@@ -1,0 +1,52 @@
+.aside {
+  display: flex;
+  flex-direction: column;
+  width: 232px;
+  flex: none;
+  height: 100vh;
+  background: var(--surface-0);
+  border-right: 1px solid var(--border);
+  padding: 10px 10px 8px;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+.quickActions {
+  margin: 10px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 4px;
+}
+
+.section {
+  margin-top: 14px;
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  margin-top: 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .12s;
+
+  &:hover { background: var(--card-hover); }
+}

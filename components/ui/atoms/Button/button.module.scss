@@ -1,0 +1,105 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s, transform 0.06s;
+
+  &:active:not(:disabled) { transform: translateY(1px); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+  /* ── Sizes (base padding, no icon) ── */
+  &.sm { height: 26px; padding: 0 8px;  font-size: var(--text-xs);   gap: 5px; }
+  &.md { height: 32px; padding: 0 12px; font-size: var(--text-sm);   gap: 6px; }
+  &.lg { height: 40px; padding: 0 16px; font-size: var(--text-base); gap: 7px; }
+
+  /* ── Width ── */
+  &.full { width: 100%; }
+}
+
+/* ── Variants ── */
+
+.primary {
+  background: var(--accent);
+  border: 1px solid transparent;
+  color: var(--text-on-accent);
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--accent) 88%, #fff);
+  }
+}
+
+.elevated {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+  &:hover:not(:disabled) {
+    background: var(--card-hover);
+    border-color: var(--border-strong);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
+  }
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-2);
+
+  &:hover:not(:disabled) {
+    background: var(--card-hover);
+    color: var(--text);
+  }
+}
+
+.outline {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+
+  &:hover:not(:disabled) {
+    background: var(--card-hover);
+  }
+}
+
+.text {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-2);
+
+  &.sm { padding-inline: 4px; }
+  &.md { padding-inline: 6px; }
+  &.lg { padding-inline: 8px; }
+
+  &:hover:not(:disabled) { color: var(--text); }
+}
+
+/* ── Icon modifiers ── */
+
+/* Icon-only → square, no text padding */
+.iconOnly {
+  &.sm { width: 26px; padding: 0; }
+  &.md { width: 32px; padding: 0; }
+  &.lg { width: 40px; padding: 0; }
+}
+
+/* Leading icon + text → tighter left padding to balance icon weight */
+.hasIcon {
+  &.sm { padding-left: 6px; }
+  &.md { padding-left: 9px; }
+  &.lg { padding-left: 12px; }
+}
+
+/* Trailing icon + text → tighter right padding */
+.hasIconRight {
+  &.sm { padding-right: 6px; }
+  &.md { padding-right: 9px; }
+  &.lg { padding-right: 12px; }
+}

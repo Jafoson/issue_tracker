@@ -1,0 +1,64 @@
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cardTopRight {
+  flex: none;
+}
+
+.title {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 0 0 12px;
+  color: var(--text);
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.id {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-3);
+}
+
+.time {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-left: auto;
+}
+
+.comments {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-left: 4px;
+}

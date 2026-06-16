@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Workspace members ───────────────────────────────────────────────────────
+
+model User {
+  id      String  @id
+  name    String
+  handle  String  @unique
+  email   String  @unique
+  role    String  @default("member")
+  color   String
+  pending Boolean @default(false)
+
+  assignedIssues  Issue[]    @relation("IssueAssignee")
+  reportedIssues  Issue[]    @relation("IssueReporter")
+  comments        Comment[]
+  leadingTeams    Team[]     @relation("TeamLead")
+  teamMemberships TeamMember[]
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+
+model Project {
+  id     String @id
+  name   String
+  prefix String @unique
+  color  String
+
+  issues Issue[]
+  teams  TeamProject[]
+}
+
+// ─── Workspace config (customizable per workspace) ───────────────────────────
+
+model Status {
+  id       String  @id
+  name     String
+  short    String
+  color    String
+  isColumn Boolean @default(true)
+  position Int
+}
+
+model Priority {
+  id       Int    @id
+  key      String @unique
+  name     String
+  color    String
+  position Int
+}
+
+model IssueType {
+  id       String @id
+  name     String
+  color    String
+  position Int
+}
+
+model Role {
+  id   String @id
+  name String
+  desc String @default("")
+}
+
+// ─── Labels ──────────────────────────────────────────────────────────────────
+
+model Label {
+  id    String @id
+  name  String
+  color String
+}
+
+// ─── Issues ──────────────────────────────────────────────────────────────────
+
+model Issue {
+  id          String   @id
+  key         Int
+  title       String
+  status      String   @default("backlog")
+  priority    Int      @default(0)
+  description String   @default("")
+  type        String   @default("feature")
+  labels      String[]
+  rank        Float    @default(0)
+  created     DateTime @default(now())
+  updated     DateTime @updatedAt
+
+  assigneeId String?
+  reporterId String
+  projectId  String
+
+  assignee User?    @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  reporter User     @relation("IssueReporter", fields: [reporterId], references: [id])
+  project  Project  @relation(fields: [projectId],  references: [id])
+  comments Comment[]
+
+  @@unique([projectId, key])
+  @@index([projectId, status])
+  @@index([assigneeId])
+}
+
+// ─── Comments ────────────────────────────────────────────────────────────────
+
+model Comment {
+  id      String   @id
+  body    String
+  created DateTime @default(now())
+
+  issueId  String
+  authorId String
+
+  issue  Issue @relation(fields: [issueId],  references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id])
+}
+
+// ─── Teams ───────────────────────────────────────────────────────────────────
+
+model Team {
+  id    String @id
+  name  String
+  key   String @unique
+  color String
+  desc  String @default("")
+
+  leadId String
+  lead   User   @relation("TeamLead", fields: [leadId], references: [id])
+
+  members  TeamMember[]
+  projects TeamProject[]
+}
+
+model TeamMember {
+  teamId String
+  userId String
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+}
+
+model TeamProject {
+  teamId    String
+  projectId String
+
+  team    Team    @relation(fields: [teamId],    references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, projectId])
+}

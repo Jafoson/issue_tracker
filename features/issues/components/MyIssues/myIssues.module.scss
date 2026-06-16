@@ -1,0 +1,35 @@
+.wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+.group {
+  margin-bottom: 8px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 20px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-2);
+  position: sticky;
+  top: 0;
+  background: var(--surface-0);
+  z-index: 1;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  color: var(--text-3);
+
+  p { margin: 0; font-size: 14px; }
+}

@@ -1,0 +1,50 @@
+.wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  max-width: 640px;
+}
+
+.pageTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 28px;
+}
+
+.section {
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-3);
+  padding: 10px 16px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 20px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.rowLabel {
+  font-size: 13.5px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}

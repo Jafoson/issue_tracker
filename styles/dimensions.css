@@ -1,0 +1,26 @@
+/* ============================================================
+   Orbit — Dimension & Shadow Tokens
+   Spacing, border-radius, shadows, sizing constants.
+   ============================================================ */
+
+:root {
+  /* Spacing / sizing */
+  --row-h:    40px;
+  --card-pad: 13px;
+
+  /* Border radius */
+  --radius:    8px;
+  --radius-sm: 6px;
+  --radius-lg: 12px;
+
+  /* Shadows (dark-mode defaults; light overrides in colors.css) */
+  --shadow-card:  0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 1px rgba(0, 0, 0, 0.10);
+  --shadow-pop:   0 16px 40px -12px rgba(0, 0, 0, 0.6), 0 4px 12px -4px rgba(0, 0, 0, 0.4);
+  --shadow-panel: -24px 0 60px -24px rgba(0, 0, 0, 0.6);
+
+  /* Z-index scale */
+  --z-popover: 1700;
+  --z-overlay: 1500;
+  --z-toast:   4000;
+}
+

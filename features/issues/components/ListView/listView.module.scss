@@ -1,0 +1,35 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rowRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.identifier {
+  font-size: 11.5px;
+  color: var(--text-3);
+  flex: none;
+}
+
+.rowTitle {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}

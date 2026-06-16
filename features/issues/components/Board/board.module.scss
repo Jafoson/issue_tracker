@@ -1,0 +1,70 @@
+.board {
+  display: flex;
+  gap: 0;
+  height: 100%;
+  overflow-x: auto;
+  padding: 16px;
+  align-items: stretch;
+}
+
+.colHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px 10px;
+  flex: none;
+}
+
+.colTitle {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px 10px;
+  min-height: 60px;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dropIndicator {
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+
+  &::after {
+    content: '';
+    display: block;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+    transform: translateY(-1px);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+}
+
+.empty {
+  font-size: 12.5px;
+  color: var(--text-3);
+  text-align: center;
+  padding: 18px 0;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}

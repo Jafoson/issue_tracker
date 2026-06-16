@@ -1,0 +1,77 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-0);
+  padding: 0 20px;
+  flex: none;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 9px;
+  height: 32px;
+  flex: 1;
+  max-width: 320px;
+
+  &:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-a15);
+  }
+}
+
+.searchInput {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13.5px;
+  flex: 1;
+  min-width: 0;
+
+  &::placeholder {
+    color: var(--text-3);
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 10px;
+  flex-wrap: wrap;
+}

@@ -1,0 +1,85 @@
+/* ============================================================
+   Orbit — Color Tokens
+   Imported once in app/layout.tsx. Available globally as CSS
+   custom properties throughout the entire app.
+   ============================================================ */
+
+:root {
+  --accent:       #d98b2b;
+  --accent-soft:  color-mix(in oklab, var(--accent) 16%, transparent);
+  --accent-a15:   color-mix(in oklab, var(--accent) 15%, transparent);
+  --accent-text:  #ffffff;
+
+  --red:          #e05252;
+  --green:        #5ab98a;
+  --amber:        #e0992b;
+  --blue:         #3b7bd5;
+}
+
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg:         #08090b;
+  --surface-0:  #0a0b0d;
+  --surface-1:  #111215;
+  --surface-2:  #181920;
+
+  /* Legacy aliases (used by globals.scss utilities) */
+  --sidebar:    #0a0b0d;
+  --panel:      #0d0e11;
+  --panel-2:    #121317;
+  --elev:       #16171b;
+  --card:       #0f1013;
+  --card-hover: #16171b;
+
+  /* Borders */
+  --border:        rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.11);
+  --border-faint:  rgba(255, 255, 255, 0.035);
+
+  /* Text */
+  --text:          #edeef1;
+  --text-2:        #9ba1ab;
+  --text-3:        #686d76;
+  --text-on-accent: #ffffff;
+
+  /* Misc */
+  --overlay:      rgba(2, 3, 4, 0.6);
+  --shadow-card:  none;
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg:         #fafafb;
+  --surface-0:  #f4f4f6;
+  --surface-1:  #ffffff;
+  --surface-2:  #f0f0f2;
+
+  /* Legacy aliases */
+  --sidebar:    #f4f4f6;
+  --panel:      #ffffff;
+  --panel-2:    #fbfbfc;
+  --elev:       #ffffff;
+  --card:       #ffffff;
+  --card-hover: #fbfbfd;
+
+  /* Borders */
+  --border:        rgba(15, 17, 24, 0.10);
+  --border-strong: rgba(15, 17, 24, 0.16);
+  --border-faint:  rgba(15, 17, 24, 0.055);
+
+  /* Text */
+  --text:          #181a1f;
+  --text-2:        #5c636e;
+  --text-3:        #8b929c;
+  --text-on-accent: #ffffff;
+
+  /* Misc */
+  --overlay:      rgba(20, 22, 28, 0.32);
+  --shadow-card:  0 1px 2px rgba(20, 22, 28, 0.06), 0 1px 1px rgba(20, 22, 28, 0.04);
+  --shadow-pop:   0 12px 32px -8px rgba(20, 22, 28, 0.18), 0 4px 12px -4px rgba(20, 22, 28, 0.10);
+  --shadow-panel: -24px 0 60px -20px rgba(20, 22, 28, 0.22);
+
+  color-scheme: light;
+}
