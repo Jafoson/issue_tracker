@@ -7,74 +7,131 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Workspace members ───────────────────────────────────────────────────────
+// ─── Workspace ────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id   String @id  // = URL slug, e.g. "nimbus"
+  name String
+
+  members    WorkspaceMember[]
+  projects   Project[]
+  labels     Label[]
+  teams      Team[]
+  statuses   Status[]
+  priorities Priority[]
+  issueTypes IssueType[]
+  roles      Role[]
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
 
 model User {
-  id      String  @id
-  name    String
-  handle  String  @unique
-  email   String  @unique
-  role    String  @default("member")
-  color   String
-  pending Boolean @default(false)
+  id     String @id
+  name   String
+  handle String @unique
+  email  String @unique
+  color  String
 
-  assignedIssues  Issue[]    @relation("IssueAssignee")
-  reportedIssues  Issue[]    @relation("IssueReporter")
+  workspaces      WorkspaceMember[]
+  assignedIssues  Issue[]      @relation("IssueAssignee")
+  reportedIssues  Issue[]      @relation("IssueReporter")
   comments        Comment[]
-  leadingTeams    Team[]     @relation("TeamLead")
+  leadingTeams    Team[]       @relation("TeamLead")
   teamMemberships TeamMember[]
+}
+
+model WorkspaceMember {
+  workspaceId String
+  userId      String
+  role        String  @default("member")
+  pending     Boolean @default(false)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId],      references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
 }
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 model Project {
-  id     String @id
-  name   String
-  prefix String @unique
-  color  String
+  id          String @id
+  workspaceId String
+  name        String
+  prefix      String
+  color       String
 
-  issues Issue[]
-  teams  TeamProject[]
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues    Issue[]
+  teams     TeamProject[]
+
+  @@unique([workspaceId, prefix])
 }
 
 // ─── Workspace config (customizable per workspace) ───────────────────────────
 
 model Status {
-  id       String  @id
-  name     String
-  short    String
-  color    String
-  isColumn Boolean @default(true)
-  position Int
+  id          String  @id
+  workspaceId String
+  name        String
+  short       String
+  color       String
+  isColumn    Boolean @default(true)
+  position    Int
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, position])
 }
 
 model Priority {
-  id       Int    @id
-  key      String @unique
-  name     String
-  color    String
-  position Int
+  id          Int    @id
+  workspaceId String
+  key         String
+  name        String
+  color       String
+  position    Int
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+  @@index([workspaceId, position])
 }
 
 model IssueType {
-  id       String @id
-  name     String
-  color    String
-  position Int
+  id          String @id
+  workspaceId String
+  name        String
+  color       String
+  position    Int
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, position])
 }
 
 model Role {
-  id   String @id
-  name String
-  desc String @default("")
+  id          String @id
+  workspaceId String
+  name        String
+  desc        String @default("")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, id])
 }
 
 // ─── Labels ──────────────────────────────────────────────────────────────────
 
 model Label {
-  id    String @id
-  name  String
-  color String
+  id          String @id
+  workspaceId String
+  name        String
+  color       String
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 // ─── Issues ──────────────────────────────────────────────────────────────────
@@ -98,7 +155,7 @@ model Issue {
 
   assignee User?    @relation("IssueAssignee", fields: [assigneeId], references: [id])
   reporter User     @relation("IssueReporter", fields: [reporterId], references: [id])
-  project  Project  @relation(fields: [projectId],  references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
   comments Comment[]
 
   @@unique([projectId, key])
@@ -123,17 +180,21 @@ model Comment {
 // ─── Teams ───────────────────────────────────────────────────────────────────
 
 model Team {
-  id    String @id
-  name  String
-  key   String @unique
-  color String
-  desc  String @default("")
+  id          String @id
+  workspaceId String
+  name        String
+  key         String
+  color       String
+  desc        String @default("")
 
   leadId String
   lead   User   @relation("TeamLead", fields: [leadId], references: [id])
 
-  members  TeamMember[]
-  projects TeamProject[]
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  projects  TeamProject[]
+
+  @@unique([workspaceId, key])
 }
 
 model TeamMember {

@@ -6,73 +6,85 @@ import { PrismaClient } from "../lib/generated/prisma/client";
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db   = new PrismaClient({ adapter: new PrismaPg(pool) });
 
+const WS = "nimbus";
+
 // ─── Workspace Config ─────────────────────────────────────────────────────────
 
 const STATUSES = [
-  { id: "backlog",     name: "Backlog",     short: "Backlog",  color: "#8a9099", isColumn: true,  position: 0 },
-  { id: "todo",        name: "Todo",        short: "Todo",     color: "#b8bcc4", isColumn: true,  position: 1 },
-  { id: "in_progress", name: "In Progress", short: "Progress", color: "#e2b340", isColumn: true,  position: 2 },
-  { id: "in_review",   name: "In Review",   short: "Review",   color: "#5b9bd5", isColumn: true,  position: 3 },
-  { id: "done",        name: "Done",        short: "Done",     color: "#5ab98a", isColumn: true,  position: 4 },
-  { id: "canceled",    name: "Canceled",    short: "Canceled", color: "#7a7f87", isColumn: false, position: 5 },
+  { id: "backlog",     workspaceId: WS, name: "Backlog",     short: "Backlog",  color: "#8a9099", isColumn: true,  position: 0 },
+  { id: "todo",        workspaceId: WS, name: "Todo",        short: "Todo",     color: "#b8bcc4", isColumn: true,  position: 1 },
+  { id: "in_progress", workspaceId: WS, name: "In Progress", short: "Progress", color: "#e2b340", isColumn: true,  position: 2 },
+  { id: "in_review",   workspaceId: WS, name: "In Review",   short: "Review",   color: "#5b9bd5", isColumn: true,  position: 3 },
+  { id: "done",        workspaceId: WS, name: "Done",        short: "Done",     color: "#5ab98a", isColumn: true,  position: 4 },
+  { id: "canceled",    workspaceId: WS, name: "Canceled",    short: "Canceled", color: "#7a7f87", isColumn: false, position: 5 },
 ];
 
 const PRIORITIES = [
-  { id: 0, key: "none",   name: "No priority", color: "#8a9099", position: 0 },
-  { id: 1, key: "low",    name: "Low",          color: "#3b9d6e", position: 1 },
-  { id: 2, key: "medium", name: "Medium",       color: "#e2b340", position: 2 },
-  { id: 3, key: "high",   name: "High",         color: "#d5733b", position: 3 },
-  { id: 4, key: "urgent", name: "Urgent",       color: "#e05252", position: 4 },
+  { id: 0, workspaceId: WS, key: "none",   name: "No priority", color: "#8a9099", position: 0 },
+  { id: 1, workspaceId: WS, key: "low",    name: "Low",          color: "#3b9d6e", position: 1 },
+  { id: 2, workspaceId: WS, key: "medium", name: "Medium",       color: "#e2b340", position: 2 },
+  { id: 3, workspaceId: WS, key: "high",   name: "High",         color: "#d5733b", position: 3 },
+  { id: 4, workspaceId: WS, key: "urgent", name: "Urgent",       color: "#e05252", position: 4 },
 ];
 
 const ISSUE_TYPES = [
-  { id: "feature",     name: "Feature",     color: "#6e63e6", position: 0 },
-  { id: "bug",         name: "Bug",         color: "#e5664a", position: 1 },
-  { id: "improvement", name: "Improvement", color: "#3b9d6e", position: 2 },
-  { id: "task",        name: "Task",        color: "#3b7bd5", position: 3 },
-  { id: "chore",       name: "Chore",       color: "#8a7f6b", position: 4 },
+  { id: "feature",     workspaceId: WS, name: "Feature",     color: "#6e63e6", position: 0 },
+  { id: "bug",         workspaceId: WS, name: "Bug",         color: "#e5664a", position: 1 },
+  { id: "improvement", workspaceId: WS, name: "Improvement", color: "#3b9d6e", position: 2 },
+  { id: "task",        workspaceId: WS, name: "Task",        color: "#3b7bd5", position: 3 },
+  { id: "chore",       workspaceId: WS, name: "Chore",       color: "#8a7f6b", position: 4 },
 ];
 
 const ROLES = [
-  { id: "admin",  name: "Admin",  desc: "Full access — manage members & workspace settings." },
-  { id: "member", name: "Member", desc: "Create and edit issues, comment, manage own work."  },
-  { id: "viewer", name: "Viewer", desc: "Read-only access to issues and boards."              },
+  { id: "admin",  workspaceId: WS, name: "Admin",  desc: "Full access — manage members & workspace settings." },
+  { id: "member", workspaceId: WS, name: "Member", desc: "Create and edit issues, comment, manage own work."  },
+  { id: "viewer", workspaceId: WS, name: "Viewer", desc: "Read-only access to issues and boards."              },
 ];
 
 const LABELS = [
-  { id: "l1", name: "Bug",         color: "#e5664a" },
-  { id: "l2", name: "Feature",     color: "#6e63e6" },
-  { id: "l3", name: "Improvement", color: "#3b9d6e" },
-  { id: "l4", name: "Design",      color: "#cf6fb0" },
-  { id: "l5", name: "Frontend",    color: "#3b7bd5" },
-  { id: "l6", name: "Backend",     color: "#c2904a" },
-  { id: "l7", name: "Tech Debt",   color: "#8a7f6b" },
-  { id: "l8", name: "Customer",    color: "#d5733b" },
-  { id: "l9", name: "Docs",        color: "#5aa0a0" },
+  { id: "l1", workspaceId: WS, name: "Bug",         color: "#e5664a" },
+  { id: "l2", workspaceId: WS, name: "Feature",     color: "#6e63e6" },
+  { id: "l3", workspaceId: WS, name: "Improvement", color: "#3b9d6e" },
+  { id: "l4", workspaceId: WS, name: "Design",      color: "#cf6fb0" },
+  { id: "l5", workspaceId: WS, name: "Frontend",    color: "#3b7bd5" },
+  { id: "l6", workspaceId: WS, name: "Backend",     color: "#c2904a" },
+  { id: "l7", workspaceId: WS, name: "Tech Debt",   color: "#8a7f6b" },
+  { id: "l8", workspaceId: WS, name: "Customer",    color: "#d5733b" },
+  { id: "l9", workspaceId: WS, name: "Docs",        color: "#5aa0a0" },
 ];
 
 // ─── Seed Data ───────────────────────────────────────────────────────────────
 
 const USERS = [
-  { id: "u1", name: "Mara Velez",   handle: "mara",  email: "mara@nimbus.io",  role: "admin",  color: "#6e63e6" },
-  { id: "u2", name: "Tomas Køhler", handle: "tomas", email: "tomas@nimbus.io", role: "member", color: "#d5733b" },
-  { id: "u3", name: "Aisha Rahman", handle: "aisha", email: "aisha@nimbus.io", role: "member", color: "#3b9d6e" },
-  { id: "u4", name: "Devon Park",   handle: "devon", email: "devon@nimbus.io", role: "member", color: "#c2456b" },
-  { id: "u5", name: "Lena Brandt",  handle: "lena",  email: "lena@nimbus.io",  role: "admin",  color: "#3b7bd5" },
-  { id: "u6", name: "Yusuf Demir",  handle: "yusuf", email: "yusuf@nimbus.io", role: "member", color: "#a05fd0" },
-  { id: "u7", name: "Priya Nair",   handle: "priya", email: "priya@nimbus.io", role: "viewer", color: "#cf9a3b" },
+  { id: "u1", name: "Mara Velez",   handle: "mara",  email: "mara@nimbus.io",  color: "#6e63e6" },
+  { id: "u2", name: "Tomas Køhler", handle: "tomas", email: "tomas@nimbus.io", color: "#d5733b" },
+  { id: "u3", name: "Aisha Rahman", handle: "aisha", email: "aisha@nimbus.io", color: "#3b9d6e" },
+  { id: "u4", name: "Devon Park",   handle: "devon", email: "devon@nimbus.io", color: "#c2456b" },
+  { id: "u5", name: "Lena Brandt",  handle: "lena",  email: "lena@nimbus.io",  color: "#3b7bd5" },
+  { id: "u6", name: "Yusuf Demir",  handle: "yusuf", email: "yusuf@nimbus.io", color: "#a05fd0" },
+  { id: "u7", name: "Priya Nair",   handle: "priya", email: "priya@nimbus.io", color: "#cf9a3b" },
+];
+
+const WORKSPACE_MEMBERS = [
+  { workspaceId: WS, userId: "u1", role: "admin",  pending: false },
+  { workspaceId: WS, userId: "u2", role: "member", pending: false },
+  { workspaceId: WS, userId: "u3", role: "member", pending: false },
+  { workspaceId: WS, userId: "u4", role: "member", pending: false },
+  { workspaceId: WS, userId: "u5", role: "admin",  pending: false },
+  { workspaceId: WS, userId: "u6", role: "member", pending: false },
+  { workspaceId: WS, userId: "u7", role: "viewer", pending: false },
 ];
 
 const PROJECTS = [
-  { id: "p1", name: "Web App",  prefix: "NIM", color: "#6e63e6" },
-  { id: "p2", name: "Mobile",   prefix: "MOB", color: "#3b9d6e" },
-  { id: "p3", name: "Platform", prefix: "PLT", color: "#d5733b" },
+  { id: "p1", workspaceId: WS, name: "Web App",  prefix: "NIM", color: "#6e63e6" },
+  { id: "p2", workspaceId: WS, name: "Mobile",   prefix: "MOB", color: "#3b9d6e" },
+  { id: "p3", workspaceId: WS, name: "Platform", prefix: "PLT", color: "#d5733b" },
 ];
 
 const TEAMS = [
-  { id: "t1", name: "Web Platform",   key: "WEB", color: "#6e63e6", lead: "u1", members: ["u1","u2","u3","u6"], projects: ["p1"], desc: "Owns the web app, board experience and core UX." },
-  { id: "t2", name: "Mobile",         key: "MOB", color: "#3b9d6e", lead: "u5", members: ["u5","u4","u7"],       projects: ["p2"], desc: "iOS & Android apps and shared mobile tooling." },
-  { id: "t3", name: "Infrastructure", key: "INF", color: "#d5733b", lead: "u6", members: ["u6","u3","u5"],       projects: ["p3"], desc: "APIs, billing, webhooks and reliability." },
+  { id: "t1", workspaceId: WS, name: "Web Platform",   key: "WEB", color: "#6e63e6", lead: "u1", members: ["u1","u2","u3","u6"], projects: ["p1"], desc: "Owns the web app, board experience and core UX." },
+  { id: "t2", workspaceId: WS, name: "Mobile",         key: "MOB", color: "#3b9d6e", lead: "u5", members: ["u5","u4","u7"],       projects: ["p2"], desc: "iOS & Android apps and shared mobile tooling." },
+  { id: "t3", workspaceId: WS, name: "Infrastructure", key: "INF", color: "#d5733b", lead: "u6", members: ["u6","u3","u5"],       projects: ["p3"], desc: "APIs, billing, webhooks and reliability." },
 ];
 
 const H = 3_600_000;
@@ -124,6 +136,13 @@ const ISSUES = [
 async function main() {
   console.log("🌱  Seeding database…");
 
+  await db.workspace.upsert({
+    where: { id: WS },
+    update: { name: "Nimbus" },
+    create: { id: WS, name: "Nimbus" },
+  });
+  console.log("   ✓ 1 workspace");
+
   for (const s of STATUSES) {
     await db.status.upsert({ where: { id: s.id }, update: s, create: s });
   }
@@ -149,6 +168,15 @@ async function main() {
   }
   console.log(`   ✓ ${USERS.length} users`);
 
+  for (const m of WORKSPACE_MEMBERS) {
+    await db.workspaceMember.upsert({
+      where:  { workspaceId_userId: { workspaceId: m.workspaceId, userId: m.userId } },
+      update: { role: m.role, pending: m.pending },
+      create: m,
+    });
+  }
+  console.log(`   ✓ ${WORKSPACE_MEMBERS.length} workspace members`);
+
   for (const p of PROJECTS) {
     await db.project.upsert({ where: { id: p.id }, update: {}, create: p });
   }
@@ -163,7 +191,7 @@ async function main() {
     await db.team.upsert({
       where:  { id: t.id },
       update: {},
-      create: { id: t.id, name: t.name, key: t.key, color: t.color, desc: t.desc, leadId: t.lead },
+      create: { id: t.id, workspaceId: t.workspaceId, name: t.name, key: t.key, color: t.color, desc: t.desc, leadId: t.lead },
     });
     for (const userId of t.members) {
       await db.teamMember.upsert({

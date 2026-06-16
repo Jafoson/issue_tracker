@@ -2,7 +2,7 @@
 import { useTranslations } from "@/lib/translations-context";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/atoms/Button/Button";
@@ -24,14 +24,15 @@ export function Members({ members, teams }: Props) {
   const { me, roles } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
+  const { workspace } = useParams<{ workspace: string }>();
   const [, startTransition] = useTransition();
   const isAdmin = me.role === "admin";
 
   const changeRole = (userId: string, role: string) =>
-    startTransition(async () => { await setMemberRole(userId, role); router.refresh(); });
+    startTransition(async () => { await setMemberRole(workspace, userId, role); router.refresh(); });
 
   const remove = (userId: string) =>
-    startTransition(async () => { await removeMember(userId); router.refresh(); });
+    startTransition(async () => { await removeMember(workspace, userId); router.refresh(); });
 
   return (
     <div className={styles.wrap}>

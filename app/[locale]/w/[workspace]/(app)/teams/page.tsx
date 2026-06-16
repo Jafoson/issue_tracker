@@ -3,9 +3,10 @@ import { Teams } from "@/features/admin/components/Teams/Teams";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeamsPage() {
+export default async function TeamsPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = await params;
   const [members, teams, projects] = await Promise.all([
-    getMembers(), getTeams(), getProjects(),
+    getMembers(workspace), getTeams(workspace), getProjects(workspace),
   ]);
 
   const allIssues = (

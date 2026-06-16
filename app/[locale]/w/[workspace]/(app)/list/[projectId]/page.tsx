@@ -11,11 +11,11 @@ export default async function ListPage({
   params: Promise<{ workspace: string; projectId: string }>;
   searchParams: Promise<Record<string, string>>;
 }) {
-  const { projectId } = await params;
+  const { workspace, projectId } = await params;
   const filters = await searchParams;
 
   const [projects, issues] = await Promise.all([
-    getProjects(),
+    getProjects(workspace),
     getIssuesByProject(projectId, filters),
   ]);
 

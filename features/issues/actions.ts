@@ -54,7 +54,12 @@ export async function createIssue(data: {
   projectId: string;
   reporterId: string;
 }) {
+  const project = await db.project.findUnique({
+    where: { id: data.projectId },
+    select: { workspaceId: true },
+  });
   const last = await db.issue.findFirst({
+    where: { project: { workspaceId: project?.workspaceId } },
     orderBy: { key: "desc" },
     select: { key: true },
   });
@@ -94,12 +99,17 @@ export async function deleteComment(commentId: string) {
   await revalidate();
 }
 
-export async function setMemberRole(userId: string, role: string) {
-  await db.user.update({ where: { id: userId }, data: { role } });
+export async function setMemberRole(workspaceId: string, userId: string, role: string) {
+  await db.workspaceMember.update({
+    where: { workspaceId_userId: { workspaceId, userId } },
+    data: { role },
+  });
   await revalidate();
 }
 
-export async function removeMember(userId: string) {
-  await db.user.delete({ where: { id: userId } });
+export async function removeMember(workspaceId: string, userId: string) {
+  await db.workspaceMember.delete({
+    where: { workspaceId_userId: { workspaceId, userId } },
+  });
   await revalidate();
 }

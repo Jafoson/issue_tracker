@@ -25,46 +25,74 @@ function mapIssue(i: {
 
 // ── Cached queries (deduplicated per request) ─────────────────────────────────
 
-export const getProjects = cache(async (): Promise<Project[]> => {
-  const rows = await db.project.findMany({ orderBy: { name: "asc" } });
+export const getWorkspace = cache(async (id: string) => {
+  return db.workspace.findUnique({ where: { id }, select: { id: true, name: true } });
+});
+
+export const getProjects = cache(async (workspaceId: string): Promise<Project[]> => {
+  const rows = await db.project.findMany({
+    where: { workspaceId },
+    orderBy: { name: "asc" },
+  });
   return rows.map((p) => ({ id: p.id, name: p.name, prefix: p.prefix, color: p.color }));
 });
 
-export const getMembers = cache(async (): Promise<User[]> => {
-  const rows = await db.user.findMany({ orderBy: { name: "asc" } });
-  return rows.map((u) => ({
-    id: u.id, name: u.name, handle: u.handle, email: u.email,
-    role: u.role as User["role"], color: u.color, pending: u.pending,
+export const getMembers = cache(async (workspaceId: string): Promise<User[]> => {
+  const rows = await db.workspaceMember.findMany({
+    where: { workspaceId },
+    include: { user: true },
+    orderBy: { user: { name: "asc" } },
+  });
+  return rows.map((m) => ({
+    id: m.user.id, name: m.user.name, handle: m.user.handle,
+    email: m.user.email, color: m.user.color,
+    role: m.role as User["role"], pending: m.pending,
   }));
 });
 
-export const getLabels = cache(async (): Promise<Label[]> => {
-  const rows = await db.label.findMany({ orderBy: { name: "asc" } });
+export const getLabels = cache(async (workspaceId: string): Promise<Label[]> => {
+  const rows = await db.label.findMany({
+    where: { workspaceId },
+    orderBy: { name: "asc" },
+  });
   return rows.map((l) => ({ id: l.id, name: l.name, color: l.color }));
 });
 
-export const getStatuses = cache(async (): Promise<Status[]> => {
-  const rows = await db.status.findMany({ orderBy: { position: "asc" } });
+export const getStatuses = cache(async (workspaceId: string): Promise<Status[]> => {
+  const rows = await db.status.findMany({
+    where: { workspaceId },
+    orderBy: { position: "asc" },
+  });
   return rows.map((s) => ({ id: s.id, name: s.name, short: s.short, color: s.color, isColumn: s.isColumn }));
 });
 
-export const getPriorities = cache(async (): Promise<Priority[]> => {
-  const rows = await db.priority.findMany({ orderBy: { position: "asc" } });
+export const getPriorities = cache(async (workspaceId: string): Promise<Priority[]> => {
+  const rows = await db.priority.findMany({
+    where: { workspaceId },
+    orderBy: { position: "asc" },
+  });
   return rows.map((p) => ({ id: p.id, key: p.key, name: p.name, color: p.color }));
 });
 
-export const getIssueTypes = cache(async (): Promise<IssueType[]> => {
-  const rows = await db.issueType.findMany({ orderBy: { position: "asc" } });
+export const getIssueTypes = cache(async (workspaceId: string): Promise<IssueType[]> => {
+  const rows = await db.issueType.findMany({
+    where: { workspaceId },
+    orderBy: { position: "asc" },
+  });
   return rows.map((t) => ({ id: t.id, name: t.name, color: t.color }));
 });
 
-export const getRoles = cache(async (): Promise<Role[]> => {
-  const rows = await db.role.findMany({ orderBy: { id: "asc" } });
+export const getRoles = cache(async (workspaceId: string): Promise<Role[]> => {
+  const rows = await db.role.findMany({
+    where: { workspaceId },
+    orderBy: { id: "asc" },
+  });
   return rows.map((r) => ({ id: r.id, name: r.name, desc: r.desc }));
 });
 
-export const getTeams = cache(async (): Promise<Team[]> => {
+export const getTeams = cache(async (workspaceId: string): Promise<Team[]> => {
   const rows = await db.team.findMany({
+    where: { workspaceId },
     include: {
       members:  { select: { userId:    true } },
       projects: { select: { projectId: true } },
@@ -86,18 +114,18 @@ export async function getIssuesByProject(
     label?: string; q?: string;
   } = {},
 ): Promise<Issue[]> {
-  const statuses  = filters.status?.split(",").filter(Boolean)   ?? [];
+  const statuses   = filters.status?.split(",").filter(Boolean)              ?? [];
   const priorities = filters.priority?.split(",").map(Number).filter((n) => !isNaN(n)) ?? [];
-  const assignees = filters.assignee?.split(",").filter(Boolean) ?? [];
-  const labels    = filters.label?.split(",").filter(Boolean)    ?? [];
+  const assignees  = filters.assignee?.split(",").filter(Boolean)            ?? [];
+  const labels     = filters.label?.split(",").filter(Boolean)               ?? [];
 
   const rows = await db.issue.findMany({
     where: {
       projectId,
-      ...(statuses.length   && { status:   { in: statuses } }),
-      ...(priorities.length && { priority: { in: priorities } }),
+      ...(statuses.length   && { status:     { in: statuses } }),
+      ...(priorities.length && { priority:   { in: priorities } }),
       ...(assignees.length  && { assigneeId: { in: assignees } }),
-      ...(labels.length     && { labels: { hasSome: labels } }),
+      ...(labels.length     && { labels:     { hasSome: labels } }),
       ...(filters.q && {
         OR: [
           { title:       { contains: filters.q, mode: "insensitive" } },
@@ -111,18 +139,19 @@ export async function getIssuesByProject(
   return rows.map(mapIssue);
 }
 
-export async function getMyIssues(userId: string): Promise<Issue[]> {
+export async function getMyIssues(userId: string, workspaceId: string): Promise<Issue[]> {
   const rows = await db.issue.findMany({
-    where: { assigneeId: userId },
+    where: { assigneeId: userId, project: { workspaceId } },
     include: { comments: { orderBy: { created: "asc" } } },
     orderBy: { updated: "desc" },
   });
   return rows.map(mapIssue);
 }
 
-export async function getInboxIssues(userId: string): Promise<Issue[]> {
+export async function getInboxIssues(userId: string, workspaceId: string): Promise<Issue[]> {
   const rows = await db.issue.findMany({
     where: {
+      project: { workspaceId },
       OR: [{ assigneeId: userId }, { reporterId: userId }],
       comments: { some: { authorId: { not: userId } } },
     },
@@ -141,8 +170,9 @@ export async function getIssueById(id: string): Promise<Issue | null> {
   return i ? mapIssue(i) : null;
 }
 
-export const getSearchIssues = cache(async (): Promise<SearchableIssue[]> => {
+export const getSearchIssues = cache(async (workspaceId: string): Promise<SearchableIssue[]> => {
   const rows = await db.issue.findMany({
+    where: { project: { workspaceId } },
     select: { id: true, key: true, title: true, status: true, projectId: true },
     orderBy: { updated: "desc" },
     take: 500,
