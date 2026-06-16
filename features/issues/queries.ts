@@ -60,7 +60,7 @@ export const getLabels = cache(async (workspaceId: string): Promise<Label[]> => 
 
 export const getStatuses = cache(async (workspaceId: string): Promise<Status[]> => {
   const rows = await db.status.findMany({
-    where: { workspaceId },
+    where: { workspaces: { some: { workspaceId } } },
     orderBy: { position: "asc" },
   });
   return rows.map((s) => ({ id: s.id, name: s.name, short: s.short, color: s.color, isColumn: s.isColumn }));
@@ -68,7 +68,7 @@ export const getStatuses = cache(async (workspaceId: string): Promise<Status[]> 
 
 export const getPriorities = cache(async (workspaceId: string): Promise<Priority[]> => {
   const rows = await db.priority.findMany({
-    where: { workspaceId },
+    where: { workspaces: { some: { workspaceId } } },
     orderBy: { position: "asc" },
   });
   return rows.map((p) => ({ id: p.id, key: p.key, name: p.name, color: p.color }));
@@ -76,7 +76,7 @@ export const getPriorities = cache(async (workspaceId: string): Promise<Priority
 
 export const getIssueTypes = cache(async (workspaceId: string): Promise<IssueType[]> => {
   const rows = await db.issueType.findMany({
-    where: { workspaceId },
+    where: { workspaces: { some: { workspaceId } } },
     orderBy: { position: "asc" },
   });
   return rows.map((t) => ({ id: t.id, name: t.name, color: t.color }));
@@ -84,7 +84,7 @@ export const getIssueTypes = cache(async (workspaceId: string): Promise<IssueTyp
 
 export const getRoles = cache(async (workspaceId: string): Promise<Role[]> => {
   const rows = await db.role.findMany({
-    where: { workspaceId },
+    where: { workspaces: { some: { workspaceId } } },
     orderBy: { id: "asc" },
   });
   return rows.map((r) => ({ id: r.id, name: r.name, desc: r.desc }));

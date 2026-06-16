@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, useRouter, usePathname, useParams } from "next/navigation";
 import { UIProvider } from "@/lib/ui-store";
 import { WorkspaceProvider } from "@/lib/workspace-context";
 import { TranslationsProvider } from "@/lib/translations-context";
@@ -11,6 +11,7 @@ import { IssueDetail } from "@/features/issues/components/IssueDetail/IssueDetai
 import { IssueComposer } from "@/features/issues/components/IssueComposer/IssueComposer";
 import { CommandPalette } from "@/features/issues/components/CommandPalette/CommandPalette";
 import { useUI } from "@/lib/ui-store";
+import { logout } from "@/features/auth/actions";
 import type { WorkspaceData } from "@/lib/workspace-context";
 import type { StaticMessages } from "@/lib/i18n";
 import styles from "./appShell.module.scss";
@@ -29,9 +30,14 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { locale } = useParams<{ locale: string }>();
   const [composerOpen, setComposerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen]   = useState(false);
-  const [loggedIn, setLoggedIn]         = useState(true);
+
+  async function handleLogout() {
+    await logout();
+    router.push(`/${locale}/login`);
+  }
 
   const issueId = searchParams.get("issue");
 
@@ -62,7 +68,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
 
   return (
     <div className={styles.shell}>
-      <Sidebar onLogout={() => setLoggedIn(false)} loggedIn={loggedIn} />
+      <Sidebar onLogout={handleLogout} loggedIn={true} />
       <div className={styles.main}>
         <Topbar />
         <div className={styles.content}>{children}</div>

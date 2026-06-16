@@ -10,27 +10,29 @@ datasource db {
 // ─── Workspace ────────────────────────────────────────────────────────────────
 
 model Workspace {
-  id   String @id  // = URL slug, e.g. "nimbus"
-  name String
+  id    String @id  // = URL slug, e.g. "nimbus"
+  name  String
+  color String @default("#6e63e6")
 
   members    WorkspaceMember[]
   projects   Project[]
   labels     Label[]
   teams      Team[]
-  statuses   Status[]
-  priorities Priority[]
-  issueTypes IssueType[]
-  roles      Role[]
+  statuses   WorkspaceStatus[]
+  priorities WorkspacePriority[]
+  issueTypes WorkspaceIssueType[]
+  roles      WorkspaceRole[]
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 model User {
-  id     String @id
-  name   String
-  handle String @unique
-  email  String @unique
-  color  String
+  id           String  @id
+  name         String
+  handle       String  @unique
+  email        String  @unique
+  color        String
+  passwordHash String?
 
   workspaces      WorkspaceMember[]
   assignedIssues  Issue[]      @relation("IssueAssignee")
@@ -68,60 +70,87 @@ model Project {
   @@unique([workspaceId, prefix])
 }
 
-// ─── Workspace config (customizable per workspace) ───────────────────────────
+// ─── Global config (shared across workspaces via join tables) ─────────────────
 
 model Status {
-  id          String  @id
+  id       String  @id
+  name     String
+  short    String
+  color    String
+  isColumn Boolean @default(true)
+  position Int
+
+  workspaces WorkspaceStatus[]
+}
+
+model WorkspaceStatus {
   workspaceId String
-  name        String
-  short       String
-  color       String
-  isColumn    Boolean @default(true)
-  position    Int
+  statusId    String
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  status    Status    @relation(fields: [statusId],    references: [id], onDelete: Cascade)
 
-  @@index([workspaceId, position])
+  @@id([workspaceId, statusId])
 }
 
 model Priority {
-  id          Int    @id
+  id       Int    @id
+  key      String @unique
+  name     String
+  color    String
+  position Int
+
+  workspaces WorkspacePriority[]
+}
+
+model WorkspacePriority {
   workspaceId String
-  key         String
-  name        String
-  color       String
-  position    Int
+  priorityId  Int
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  priority  Priority  @relation(fields: [priorityId],  references: [id], onDelete: Cascade)
 
-  @@unique([workspaceId, key])
-  @@index([workspaceId, position])
+  @@id([workspaceId, priorityId])
 }
 
 model IssueType {
-  id          String @id
+  id       String @id
+  name     String
+  color    String
+  position Int
+
+  workspaces WorkspaceIssueType[]
+}
+
+model WorkspaceIssueType {
   workspaceId String
-  name        String
-  color       String
-  position    Int
+  issueTypeId String
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issueType IssueType @relation(fields: [issueTypeId], references: [id], onDelete: Cascade)
 
-  @@index([workspaceId, position])
+  @@id([workspaceId, issueTypeId])
 }
 
 model Role {
-  id          String @id
-  workspaceId String
-  name        String
-  desc        String @default("")
+  id   String @id
+  name String
+  desc String @default("")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, id])
+  workspaces WorkspaceRole[]
 }
 
-// ─── Labels ──────────────────────────────────────────────────────────────────
+model WorkspaceRole {
+  workspaceId String
+  roleId      String
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId],      references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, roleId])
+}
+
+// ─── Labels (workspace-specific) ─────────────────────────────────────────────
 
 model Label {
   id          String @id

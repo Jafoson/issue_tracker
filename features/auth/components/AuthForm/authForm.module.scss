@@ -1,0 +1,149 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.card {
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.logo {
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin: 0;
+  color: var(--text);
+}
+
+.sub {
+  margin: -8px 0 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-2);
+}
+
+.input {
+  width: 100%;
+  height: 38px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 11px;
+  font-size: var(--text-base);
+  font-family: inherit;
+  outline: none;
+  transition: border-color .12s, box-shadow .12s;
+  box-sizing: border-box;
+
+  &::placeholder { color: var(--text-3); }
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+
+.passwordWrap {
+  position: relative;
+
+  .input { padding-right: 38px; }
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+
+  &:hover { color: var(--text-2); }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--red);
+  background: color-mix(in oklab, var(--red) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--red) 20%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.submit {
+  width: 100%;
+  height: 38px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity .12s;
+
+  &:hover { opacity: .9; }
+  &:active { opacity: .8; }
+}
+
+.switch {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0;
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 550;
+
+    &:hover { text-decoration: underline; }
+  }
+}
