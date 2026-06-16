@@ -8,7 +8,7 @@ export default async function BoardPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ workspace: string; projectId: string }>;
   searchParams: Promise<Record<string, string>>;
 }) {
   const { projectId } = await params;

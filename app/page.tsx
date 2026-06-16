@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function RootPage() {
-  redirect("/board");
+  redirect("/de/w/nimbus/board");
 }

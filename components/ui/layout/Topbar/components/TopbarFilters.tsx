@@ -8,7 +8,7 @@ import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { StatusIcon, PriorityIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { FilterChip } from "./FilterChip";
 import { useWorkspace } from "@/lib/workspace-context";
-import type { T } from "@/lib/i18n";
+import type { T } from "@/lib/translations-context";
 import styles from "../topbar.module.scss";
 
 interface FilterState {

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { UIProvider } from "@/lib/ui-store";
 import { WorkspaceProvider } from "@/lib/workspace-context";
+import { TranslationsProvider } from "@/lib/translations-context";
 import { Sidebar } from "@/components/ui/layout/Sidebar/Sidebar";
 import { Topbar } from "@/components/ui/layout/Topbar/Topbar";
 import { IssueDetail } from "@/features/issues/components/IssueDetail/IssueDetail";
@@ -11,6 +12,7 @@ import { IssueComposer } from "@/features/issues/components/IssueComposer/IssueC
 import { CommandPalette } from "@/features/issues/components/CommandPalette/CommandPalette";
 import { useUI } from "@/lib/ui-store";
 import type { WorkspaceData } from "@/lib/workspace-context";
+import type { StaticMessages } from "@/lib/i18n";
 import styles from "./appShell.module.scss";
 
 function Toast() {
@@ -73,18 +75,16 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
   );
 }
 
-export function AppShell({ children, workspace }: { children: React.ReactNode; workspace: WorkspaceData }) {
-  const initLocale = (typeof window !== "undefined"
-    ? (localStorage.getItem("orbit-locale") as "en" | "de" | null) ?? "de"
-    : "de") as "en" | "de";
-
+export function AppShell({ children, workspace, messages }: { children: React.ReactNode; workspace: WorkspaceData; messages: StaticMessages }) {
   return (
-    <UIProvider locale={initLocale}>
-      <WorkspaceProvider value={workspace}>
-        <Suspense fallback={null}>
-          <Shell workspace={workspace}>{children}</Shell>
-        </Suspense>
-      </WorkspaceProvider>
+    <UIProvider>
+      <TranslationsProvider messages={messages}>
+        <WorkspaceProvider value={workspace}>
+          <Suspense fallback={null}>
+            <Shell workspace={workspace}>{children}</Shell>
+          </Suspense>
+        </WorkspaceProvider>
+      </TranslationsProvider>
     </UIProvider>
   );
 }

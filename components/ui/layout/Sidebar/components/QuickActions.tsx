@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import type { T } from "@/lib/i18n";
+import type { T } from "@/lib/translations-context";
 
 interface QuickActionsProps {
   t: T;

@@ -1,9 +1,10 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
-import { usePathname } from "next/navigation";
-import { useUI } from "@/lib/ui-store";
+import { usePathname, useParams } from "next/navigation";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import { QuickActions } from "./components/QuickActions";
 import { NavLink } from "./components/NavLink";
@@ -16,29 +17,30 @@ interface SidebarClientProps {
 }
 
 export function SidebarClient({ onLogout }: SidebarClientProps) {
-  const { ui } = useUI();
+
   const { projects } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const pathname = usePathname();
+  const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
+  const base = `/${locale}/w/${workspace}`;
   const projectId = projects[0]?.id ?? "";
 
   const navTop: Array<{ href: string; icon: string; label: string; badge?: number } | null> = [
-    { href: "/my",                   icon: "lucide:user",             label: t.nav.myIssues },
+    { href: `${base}/my`,                   icon: "lucide:user",             label: t.nav.myIssues },
     null,
-    { href: `/board/${projectId}`,   icon: "lucide:layout-dashboard", label: t.nav.board },
-    { href: `/list/${projectId}`,    icon: "lucide:list",             label: t.nav.issues },
+    { href: `${base}/board/${projectId}`,   icon: "lucide:layout-dashboard", label: t.nav.board },
+    { href: `${base}/list/${projectId}`,    icon: "lucide:list",             label: t.nav.issues },
   ];
 
   const navBottom = [
-    { href: "/members", icon: "lucide:users",   label: t.nav.members },
-    { href: "/teams",   icon: "lucide:users-2", label: t.nav.teams   },
+    { href: `${base}/members`, icon: "lucide:users",   label: t.nav.members },
+    { href: `${base}/teams`,   icon: "lucide:users-2", label: t.nav.teams   },
   ];
-
 
   const isActive = (href: string) =>
     pathname === href ||
-    (href.includes("/board/") && pathname.startsWith("/board/")) ||
-    (href.includes("/list/")  && pathname.startsWith("/list/"));
+    (href.includes("/board/") && pathname.startsWith(`${base}/board/`)) ||
+    (href.includes("/list/")  && pathname.startsWith(`${base}/list/`));
 
   return (
     <aside className={styles.aside}>

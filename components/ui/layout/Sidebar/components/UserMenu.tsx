@@ -1,16 +1,17 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { NavLink } from "./NavLink";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import styles from "../sidebar.module.scss";
 
 interface UserMenuProps {
@@ -18,13 +19,15 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ onLogout }: UserMenuProps) {
-  const { ui } = useUI();
+
   const { me } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const inboxActive = pathname === "/inbox";
+  const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
+  const base = `/${locale}/w/${workspace}`;
+  const inboxActive = pathname === `${base}/inbox`;
 
   return (
     <div
@@ -41,7 +44,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
       </div>
 
       <Link
-        href="/inbox"
+        href={`${base}/inbox`}
         className={`iconbtn${inboxActive ? " active" : ""}`}
         style={{ position: "relative", flex: "none", marginRight: 4 }}
         onClick={(e) => e.stopPropagation()}
@@ -59,8 +62,8 @@ export function UserMenu({ onLogout }: UserMenuProps) {
           </div>
         </div>
         <div className="divider" style={{ margin: "4px 0" }} />
-        <NavLink href="/inbox"    icon="lucide:bell"     label={t.nav.inbox}    active={pathname === "/inbox"}    onClick={() => setOpen(false)} />
-        <NavLink href="/settings" icon="lucide:settings" label={t.nav.settings} active={pathname === "/settings"} onClick={() => setOpen(false)} />
+        <NavLink href={`${base}/inbox`}    icon="lucide:bell"     label={t.nav.inbox}    active={pathname === `${base}/inbox`}    onClick={() => setOpen(false)} />
+        <NavLink href={`${base}/settings`} icon="lucide:settings" label={t.nav.settings} active={pathname === `${base}/settings`} onClick={() => setOpen(false)} />
         <div className="divider" style={{ margin: "4px 0" }} />
         <div className="menu-item" onClick={onLogout}>
           <Icon icon="lucide:log-out" width={16} className="faint" /> {t.nav.signOut}

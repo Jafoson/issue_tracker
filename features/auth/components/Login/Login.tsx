@@ -1,10 +1,11 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Input } from "@/components/ui/atoms/Input/Input";
-import { useUI } from "@/lib/ui-store";
-import { getT } from "@/lib/i18n";
+
+
 import styles from "./login.module.scss";
 
 function OrbitLogo({ size = 36 }: { size?: number }) {
@@ -22,8 +23,8 @@ interface LoginProps {
 }
 
 export function Login({ onLogin }: LoginProps) {
-  const { ui } = useUI();
-  const t = getT(ui.locale);
+
+  const t = useTranslations();
 
   return (
     <div className={styles.root}>

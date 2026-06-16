@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams, useParams } from "next/navigation";
 
 export type SortKey = "priority" | "status" | "updated" | "created" | "title" | "assignee";
 
@@ -10,9 +10,11 @@ export function useTopbar() {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
+  const base = `/${locale}/w/${workspace}`;
 
-  const showFilters = pathname.startsWith("/board/") || pathname.startsWith("/list/");
-  const showSort    = pathname.startsWith("/list/");
+  const showFilters = pathname.startsWith(`${base}/board/`) || pathname.startsWith(`${base}/list/`);
+  const showSort    = pathname.startsWith(`${base}/list/`);
 
   const f = {
     statuses:   searchParams.get("status")?.split(",").filter(Boolean)                           ?? [],

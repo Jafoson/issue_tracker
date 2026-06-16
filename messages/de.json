@@ -1,0 +1,141 @@
+{
+  "nav": {
+    "myIssues":     "Meine Aufgaben",
+    "inbox":        "Posteingang",
+    "board":        "Board",
+    "issues":       "Aufgaben",
+    "members":      "Mitglieder",
+    "teams":        "Teams",
+    "settings":     "Einstellungen",
+    "newWorkspace": "Neuer Workspace",
+    "signOut":      "Abmelden"
+  },
+  "actions": {
+    "newIssue":      "Neue Aufgabe",
+    "createIssue":   "Aufgabe erstellen",
+    "inviteMember":  "Mitglied einladen",
+    "newTeam":       "Neues Team",
+    "comment":       "Kommentieren",
+    "deleteIssue":   "Aufgabe löschen",
+    "edit":          "Bearbeiten",
+    "rename":        "Umbenennen",
+    "clear":         "Zurücksetzen",
+    "signIn":        "Anmelden",
+    "requestAccess": "Zugang anfragen"
+  },
+  "placeholders": {
+    "search":         "Suchen…",
+    "searchIssues":   "Aufgaben und Navigation suchen…",
+    "issueTitle":     "Aufgabentitel",
+    "addDescription": "Beschreibung hinzufügen… (optional)",
+    "addComment":     "Kommentar schreiben…",
+    "email":          "E-Mail-Adresse",
+    "password":       "Passwort"
+  },
+  "statuses": {
+    "backlog":     "Rückstand",
+    "todo":        "Offen",
+    "in_progress": "In Bearbeitung",
+    "in_review":   "In Überprüfung",
+    "done":        "Erledigt",
+    "canceled":    "Abgebrochen"
+  },
+  "priorities": {
+    "none":   "Keine Priorität",
+    "low":    "Niedrig",
+    "medium": "Mittel",
+    "high":   "Hoch",
+    "urgent": "Dringend"
+  },
+  "fields": {
+    "status":     "Status",
+    "priority":   "Priorität",
+    "assignee":   "Zuständig",
+    "label":      "Label",
+    "labels":     "Labels",
+    "project":    "Projekt",
+    "created":    "Erstellt",
+    "updated":    "Aktualisiert",
+    "unassigned": "Nicht zugewiesen",
+    "none":       "Keine",
+    "name":       "Name",
+    "email":      "E-Mail",
+    "role":       "Rolle"
+  },
+  "sort": {
+    "label":    "Sortieren",
+    "priority": "Priorität",
+    "status":   "Status",
+    "updated":  "Zuletzt aktualisiert",
+    "created":  "Erstellt",
+    "title":    "Titel",
+    "assignee": "Zuständig"
+  },
+  "settings": {
+    "title":         "Einstellungen",
+    "appearance":    "Erscheinungsbild",
+    "theme":         "Design",
+    "themeDesc":     "Farbschema der Benutzeroberfläche wählen",
+    "density":       "Dichte",
+    "densityDesc":   "Abstände der UI-Elemente steuern",
+    "dark":          "Dunkel",
+    "light":         "Hell",
+    "airy":          "Luftig",
+    "compact":       "Kompakt",
+    "language":      "Sprache",
+    "languageDesc":  "Bevorzugte Sprache wählen",
+    "workspace":     "Workspace",
+    "workspaceName": "Workspace-Name",
+    "projects":      "Projekte",
+    "profile":       "Profil"
+  },
+  "members": {
+    "title":       "Mitglieder",
+    "colUser":     "Benutzer",
+    "colRole":     "Rolle",
+    "colTeams":    "Teams",
+    "noTeams":     "Keine Teams",
+    "removeTitle": "Mitglied entfernen"
+  },
+  "teams": {
+    "title":      "Teams",
+    "openIssues": "offene Aufgaben",
+    "projects":   "Projekte",
+    "members":    "Mitglieder"
+  },
+  "comments": {
+    "title":       "Kommentare",
+    "commentedOn": "hat kommentiert auf"
+  },
+  "empty": {
+    "noIssues":         "Keine Aufgaben",
+    "noAssignedIssues": "Dir sind keine Aufgaben zugewiesen",
+    "allCaughtUp":      "Alles erledigt!"
+  },
+  "palette": {
+    "navigation": "Navigation",
+    "issues":     "Aufgaben",
+    "navigate":   "navigieren",
+    "select":     "auswählen",
+    "close":      "schließen",
+    "goto": {
+      "board":    "Zum Board",
+      "list":     "Zu den Aufgaben",
+      "my":       "Zu meinen Aufgaben",
+      "inbox":    "Zum Posteingang",
+      "members":  "Zu Mitgliedern",
+      "teams":    "Zu Teams",
+      "settings": "Zu Einstellungen"
+    }
+  },
+  "login": {
+    "subtitle":           "Weiter zu Orbit Issue Tracker",
+    "continueWithGoogle": "Mit Google fortfahren",
+    "or":                 "oder",
+    "noAccount":          "Noch kein Konto?",
+    "requestAccess":      "Zugang anfragen"
+  },
+  "toast": {
+    "issueCreated": "Aufgabe erstellt"
+  }
+}

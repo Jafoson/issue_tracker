@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -9,9 +10,9 @@ import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Label } from "@/components/ui/atoms/Label/Label";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { timeAgo } from "@/lib/utils/date";
 import { updateIssue } from "@/features/issues/actions";
 import type { Issue } from "@/types";
@@ -20,9 +21,9 @@ import styles from "./listView.module.scss";
 interface Props { issues: Issue[]; projectId: string; }
 
 function IssueRow({ issue }: { issue: Issue }) {
-  const { ui } = useUI();
+
   const { members, projects, labels, statuses, priorities } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -88,8 +89,8 @@ function IssueRow({ issue }: { issue: Issue }) {
 }
 
 export function ListView({ issues }: Props) {
-  const { ui } = useUI();
-  const t = getT(ui.locale);
+
+  const t = useTranslations();
 
   if (issues.length === 0) {
     return (

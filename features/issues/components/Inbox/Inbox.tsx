@@ -1,12 +1,13 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Icon } from "@iconify/react";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { timeAgo } from "@/lib/utils/date";
 import type { Issue } from "@/types";
 import styles from "./inbox.module.scss";
@@ -14,9 +15,9 @@ import styles from "./inbox.module.scss";
 interface Props { issues: Issue[]; }
 
 export function Inbox({ issues }: Props) {
-  const { ui } = useUI();
+
   const { members, me } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

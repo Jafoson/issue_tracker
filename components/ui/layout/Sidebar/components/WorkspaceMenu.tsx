@@ -1,18 +1,19 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
-import { useUI } from "@/lib/ui-store";
-import { getT } from "@/lib/i18n";
+
+
 
 interface WorkspaceMenuProps {
   onLogout: () => void;
 }
 
 export function WorkspaceMenu({ onLogout }: WorkspaceMenuProps) {
-  const { ui } = useUI();
-  const t = getT(ui.locale);
+
+  const t = useTranslations();
   const ref = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 

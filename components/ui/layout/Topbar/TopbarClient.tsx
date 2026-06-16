@@ -1,13 +1,16 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useParams } from "next/navigation";
+import { useTranslations } from "@/lib/translations-context";
+import type { T } from "@/lib/translations-context";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
-import type { T } from "@/lib/i18n";
+
+
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { useTopbar, type SortKey } from "./useTopbar";
 import { TopbarFilters } from "./components/TopbarFilters";
@@ -24,21 +27,23 @@ function sortOptions(t: T) {
   ];
 }
 
-function viewTitle(pathname: string, t: T, projects: { id: string; name: string }[]): string {
-  if (pathname.startsWith("/board/")) return projects.find((p) => p.id === pathname.split("/")[2])?.name ?? t.nav.board;
-  if (pathname.startsWith("/list/"))  return t.nav.issues;
-  if (pathname === "/my")             return t.nav.myIssues;
-  if (pathname === "/inbox")          return t.nav.inbox;
-  if (pathname === "/members")        return t.nav.members;
-  if (pathname === "/teams")          return t.nav.teams;
-  if (pathname === "/settings")       return t.nav.settings;
+function viewTitle(pathname: string, t: T, projects: { id: string; name: string }[], base: string): string {
+  if (pathname.startsWith(`${base}/board/`)) return projects.find((p) => p.id === pathname.split("/")[5])?.name ?? t.nav.board;
+  if (pathname.startsWith(`${base}/list/`))  return t.nav.issues;
+  if (pathname === `${base}/my`)             return t.nav.myIssues;
+  if (pathname === `${base}/inbox`)          return t.nav.inbox;
+  if (pathname === `${base}/members`)        return t.nav.members;
+  if (pathname === `${base}/teams`)          return t.nav.teams;
+  if (pathname === `${base}/settings`)       return t.nav.settings;
   return "Orbit";
 }
 
 export function TopbarClient() {
-  const { ui } = useUI();
+
   const { projects } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
+  const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
+  const base = `/${locale}/w/${workspace}`;
 
   const {
     router, pathname, isPending, showFilters, showSort,
@@ -52,7 +57,7 @@ export function TopbarClient() {
     <header className={`${styles.header}${isPending ? " loading" : ""}`}>
       <div className={styles.topRow}>
         <div className={styles.titleRow}>
-          <h1 className={styles.title}>{viewTitle(pathname, t, projects)}</h1>
+          <h1 className={styles.title}>{viewTitle(pathname, t, projects, base)}</h1>
         </div>
 
 
@@ -80,8 +85,8 @@ export function TopbarClient() {
           {showFilters && (
             <SegmentedControl
               variant="surface"
-              value={pathname.startsWith("/board/") ? "board" : "list"}
-              onChange={(v) => router.push(`/${v}/${pathname.split("/")[2] ?? projects[0]?.id}`)}
+              value={pathname.startsWith(`${base}/board/`) ? "board" : "list"}
+              onChange={(v) => router.push(`${base}/${v}/${pathname.split("/")[5] ?? projects[0]?.id}`)}
               items={[
                 { value: "board", icon: <Icon icon="lucide:layout-dashboard" width={16} /> },
                 { value: "list",  icon: <Icon icon="lucide:list"             width={16} /> },

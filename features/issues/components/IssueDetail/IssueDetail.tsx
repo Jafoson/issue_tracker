@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -9,9 +10,9 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { StatusIcon, PriorityIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Icon } from "@iconify/react";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { timeAgo } from "@/lib/utils/date";
 import { updateIssue, deleteIssue, addComment } from "@/features/issues/actions";
 import type { Issue } from "@/types";
@@ -29,9 +30,9 @@ function SideField({ label, children }: { label: string; children: React.ReactNo
 }
 
 export function IssueDetail({ id, onClose }: Props) {
-  const { ui } = useUI();
+
   const { members, projects, labels, statuses, priorities, me } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [issue, setIssue]     = useState<Issue | null>(null);

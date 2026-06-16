@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import { Icon } from "@iconify/react";
+import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
-import { useUI } from "@/lib/ui-store";
-import type { Locale } from "@/types";
+import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
 import styles from "./settings.module.scss";
 
 export function Settings() {
-  const { ui, dispatch: uiDispatch } = useUI();
+  const t = useTranslations();
   const { me, projects } = useWorkspace();
-  const t = getT(ui.locale);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { locale } = useParams<{ locale: string }>();
   const isAdmin = me.role === "admin";
 
   const [theme, setTheme] = useState<"dark" | "light">(
@@ -50,8 +51,8 @@ export function Settings() {
           </div>
           <SegmentedControl
             items={[{ value: "de", label: "Deutsch" }, { value: "en", label: "English" }]}
-            value={ui.locale}
-            onChange={(v) => uiDispatch({ type: "SET_LOCALE", locale: v as Locale })}
+            value={locale}
+            onChange={(v) => router.push(pathname.replace(new RegExp(`^/${locale}/`), `/${v}/`))}
           />
         </div>
       </section>

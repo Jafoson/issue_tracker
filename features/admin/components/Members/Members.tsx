@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -9,9 +10,9 @@ import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { setMemberRole, removeMember } from "@/features/issues/actions";
 import type { User, Team } from "@/types";
 import styles from "./members.module.scss";
@@ -19,9 +20,9 @@ import styles from "./members.module.scss";
 interface Props { members: User[]; teams: Team[]; }
 
 export function Members({ members, teams }: Props) {
-  const { ui } = useUI();
+
   const { me, roles } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const isAdmin = me.role === "admin";

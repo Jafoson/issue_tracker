@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import React, { useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -6,9 +7,9 @@ import { BoardCard } from "@/features/issues/components/BoardCard/BoardCard";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { reorderIssue } from "@/features/issues/actions";
 import type { Issue } from "@/types";
 import styles from "./board.module.scss";
@@ -22,9 +23,9 @@ interface BoardProps {
 const erank = (i: Issue) => i.rank !== 0 ? i.rank : i.created;
 
 export function Board({ issues, projectId }: BoardProps) {
-  const { ui } = useUI();
+
   const { statuses } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const columnStatuses = statuses.filter((s) => s.isColumn);
   const router = useRouter();
   const pathname = usePathname();

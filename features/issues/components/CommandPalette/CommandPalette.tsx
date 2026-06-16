@@ -2,27 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { useUI } from "@/lib/ui-store";
+import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+import type { T } from "@/lib/translations-context";
 import styles from "./commandPalette.module.scss";
 
 interface NavEntry {
   href: string;
-  label: (t: ReturnType<typeof getT>) => string;
+  label: (t: T) => string;
   icon: string;
 }
-
-const NAV_ENTRIES: NavEntry[] = [
-  { href: "/my",       icon: "lucide:user",             label: (t) => t.palette.goto.my       },
-  { href: "/inbox",    icon: "lucide:inbox",            label: (t) => t.palette.goto.inbox    },
-  { href: "/members",  icon: "lucide:users",            label: (t) => t.palette.goto.members  },
-  { href: "/teams",    icon: "lucide:users-2",          label: (t) => t.palette.goto.teams    },
-  { href: "/settings", icon: "lucide:settings",         label: (t) => t.palette.goto.settings },
-];
 
 interface CommandPaletteProps {
   open: boolean;
@@ -30,13 +22,23 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
-  const { ui } = useUI();
+
   const { searchIssues, projects } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const router = useRouter();
+  const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
+  const base = `/${locale}/w/${workspace}`;
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const NAV_ENTRIES: NavEntry[] = [
+    { href: `${base}/my`,       icon: "lucide:user",     label: (t) => t.palette.goto.my       },
+    { href: `${base}/inbox`,    icon: "lucide:inbox",    label: (t) => t.palette.goto.inbox    },
+    { href: `${base}/members`,  icon: "lucide:users",    label: (t) => t.palette.goto.members  },
+    { href: `${base}/teams`,    icon: "lucide:users-2",  label: (t) => t.palette.goto.teams    },
+    { href: `${base}/settings`, icon: "lucide:settings", label: (t) => t.palette.goto.settings },
+  ];
 
   useEffect(() => {
     if (open) { setQ(""); setCursor(0); setTimeout(() => inputRef.current?.focus(), 30); }
@@ -47,7 +49,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const navHits = NAV_ENTRIES.filter((e) => e.label(t).toLowerCase().includes(lq));
   const boardHits = projects
     .filter((p) => p.name.toLowerCase().includes(lq) || "board".includes(lq))
-    .map((p) => ({ href: `/board/${p.id}`, label: () => p.name, icon: "lucide:layout-dashboard" }));
+    .map((p) => ({ href: `${base}/board/${p.id}`, label: () => p.name, icon: "lucide:layout-dashboard" }));
 
   const allNavHits = [...navHits, ...boardHits];
 

@@ -1,11 +1,12 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import type { User, Team, Project, Issue } from "@/types";
 import styles from "./teams.module.scss";
 
@@ -17,9 +18,9 @@ interface Props {
 }
 
 export function Teams({ teams, members, projects, allIssues }: Props) {
-  const { ui } = useUI();
+
   const { me } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const isAdmin = me.role === "admin";
 
   return (

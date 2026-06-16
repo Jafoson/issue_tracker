@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "@/lib/translations-context";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -9,9 +10,9 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { StatusIcon, PriorityIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Icon } from "@iconify/react";
-import { useUI } from "@/lib/ui-store";
+
 import { useWorkspace } from "@/lib/workspace-context";
-import { getT } from "@/lib/i18n";
+
 import { createIssue } from "@/features/issues/actions";
 import styles from "./issueComposer.module.scss";
 
@@ -21,9 +22,9 @@ interface IssueComposerProps {
 }
 
 export function IssueComposer({ open, onClose }: IssueComposerProps) {
-  const { ui } = useUI();
+
   const { members, projects, labels: allLabels, statuses, priorities, me } = useWorkspace();
-  const t = getT(ui.locale);
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
@@ -40,7 +41,7 @@ export function IssueComposer({ open, onClose }: IssueComposerProps) {
 
   const activeProjectId = (() => {
     const seg = pathname.split("/");
-    if (seg[1] === "board" || seg[1] === "list") return seg[2] ?? projects[0]?.id ?? "";
+    if (seg[4] === "board" || seg[4] === "list") return seg[5] ?? projects[0]?.id ?? "";
     return projects[0]?.id ?? "";
   })();
 
