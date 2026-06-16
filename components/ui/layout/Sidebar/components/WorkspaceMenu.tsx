@@ -1,42 +1,77 @@
 "use client";
-import { useTranslations } from "@/lib/translations-context";
 
 import { useRef, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
+import { useWorkspace } from "@/lib/workspace-context";
+import { useTranslations } from "@/lib/translations-context";
 
-
-
-interface WorkspaceMenuProps {
-  onLogout: () => void;
-}
-
-export function WorkspaceMenu({ onLogout }: WorkspaceMenuProps) {
-
+export function WorkspaceMenu() {
+  const { workspace, userWorkspaces } = useWorkspace();
   const t = useTranslations();
+  const router = useRouter();
+  const { locale } = useParams<{ locale: string }>();
   const ref = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+
+  function goTo(wsId: string) {
+    setOpen(false);
+    router.push(`/${locale}/w/${wsId}/board`);
+  }
+
+  function initial(name: string) {
+    return name.trim()[0]?.toUpperCase() ?? "W";
+  }
 
   return (
     <>
       <button ref={ref} className="orbit-ws" onClick={() => setOpen((o) => !o)}>
-        <span className="avatar" style={{ width: 26, height: 26, borderRadius: 8, background: "linear-gradient(150deg,#6e63e6,#473fb0)", fontSize: 12.5 }}>N</span>
+        <span
+          className="avatar"
+          style={{ width: 26, height: 26, borderRadius: 8, background: workspace.color, fontSize: 12.5 }}
+        >
+          {initial(workspace.name)}
+        </span>
         <div style={{ textAlign: "left", lineHeight: 1.15, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Orbit</div>
-          <div className="faint" style={{ fontSize: 11 }} />
+          <div style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {workspace.name}
+          </div>
         </div>
         <Icon icon="lucide:chevrons-up-down" width={15} className="faint" style={{ marginLeft: "auto" }} />
       </button>
 
       <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={236}>
         <div className="menu-label">Workspace</div>
-        <div className="menu-item active">
-          <span className="avatar" style={{ width: 22, height: 22, borderRadius: 7, background: "linear-gradient(150deg,#6e63e6,#473fb0)", fontSize: 11 }}>N</span>
-          Orbit<span className="check"><Icon icon="lucide:check" width={15} /></span>
-        </div>
+
+        {userWorkspaces.map((ws) => (
+          <div
+            key={ws.id}
+            className={`menu-item${ws.id === workspace.id ? " active" : ""}`}
+            onClick={() => goTo(ws.id)}
+          >
+            <span
+              className="avatar"
+              style={{ width: 22, height: 22, borderRadius: 7, background: ws.color, fontSize: 11 }}
+            >
+              {initial(ws.name)}
+            </span>
+            {ws.name}
+            {ws.id === workspace.id && (
+              <span className="check"><Icon icon="lucide:check" width={15} /></span>
+            )}
+          </div>
+        ))}
+
         <div className="divider" style={{ margin: "5px 0" }} />
-        <div className="menu-item"><Icon icon="lucide:plus" width={16} className="faint" /> {t.nav.newWorkspace}</div>
-        <div className="menu-item" onClick={onLogout}><Icon icon="lucide:log-out" width={16} className="faint" /> {t.nav.signOut}</div>
+
+        <div
+          className="menu-item"
+          onClick={() => { setOpen(false); router.push(`/${locale}/create-workspace`); }}
+        >
+          <Icon icon="lucide:plus" width={16} className="faint" />
+          {t.nav.newWorkspace}
+        </div>
       </Popover>
     </>
   );

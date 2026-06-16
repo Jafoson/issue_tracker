@@ -12,7 +12,8 @@ export interface SearchableIssue {
 }
 
 export interface WorkspaceData {
-  workspace: { id: string; name: string };
+  workspace: { id: string; name: string; color: string };
+  userWorkspaces: { id: string; name: string; color: string }[];
   me: User;
   members: User[];
   projects: Project[];

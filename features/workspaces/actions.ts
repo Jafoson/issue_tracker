@@ -28,6 +28,12 @@ export async function createWorkspace(formData: FormData): Promise<WorkspaceResu
   const existing = await db.workspace.findUnique({ where: { id: slug } });
   if (existing) return { error: "That URL is already taken. Please choose another." };
 
+  const projectId = crypto.randomUUID();
+  const prefix = name
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 4) || slug.toUpperCase().slice(0, 4);
+
   try {
     await db.$transaction(async (tx) => {
       await tx.workspace.create({ data: { id: slug, name, color } });
@@ -48,6 +54,10 @@ export async function createWorkspace(formData: FormData): Promise<WorkspaceResu
       await tx.workspaceMember.create({
         data: { workspaceId: slug, userId: session.userId, role: "admin", pending: false },
       });
+
+      await tx.project.create({
+        data: { id: projectId, workspaceId: slug, name, prefix, color },
+      });
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -55,5 +65,5 @@ export async function createWorkspace(formData: FormData): Promise<WorkspaceResu
     return { error: "Something went wrong. Please try again." };
   }
 
-  return { redirectTo: `/${locale}/w/${slug}/board` };
+  return { redirectTo: `/${locale}/w/${slug}/board/${projectId}` };
 }

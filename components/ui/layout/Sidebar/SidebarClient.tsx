@@ -44,7 +44,7 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
 
   return (
     <aside className={styles.aside}>
-      <WorkspaceMenu onLogout={onLogout} />
+      <WorkspaceMenu />
 
       <QuickActions t={t} />
 

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 import {
-  getWorkspace, getProjects, getMembers, getLabels, getSearchIssues,
+  getWorkspace, getUserWorkspaces, getProjects, getMembers, getLabels, getSearchIssues,
   getStatuses, getPriorities, getIssueTypes, getRoles,
 } from "@/features/issues/queries";
 import { getStaticMessages, hasLocale } from "@/lib/i18n";
@@ -25,7 +25,7 @@ export default async function AppLayout({
   const ws = await getWorkspace(workspaceId);
   if (!ws) notFound();
 
-  const [projects, members, labels, searchIssues, statuses, priorities, issueTypes, roles, messages] = await Promise.all([
+  const [projects, members, labels, searchIssues, statuses, priorities, issueTypes, roles, userWorkspaces, messages] = await Promise.all([
     getProjects(workspaceId),
     getMembers(workspaceId),
     getLabels(workspaceId),
@@ -34,6 +34,7 @@ export default async function AppLayout({
     getPriorities(workspaceId),
     getIssueTypes(workspaceId),
     getRoles(workspaceId),
+    getUserWorkspaces(session.userId),
     getStaticMessages(locale),
   ]);
 
@@ -41,7 +42,7 @@ export default async function AppLayout({
   if (!me) redirect(`/${locale}/login`);
 
   return (
-    <AppShell messages={messages} workspace={{ workspace: ws, me, members, projects, labels, statuses, priorities, issueTypes, roles, searchIssues }}>
+    <AppShell messages={messages} workspace={{ workspace: ws, userWorkspaces, me, members, projects, labels, statuses, priorities, issueTypes, roles, searchIssues }}>
       {children}
     </AppShell>
   );
