@@ -8,6 +8,7 @@
     "teams":        "Teams",
     "settings":     "Settings",
     "newWorkspace": "New workspace",
+    "projects":     "Projects",
     "signOut":      "Sign out"
   },
   "actions": {

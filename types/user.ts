@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: "admin" | "member" | "viewer";
   color: string;
+  image?: string;
   pending?: boolean;
 }
 

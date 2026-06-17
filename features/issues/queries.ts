@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { createHash } from "crypto";
 import { db } from "@/lib/db";
 import type { Issue, User, Project, Team, Label, Status, Priority, IssueType, Role } from "@/types";
 import type { SearchableIssue } from "@/lib/workspace-context";
@@ -55,11 +56,15 @@ export const getMembers = cache(async (workspaceId: string): Promise<User[]> => 
     include: { user: true },
     orderBy: { user: { name: "asc" } },
   });
-  return rows.map((m) => ({
-    id: m.user.id, name: m.user.name, handle: m.user.handle,
-    email: m.user.email, color: m.user.color,
-    role: m.role as User["role"], pending: m.pending,
-  }));
+  return rows.map((m) => {
+    const hash = createHash("md5").update(m.user.email.toLowerCase().trim()).digest("hex");
+    return {
+      id: m.user.id, name: m.user.name, handle: m.user.handle,
+      email: m.user.email, color: m.user.color,
+      image: `https://www.gravatar.com/avatar/${hash}?s=80&d=404`,
+      role: m.role as User["role"], pending: m.pending,
+    };
+  });
 });
 
 export const getLabels = cache(async (workspaceId: string): Promise<Label[]> => {

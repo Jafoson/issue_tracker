@@ -3,9 +3,6 @@ import { useTranslations } from "@/lib/translations-context";
 
 import { usePathname, useParams } from "next/navigation";
 
-import { useWorkspace } from "@/lib/workspace-context";
-import { toProjectSlug } from "@/lib/slug";
-
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import { QuickActions } from "./components/QuickActions";
 import { NavLink } from "./components/NavLink";
@@ -19,18 +16,14 @@ interface SidebarClientProps {
 
 export function SidebarClient({ onLogout }: SidebarClientProps) {
 
-  const { projects } = useWorkspace();
   const t = useTranslations();
   const pathname = usePathname();
   const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
   const base = `/${locale}/${workspace}`;
-  const firstProjectSlug = projects[0] ? toProjectSlug(projects[0].name) : "";
-
   const navTop: Array<{ href: string; icon: string; label: string; badge?: number } | null> = [
-    { href: `${base}/my`,                           icon: "lucide:user",             label: t.nav.myIssues },
+    { href: `${base}/my`,       icon: "lucide:user",    label: t.nav.myIssues },
     null,
-    { href: `${base}/project/${firstProjectSlug}`,  icon: "lucide:layout-dashboard", label: t.nav.board },
-    { href: `${base}/project/${firstProjectSlug}/list`, icon: "lucide:list",         label: t.nav.issues },
+    { href: `${base}/projects`, icon: "lucide:folders", label: t.nav.projects },
   ];
 
   const navBottom = [

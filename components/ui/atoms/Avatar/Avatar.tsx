@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { initials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
@@ -11,13 +12,18 @@ interface AvatarProps {
 }
 
 export function Avatar({ user, size = 22, ring }: AvatarProps) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  const ringStyle = ring
+    ? { boxShadow: "0 0 0 2px var(--panel), inset 0 0 0 1px rgba(255,255,255,.12)" }
+    : undefined;
+
   if (!user) {
     return (
       <span
         className="avatar"
         style={{
-          width: size,
-          height: size,
+          width: size, height: size,
           background: "transparent",
           border: "1.4px dashed var(--text-3)",
           color: "var(--text-3)",
@@ -33,17 +39,29 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
     );
   }
 
+  if (user.image && !imgFailed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={user.image}
+        alt={user.name}
+        width={size}
+        height={size}
+        className={`avatar ${styles.img}`}
+        style={{ width: size, height: size, ...ringStyle }}
+        onError={() => setImgFailed(true)}
+      />
+    );
+  }
+
   return (
     <span
       className="avatar"
       style={{
-        width: size,
-        height: size,
+        width: size, height: size,
         background: `linear-gradient(150deg, ${user.color}, color-mix(in oklab, ${user.color} 70%, #000))`,
         fontSize: Math.max(9, size * 0.42),
-        boxShadow: ring
-          ? "0 0 0 2px var(--panel), inset 0 0 0 1px rgba(255,255,255,.12)"
-          : undefined,
+        ...ringStyle,
       }}
     >
       {initials(user.name)}
@@ -75,8 +93,7 @@ export function AvatarStack({ ids, users, size = 22, max = 4 }: AvatarStackProps
           className="avatar"
           style={{
             marginLeft: -7,
-            width: size,
-            height: size,
+            width: size, height: size,
             background: "var(--elev)",
             color: "var(--text-2)",
             fontSize: size * 0.4,
