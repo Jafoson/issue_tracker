@@ -37,6 +37,48 @@
   margin-top: 2px;
 }
 
+.projectGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.projectToggle {
+  cursor: pointer;
+}
+
+.projectPrefix {
+  margin-left: auto;
+  font-size: 11px;
+}
+
+.chevron {
+  flex: none;
+  transition: transform .15s;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.projectSubLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 12px;
+  margin-top: 1px;
+}
+
+.projectSubLink {
+  height: 29px;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--text-3);
+
+  &:global([data-active="true"]) {
+    color: var(--text);
+  }
+}
+
 .userRow {
   display: flex;
   align-items: center;
