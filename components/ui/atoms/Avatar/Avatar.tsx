@@ -39,32 +39,31 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
     );
   }
 
-  if (user.image && !imgFailed) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={user.image}
-        alt={user.name}
-        width={size}
-        height={size}
-        className={`avatar ${styles.img}`}
-        style={{ width: size, height: size, ...ringStyle }}
-        onError={() => setImgFailed(true)}
-      />
-    );
-  }
+  const color = user.color || "#6e63e6";
+  const label = initials(user.name) || user.name?.[0]?.toUpperCase() || "?";
 
   return (
     <span
       className="avatar"
       style={{
         width: size, height: size,
-        background: `linear-gradient(150deg, ${user.color}, color-mix(in oklab, ${user.color} 70%, #000))`,
+        background: `linear-gradient(150deg, ${color}, color-mix(in oklab, ${color} 70%, #000))`,
         fontSize: Math.max(9, size * 0.42),
+        color: "#fff",
+        position: "relative",
         ...ringStyle,
       }}
     >
-      {initials(user.name)}
+      {label}
+      {user.image && !imgFailed && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={user.image}
+          alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+          onError={() => setImgFailed(true)}
+        />
+      )}
     </span>
   );
 }

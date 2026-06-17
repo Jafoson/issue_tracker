@@ -77,11 +77,13 @@ export function TabBar() {
         const icon = color ? null : tabIcon(tab.href, base);
 
         return (
-          <button
+          <div
             key={tab.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             className={`${styles.tab}${isActive ? ` ${styles.active}` : ""}`}
             onClick={() => switchTab(tab.id)}
+            onKeyDown={(e) => e.key === "Enter" || e.key === " " ? switchTab(tab.id) : undefined}
           >
             {color ? (
               <span className={styles.dot} style={{ background: color }} />
@@ -104,7 +106,7 @@ export function TabBar() {
             >
               <Icon icon="lucide:x" width={10} />
             </button>
-          </button>
+          </div>
         );
       })}
 
