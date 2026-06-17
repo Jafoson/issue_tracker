@@ -177,3 +177,62 @@ Button/
 - `bun run format` — Biome Format
 - `bun prisma migrate dev` — DB-Schema anwenden
 - `bun prisma generate` — Prisma Client neu generieren
+
+## Testing
+
+- **Vitest** als Test-Runner (kein Jest)
+- Konfiguration: `vitest.config.ts` im Root
+- Setup-Datei: `tests/setup.ts` (mockt `server-only` global)
+- Alle Tests liegen in `tests/unit/` nach Domänen aufgeteilt
+
+### Befehle
+
+- `bun test` — Alle Tests einmalig ausführen
+- `bun run test:watch` — Tests im Watch-Modus
+- `bun run test:coverage` — Tests mit Coverage-Report
+
+### Struktur
+
+```
+tests/
+  setup.ts                        ← Globale Mocks (server-only)
+  unit/
+    auth/
+      login.test.ts               ← login() Server Action
+      register.test.ts            ← register() Server Action
+      logout.test.ts              ← logout() Server Action
+    middleware/
+      middleware.test.ts          ← Auth-Middleware (JWT, Routing)
+    session/
+      session.test.ts             ← createSession / getSession / clearSession
+    workspace/
+      createWorkspace.test.ts     ← createWorkspace() Server Action
+```
+
+### Mocking-Konventionen
+
+- `@/lib/db` immer mocken — kein echter DB-Zugriff in Unit Tests
+- `@/lib/session` mocken wenn getestet wird, was die Session konsumiert
+- `server-only` wird global in `tests/setup.ts` gemockt
+- `next/headers` (`cookies`) und `jose` werden pro Datei gemockt
+- `vi.clearAllMocks()` in `beforeEach` — kein Zustand zwischen Tests
+
+### Wichtig: Immer `bun run test` statt `bun test`
+
+Bun 1.3 teilt den Modul-Cache zwischen Test-Dateien innerhalb eines Prozesses. Da
+andere Test-Dateien `@/lib/session` mocken, würde dieser Mock in `session.test.ts`
+durchlecken wenn alle Tests in einem einzigen `bun test`-Aufruf laufen. Das `test`-Script
+in `package.json` splittet den Aufruf automatisch in zwei separate Prozesse:
+
+```
+# Korrekt:
+bun run test
+
+# NICHT direkt verwenden (Session-Tests schlagen fehl):
+bun test
+```
+
+### CI
+
+GitHub Actions Workflow: `.github/workflows/tests.yml`
+Läuft bei jedem Push und PR auf `main`.
