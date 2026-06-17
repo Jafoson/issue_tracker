@@ -11,34 +11,34 @@ const WS = "nimbus";
 // ─── Workspace Config ─────────────────────────────────────────────────────────
 
 const STATUSES = [
-  { id: "backlog",     workspaceId: WS, name: "Backlog",     short: "Backlog",  color: "#8a9099", isColumn: true,  position: 0 },
-  { id: "todo",        workspaceId: WS, name: "Todo",        short: "Todo",     color: "#b8bcc4", isColumn: true,  position: 1 },
-  { id: "in_progress", workspaceId: WS, name: "In Progress", short: "Progress", color: "#e2b340", isColumn: true,  position: 2 },
-  { id: "in_review",   workspaceId: WS, name: "In Review",   short: "Review",   color: "#5b9bd5", isColumn: true,  position: 3 },
-  { id: "done",        workspaceId: WS, name: "Done",        short: "Done",     color: "#5ab98a", isColumn: true,  position: 4 },
-  { id: "canceled",    workspaceId: WS, name: "Canceled",    short: "Canceled", color: "#7a7f87", isColumn: false, position: 5 },
+  { id: "backlog",     name: "Backlog",     short: "Backlog",  color: "#8a9099", isColumn: true,  position: 0 },
+  { id: "todo",        name: "Todo",        short: "Todo",     color: "#b8bcc4", isColumn: true,  position: 1 },
+  { id: "in_progress", name: "In Progress", short: "Progress", color: "#e2b340", isColumn: true,  position: 2 },
+  { id: "in_review",   name: "In Review",   short: "Review",   color: "#5b9bd5", isColumn: true,  position: 3 },
+  { id: "done",        name: "Done",        short: "Done",     color: "#5ab98a", isColumn: true,  position: 4 },
+  { id: "canceled",    name: "Canceled",    short: "Canceled", color: "#7a7f87", isColumn: false, position: 5 },
 ];
 
 const PRIORITIES = [
-  { id: 0, workspaceId: WS, key: "none",   name: "No priority", color: "#8a9099", position: 0 },
-  { id: 1, workspaceId: WS, key: "low",    name: "Low",          color: "#3b9d6e", position: 1 },
-  { id: 2, workspaceId: WS, key: "medium", name: "Medium",       color: "#e2b340", position: 2 },
-  { id: 3, workspaceId: WS, key: "high",   name: "High",         color: "#d5733b", position: 3 },
-  { id: 4, workspaceId: WS, key: "urgent", name: "Urgent",       color: "#e05252", position: 4 },
+  { id: 0, key: "none",   name: "No priority", color: "#8a9099", position: 0 },
+  { id: 1, key: "low",    name: "Low",          color: "#3b9d6e", position: 1 },
+  { id: 2, key: "medium", name: "Medium",       color: "#e2b340", position: 2 },
+  { id: 3, key: "high",   name: "High",         color: "#d5733b", position: 3 },
+  { id: 4, key: "urgent", name: "Urgent",       color: "#e05252", position: 4 },
 ];
 
 const ISSUE_TYPES = [
-  { id: "feature",     workspaceId: WS, name: "Feature",     color: "#6e63e6", position: 0 },
-  { id: "bug",         workspaceId: WS, name: "Bug",         color: "#e5664a", position: 1 },
-  { id: "improvement", workspaceId: WS, name: "Improvement", color: "#3b9d6e", position: 2 },
-  { id: "task",        workspaceId: WS, name: "Task",        color: "#3b7bd5", position: 3 },
-  { id: "chore",       workspaceId: WS, name: "Chore",       color: "#8a7f6b", position: 4 },
+  { id: "feature",     name: "Feature",     color: "#6e63e6", position: 0 },
+  { id: "bug",         name: "Bug",         color: "#e5664a", position: 1 },
+  { id: "improvement", name: "Improvement", color: "#3b9d6e", position: 2 },
+  { id: "task",        name: "Task",        color: "#3b7bd5", position: 3 },
+  { id: "chore",       name: "Chore",       color: "#8a7f6b", position: 4 },
 ];
 
 const ROLES = [
-  { id: "admin",  workspaceId: WS, name: "Admin",  desc: "Full access — manage members & workspace settings." },
-  { id: "member", workspaceId: WS, name: "Member", desc: "Create and edit issues, comment, manage own work."  },
-  { id: "viewer", workspaceId: WS, name: "Viewer", desc: "Read-only access to issues and boards."              },
+  { id: "admin",  name: "Admin",  desc: "Full access — manage members & workspace settings." },
+  { id: "member", name: "Member", desc: "Create and edit issues, comment, manage own work."  },
+  { id: "viewer", name: "Viewer", desc: "Read-only access to issues and boards."              },
 ];
 
 const LABELS = [
@@ -139,27 +139,47 @@ async function main() {
   await db.workspace.upsert({
     where: { id: WS },
     update: { name: "Nimbus" },
-    create: { id: WS, name: "Nimbus" },
+    create: { id: WS, name: "Nimbus", color: "#6e63e6" },
   });
   console.log("   ✓ 1 workspace");
 
   for (const s of STATUSES) {
     await db.status.upsert({ where: { id: s.id }, update: s, create: s });
+    await db.workspaceStatus.upsert({
+      where:  { workspaceId_statusId: { workspaceId: WS, statusId: s.id } },
+      update: {},
+      create: { workspaceId: WS, statusId: s.id },
+    });
   }
   console.log(`   ✓ ${STATUSES.length} statuses`);
 
   for (const p of PRIORITIES) {
     await db.priority.upsert({ where: { id: p.id }, update: p, create: p });
+    await db.workspacePriority.upsert({
+      where:  { workspaceId_priorityId: { workspaceId: WS, priorityId: p.id } },
+      update: {},
+      create: { workspaceId: WS, priorityId: p.id },
+    });
   }
   console.log(`   ✓ ${PRIORITIES.length} priorities`);
 
   for (const t of ISSUE_TYPES) {
     await db.issueType.upsert({ where: { id: t.id }, update: t, create: t });
+    await db.workspaceIssueType.upsert({
+      where:  { workspaceId_issueTypeId: { workspaceId: WS, issueTypeId: t.id } },
+      update: {},
+      create: { workspaceId: WS, issueTypeId: t.id },
+    });
   }
   console.log(`   ✓ ${ISSUE_TYPES.length} issue types`);
 
   for (const r of ROLES) {
     await db.role.upsert({ where: { id: r.id }, update: r, create: r });
+    await db.workspaceRole.upsert({
+      where:  { workspaceId_roleId: { workspaceId: WS, roleId: r.id } },
+      update: {},
+      create: { workspaceId: WS, roleId: r.id },
+    });
   }
   console.log(`   ✓ ${ROLES.length} roles`);
 

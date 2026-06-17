@@ -12,6 +12,9 @@ export default async function LoginPage({
 
   const session = await getSession();
   if (session) {
+    const user = await db.user.findUnique({ where: { id: session.userId }, select: { id: true } });
+    if (!user) redirect(`/api/logout?to=/${locale}/login`);
+
     const membership = await db.workspaceMember.findFirst({
       where: { userId: session.userId },
       select: { workspaceId: true },
