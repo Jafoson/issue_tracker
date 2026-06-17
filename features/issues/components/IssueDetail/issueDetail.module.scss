@@ -26,6 +26,12 @@
   gap: 10px;
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .body {
   display: flex;
   flex: 1;

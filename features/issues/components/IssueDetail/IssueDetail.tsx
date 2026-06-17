@@ -3,7 +3,8 @@ import { useTranslations } from "@/lib/translations-context";
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
@@ -34,6 +35,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   const { members, projects, labels, statuses, priorities, me } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
+  const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
   const [, startTransition] = useTransition();
   const [issue, setIssue]     = useState<Issue | null>(initialIssue ?? null);
   const [commentBody, setCommentBody] = useState("");
@@ -106,7 +108,14 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               )}
             </InlinePicker>
           </div>
-          <button className="iconbtn" onClick={onClose}><Icon icon="lucide:x" width={18} /></button>
+          <div className={styles.headerRight}>
+            {!inline && (
+              <Link href={`/${locale}/${workspace}/issue/${identifier}`} className="iconbtn" title={t.actions.openFullscreen}>
+                <Icon icon="lucide:maximize-2" width={16} />
+              </Link>
+            )}
+            <button className="iconbtn" onClick={onClose}><Icon icon="lucide:x" width={18} /></button>
+          </div>
         </div>
 
         <div className={styles.body}>
