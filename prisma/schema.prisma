@@ -66,6 +66,7 @@ model Project {
   workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   issues    Issue[]
   teams     TeamProject[]
+  labels    Label[]
 
   @@unique([workspaceId, prefix])
 }
@@ -153,14 +154,17 @@ model WorkspaceRole {
 // ─── Labels (workspace-specific) ─────────────────────────────────────────────
 
 model Label {
-  id          String @id
+  id          String  @id
   workspaceId String
+  projectId   String?
   name        String
   color       String
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId],   references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([projectId])
 }
 
 // ─── Issues ──────────────────────────────────────────────────────────────────

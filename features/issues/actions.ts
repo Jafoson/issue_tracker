@@ -82,6 +82,25 @@ export async function createIssue(data: {
   await revalidate();
 }
 
+export async function createLabel(data: {
+  name: string;
+  color: string;
+  workspaceId: string;
+  projectId?: string | null;
+}) {
+  const label = await db.label.create({
+    data: {
+      id:        uid("l"),
+      name:      data.name,
+      color:     data.color,
+      workspace: { connect: { id: data.workspaceId } },
+      ...(data.projectId ? { project: { connect: { id: data.projectId } } } : {}),
+    },
+  });
+  await revalidate();
+  return { id: label.id, name: label.name, color: label.color, projectId: label.projectId };
+}
+
 export async function deleteIssue(id: string) {
   await db.issue.delete({ where: { id } });
   await revalidate();

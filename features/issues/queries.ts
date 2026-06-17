@@ -69,7 +69,7 @@ export const getLabels = cache(async (workspaceId: string): Promise<Label[]> => 
     where: { workspaceId },
     orderBy: { name: "asc" },
   });
-  return rows.map((l) => ({ id: l.id, name: l.name, color: l.color }));
+  return rows.map((l) => ({ id: l.id, name: l.name, color: l.color, projectId: l.projectId ?? null }));
 });
 
 export const getStatuses = cache(async (workspaceId: string): Promise<Status[]> => {

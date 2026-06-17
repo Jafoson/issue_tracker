@@ -7,11 +7,12 @@ interface InlinePickerProps {
   trigger: React.ReactElement;
   children: React.ReactNode | ((close: () => void) => React.ReactNode);
   width?: number;
+  maxWidth?: number;
   align?: "start" | "center" | "end";
   stop?: boolean;
 }
 
-export function InlinePicker({ trigger, children, width, align, stop }: InlinePickerProps) {
+export function InlinePicker({ trigger, children, width, maxWidth, align, stop }: InlinePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const close = () => setOpen(false);
@@ -28,7 +29,7 @@ export function InlinePicker({ trigger, children, width, align, stop }: InlinePi
   return (
     <>
       {triggerWithRef}
-      <Popover anchorRef={ref} open={open} onClose={close} width={width} align={align}>
+      <Popover anchorRef={ref} open={open} onClose={close} width={width} maxWidth={maxWidth} align={align}>
         {typeof children === "function" ? children(close) : children}
       </Popover>
     </>

@@ -11,6 +11,7 @@ interface PopoverProps {
   align?: "start" | "center" | "end";
   side?: "top" | "bottom";
   width?: number;
+  maxWidth?: number;
   offset?: number;
 }
 
@@ -22,6 +23,7 @@ export function Popover({
   align = "start",
   side = "bottom",
   width,
+  maxWidth,
   offset = 6,
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -93,6 +95,7 @@ export function Popover({
         left: pos?.left ?? -9999,
         top: pos?.top ?? -9999,
         width: width ?? undefined,
+        maxWidth: maxWidth ?? undefined,
         visibility: pos ? "visible" : "hidden",
       }}
     >
