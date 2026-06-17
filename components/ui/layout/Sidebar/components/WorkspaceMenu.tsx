@@ -17,7 +17,7 @@ export function WorkspaceMenu() {
 
   function goTo(wsId: string) {
     setOpen(false);
-    router.push(`/${locale}/w/${wsId}/board`);
+    router.push(`/${locale}/${wsId}`);
   }
 
   function initial(name: string) {

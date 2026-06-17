@@ -16,7 +16,7 @@ export default async function LoginPage({
       where: { userId: session.userId },
       select: { workspaceId: true },
     });
-    if (membership) redirect(`/${locale}/w/${membership.workspaceId}/board`);
+    if (membership) redirect(`/${locale}/${membership.workspaceId}`);
     redirect(`/${locale}/create-workspace`);
   }
 

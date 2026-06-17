@@ -26,7 +26,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
-  const base = `/${locale}/w/${workspace}`;
+  const base = `/${locale}/${workspace}`;
   const inboxActive = pathname === `${base}/inbox`;
 
   return (

@@ -9,6 +9,7 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 
 import { useWorkspace } from "@/lib/workspace-context";
+import { toProjectSlug } from "@/lib/slug";
 
 
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
@@ -28,13 +29,16 @@ function sortOptions(t: T) {
 }
 
 function viewTitle(pathname: string, t: T, projects: { id: string; name: string }[], base: string): string {
-  if (pathname.startsWith(`${base}/board/`)) return projects.find((p) => p.id === pathname.split("/")[5])?.name ?? t.nav.board;
-  if (pathname.startsWith(`${base}/list/`))  return t.nav.issues;
-  if (pathname === `${base}/my`)             return t.nav.myIssues;
-  if (pathname === `${base}/inbox`)          return t.nav.inbox;
-  if (pathname === `${base}/members`)        return t.nav.members;
-  if (pathname === `${base}/teams`)          return t.nav.teams;
-  if (pathname === `${base}/settings`)       return t.nav.settings;
+  const projectMatch = pathname.match(new RegExp(`^${base}/project/([^/]+)`));
+  if (projectMatch) {
+    const slug = projectMatch[1];
+    return projects.find((p) => toProjectSlug(p.name) === slug)?.name ?? t.nav.board;
+  }
+  if (pathname === `${base}/my`)        return t.nav.myIssues;
+  if (pathname === `${base}/inbox`)     return t.nav.inbox;
+  if (pathname === `${base}/members`)   return t.nav.members;
+  if (pathname === `${base}/teams`)     return t.nav.teams;
+  if (pathname === `${base}/settings`)  return t.nav.settings;
   return "Orbit";
 }
 
@@ -43,13 +47,15 @@ export function TopbarClient() {
   const { projects } = useWorkspace();
   const t = useTranslations();
   const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
-  const base = `/${locale}/w/${workspace}`;
+  const base = `/${locale}/${workspace}`;
 
   const {
     router, pathname, isPending, showFilters, showSort,
     f, filterCount, sortKey,
     pushParams, toggleFilter, clearFilter, clearAll,
   } = useTopbar();
+
+  const currentSlug = pathname.match(new RegExp(`^${base}/project/([^/]+)`))?.[1] ?? toProjectSlug(projects[0]?.name ?? "");
 
   const SORT_OPTIONS = sortOptions(t);
 
@@ -85,8 +91,8 @@ export function TopbarClient() {
           {showFilters && (
             <SegmentedControl
               variant="surface"
-              value={pathname.startsWith(`${base}/board/`) ? "board" : "list"}
-              onChange={(v) => router.push(`${base}/${v}/${pathname.split("/")[5] ?? projects[0]?.id}`)}
+              value={pathname.endsWith("/list") ? "list" : "board"}
+              onChange={(v) => router.push(v === "list" ? `${base}/project/${currentSlug}/list` : `${base}/project/${currentSlug}`)}
               items={[
                 { value: "board", icon: <Icon icon="lucide:layout-dashboard" width={16} /> },
                 { value: "list",  icon: <Icon icon="lucide:list"             width={16} /> },

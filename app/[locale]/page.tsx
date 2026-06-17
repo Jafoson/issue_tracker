@@ -20,6 +20,6 @@ export default async function LocaleRootPage({
     select: { workspaceId: true },
   });
 
-  if (membership) redirect(`/${locale}/w/${membership.workspaceId}/board`);
+  if (membership) redirect(`/${locale}/${membership.workspaceId}`);
   redirect(`/${locale}/create-workspace`);
 }

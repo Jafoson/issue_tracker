@@ -18,7 +18,7 @@ import { updateIssue, deleteIssue, addComment } from "@/features/issues/actions"
 import type { Issue } from "@/types";
 import styles from "./issueDetail.module.scss";
 
-interface Props { id: string; onClose: () => void; }
+interface Props { id: string; onClose: () => void; initialIssue?: Issue; inline?: boolean; }
 
 function SideField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -29,26 +29,32 @@ function SideField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-export function IssueDetail({ id, onClose }: Props) {
+export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
 
   const { members, projects, labels, statuses, priorities, me } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [issue, setIssue]     = useState<Issue | null>(null);
+  const [issue, setIssue]     = useState<Issue | null>(initialIssue ?? null);
   const [commentBody, setCommentBody] = useState("");
 
   useEffect(() => {
-    setIssue(null);
-    fetch(`/api/issues/${id}`).then((r) => r.json()).then(setIssue);
-  }, [id]);
+    if (!initialIssue) {
+      setIssue(null);
+      fetch(`/api/issues/${id}`).then((r) => r.json()).then(setIssue);
+    }
+  }, [id, initialIssue]);
 
   if (!issue) {
+    const loading = (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200 }}>
+        <span className="faint">Loading…</span>
+      </div>
+    );
+    if (inline) return loading;
     return createPortal(
       <div className="orbit-overlay" onClick={onClose}>
-        <div className="orbit-panel" onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span className="faint">Loading…</span>
-        </div>
+        <div className="orbit-panel" onClick={(e) => e.stopPropagation()}>{loading}</div>
       </div>,
       document.body,
     );
@@ -87,9 +93,8 @@ export function IssueDetail({ id, onClose }: Props) {
   const statusName   = (sid: string) => statuses.find((s) => s.id === sid)?.name ?? sid;
   const priorityName = (pid: number) => priorities.find((p) => p.id === pid)?.name ?? String(pid);
 
-  return createPortal(
-    <div className="orbit-overlay" onClick={onClose}>
-      <div className="orbit-panel" onClick={(e) => e.stopPropagation()}>
+  const content = (
+      <div className={inline ? styles.inlineWrap : "orbit-panel"} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -204,7 +209,11 @@ export function IssueDetail({ id, onClose }: Props) {
           </aside>
         </div>
       </div>
-    </div>,
+  );
+
+  if (inline) return content;
+  return createPortal(
+    <div className="orbit-overlay" onClick={onClose}>{content}</div>,
     document.body,
   );
 }

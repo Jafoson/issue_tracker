@@ -4,6 +4,7 @@ import { useTranslations } from "@/lib/translations-context";
 import { usePathname, useParams } from "next/navigation";
 
 import { useWorkspace } from "@/lib/workspace-context";
+import { toProjectSlug } from "@/lib/slug";
 
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import { QuickActions } from "./components/QuickActions";
@@ -22,14 +23,14 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
-  const base = `/${locale}/w/${workspace}`;
-  const projectId = projects[0]?.id ?? "";
+  const base = `/${locale}/${workspace}`;
+  const firstProjectSlug = projects[0] ? toProjectSlug(projects[0].name) : "";
 
   const navTop: Array<{ href: string; icon: string; label: string; badge?: number } | null> = [
-    { href: `${base}/my`,                   icon: "lucide:user",             label: t.nav.myIssues },
+    { href: `${base}/my`,                           icon: "lucide:user",             label: t.nav.myIssues },
     null,
-    { href: `${base}/board/${projectId}`,   icon: "lucide:layout-dashboard", label: t.nav.board },
-    { href: `${base}/list/${projectId}`,    icon: "lucide:list",             label: t.nav.issues },
+    { href: `${base}/project/${firstProjectSlug}`,  icon: "lucide:layout-dashboard", label: t.nav.board },
+    { href: `${base}/project/${firstProjectSlug}/list`, icon: "lucide:list",         label: t.nav.issues },
   ];
 
   const navBottom = [
@@ -39,8 +40,8 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
 
   const isActive = (href: string) =>
     pathname === href ||
-    (href.includes("/board/") && pathname.startsWith(`${base}/board/`)) ||
-    (href.includes("/list/")  && pathname.startsWith(`${base}/list/`));
+    (href.includes("/project/") && !href.endsWith("/list") && pathname.startsWith(`${base}/project/`) && !pathname.endsWith("/list")) ||
+    (href.endsWith("/list")     && pathname.endsWith("/list"));
 
   return (
     <aside className={styles.aside}>

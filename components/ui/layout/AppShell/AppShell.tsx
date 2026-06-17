@@ -41,13 +41,6 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
 
   const issueId = searchParams.get("issue");
 
-  const closeIssue = () => {
-    const p = new URLSearchParams(searchParams.toString());
-    p.delete("issue");
-    const qs = p.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
-
   useEffect(() => {
     (window as { __openComposer?: () => void }).__openComposer = () => setComposerOpen(true);
     (window as { __openPalette?:  () => void }).__openPalette  = () => setPaletteOpen(true);
@@ -73,7 +66,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
         <Topbar />
         <div className={styles.content}>{children}</div>
       </div>
-      {issueId && <IssueDetail id={issueId} onClose={closeIssue} />}
+      {issueId && <IssueDetail id={issueId} onClose={() => router.back()} />}
       <IssueComposer open={composerOpen} onClose={() => setComposerOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <Toast />

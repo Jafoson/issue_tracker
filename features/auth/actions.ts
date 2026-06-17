@@ -26,7 +26,7 @@ export async function login(formData: FormData): Promise<AuthResult> {
   });
 
   const locale = (formData.get("locale") as string | null) ?? "de";
-  if (membership) return { redirectTo: `/${locale}/w/${membership.workspaceId}/board` };
+  if (membership) return { redirectTo: `/${locale}/${membership.workspaceId}` };
   return { redirectTo: `/${locale}/create-workspace` };
 }
 

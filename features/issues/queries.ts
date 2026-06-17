@@ -25,6 +25,9 @@ function mapIssue(i: {
 
 // ── Cached queries (deduplicated per request) ─────────────────────────────────
 
+import { toProjectSlug } from "@/lib/slug";
+export { toProjectSlug };
+
 export const getWorkspace = cache(async (id: string) => {
   return db.workspace.findUnique({ where: { id }, select: { id: true, name: true, color: true } });
 });
@@ -174,6 +177,22 @@ export async function getInboxIssues(userId: string, workspaceId: string): Promi
 export async function getIssueById(id: string): Promise<Issue | null> {
   const i = await db.issue.findUnique({
     where: { id },
+    include: { comments: { orderBy: { created: "asc" } } },
+  });
+  return i ? mapIssue(i) : null;
+}
+
+export async function getIssueByRef(workspaceId: string, issueRef: string): Promise<Issue | null> {
+  const match = issueRef.match(/^([A-Z0-9]+)-(\d+)$/i);
+  if (!match) return null;
+  const prefix = match[1].toUpperCase();
+  const key    = parseInt(match[2], 10);
+
+  const project = await db.project.findFirst({ where: { workspaceId, prefix } });
+  if (!project) return null;
+
+  const i = await db.issue.findUnique({
+    where: { projectId_key: { projectId: project.id, key } },
     include: { comments: { orderBy: { created: "asc" } } },
   });
   return i ? mapIssue(i) : null;

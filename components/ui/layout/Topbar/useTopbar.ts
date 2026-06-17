@@ -11,10 +11,10 @@ export function useTopbar() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
-  const base = `/${locale}/w/${workspace}`;
+  const base = `/${locale}/${workspace}`;
 
-  const showFilters = pathname.startsWith(`${base}/board/`) || pathname.startsWith(`${base}/list/`);
-  const showSort    = pathname.startsWith(`${base}/list/`);
+  const showFilters = pathname.startsWith(`${base}/project/`);
+  const showSort    = pathname.startsWith(`${base}/project/`) && pathname.endsWith("/list");
 
   const f = {
     statuses:   searchParams.get("status")?.split(",").filter(Boolean)                           ?? [],
