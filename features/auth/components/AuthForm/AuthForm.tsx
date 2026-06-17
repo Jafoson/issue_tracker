@@ -10,9 +10,10 @@ import styles from "./authForm.module.scss";
 interface AuthFormProps {
   mode: "login" | "register";
   locale: string;
+  callbackUrl?: string;
 }
 
-export function AuthForm({ mode, locale }: AuthFormProps) {
+export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [name, setName]         = useState("");
@@ -27,6 +28,7 @@ export function AuthForm({ mode, locale }: AuthFormProps) {
     fd.append("email",    email.trim());
     fd.append("password", password);
     fd.append("locale",   locale);
+    if (callbackUrl) fd.append("callbackUrl", callbackUrl);
     if (mode === "register") fd.append("name", name.trim());
 
     startTransition(async () => {

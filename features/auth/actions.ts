@@ -20,6 +20,9 @@ export async function login(formData: FormData): Promise<AuthResult> {
 
   await createSession(user.id);
 
+  const callbackUrl = (formData.get("callbackUrl") as string | null) ?? "";
+  if (callbackUrl) return { redirectTo: callbackUrl };
+
   const membership = await db.workspaceMember.findFirst({
     where: { userId: user.id },
     select: { workspaceId: true },

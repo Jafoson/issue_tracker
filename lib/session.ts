@@ -1,11 +1,10 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { sessionSecret } from "@/lib/session-secret";
 
 const COOKIE = "session";
-const secret = new TextEncoder().encode(
-  process.env.SESSION_SECRET ?? "dev-secret-minimum-32-characters-long!",
-);
+const secret = sessionSecret;
 
 export async function createSession(userId: string) {
   const token = await new SignJWT({ sub: userId })
