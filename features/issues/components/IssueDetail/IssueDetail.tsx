@@ -39,6 +39,11 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   const [, startTransition] = useTransition();
   const [issue, setIssue]     = useState<Issue | null>(initialIssue ?? null);
   const [commentBody, setCommentBody] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!initialIssue) {
@@ -54,6 +59,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
       </div>
     );
     if (inline) return loading;
+    if (!mounted) return null;
     return createPortal(
       <div className="orbit-overlay" onClick={onClose}>
         <div className="orbit-panel" onClick={(e) => e.stopPropagation()}>{loading}</div>
@@ -221,6 +227,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   );
 
   if (inline) return content;
+  if (!mounted) return null;
   return createPortal(
     <div className="orbit-overlay" onClick={onClose}>{content}</div>,
     document.body,
