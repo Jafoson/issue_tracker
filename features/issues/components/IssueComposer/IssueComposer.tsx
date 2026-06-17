@@ -28,6 +28,7 @@ export function IssueComposer({ open, onClose }: IssueComposerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
+  const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
@@ -39,19 +40,20 @@ export function IssueComposer({ open, onClose }: IssueComposerProps) {
   const statusName   = (id: string) => statuses.find((s) => s.id === id)?.name ?? id;
   const priorityName = (id: number) => priorities.find((p) => p.id === id)?.name ?? String(id);
 
-  const activeProjectId = (() => {
+  const defaultProjectId = (() => {
     const seg = pathname.split("/");
     if (seg[4] === "board" || seg[4] === "list") return seg[5] ?? projects[0]?.id ?? "";
     return projects[0]?.id ?? "";
   })();
 
-  const project = projects.find((p) => p.id === activeProjectId) ?? projects[0];
+  const [selectedProjectId, setSelectedProjectId] = useState(defaultProjectId);
+  const project = projects.find((p) => p.id === selectedProjectId) ?? projects[0];
   const assigneeUser = assignee ? (members.find((m) => m.id === assignee) ?? null) : null;
 
   useEffect(() => {
     if (open) {
       setTitle(""); setDescription(""); setStatus("todo");
-      setPriority(0); setAssignee(null); setLabels([]);
+      setPriority(0); setAssignee(null); setLabels([]); setSelectedProjectId(defaultProjectId); setExpanded(false);
       setTimeout(() => titleRef.current?.focus(), 50);
     }
   }, [open]);
@@ -79,11 +81,37 @@ export function IssueComposer({ open, onClose }: IssueComposerProps) {
   if (!open) return null;
 
   return createPortal(
-    <div className="orbit-overlay" onClick={onClose}>
-      <div className="orbit-comp" onClick={(e) => e.stopPropagation()}>
+    <div className={`orbit-overlay ${styles.overlay}`} onClick={onClose}>
+      <div className={`orbit-comp ${expanded ? styles.compExpanded : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <span style={{ fontSize: 13, fontWeight: 550 }}>{t.actions.newIssue}</span>
-          <span className="faint mono" style={{ fontSize: 12 }}>{project?.prefix}</span>
+          <div className={styles.breadcrumb}>
+            <InlinePicker
+              trigger={
+                <button type="button" className={styles.projectTrigger}>
+                  <span className="dot" style={{ background: project?.color ?? "var(--text-3)", width: 8, height: 8, borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
+                  {project?.name ?? "Projekt"}
+                </button>
+              }
+              width={220}
+              stop
+            >
+              {(close) => (
+                <SelectMenu
+                  items={projects.map((p) => ({ value: p.id, label: p.name, icon: <span className="dot" style={{ background: p.color ?? "var(--text-3)", width: 9, height: 9, borderRadius: "50%", display: "inline-block" }} /> }))}
+                  value={selectedProjectId}
+                  onPick={(v) => { setSelectedProjectId(v as string); close(); }}
+                  onClose={close}
+                />
+              )}
+            </InlinePicker>
+            <span className={styles.sep}>›</span>
+            <span className={styles.pageTitle}>{t.actions.newIssue}</span>
+          </div>
+
+          <div className={styles.headerRight}>
+            <Button variant="ghost" size="sm" icon={<Icon icon={expanded ? "lucide:minimize-2" : "lucide:maximize-2"} width={14} />} onClick={() => setExpanded((v) => !v)} title={expanded ? "Verkleinern" : "Erweitern"} />
+            <Button variant="ghost" size="sm" icon={<Icon icon="lucide:x" width={15} />} onClick={onClose} title="Schließen" />
+          </div>
         </div>
 
         <div className={styles.body}>
@@ -91,10 +119,12 @@ export function IssueComposer({ open, onClose }: IssueComposerProps) {
             placeholder={t.placeholders.issueTitle}
             value={title} onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} />
-          <textarea className={styles.descInput}
+          <textarea
+            key={expanded ? "expanded" : "compact"}
+            className={styles.descInput}
             placeholder={t.placeholders.addDescription}
             value={description} onChange={(e) => setDescription(e.target.value)}
-            rows={4} />
+            rows={expanded ? 18 : 4} />
         </div>
 
         <div className={styles.toolbar}>
