@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import { Label as LabelBadge } from "@/components/ui/atoms/Label/Label";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { StatusIcon, PriorityIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
@@ -16,7 +17,8 @@ import { useWorkspace } from "@/lib/workspace-context";
 
 import { timeAgo } from "@/lib/utils/date";
 import { updateIssue, deleteIssue, addComment } from "@/features/issues/actions";
-import type { Issue } from "@/types";
+import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
+import type { Issue, Label } from "@/types";
 import styles from "./issueDetail.module.scss";
 
 interface Props { id: string; onClose: () => void; initialIssue?: Issue; inline?: boolean; }
@@ -32,7 +34,8 @@ function SideField({ label, children }: { label: string; children: React.ReactNo
 
 export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
 
-  const { members, projects, labels, statuses, priorities, me } = useWorkspace();
+  const { members, projects, labels, statuses, priorities, me, workspace: workspaceData } = useWorkspace();
+  const [localLabels, setLocalLabels] = useState<Label[]>([]);
   const t = useTranslations();
   const router = useRouter();
   const { locale, workspace } = useParams<{ locale: string; workspace: string }>();
@@ -68,6 +71,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
     );
   }
 
+  const combinedLabels = [...labels, ...localLabels.filter((l) => !labels.some((a) => a.id === l.id))];
   const project  = projects.find((p) => p.id === issue.project) ?? { prefix: "?", name: "?", color: "#686d76" };
   const assignee = issue.assignee ? (members.find((m) => m.id === issue.assignee) ?? null) : null;
   const identifier = `${project.prefix}-${issue.key}`;
@@ -195,14 +199,38 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               </InlinePicker>
             </SideField>
             <SideField label={t.fields.labels}>
-              <InlinePicker trigger={<button className={styles.sideBtn}><Icon icon="lucide:tag" width={13} />{issue.labels.length === 0 ? t.fields.none : issue.labels.map((l) => labels.find((x) => x.id === l)?.name ?? l).join(", ")}</button>} width={210} stop>
-                <SelectMenu items={labels.map((l) => ({ value: l.id, label: l.name, icon: <span className="dot" style={{ background: l.color, width: 9, height: 9 }} /> }))}
-                  value={issue.labels}
-                  onPick={(v) => {
-                    const next = issue.labels.includes(v as string) ? issue.labels.filter((x) => x !== v) : [...issue.labels, v as string];
-                    patch({ labels: next });
-                  }}
-                  multi />
+              <InlinePicker
+                trigger={
+                  <button className={styles.sideBtn} style={issue.labels.length > 0 ? { alignItems: "flex-start", flexWrap: "wrap", gap: 4 } : undefined}>
+                    {issue.labels.length === 0 ? (
+                      <><Icon icon="lucide:tag" width={13} />{t.fields.none}</>
+                    ) : (
+                      issue.labels.map((lid) => {
+                        const l = combinedLabels.find((x) => x.id === lid);
+                        return l ? <LabelBadge key={lid} color={l.color} size="sm">{l.name}</LabelBadge> : null;
+                      })
+                    )}
+                  </button>
+                }
+                width={240}
+                stop
+              >
+                {(close) => (
+                  <LabelPickerMenu
+                    allLabels={combinedLabels}
+                    selected={issue.labels}
+                    projectId={issue.project}
+                    projectName={project.name}
+                    workspaceId={workspaceData.id}
+                    onPick={(id) => {
+                      const next = issue.labels.includes(id) ? issue.labels.filter((x) => x !== id) : [...issue.labels, id];
+                      patch({ labels: next });
+                    }}
+                    onCreated={(label) => setLocalLabels((cur) => [...cur, label])}
+                    onClose={close}
+                    keepOpen
+                  />
+                )}
               </InlinePicker>
             </SideField>
             <SideField label={t.fields.project}>
