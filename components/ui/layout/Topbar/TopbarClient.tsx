@@ -61,59 +61,6 @@ export function TopbarClient() {
       <div className={styles.topRow}>
         <TabBar />
 
-        <div className={styles.actions}>
-          {showSort && (
-            <InlinePicker
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<Icon icon="lucide:arrow-down" width={14} />}
-                >
-                  {SORT_OPTIONS.find((o) => o.value === sortKey)?.label ??
-                    t.sort.label}
-                </Button>
-              }
-              width={180}
-            >
-              {(close) => (
-                <SelectMenu
-                  items={SORT_OPTIONS.map((o) => ({
-                    value: o.value,
-                    label: o.label,
-                  }))}
-                  value={sortKey}
-                  onPick={(v) => {
-                    pushParams((p) => p.set("sort", v as string));
-                    close();
-                  }}
-                  onClose={close}
-                />
-              )}
-            </InlinePicker>
-          )}
-
-          {showFilters && (
-            <SegmentedControl
-              variant="surface"
-              value={pathname.endsWith("/list") ? "list" : "board"}
-              onChange={(v) =>
-                router.push(
-                  v === "list"
-                    ? `${base}/project/${currentSlug}/list`
-                    : `${base}/project/${currentSlug}`,
-                )
-              }
-              items={[
-                {
-                  value: "board",
-                  icon: <Icon icon="lucide:layout-dashboard" width={16} />,
-                },
-                { value: "list", icon: <Icon icon="lucide:list" width={16} /> },
-              ]}
-            />
-          )}
-        </div>
       </div>
 
       {showFilters && (
@@ -124,6 +71,58 @@ export function TopbarClient() {
           onClear={clearFilter}
           onClearAll={clearAll}
           t={t}
+          end={
+            <>
+              {showSort && (
+                <InlinePicker
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<Icon icon="lucide:arrow-down" width={14} />}
+                    >
+                      {SORT_OPTIONS.find((o) => o.value === sortKey)?.label ??
+                        t.sort.label}
+                    </Button>
+                  }
+                  width={180}
+                >
+                  {(close) => (
+                    <SelectMenu
+                      items={SORT_OPTIONS.map((o) => ({
+                        value: o.value,
+                        label: o.label,
+                      }))}
+                      value={sortKey}
+                      onPick={(v) => {
+                        pushParams((p) => p.set("sort", v as string));
+                        close();
+                      }}
+                      onClose={close}
+                    />
+                  )}
+                </InlinePicker>
+              )}
+              <SegmentedControl
+                variant="surface"
+                value={pathname.endsWith("/list") ? "list" : "board"}
+                onChange={(v) =>
+                  router.push(
+                    v === "list"
+                      ? `${base}/project/${currentSlug}/list`
+                      : `${base}/project/${currentSlug}`,
+                  )
+                }
+                items={[
+                  {
+                    value: "board",
+                    icon: <Icon icon="lucide:layout-dashboard" width={16} />,
+                  },
+                  { value: "list", icon: <Icon icon="lucide:list" width={16} /> },
+                ]}
+              />
+            </>
+          }
         />
       )}
     </header>

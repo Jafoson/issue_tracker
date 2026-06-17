@@ -25,9 +25,10 @@ interface TopbarFiltersProps {
   onClear:      (key: string) => void;
   onClearAll:   () => void;
   t:            T;
+  end?:         React.ReactNode;
 }
 
-export function TopbarFilters({ f, filterCount, onToggle, onClear, onClearAll, t }: TopbarFiltersProps) {
+export function TopbarFilters({ f, filterCount, onToggle, onClear, onClearAll, t, end }: TopbarFiltersProps) {
   const { members, statuses, priorities, labels } = useWorkspace();
 
   const statusName   = (id: string) => statuses.find((s)  => s.id === id)?.name  ?? id;
@@ -114,6 +115,8 @@ export function TopbarFilters({ f, filterCount, onToggle, onClear, onClearAll, t
           {t.actions.clear}
         </Button>
       )}
+
+      {end && <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>{end}</div>}
     </div>
   );
 }
