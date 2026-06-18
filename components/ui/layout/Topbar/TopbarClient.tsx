@@ -38,6 +38,7 @@ export function TopbarClient() {
   const {
     router,
     pathname,
+    searchParams,
     isPending,
     showFilters,
     showSort,
@@ -54,13 +55,17 @@ export function TopbarClient() {
     pathname.match(new RegExp(`^${base}/project/([^/]+)`))?.[1] ??
     toProjectSlug(projects[0]?.name ?? "");
 
+  const currentProject =
+    projects.find((p) => toProjectSlug(p.name) === currentSlug) ??
+    projects[0] ??
+    null;
+
   const SORT_OPTIONS = sortOptions(t);
 
   return (
     <header className={`${styles.header}${isPending ? " loading" : ""}`}>
       <div className={styles.topRow}>
         <TabBar />
-
       </div>
 
       {showFilters && (
@@ -71,6 +76,8 @@ export function TopbarClient() {
           onClear={clearFilter}
           onClearAll={clearAll}
           t={t}
+          projectId={currentProject?.id ?? ""}
+          projectName={currentProject?.name ?? ""}
           end={
             <>
               {showSort && (
@@ -106,19 +113,24 @@ export function TopbarClient() {
               <SegmentedControl
                 variant="surface"
                 value={pathname.endsWith("/list") ? "list" : "board"}
-                onChange={(v) =>
+                onChange={(v) => {
+                  const qs = searchParams.toString();
+                  const suffix = qs ? `?${qs}` : "";
                   router.push(
                     v === "list"
-                      ? `${base}/project/${currentSlug}/list`
-                      : `${base}/project/${currentSlug}`,
-                  )
-                }
+                      ? `${base}/project/${currentSlug}/list${suffix}`
+                      : `${base}/project/${currentSlug}${suffix}`,
+                  );
+                }}
                 items={[
                   {
                     value: "board",
                     icon: <Icon icon="lucide:layout-dashboard" width={16} />,
                   },
-                  { value: "list", icon: <Icon icon="lucide:list" width={16} /> },
+                  {
+                    value: "list",
+                    icon: <Icon icon="lucide:list" width={16} />,
+                  },
                 ]}
               />
             </>

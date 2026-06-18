@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export type Tab = {
@@ -41,6 +41,12 @@ function save(ws: string, tabs: Tab[]) {
 export function useTabBar(workspace: string, defaultHref: string) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Full URL of the current view including the query string (filters, sort…).
+  // usePathname() alone drops the query, which would lose per-tab filter state.
+  const qs = searchParams.toString();
+  const currentHref = qs ? `${pathname}?${qs}` : pathname;
 
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeId, setActiveId] = useState("");
@@ -59,7 +65,8 @@ export function useTabBar(workspace: string, defaultHref: string) {
     setReady(true);
   }, [workspace, defaultHref]);
 
-  // Track navigation within the current tab.
+  // Track navigation within the current tab — including the query string, so
+  // each tab keeps its own filters/sort even after switching away and back.
   useEffect(() => {
     if (!ready || !activeId) return;
 
@@ -68,17 +75,17 @@ export function useTabBar(workspace: string, defaultHref: string) {
 
     // Skip when activeId just changed — this effect fired because the tab
     // switched, not because the user navigated. The new tab's href is already
-    // stored correctly. Updating here would overwrite it with the old pathname.
+    // stored correctly. Updating here would overwrite it with the old href.
     if (activeIdChanged) return;
 
     setTabs((prev) => {
       const next = prev.map((t) =>
-        t.id === activeId ? { ...t, href: pathname } : t,
+        t.id === activeId ? { ...t, href: currentHref } : t,
       );
       save(workspace, next);
       return next;
     });
-  }, [pathname, activeId, ready, workspace]);
+  }, [currentHref, activeId, ready, workspace]);
 
   useEffect(() => {
     if (activeId) localStorage.setItem(activeKey(workspace), activeId);

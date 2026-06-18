@@ -72,9 +72,18 @@ export function TabBar() {
     <div className={styles.bar}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeId;
-        const title = tabTitle(tab.href, projects, t, base);
-        const color = tabColor(tab.href, projects, base);
-        const icon = color ? null : tabIcon(tab.href, base);
+        // Strip the query string — tab.href carries filters (?status=…), but the
+        // title/color/icon are derived from the path only.
+        const path = tab.href.split("?")[0];
+        const color = tabColor(path, projects, base);
+        const icon = color ? null : tabIcon(path, base);
+
+        // List ("Aufgaben") view of a project → "Projektname (Aufgaben)" to set
+        // it apart from the board tab, which shows the bare project name.
+        let title = tabTitle(path, projects, t, base);
+        if (path.includes("/project/") && path.endsWith("/list")) {
+          title = `${title} (${t.nav.issues})`;
+        }
 
         return (
           <div
@@ -83,7 +92,9 @@ export function TabBar() {
             tabIndex={0}
             className={`${styles.tab}${isActive ? ` ${styles.active}` : ""}`}
             onClick={() => switchTab(tab.id)}
-            onKeyDown={(e) => e.key === "Enter" || e.key === " " ? switchTab(tab.id) : undefined}
+            onKeyDown={(e) =>
+              e.key === "Enter" || e.key === " " ? switchTab(tab.id) : undefined
+            }
           >
             {color ? (
               <span className={styles.dot} style={{ background: color }} />
