@@ -48,11 +48,16 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
     setMounted(true);
   }, []);
 
+  // `id` may be an internal id or a "PREFIX-123" ref — pass the workspace so
+  // the API can resolve a ref to the right issue.
+  const issueUrl = (ref: string) => `/api/issues/${encodeURIComponent(ref)}?ws=${workspace}`;
+
   useEffect(() => {
     if (!initialIssue) {
       setIssue(null);
-      fetch(`/api/issues/${id}`).then((r) => r.json()).then(setIssue);
+      fetch(issueUrl(id)).then((r) => r.json()).then(setIssue);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, initialIssue]);
 
   if (!issue) {
@@ -79,7 +84,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   const patch = (p: Parameters<typeof updateIssue>[1]) =>
     startTransition(async () => {
       await updateIssue(issue.id, p);
-      const fresh = await fetch(`/api/issues/${id}`).then((r) => r.json());
+      const fresh = await fetch(issueUrl(issue.id)).then((r) => r.json());
       setIssue(fresh);
       router.refresh();
     });
@@ -88,7 +93,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
     if (!commentBody.trim()) return;
     startTransition(async () => {
       await addComment(issue.id, commentBody.trim(), me.id);
-      const fresh = await fetch(`/api/issues/${id}`).then((r) => r.json());
+      const fresh = await fetch(issueUrl(issue.id)).then((r) => r.json());
       setIssue(fresh);
       setCommentBody("");
       router.refresh();

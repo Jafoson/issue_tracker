@@ -39,7 +39,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
     router.push(`/${locale}/login`);
   }
 
-  const issueId = searchParams.get("issue");
+  const issueRef = searchParams.get("issue");
 
   useEffect(() => {
     (window as { __openComposer?: () => void }).__openComposer = () => setComposerOpen(true);
@@ -66,7 +66,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
         <Topbar />
         <div className={styles.content}>{children}</div>
       </div>
-      {issueId && <IssueDetail id={issueId} onClose={() => router.back()} />}
+      {issueRef && <IssueDetail id={issueRef} onClose={() => router.back()} />}
       <IssueComposer open={composerOpen} onClose={() => setComposerOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <Toast />

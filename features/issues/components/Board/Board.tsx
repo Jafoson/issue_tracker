@@ -24,7 +24,7 @@ const erank = (i: Issue) => i.rank !== 0 ? i.rank : i.created;
 
 export function Board({ issues, projectId }: BoardProps) {
 
-  const { statuses } = useWorkspace();
+  const { statuses, projects } = useWorkspace();
   const t = useTranslations();
   const columnStatuses = statuses.filter((s) => s.isColumn);
   const router = useRouter();
@@ -52,9 +52,10 @@ export function Board({ issues, projectId }: BoardProps) {
   const sortedByRank = (list: Issue[]) =>
     [...list].sort((a, b) => erank(a) - erank(b));
 
-  const openIssue = (id: string) => {
+  const openIssue = (issue: Issue) => {
+    const prefix = projects.find((p) => p.id === issue.project)?.prefix ?? "?";
     const p = new URLSearchParams(searchParams.toString());
-    p.set("issue", id);
+    p.set("issue", `${prefix}-${issue.key}`);
     router.push(`${pathname}?${p.toString()}`, { scroll: false });
   };
 
@@ -164,7 +165,7 @@ export function Board({ issues, projectId }: BoardProps) {
                       onDragStart={(e) => onDragStart(e, issue)}
                       onDragEnd={clearDragState}
                       onDragOver={(e) => onCardDragOver(e, issue.id)}
-                      onClick={() => openIssue(issue.id)}
+                      onClick={() => openIssue(issue)}
                     />
                     {isCardOver && !insertAbove && <div className={styles.dropIndicator} />}
                   </React.Fragment>

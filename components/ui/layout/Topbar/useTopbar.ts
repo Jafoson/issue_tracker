@@ -7,6 +7,17 @@ import {
   useSearchParams,
 } from "next/navigation";
 import { useTransition } from "react";
+import {
+  assigneeIdToSlug,
+  assigneeSlugToId,
+  labelIdToSlug,
+  labelSlugToId,
+  priorityIdToSlug,
+  prioritySlugToId,
+  statusIdToSlug,
+  statusSlugToId,
+} from "@/lib/filter-slugs";
+import { useWorkspace } from "@/lib/workspace-context";
 
 export type SortKey =
   | "priority"
@@ -27,21 +38,44 @@ export function useTopbar() {
   }>();
   const base = `/${locale}/${workspace}`;
 
+  const { priorities, members, labels } = useWorkspace();
+
   const showFilters = pathname.startsWith(`${base}/project/`);
   const showSort =
     pathname.startsWith(`${base}/project/`) && pathname.endsWith("/list");
 
+  // URL holds slugs; the UI works in internal-id space — translate on read.
+  const parse = (key: string) =>
+    searchParams.get(key)?.split(",").filter(Boolean) ?? [];
+
   const f = {
-    statuses: searchParams.get("status")?.split(",").filter(Boolean) ?? [],
-    priorities:
-      searchParams
-        .get("priority")
-        ?.split(",")
-        .map(Number)
-        .filter((n) => !Number.isNaN(n)) ?? [],
-    assignees: searchParams.get("assignee")?.split(",").filter(Boolean) ?? [],
-    labels: searchParams.get("label")?.split(",").filter(Boolean) ?? [],
+    statuses: parse("status").map(statusSlugToId),
+    priorities: parse("priority")
+      .map((s) => prioritySlugToId(priorities, s))
+      .filter((n): n is number => n !== undefined),
+    assignees: parse("assignee")
+      .map((s) => assigneeSlugToId(members, s))
+      .filter((id): id is string => Boolean(id)),
+    labels: parse("label")
+      .map((s) => labelSlugToId(labels, s))
+      .filter((id): id is string => Boolean(id)),
   };
+
+  // internal id (as passed by the filter UI) → URL slug
+  function toSlug(key: string, value: string | number): string {
+    switch (key) {
+      case "status":
+        return statusIdToSlug(String(value));
+      case "priority":
+        return priorityIdToSlug(priorities, value as number);
+      case "assignee":
+        return assigneeIdToSlug(members, String(value));
+      case "label":
+        return labelIdToSlug(labels, String(value));
+      default:
+        return String(value);
+    }
+  }
   const filterCount =
     f.statuses.length +
     f.priorities.length +
@@ -60,10 +94,10 @@ export function useTopbar() {
   function toggleFilter(key: string, value: string | number) {
     pushParams((p) => {
       const cur = p.get(key)?.split(",").filter(Boolean) ?? [];
-      const str = String(value);
-      const next = cur.includes(str)
-        ? cur.filter((v) => v !== str)
-        : [...cur, str];
+      const slug = toSlug(key, value);
+      const next = cur.includes(slug)
+        ? cur.filter((v) => v !== slug)
+        : [...cur, slug];
       if (next.length) p.set(key, next.join(","));
       else p.delete(key);
     });

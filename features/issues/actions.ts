@@ -3,9 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { uid } from "@/lib/utils/id";
+import { slugify } from "@/lib/slug";
 
 async function revalidate() {
   revalidatePath("/", "layout");
+}
+
+// Build a workspace-unique slug for a label (slug is unique per workspace).
+async function uniqueLabelSlug(workspaceId: string, name: string) {
+  const base = slugify(name) || "label";
+  let slug = base;
+  let n = 1;
+  while (await db.label.findUnique({ where: { workspaceId_slug: { workspaceId, slug } } })) {
+    slug = `${base}-${++n}`;
+  }
+  return slug;
 }
 
 export async function moveIssue(id: string, status: string) {
@@ -88,17 +100,19 @@ export async function createLabel(data: {
   workspaceId: string;
   projectId?: string | null;
 }) {
+  const slug = await uniqueLabelSlug(data.workspaceId, data.name);
   const label = await db.label.create({
     data: {
       id:        uid("l"),
       name:      data.name,
+      slug,
       color:     data.color,
       workspace: { connect: { id: data.workspaceId } },
       ...(data.projectId ? { project: { connect: { id: data.projectId } } } : {}),
     },
   });
   await revalidate();
-  return { id: label.id, name: label.name, color: label.color, projectId: label.projectId };
+  return { id: label.id, name: label.name, slug: label.slug, color: label.color, projectId: label.projectId };
 }
 
 export async function deleteIssue(id: string) {

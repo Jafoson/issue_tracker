@@ -158,11 +158,13 @@ model Label {
   workspaceId String
   projectId   String?
   name        String
+  slug        String
   color       String
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   project   Project?  @relation(fields: [projectId],   references: [id], onDelete: Cascade)
 
+  @@unique([workspaceId, slug])
   @@index([workspaceId])
   @@index([projectId])
 }

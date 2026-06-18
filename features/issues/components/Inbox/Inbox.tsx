@@ -16,7 +16,7 @@ interface Props { issues: Issue[]; }
 
 export function Inbox({ issues }: Props) {
 
-  const { members, me } = useWorkspace();
+  const { members, me, projects } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -31,9 +31,10 @@ export function Inbox({ issues }: Props) {
     .sort((a, b) => b.comment.time - a.comment.time)
     .slice(0, 20);
 
-  const openIssue = (id: string) => {
+  const openIssue = (issue: Issue) => {
+    const prefix = projects.find((p) => p.id === issue.project)?.prefix ?? "?";
     const p = new URLSearchParams(searchParams.toString());
-    p.set("issue", id);
+    p.set("issue", `${prefix}-${issue.key}`);
     router.push(`${pathname}?${p.toString()}`, { scroll: false });
   };
 
@@ -51,7 +52,7 @@ export function Inbox({ issues }: Props) {
       {notifications.map(({ issue, comment }) => {
         const author = members.find((m) => m.id === comment.author) ?? null;
         return (
-          <div key={comment.id} className={styles.item} onClick={() => openIssue(issue.id)}>
+          <div key={comment.id} className={styles.item} onClick={() => openIssue(issue)}>
             <Avatar user={author} size={30} />
             <div className={styles.content}>
               <div className={styles.meta}>

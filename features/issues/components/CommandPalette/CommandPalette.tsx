@@ -77,7 +77,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     if (item.kind === "nav") {
       router.push(item.href);
     } else {
-      router.push(`?issue=${item.id}`, { scroll: false });
+      router.push(`?issue=${item.identifier}`, { scroll: false });
     }
     onClose();
   };

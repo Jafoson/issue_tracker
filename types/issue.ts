@@ -16,6 +16,7 @@ export interface Priority {
 export interface Label {
   id: string;
   name: string;
+  slug: string;
   color: string;
   projectId?: string | null;
 }

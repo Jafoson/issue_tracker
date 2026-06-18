@@ -37,7 +37,7 @@ function IssueRow({ issue }: { issue: Issue }) {
 
   const openIssue = () => {
     const p = new URLSearchParams(searchParams.toString());
-    p.set("issue", issue.id);
+    p.set("issue", identifier);
     router.push(`${pathname}?${p.toString()}`, { scroll: false });
   };
 

@@ -32,21 +32,21 @@ describe("getLabels()", () => {
 
   it("mappt DB-Rows auf Label-Objekte mit projectId", async () => {
     mockLabelFindMany.mockResolvedValue([
-      { id: "l-1", name: "Bug",     color: "#ef4444", workspaceId: "ws-1", projectId: null    },
-      { id: "l-2", name: "Feature", color: "#6366f1", workspaceId: "ws-1", projectId: "p-1"  },
+      { id: "l-1", name: "Bug",     slug: "bug",     color: "#ef4444", workspaceId: "ws-1", projectId: null    },
+      { id: "l-2", name: "Feature", slug: "feature", color: "#6366f1", workspaceId: "ws-1", projectId: "p-1"  },
     ]);
 
     const result = await getLabels("ws-1");
 
     expect(result).toEqual([
-      { id: "l-1", name: "Bug",     color: "#ef4444", projectId: null  },
-      { id: "l-2", name: "Feature", color: "#6366f1", projectId: "p-1" },
+      { id: "l-1", name: "Bug",     slug: "bug",     color: "#ef4444", projectId: null  },
+      { id: "l-2", name: "Feature", slug: "feature", color: "#6366f1", projectId: "p-1" },
     ]);
   });
 
   it("gibt projectId als null zurück wenn das Feld in DB null ist", async () => {
     mockLabelFindMany.mockResolvedValue([
-      { id: "l-1", name: "Bug", color: "#ef4444", workspaceId: "ws-1", projectId: null },
+      { id: "l-1", name: "Bug", slug: "bug", color: "#ef4444", workspaceId: "ws-1", projectId: null },
     ]);
 
     const [label] = await getLabels("ws-1");

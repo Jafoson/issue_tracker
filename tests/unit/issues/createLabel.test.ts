@@ -2,7 +2,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 mock.module("@/lib/db", () => ({
   db: {
-    label: { create: mock() },
+    label: { create: mock(), findUnique: mock() },
   },
 }));
 
@@ -14,8 +14,9 @@ import { createLabel } from "@/features/issues/actions";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
-const mockLabelCreate  = db.label.create   as ReturnType<typeof mock>;
-const mockRevalidate   = revalidatePath    as ReturnType<typeof mock>;
+const mockLabelCreate     = db.label.create     as ReturnType<typeof mock>;
+const mockLabelFindUnique = db.label.findUnique as ReturnType<typeof mock>;
+const mockRevalidate      = revalidatePath      as ReturnType<typeof mock>;
 
 const BASE = {
   name:        "Bug",
@@ -26,6 +27,7 @@ const BASE = {
 const DB_LABEL_WS = {
   id:          "l-uuid",
   name:        "Bug",
+  slug:        "bug",
   color:       "#ef4444",
   workspaceId: "ws-1",
   projectId:   null,
@@ -34,6 +36,7 @@ const DB_LABEL_WS = {
 const DB_LABEL_PROJECT = {
   id:          "l-uuid-2",
   name:        "Feature",
+  slug:        "feature",
   color:       "#6366f1",
   workspaceId: "ws-1",
   projectId:   "proj-1",
@@ -42,6 +45,8 @@ const DB_LABEL_PROJECT = {
 describe("createLabel()", () => {
   beforeEach(() => {
     mockLabelCreate.mockReset();
+    mockLabelFindUnique.mockReset();
+    mockLabelFindUnique.mockResolvedValue(null); // slug is free
     mockRevalidate.mockReset();
   });
 
@@ -69,14 +74,30 @@ describe("createLabel()", () => {
       expect(call.data.project).toBeUndefined();
     });
 
-    it("gibt id, name, color und projectId null zurück", async () => {
+    it("gibt id, name, slug, color und projectId null zurück", async () => {
       const result = await createLabel(BASE);
       expect(result).toEqual({
         id:        "l-uuid",
         name:      "Bug",
+        slug:      "bug",
         color:     "#ef4444",
         projectId: null,
       });
+    });
+
+    it("generiert einen Slug aus dem Namen", async () => {
+      await createLabel({ ...BASE, name: "Tech Debt" });
+      const call = mockLabelCreate.mock.calls[0][0] as any;
+      expect(call.data.slug).toBe("tech-debt");
+    });
+
+    it("hängt einen Zähler an wenn der Slug bereits existiert", async () => {
+      mockLabelFindUnique
+        .mockResolvedValueOnce({ id: "existing" }) // "bug" taken
+        .mockResolvedValueOnce(null);              // "bug-2" free
+      await createLabel(BASE);
+      const call = mockLabelCreate.mock.calls[0][0] as any;
+      expect(call.data.slug).toBe("bug-2");
     });
 
     it("ruft revalidatePath auf", async () => {

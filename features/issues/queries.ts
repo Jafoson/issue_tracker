@@ -69,7 +69,7 @@ export const getLabels = cache(async (workspaceId: string): Promise<Label[]> => 
     where: { workspaceId },
     orderBy: { name: "asc" },
   });
-  return rows.map((l) => ({ id: l.id, name: l.name, color: l.color, projectId: l.projectId ?? null }));
+  return rows.map((l) => ({ id: l.id, name: l.name, slug: l.slug, color: l.color, projectId: l.projectId ?? null }));
 });
 
 export const getStatuses = cache(async (workspaceId: string): Promise<Status[]> => {
@@ -128,10 +128,31 @@ export async function getIssuesByProject(
     label?: string; q?: string;
   } = {},
 ): Promise<Issue[]> {
-  const statuses   = filters.status?.split(",").filter(Boolean)              ?? [];
-  const priorities = filters.priority?.split(",").map(Number).filter((n) => !isNaN(n)) ?? [];
-  const assignees  = filters.assignee?.split(",").filter(Boolean)            ?? [];
-  const labels     = filters.label?.split(",").filter(Boolean)               ?? [];
+  // URL filter values are human-readable slugs — resolve them to the internal
+  // values stored on the issue (status slug == status id, so it needs no lookup).
+  const statuses     = filters.status?.split(",").filter(Boolean)   ?? [];
+  const prioritySlugs = filters.priority?.split(",").filter(Boolean) ?? [];
+  const assigneeSlugs = filters.assignee?.split(",").filter(Boolean) ?? [];
+  const labelSlugs    = filters.label?.split(",").filter(Boolean)    ?? [];
+
+  const [priorityRows, assigneeRows, labelRows] = await Promise.all([
+    prioritySlugs.length
+      ? db.priority.findMany({ where: { key: { in: prioritySlugs } }, select: { id: true } })
+      : Promise.resolve([]),
+    assigneeSlugs.length
+      ? db.user.findMany({ where: { handle: { in: assigneeSlugs } }, select: { id: true } })
+      : Promise.resolve([]),
+    labelSlugs.length
+      ? db.label.findMany({
+          where: { slug: { in: labelSlugs }, workspace: { projects: { some: { id: projectId } } } },
+          select: { id: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const priorities = priorityRows.map((p) => p.id);
+  const assignees  = assigneeRows.map((u) => u.id);
+  const labels     = labelRows.map((l) => l.id);
 
   const rows = await db.issue.findMany({
     where: {

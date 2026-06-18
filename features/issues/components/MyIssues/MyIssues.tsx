@@ -57,7 +57,7 @@ export function MyIssues({ issues }: Props) {
             const project = projects.find((p) => p.id === issue.project) ?? { prefix: "?" };
             const identifier = `${project.prefix}-${issue.key}`;
             return (
-              <div key={issue.id} className="orbit-row" onClick={() => openIssue(issue.id)}>
+              <div key={issue.id} className="orbit-row" onClick={() => openIssue(identifier)}>
                 <PriorityIcon priority={issue.priority} size={14} />
                 <StatusIcon status={issue.status} size={14} />
                 <span className="mono faint" style={{ fontSize: 11.5 }}>{identifier}</span>

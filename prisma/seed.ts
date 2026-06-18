@@ -42,15 +42,15 @@ const ROLES = [
 ];
 
 const LABELS = [
-  { id: "l1", workspaceId: WS, name: "Bug",         color: "#e5664a" },
-  { id: "l2", workspaceId: WS, name: "Feature",     color: "#6e63e6" },
-  { id: "l3", workspaceId: WS, name: "Improvement", color: "#3b9d6e" },
-  { id: "l4", workspaceId: WS, name: "Design",      color: "#cf6fb0" },
-  { id: "l5", workspaceId: WS, name: "Frontend",    color: "#3b7bd5" },
-  { id: "l6", workspaceId: WS, name: "Backend",     color: "#c2904a" },
-  { id: "l7", workspaceId: WS, name: "Tech Debt",   color: "#8a7f6b" },
-  { id: "l8", workspaceId: WS, name: "Customer",    color: "#d5733b" },
-  { id: "l9", workspaceId: WS, name: "Docs",        color: "#5aa0a0" },
+  { id: "l1", workspaceId: WS, name: "Bug",         slug: "bug",         color: "#e5664a" },
+  { id: "l2", workspaceId: WS, name: "Feature",     slug: "feature",     color: "#6e63e6" },
+  { id: "l3", workspaceId: WS, name: "Improvement", slug: "improvement", color: "#3b9d6e" },
+  { id: "l4", workspaceId: WS, name: "Design",      slug: "design",      color: "#cf6fb0" },
+  { id: "l5", workspaceId: WS, name: "Frontend",    slug: "frontend",    color: "#3b7bd5" },
+  { id: "l6", workspaceId: WS, name: "Backend",     slug: "backend",     color: "#c2904a" },
+  { id: "l7", workspaceId: WS, name: "Tech Debt",   slug: "tech-debt",   color: "#8a7f6b" },
+  { id: "l8", workspaceId: WS, name: "Customer",    slug: "customer",    color: "#d5733b" },
+  { id: "l9", workspaceId: WS, name: "Docs",        slug: "docs",        color: "#5aa0a0" },
 ];
 
 // ─── Seed Data ───────────────────────────────────────────────────────────────
