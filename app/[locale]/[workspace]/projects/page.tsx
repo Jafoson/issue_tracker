@@ -1,6 +1,6 @@
-import { getProjectsWithStats } from "@/features/projects/queries";
 import { getMembers } from "@/features/issues/queries";
 import { ProjectList } from "@/features/projects/components/ProjectList/ProjectList";
+import { getProjectsWithStats } from "@/features/projects/queries";
 
 export default async function ProjectsPage({
   params,
@@ -14,5 +14,12 @@ export default async function ProjectsPage({
   ]);
   const base = `/${locale}/${workspace}`;
 
-  return <ProjectList projects={projects} members={members} base={base} />;
+  return (
+    <ProjectList
+      projects={projects}
+      members={members}
+      base={base}
+      workspaceId={workspace}
+    />
+  );
 }

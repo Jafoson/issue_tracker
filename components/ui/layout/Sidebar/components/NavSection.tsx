@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
+import { ProjectComposer } from "@/features/projects/components/ProjectComposer/ProjectComposer";
 import { toProjectSlug } from "@/lib/slug";
 import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -31,7 +32,23 @@ export function NavSection() {
 
   return (
     <div className={styles.section}>
-      <div className="orbit-section-h">{t.settings.projects}</div>
+      <div className={styles.sectionHeader}>
+        <span className="orbit-section-h">{t.settings.projects}</span>
+        <ProjectComposer
+          workspaceId={workspace}
+          trigger={(open) => (
+            <button
+              type="button"
+              className={styles.addProject}
+              onClick={open}
+              title={t.actions.newProject}
+              aria-label={t.actions.newProject}
+            >
+              <Icon icon="lucide:plus" width={14} />
+            </button>
+          )}
+        />
+      </div>
       <div className={styles.projectList}>
         {projects.map((p) => {
           const slug = toProjectSlug(p.name);
