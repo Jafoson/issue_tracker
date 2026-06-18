@@ -102,10 +102,25 @@ describe("createWorkspace()", () => {
       expect(result).toEqual({ error: "Slug may only contain lowercase letters, numbers, and hyphens." });
     });
 
-    it("gibt Fehler zurück wenn Slug bereits vergeben ist", async () => {
-      mockWorkspaceFindUnique.mockResolvedValue({ id: "existing", name: "Existing" });
-      const result = await createWorkspace(makeFormData({ name: "My Workspace", slug: "existing" }));
-      expect(result).toEqual({ error: "That URL is already taken. Please choose another." });
+    it("hängt eine Nummer an wenn der Slug bereits vergeben ist", async () => {
+      mockWorkspaceFindUnique.mockImplementation(async ({ where }: any) =>
+        where.id === "existing" ? { id: "existing" } : null,
+      );
+      const result = await createWorkspace(
+        makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
+      );
+      expect((result as { redirectTo: string }).redirectTo).toContain("/de/w/existing1/board/");
+    });
+
+    it("zählt weiter hoch wenn auch der erste Fallback-Slug vergeben ist", async () => {
+      const taken = new Set(["existing", "existing1"]);
+      mockWorkspaceFindUnique.mockImplementation(async ({ where }: any) =>
+        taken.has(where.id) ? { id: where.id } : null,
+      );
+      const result = await createWorkspace(
+        makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
+      );
+      expect((result as { redirectTo: string }).redirectTo).toContain("/de/w/existing2/board/");
     });
   });
 

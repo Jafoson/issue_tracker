@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { createWorkspace } from "@/features/workspaces/actions";
+import { createWorkspace, suggestWorkspaceSlug } from "@/features/workspaces/actions";
 import styles from "./createWorkspaceForm.module.scss";
 
 const COLORS = [
@@ -34,7 +34,16 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
   useEffect(() => { nameRef.current?.focus(); }, []);
 
   useEffect(() => {
-    if (!slugTouched) setSlug(toSlug(name));
+    if (slugTouched) return;
+    const base = toSlug(name);
+    setSlug(base); // instant preview while we ask the server for a free slug
+    if (!base) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const free = await suggestWorkspaceSlug(base);
+      if (!cancelled) setSlug(free);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [name, slugTouched]);
 
   useEffect(() => {
