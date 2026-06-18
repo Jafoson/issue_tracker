@@ -230,13 +230,18 @@ async function main() {
   }
   console.log(`   ✓ ${TEAMS.length} teams`);
 
+  // Assign per-project keys starting at 1 (in array order) and track the
+  // highest key per project so the project counter can be persisted below.
+  const keyCounter: Record<string, number> = {};
   for (const issue of ISSUES) {
+    const projectId = projectOf[issue.id] ?? "p1";
+    const key = (keyCounter[projectId] = (keyCounter[projectId] ?? 0) + 1);
     await db.issue.upsert({
       where:  { id: issue.id },
       update: {},
       create: {
         id:          issue.id,
-        key:         issue.key,
+        key,
         title:       issue.title,
         status:      issue.status,
         priority:    issue.priority,
@@ -247,7 +252,7 @@ async function main() {
         updated:     issue.updated,
         assigneeId:  issue.assignee,
         reporterId:  issue.reporter,
-        projectId:   projectOf[issue.id] ?? "p1",
+        projectId,
       },
     });
     for (const c of issue.comments) {
@@ -257,6 +262,10 @@ async function main() {
         create: { id: c.id, body: c.body, created: c.time, issueId: issue.id, authorId: c.author },
       });
     }
+  }
+  // Persist the counter so newly created issues continue after the seed data.
+  for (const [projectId, last] of Object.entries(keyCounter)) {
+    await db.project.update({ where: { id: projectId }, data: { lastIssueKey: last } });
   }
   console.log(`   ✓ ${ISSUES.length} issues`);
 

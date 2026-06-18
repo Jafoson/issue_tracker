@@ -57,11 +57,12 @@ model WorkspaceMember {
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 model Project {
-  id          String @id
-  workspaceId String
-  name        String
-  prefix      String
-  color       String
+  id           String @id
+  workspaceId  String
+  name         String
+  prefix       String
+  color        String
+  lastIssueKey Int    @default(0)
 
   workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   issues    Issue[]

@@ -66,19 +66,17 @@ export async function createIssue(data: {
   projectId: string;
   reporterId: string;
 }) {
-  const project = await db.project.findUnique({
+  // Atomically claim the next key for this project. The counter only ever
+  // increments, so deleted keys are never reused and each key stays unique.
+  const { lastIssueKey } = await db.project.update({
     where: { id: data.projectId },
-    select: { workspaceId: true },
-  });
-  const last = await db.issue.findFirst({
-    where: { project: { workspaceId: project?.workspaceId } },
-    orderBy: { key: "desc" },
-    select: { key: true },
+    data: { lastIssueKey: { increment: 1 } },
+    select: { lastIssueKey: true },
   });
   await db.issue.create({
     data: {
       id:          uid("i"),
-      key:         (last?.key ?? 100) + 1,
+      key:         lastIssueKey,
       title:       data.title,
       description: data.description,
       status:      data.status,
