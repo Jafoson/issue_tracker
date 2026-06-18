@@ -79,6 +79,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   const combinedLabels = [...labels, ...localLabels.filter((l) => !labels.some((a) => a.id === l.id))];
   const project  = projects.find((p) => p.id === issue.project) ?? { prefix: "?", name: "?", color: "#686d76" };
   const assignee = issue.assignee ? (members.find((m) => m.id === issue.assignee) ?? null) : null;
+  const creator  = issue.reporter ? (members.find((m) => m.id === issue.reporter) ?? null) : null;
   const identifier = `${project.prefix}-${issue.key}`;
 
   const patch = (p: Parameters<typeof updateIssue>[1]) =>
@@ -241,6 +242,11 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
             <SideField label={t.fields.project}>
               <div className={styles.sideBtn} style={{ cursor: "default" }}>
                 <span className="dot" style={{ background: project.color, width: 9, height: 9 }} />{project.name}
+              </div>
+            </SideField>
+            <SideField label={t.fields.creator}>
+              <div className={styles.sideBtn} style={{ cursor: "default" }}>
+                <Avatar user={creator} size={16} />{creator?.name ?? t.fields.unassigned}
               </div>
             </SideField>
             <SideField label={t.fields.created}>
