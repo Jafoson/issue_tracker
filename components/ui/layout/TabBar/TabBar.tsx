@@ -2,55 +2,11 @@
 
 import { Icon } from "@iconify/react";
 import { useParams } from "next/navigation";
-import { toProjectSlug } from "@/lib/slug";
-import { type T, useTranslations } from "@/lib/translations-context";
+import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
-import type { Project } from "@/types";
 import styles from "./tabBar.module.scss";
+import { tabMeta } from "./tabMeta";
 import { useTabBar } from "./useTabBar";
-
-function tabTitle(
-  href: string,
-  projects: Project[],
-  t: T,
-  base: string,
-): string {
-  const m = href.match(new RegExp(`^${base}/project/([^/]+)`));
-  if (m)
-    return (
-      projects.find((p) => toProjectSlug(p.name) === m[1])?.name ?? t.nav.board
-    );
-  if (href.startsWith(`${base}/my`)) return t.nav.myIssues;
-  if (href.startsWith(`${base}/inbox`)) return t.nav.inbox;
-  if (href.startsWith(`${base}/members`)) return t.nav.members;
-  if (href.startsWith(`${base}/teams`)) return t.nav.teams;
-  if (href.startsWith(`${base}/settings`)) return t.nav.settings;
-  if (href.startsWith(`${base}/projects`)) return t.nav.projects;
-  return "Orbit";
-}
-
-function tabColor(
-  href: string,
-  projects: Project[],
-  base: string,
-): string | null {
-  const m = href.match(new RegExp(`^${base}/project/([^/]+)`));
-  if (!m) return null;
-  return projects.find((p) => toProjectSlug(p.name) === m[1])?.color ?? null;
-}
-
-function tabIcon(href: string, base: string): string {
-  if (href.includes("/project/") && href.endsWith("/list"))
-    return "lucide:list";
-  if (href.includes("/project/")) return "lucide:layout-dashboard";
-  if (href.startsWith(`${base}/my`)) return "lucide:user";
-  if (href.startsWith(`${base}/inbox`)) return "lucide:inbox";
-  if (href.startsWith(`${base}/members`)) return "lucide:users";
-  if (href.startsWith(`${base}/teams`)) return "lucide:users-2";
-  if (href.startsWith(`${base}/settings`)) return "lucide:settings";
-  if (href.startsWith(`${base}/projects`)) return "lucide:folders";
-  return "lucide:layout-dashboard";
-}
 
 export function TabBar() {
   const { locale, workspace } = useParams<{
@@ -72,18 +28,7 @@ export function TabBar() {
     <div className={styles.bar}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeId;
-        // Strip the query string — tab.href carries filters (?status=…), but the
-        // title/color/icon are derived from the path only.
-        const path = tab.href.split("?")[0];
-        const color = tabColor(path, projects, base);
-        const icon = color ? null : tabIcon(path, base);
-
-        // List ("Aufgaben") view of a project → "Projektname (Aufgaben)" to set
-        // it apart from the board tab, which shows the bare project name.
-        let title = tabTitle(path, projects, t, base);
-        if (path.includes("/project/") && path.endsWith("/list")) {
-          title = `${title} (${t.nav.issues})`;
-        }
+        const { title, color, icon } = tabMeta(tab.href, projects, t, base);
 
         return (
           <div
