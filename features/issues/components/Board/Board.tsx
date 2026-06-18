@@ -156,7 +156,9 @@ export function Board({ issues, projectId }: BoardProps) {
                 style={{ marginLeft: "auto" }}
                 title={t.actions.newIssue}
                 onClick={() =>
-                  (window as { __openComposer?: () => void }).__openComposer?.()
+                  (
+                    window as { __openComposer?: (status?: string) => void }
+                  ).__openComposer?.(s.id)
                 }
               >
                 <Icon icon="lucide:plus" width={15} />
@@ -192,7 +194,9 @@ export function Board({ issues, projectId }: BoardProps) {
                 className={styles.addCard}
                 title={t.actions.newIssue}
                 onClick={() =>
-                  (window as { __openComposer?: () => void }).__openComposer?.()
+                  (
+                    window as { __openComposer?: (status?: string) => void }
+                  ).__openComposer?.(s.id)
                 }
               >
                 <Icon icon="lucide:plus" width={15} />

@@ -32,6 +32,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
   const pathname = usePathname();
   const { locale } = useParams<{ locale: string }>();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [composerStatus, setComposerStatus] = useState<string | undefined>(undefined);
   const [paletteOpen, setPaletteOpen]   = useState(false);
 
   async function handleLogout() {
@@ -42,10 +43,13 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
   const issueRef = searchParams.get("issue");
 
   useEffect(() => {
-    (window as { __openComposer?: () => void }).__openComposer = () => setComposerOpen(true);
+    (window as { __openComposer?: (status?: string) => void }).__openComposer = (status?: string) => {
+      setComposerStatus(status);
+      setComposerOpen(true);
+    };
     (window as { __openPalette?:  () => void }).__openPalette  = () => setPaletteOpen(true);
     return () => {
-      delete (window as { __openComposer?: () => void }).__openComposer;
+      delete (window as { __openComposer?: (status?: string) => void }).__openComposer;
       delete (window as { __openPalette?:  () => void }).__openPalette;
     };
   }, []);
@@ -53,7 +57,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setPaletteOpen((o) => !o); }
-      if ((e.metaKey || e.ctrlKey) && e.key === "i") { e.preventDefault(); setComposerOpen(true); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "i") { e.preventDefault(); setComposerStatus(undefined); setComposerOpen(true); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -67,7 +71,7 @@ function Shell({ children, workspace }: { children: React.ReactNode; workspace: 
         <div className={styles.content}>{children}</div>
       </div>
       {issueRef && <IssueDetail id={issueRef} onClose={() => router.back()} />}
-      <IssueComposer open={composerOpen} onClose={() => setComposerOpen(false)} />
+      <IssueComposer open={composerOpen} initialStatus={composerStatus} onClose={() => setComposerOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <Toast />
     </div>

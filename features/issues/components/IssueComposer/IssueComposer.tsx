@@ -20,10 +20,11 @@ import styles from "./issueComposer.module.scss";
 
 interface IssueComposerProps {
   open: boolean;
+  initialStatus?: string;
   onClose: () => void;
 }
 
-export function IssueComposer({ open, onClose }: IssueComposerProps) {
+export function IssueComposer({ open, initialStatus, onClose }: IssueComposerProps) {
 
   const { members, projects, labels: allLabels, statuses, priorities, me, workspace } = useWorkspace();
   const t = useTranslations();
@@ -57,7 +58,7 @@ export function IssueComposer({ open, onClose }: IssueComposerProps) {
 
   useEffect(() => {
     if (open) {
-      setTitle(""); setDescription(""); setStatus("todo");
+      setTitle(""); setDescription(""); setStatus(initialStatus ?? "todo");
       setPriority(0); setAssignee(null); setLabels([]); setLocalLabels([]); setSelectedProjectId(defaultProjectId); setExpanded(false);
       setTimeout(() => titleRef.current?.focus(), 50);
     }
