@@ -1,29 +1,25 @@
 "use client";
-import { useTranslations } from "@/lib/translations-context";
-
+import { Icon } from "@iconify/react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useOptimistic, useRef, useState, useTransition } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import { reorderIssue } from "@/features/issues/actions";
 import { BoardCard } from "@/features/issues/components/BoardCard/BoardCard";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { Icon } from "@iconify/react";
-import { Badge } from "@/components/ui/atoms/Badge/Badge";
-
+import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
-
-import { reorderIssue } from "@/features/issues/actions";
 import type { Issue } from "@/types";
 import styles from "./board.module.scss";
 
 interface BoardProps {
-  issues:    Issue[];
+  issues: Issue[];
   projectId: string;
 }
 
 // rank=0 means "not yet ranked" — use created timestamp as effective rank
-const erank = (i: Issue) => i.rank !== 0 ? i.rank : i.created;
+const erank = (i: Issue) => (i.rank !== 0 ? i.rank : i.created);
 
 export function Board({ issues, projectId }: BoardProps) {
-
   const { statuses, projects } = useWorkspace();
   const t = useTranslations();
   const columnStatuses = statuses.filter((s) => s.isColumn);
@@ -33,20 +29,22 @@ export function Board({ issues, projectId }: BoardProps) {
   const [, startTransition] = useTransition();
 
   // State only for rendering the drop indicator
-  const [dragging,     setDragging]     = useState<string | null>(null);
-  const [overCol,      setOverCol]      = useState<string | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [overCol, setOverCol] = useState<string | null>(null);
   const [dragOverCard, setDragOverCard] = useState<string | null>(null);
-  const [insertAbove,  setInsertAbove]  = useState(false);
+  const [insertAbove, setInsertAbove] = useState(false);
 
   // Refs for use inside event handlers — always up-to-date, no stale closure
-  const dragIssueRef    = useRef<Issue | null>(null);
+  const dragIssueRef = useRef<Issue | null>(null);
   const dragOverCardRef = useRef<string | null>(null);
-  const insertAboveRef  = useRef(false);
+  const insertAboveRef = useRef(false);
 
   const [optimisticIssues, addOptimistic] = useOptimistic(
     issues,
-    (state, { id, status, rank }: { id: string; status: string; rank: number }) =>
-      state.map((i) => (i.id === id ? { ...i, status, rank } : i)),
+    (
+      state,
+      { id, status, rank }: { id: string; status: string; rank: number },
+    ) => state.map((i) => (i.id === id ? { ...i, status, rank } : i)),
   );
 
   const sortedByRank = (list: Issue[]) =>
@@ -70,13 +68,13 @@ export function Board({ issues, projectId }: BoardProps) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const above = e.clientY < rect.top + rect.height / 2;
     dragOverCardRef.current = cardId;
-    insertAboveRef.current  = above;
+    insertAboveRef.current = above;
     setDragOverCard(cardId);
     setInsertAbove(above);
   };
 
   const clearDragState = () => {
-    dragIssueRef.current    = null;
+    dragIssueRef.current = null;
     dragOverCardRef.current = null;
     setDragging(null);
     setOverCol(null);
@@ -90,10 +88,14 @@ export function Board({ issues, projectId }: BoardProps) {
 
     // Only use dragOverCard if it belongs to the target column
     const colIssues = sortedByRank(
-      optimisticIssues.filter((i) => i.status === statusId && i.id !== issue.id),
+      optimisticIssues.filter(
+        (i) => i.status === statusId && i.id !== issue.id,
+      ),
     );
     const overCardId = dragOverCardRef.current;
-    const overIdx    = overCardId ? colIssues.findIndex((i) => i.id === overCardId) : -1;
+    const overIdx = overCardId
+      ? colIssues.findIndex((i) => i.id === overCardId)
+      : -1;
 
     let rank: number;
     if (overIdx !== -1) {
@@ -122,13 +124,18 @@ export function Board({ issues, projectId }: BoardProps) {
   return (
     <div className={styles.board}>
       {columnStatuses.map((s) => {
-        const colIssues = sortedByRank(optimisticIssues.filter((i) => i.status === s.id));
-        const isOver    = overCol === s.id;
+        const colIssues = sortedByRank(
+          optimisticIssues.filter((i) => i.status === s.id),
+        );
+        const isOver = overCol === s.id;
         return (
           <div
             key={s.id}
             className={`orbit-col${isOver ? " drag-over" : ""}`}
-            onDragOver={(e) => { e.preventDefault(); setOverCol(s.id); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOverCol(s.id);
+            }}
             onDrop={(e) => onDrop(e, s.id)}
             onDragLeave={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -141,12 +148,16 @@ export function Board({ issues, projectId }: BoardProps) {
             <div className={styles.colHeader}>
               <StatusIcon status={s.id} size={16} />
               <span className={styles.colTitle}>{s.name}</span>
-              <Badge mono size="sm">{colIssues.length}</Badge>
+              <Badge mono size="sm">
+                {colIssues.length}
+              </Badge>
               <button
                 className="iconbtn"
                 style={{ marginLeft: "auto" }}
                 title={t.actions.newIssue}
-                onClick={() => (window as { __openComposer?: () => void }).__openComposer?.()}
+                onClick={() =>
+                  (window as { __openComposer?: () => void }).__openComposer?.()
+                }
               >
                 <Icon icon="lucide:plus" width={15} />
               </button>
@@ -154,10 +165,13 @@ export function Board({ issues, projectId }: BoardProps) {
 
             <div className={styles.cards}>
               {colIssues.map((issue) => {
-                const isCardOver = dragOverCard === issue.id && dragging !== issue.id;
+                const isCardOver =
+                  dragOverCard === issue.id && dragging !== issue.id;
                 return (
                   <React.Fragment key={issue.id}>
-                    {isCardOver && insertAbove  && <div className={styles.dropIndicator} />}
+                    {isCardOver && insertAbove && (
+                      <div className={styles.dropIndicator} />
+                    )}
                     <BoardCard
                       issue={issue}
                       projectId={projectId}
@@ -167,13 +181,23 @@ export function Board({ issues, projectId }: BoardProps) {
                       onDragOver={(e) => onCardDragOver(e, issue.id)}
                       onClick={() => openIssue(issue)}
                     />
-                    {isCardOver && !insertAbove && <div className={styles.dropIndicator} />}
+                    {isCardOver && !insertAbove && (
+                      <div className={styles.dropIndicator} />
+                    )}
                   </React.Fragment>
                 );
               })}
-              {colIssues.length === 0 && (
-                <div className={styles.empty}>{t.empty.noIssues}</div>
-              )}
+              <button
+                type="button"
+                className={styles.addCard}
+                title={t.actions.newIssue}
+                onClick={() =>
+                  (window as { __openComposer?: () => void }).__openComposer?.()
+                }
+              >
+                <Icon icon="lucide:plus" width={15} />
+                <span>{t.actions.newIssue}</span>
+              </button>
             </div>
           </div>
         );
