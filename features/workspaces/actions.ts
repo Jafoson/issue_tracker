@@ -16,7 +16,7 @@ async function uniqueWorkspaceSlug(base: string): Promise<string> {
   const root = base || "workspace";
   let slug = root;
   let n = 0;
-  while (await db.workspace.findUnique({ where: { id: slug }, select: { id: true } })) {
+  while (await db.workspace.findUnique({ where: { slug }, select: { id: true } })) {
     slug = `${root}${++n}`;
   }
   return slug;
@@ -52,7 +52,7 @@ export async function createWorkspace(formData: FormData): Promise<WorkspaceResu
 
   try {
     await db.$transaction(async (tx) => {
-      await tx.workspace.create({ data: { id: finalSlug, name, color } });
+      await tx.workspace.create({ data: { id: finalSlug, slug: finalSlug, name, color } });
 
       await tx.workspaceStatus.createMany({
         data: DEFAULT_STATUSES.map((s) => ({ workspaceId: finalSlug, statusId: s.id })),

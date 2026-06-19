@@ -139,7 +139,7 @@ async function main() {
   await db.workspace.upsert({
     where: { id: WS },
     update: { name: "Nimbus" },
-    create: { id: WS, name: "Nimbus", color: "#6e63e6" },
+    create: { id: WS, name: "Nimbus", color: "#6e63e6", slug: "nimbus" },
   });
   console.log("   ✓ 1 workspace");
 

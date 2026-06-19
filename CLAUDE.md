@@ -83,6 +83,35 @@ export const db = globalForPrisma.prisma ?? new PrismaClient()
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db
 ```
 
+### Schema ändern — Pflicht-Checkliste
+
+**Immer alle drei Schritte ausführen, nie nur einen:**
+
+```
+1. prisma/schema.prisma  anpassen
+2. bun prisma migrate dev --name <beschreibung>   ← erstellt Migration + regeneriert Client
+3. Seed und alle Server Actions/Queries prüfen    ← neue Pflichtfelder überall ergänzen
+```
+
+**Warum alle drei?**
+- Schritt 1 allein → Client und DB sind out of sync, Laufzeitfehler
+- Schritt 2 allein (ohne 1) → keine Migration, DB fehlt das Feld
+- Schritt 3 vergessen → Seed schlägt fehl, `bun db:reset` bricht ab
+
+**Feld hinzufügen (NOT NULL ohne Default):**
+```sql
+-- In der generierten migration.sql ergänzen, BEVOR migrate deploy läuft:
+ALTER TABLE "Model" ADD COLUMN "feld" TEXT;
+UPDATE "Model" SET "feld" = <backfill>;          -- bestehende Zeilen befüllen
+ALTER TABLE "Model" ALTER COLUMN "feld" SET NOT NULL;
+```
+Prisma erzeugt für NOT-NULL-Spalten ohne Default kein valides SQL für existierende Daten.
+Die Migration manuell um den Backfill-Schritt erweitern.
+
+**Migrations-Verzeichnis niemals leer lassen:**
+Ein Ordner in `prisma/migrations/` ohne `migration.sql` bricht `migrate deploy` ab (Error P3015).
+Entweder die Datei erstellen oder das leere Verzeichnis löschen.
+
 ## Verzeichnisstruktur
 
 ```

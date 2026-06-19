@@ -10,8 +10,9 @@ datasource db {
 // ─── Workspace ────────────────────────────────────────────────────────────────
 
 model Workspace {
-  id    String @id  // = URL slug, e.g. "nimbus"
+  id    String @id
   name  String
+  slug  String @unique
   color String @default("#6e63e6")
 
   members    WorkspaceMember[]
