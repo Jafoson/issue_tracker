@@ -10,10 +10,15 @@ datasource db {
 // ─── Workspace ────────────────────────────────────────────────────────────────
 
 model Workspace {
-  id    String @id
-  name  String
-  slug  String @unique
-  color String @default("#6e63e6")
+  id        String   @id
+  name      String
+  slug      String   @unique
+  color     String   @default("#6e63e6")
+  // Plattform-Ebene: ein Workspace = ein Tenant. `suspended` deaktiviert den
+  // Zugriff ohne Löschen (vom Plattform-Admin gesetzt). `createdAt` für die
+  // Tenant-Übersicht im Admin-Panel.
+  suspended Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   members    WorkspaceMember[]
   projects   Project[]
@@ -34,6 +39,9 @@ model User {
   email        String  @unique
   color        String
   passwordHash String?
+  // Globale Plattform-Ebene über allen Workspaces (SaaS-Betreiber). Gibt KEINEN
+  // Zugriff auf Tenant-Inhalte — nur auf Plattform-Operationen (siehe lib/platform.ts).
+  isPlatformAdmin Boolean @default(false)
 
   workspaces         WorkspaceMember[]
   assignedIssues     Issue[]         @relation("IssueAssignee")

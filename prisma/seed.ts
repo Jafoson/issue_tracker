@@ -10,6 +10,11 @@ const db = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const WS = "nimbus";
 
+// Bootstrap: erster Plattform-Admin (SaaS-Betreiber-Ebene über allen Workspaces).
+// u1 (Mara) wird global zum Plattform-Admin ernannt. Hat keinen Durchgriff auf
+// Tenant-Inhalte, nur auf Plattform-Operationen (siehe lib/platform.ts).
+const PLATFORM_ADMIN_IDS = new Set(["u1"]);
+
 // ─── Workspace Config ─────────────────────────────────────────────────────────
 
 const STATUSES = [
@@ -822,13 +827,14 @@ async function main() {
     const id = ref(realUserId, u.id, "user");
     await db.user.upsert({
       where: { id },
-      update: {},
+      update: { isPlatformAdmin: PLATFORM_ADMIN_IDS.has(u.id) },
       create: {
         id,
         name: u.name,
         handle: u.handle,
         email: u.email,
         color: u.color,
+        isPlatformAdmin: PLATFORM_ADMIN_IDS.has(u.id),
       },
     });
   }

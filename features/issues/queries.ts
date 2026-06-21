@@ -59,8 +59,12 @@ function mapIssue(i: {
 // ── Cached queries (deduplicated per request) ─────────────────────────────────
 
 export const getWorkspace = cache(async (id: string) => {
-  return db.workspace.findUnique({
-    where: { id },
+  // Gesperrte Workspaces (vom Plattform-Admin suspendiert) sind für den normalen
+  // App-Zugriff nicht auffindbar → die Layouts behandeln sie via notFound().
+  // Das Plattform-Admin-Panel nutzt eine eigene Query (features/platform), die
+  // suspendierte Tenants weiterhin sieht.
+  return db.workspace.findFirst({
+    where: { id, suspended: false },
     select: { id: true, name: true, color: true },
   });
 });
