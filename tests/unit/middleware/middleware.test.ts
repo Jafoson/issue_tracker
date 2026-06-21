@@ -1,17 +1,19 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 mock.module("jose", () => ({
   jwtVerify: mock(),
 }));
 
 mock.module("@/lib/session-secret", () => ({
-  sessionSecret: new TextEncoder().encode("test-secret-minimum-32-chars-long!!"),
+  sessionSecret: new TextEncoder().encode(
+    "test-secret-minimum-32-chars-long!!",
+  ),
 }));
 
-import { middleware } from "@/middleware";
 import { jwtVerify } from "jose";
+import { middleware } from "@/middleware";
 
-const mockJwtVerify = jwtVerify as any;
+const mockJwtVerify = jwtVerify as ReturnType<typeof mock>;
 
 function makeRequest(path: string, options?: { cookie?: string }) {
   const headers: Record<string, string> = {};
@@ -48,14 +50,18 @@ describe("middleware()", () => {
 
     it("leitet weiter wenn Session-Token ungültig ist", async () => {
       mockJwtVerify.mockRejectedValue(new Error("Invalid token"));
-      const response = await middleware(makeRequest("/de/dashboard", { cookie: "session=invalid-token" }));
+      const response = await middleware(
+        makeRequest("/de/dashboard", { cookie: "session=invalid-token" }),
+      );
       expect(response.status).toBe(307);
       expect(response.headers.get("Location")).toContain("/de/login");
     });
 
     it("leitet weiter wenn Session-Token abgelaufen ist", async () => {
       mockJwtVerify.mockRejectedValue(new Error("JWTExpired"));
-      const response = await middleware(makeRequest("/de/workspace", { cookie: "session=expired-token" }));
+      const response = await middleware(
+        makeRequest("/de/workspace", { cookie: "session=expired-token" }),
+      );
       expect(response.status).toBe(307);
     });
   });
@@ -83,12 +89,16 @@ describe("middleware()", () => {
     });
 
     it("lässt geschützte Route mit gültiger Session durch", async () => {
-      const response = await middleware(makeRequest("/de/myworkspace/board", { cookie: "session=valid-token" }));
+      const response = await middleware(
+        makeRequest("/de/myworkspace/board", { cookie: "session=valid-token" }),
+      );
       expect(response.status).toBe(200);
     });
 
     it("ruft jwtVerify mit dem Session-Token auf", async () => {
-      await middleware(makeRequest("/de/workspace", { cookie: "session=my-token" }));
+      await middleware(
+        makeRequest("/de/workspace", { cookie: "session=my-token" }),
+      );
       expect(mockJwtVerify).toHaveBeenCalledWith("my-token", expect.anything());
     });
   });

@@ -1,8 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 import {
-  getWorkspace, getUserWorkspaces, getProjects, getMembers, getLabels, getSearchIssues,
-  getStatuses, getPriorities, getIssueTypes, getRoles,
+  getIssueTypes,
+  getLabels,
+  getMembers,
+  getPriorities,
+  getProjects,
+  getRoles,
+  getSearchIssues,
+  getStatuses,
+  getUserWorkspaces,
+  getWorkspace,
 } from "@/features/issues/queries";
 import { getStaticMessages, hasLocale } from "@/lib/i18n";
 import { getSession } from "@/lib/session";
@@ -25,7 +33,18 @@ export default async function AppLayout({
   const ws = await getWorkspace(workspaceId);
   if (!ws) notFound();
 
-  const [projects, members, labels, searchIssues, statuses, priorities, issueTypes, roles, userWorkspaces, messages] = await Promise.all([
+  const [
+    projects,
+    members,
+    labels,
+    searchIssues,
+    statuses,
+    priorities,
+    issueTypes,
+    roles,
+    userWorkspaces,
+    messages,
+  ] = await Promise.all([
     getProjects(workspaceId),
     getMembers(workspaceId),
     getLabels(workspaceId),
@@ -38,11 +57,29 @@ export default async function AppLayout({
     getStaticMessages(locale),
   ]);
 
-  const me = members.find((m) => m.id === session.userId) ?? members.find((m) => m.role === "admin") ?? members[0];
+  const me =
+    members.find((m) => m.id === session.userId) ??
+    members.find((m) => m.role === "admin") ??
+    members[0];
   if (!me) redirect(`/${locale}/login`);
 
   return (
-    <AppShell messages={messages} workspace={{ workspace: ws, userWorkspaces, me, members, projects, labels, statuses, priorities, issueTypes, roles, searchIssues }}>
+    <AppShell
+      messages={messages}
+      workspace={{
+        workspace: ws,
+        userWorkspaces,
+        me,
+        members,
+        projects,
+        labels,
+        statuses,
+        priorities,
+        issueTypes,
+        roles,
+        searchIssues,
+      }}
+    >
       {children}
     </AppShell>
   );

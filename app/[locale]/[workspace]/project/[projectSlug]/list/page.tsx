@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { getIssuesByProject, getProjects } from "@/features/issues/queries";
 import { ListView } from "@/features/issues/components/ListView/ListView";
+import { getIssuesByProject, getProjects } from "@/features/issues/queries";
 
 export const dynamic = "force-dynamic";
 

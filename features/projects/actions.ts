@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { hasPermission } from "@/lib/permissions";
 import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/utils/id";
@@ -61,17 +62,11 @@ export async function createProject(data: {
   const name = data.name.trim();
   if (!name) return { error: "Name is required." };
 
-  const member = await db.workspaceMember.findUnique({
-    where: {
-      workspaceId_userId: {
-        workspaceId: data.workspaceId,
-        userId: session.userId,
-      },
-    },
-    select: { pending: true },
+  const allowed = await hasPermission("workspace.project.create", {
+    workspaceId: data.workspaceId,
   });
-  if (!member || member.pending)
-    return { error: "You are not a member of this workspace." };
+  if (!allowed)
+    return { error: "You are not allowed to create projects here." };
 
   const desired =
     (data.prefix?.trim() || basePrefix(name))

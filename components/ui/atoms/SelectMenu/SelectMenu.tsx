@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/atoms/Input/Input";
 
 interface SelectItem {
@@ -44,9 +44,7 @@ export function SelectMenu({
   );
 
   const isSel = (v: string | number | null) =>
-    multi
-      ? (value as (string | number | null)[]).includes(v)
-      : value === v;
+    multi ? (value as (string | number | null)[]).includes(v) : value === v;
 
   return (
     <>
@@ -63,7 +61,8 @@ export function SelectMenu({
       )}
       <div style={{ maxHeight: 280, overflowY: "auto", margin: "0 -1px" }}>
         {filtered.map((it) => (
-          <div
+          <button
+            type="button"
             key={String(it.value)}
             className={`menu-item${isSel(it.value) ? " active" : ""}`}
             onClick={() => {
@@ -72,18 +71,26 @@ export function SelectMenu({
             }}
           >
             {it.icon}
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{it.label}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+              {it.label}
+            </span>
             {it.hint && (
-              <span className="faint" style={{ marginLeft: "auto", fontSize: 12 }}>
+              <span
+                className="faint"
+                style={{ marginLeft: "auto", fontSize: 12 }}
+              >
                 {it.hint}
               </span>
             )}
             {isSel(it.value) && (
-              <span className="check" style={{ marginLeft: it.hint ? 8 : "auto" }}>
+              <span
+                className="check"
+                style={{ marginLeft: it.hint ? 8 : "auto" }}
+              >
                 <Icon icon="lucide:check" width={15} />
               </span>
             )}
-          </div>
+          </button>
         ))}
         {filtered.length === 0 && (
           <div className="menu-item faint" style={{ cursor: "default" }}>

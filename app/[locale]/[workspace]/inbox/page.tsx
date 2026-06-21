@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
+import { Inbox } from "@/features/issues/components/Inbox/Inbox";
 import { getInboxIssues } from "@/features/issues/queries";
 import { getSession } from "@/lib/session";
-import { Inbox } from "@/features/issues/components/Inbox/Inbox";
 
 export const dynamic = "force-dynamic";
 

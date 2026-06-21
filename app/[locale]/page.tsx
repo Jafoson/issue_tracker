@@ -1,8 +1,7 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { hasLocale } from "@/lib/i18n";
-import { notFound } from "next/navigation";
+import { getSession } from "@/lib/session";
 
 export default async function LocaleRootPage({
   params,
@@ -15,7 +14,10 @@ export default async function LocaleRootPage({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const user = await db.user.findUnique({ where: { id: session.userId }, select: { id: true } });
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { id: true },
+  });
   if (!user) redirect(`/api/logout?to=/${locale}/login`);
 
   const membership = await db.workspaceMember.findFirst({

@@ -1,13 +1,13 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockProjectFindUnique = mock();
-const mockProjectCreate     = mock();
+const mockProjectCreate = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
-    project:         { findUnique: mockProjectFindUnique, create: mockProjectCreate },
+    project: { findUnique: mockProjectFindUnique, create: mockProjectCreate },
     workspaceMember: { findUnique: mock() },
   },
 }));
@@ -16,18 +16,25 @@ mock.module("@/lib/session", () => ({
   getSession: mock(),
 }));
 
+const mockHasPermission = mock();
+mock.module("@/lib/permissions", () => ({
+  hasPermission: mockHasPermission,
+}));
+
 mock.module("next/cache", () => ({
   revalidatePath: mock(),
 }));
 
 import { createProject } from "@/features/projects/actions";
-import { db }            from "@/lib/db";
-import { getSession }    from "@/lib/session";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
 
-const mockGetSession        = getSession        as ReturnType<typeof mock>;
-const mockFindUnique        = db.project.findUnique as ReturnType<typeof mock>;
-const mockCreate            = db.project.create    as ReturnType<typeof mock>;
-const mockMemberFindUnique  = db.workspaceMember.findUnique as ReturnType<typeof mock>;
+const mockGetSession = getSession as ReturnType<typeof mock>;
+const mockFindUnique = db.project.findUnique as ReturnType<typeof mock>;
+const mockCreate = db.project.create as ReturnType<typeof mock>;
+const mockMemberFindUnique = db.workspaceMember.findUnique as ReturnType<
+  typeof mock
+>;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -42,6 +49,8 @@ function reset() {
 
   mockGetSession.mockResolvedValue({ userId: "u1" });
   mockMemberFindUnique.mockResolvedValue(MEMBER);
+  mockHasPermission.mockReset();
+  mockHasPermission.mockResolvedValue(true); // allowed by default
   mockFindUnique.mockResolvedValue(null); // no conflicts by default
   mockCreate.mockResolvedValue({});
 }
@@ -76,16 +85,16 @@ describe("createProject() — Slug-Generierung", () => {
     // First call (slug "fuchsly") → taken; second call ("fuchsly-1") → free.
     mockFindUnique
       .mockResolvedValueOnce({ id: "p-existing" }) // prefix check (free)
-      .mockResolvedValueOnce(null)                  // prefix uniqueness done
+      .mockResolvedValueOnce(null) // prefix uniqueness done
       .mockResolvedValueOnce({ id: "p-existing" }) // slug "fuchsly" taken
-      .mockResolvedValueOnce(null);                 // slug "fuchsly-1" free
+      .mockResolvedValueOnce(null); // slug "fuchsly-1" free
 
     // Reset to simpler mock: only slug uniqueness matters here.
     mockFindUnique.mockReset();
     mockFindUnique
-      .mockResolvedValueOnce(null)                 // prefix "FUCH" free
+      .mockResolvedValueOnce(null) // prefix "FUCH" free
       .mockResolvedValueOnce({ id: "p-existing" }) // slug "fuchsly" taken
-      .mockResolvedValueOnce(null);                // slug "fuchsly-1" free
+      .mockResolvedValueOnce(null); // slug "fuchsly-1" free
 
     await createProject({ workspaceId: WS, name: "Fuchsly", color: "#fff" });
 
@@ -95,10 +104,10 @@ describe("createProject() — Slug-Generierung", () => {
 
   it("zählt weiter hoch wenn auch fuchsly-1 vergeben ist", async () => {
     mockFindUnique
-      .mockResolvedValueOnce(null)                  // prefix free
-      .mockResolvedValueOnce({ id: "p1" })          // slug "fuchsly" taken
-      .mockResolvedValueOnce({ id: "p2" })          // slug "fuchsly-1" taken
-      .mockResolvedValueOnce(null);                 // slug "fuchsly-2" free
+      .mockResolvedValueOnce(null) // prefix free
+      .mockResolvedValueOnce({ id: "p1" }) // slug "fuchsly" taken
+      .mockResolvedValueOnce({ id: "p2" }) // slug "fuchsly-1" taken
+      .mockResolvedValueOnce(null); // slug "fuchsly-2" free
 
     await createProject({ workspaceId: WS, name: "Fuchsly", color: "#fff" });
 
@@ -116,9 +125,9 @@ describe("createProject() — Slug-Generierung", () => {
     mockCreate.mockClear();
     mockFindUnique.mockReset();
     mockFindUnique
-      .mockResolvedValueOnce(null)           // prefix free
+      .mockResolvedValueOnce(null) // prefix free
       .mockResolvedValueOnce({ id: "p-1" }) // slug "orbit" taken
-      .mockResolvedValueOnce(null);          // slug "orbit-1" free
+      .mockResolvedValueOnce(null); // slug "orbit-1" free
 
     await createProject({ workspaceId: WS, name: "Orbit", color: "#fff" });
     const second = mockCreate.mock.calls[0]?.[0]?.data;
@@ -133,25 +142,39 @@ describe("createProject() — Fehlerbehandlung", () => {
 
   it("gibt Fehler zurück wenn der User nicht eingeloggt ist", async () => {
     mockGetSession.mockResolvedValue(null);
-    const result = await createProject({ workspaceId: WS, name: "X", color: "#fff" });
+    const result = await createProject({
+      workspaceId: WS,
+      name: "X",
+      color: "#fff",
+    });
     expect(result).toEqual({ error: "You must be logged in." });
   });
 
   it("gibt Fehler zurück wenn der Name leer ist", async () => {
-    const result = await createProject({ workspaceId: WS, name: "   ", color: "#fff" });
+    const result = await createProject({
+      workspaceId: WS,
+      name: "   ",
+      color: "#fff",
+    });
     expect(result).toEqual({ error: "Name is required." });
   });
 
-  it("gibt Fehler zurück wenn der User kein Mitglied ist", async () => {
-    mockMemberFindUnique.mockResolvedValue(null);
-    const result = await createProject({ workspaceId: WS, name: "X", color: "#fff" });
-    expect(result).toEqual({ error: "You are not a member of this workspace." });
+  it("gibt Fehler zurück wenn der User keine Berechtigung hat", async () => {
+    mockHasPermission.mockResolvedValue(false);
+    const result = await createProject({
+      workspaceId: WS,
+      name: "X",
+      color: "#fff",
+    });
+    expect(result).toEqual({
+      error: "You are not allowed to create projects here.",
+    });
   });
 
-  it("gibt Fehler zurück wenn das Mitglied noch ausstehend ist", async () => {
-    mockMemberFindUnique.mockResolvedValue({ pending: true });
-    const result = await createProject({ workspaceId: WS, name: "X", color: "#fff" });
-    expect(result).toEqual({ error: "You are not a member of this workspace." });
+  it("legt kein Projekt an wenn die Berechtigung fehlt", async () => {
+    mockHasPermission.mockResolvedValue(false);
+    await createProject({ workspaceId: WS, name: "X", color: "#fff" });
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 });
 
@@ -165,7 +188,12 @@ describe("createProject() — Prefix-Generierung", () => {
   });
 
   it("nutzt einen explizit übergebenen Prefix", async () => {
-    await createProject({ workspaceId: WS, name: "Platform", prefix: "PLT", color: "#fff" });
+    await createProject({
+      workspaceId: WS,
+      name: "Platform",
+      prefix: "PLT",
+      color: "#fff",
+    });
     const created = mockCreate.mock.calls[0]?.[0]?.data;
     expect(created?.prefix).toBe("PLT");
   });

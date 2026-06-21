@@ -1,45 +1,53 @@
 "use client";
-import { useTranslations } from "@/lib/translations-context";
-
-import { useTransition } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Icon } from "@iconify/react";
-import { Button } from "@/components/ui/atoms/Button/Button";
+import { useParams, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
-import { Label } from "@/components/ui/atoms/Label/Label";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
+import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-
+import { removeMember, setMemberRole } from "@/features/issues/actions";
+import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
-
-import { setMemberRole, removeMember } from "@/features/issues/actions";
-import type { User, Team } from "@/types";
+import type { Team, User } from "@/types";
 import styles from "./members.module.scss";
 
-interface Props { members: User[]; teams: Team[]; }
+interface Props {
+  members: User[];
+  teams: Team[];
+}
 
 export function Members({ members, teams }: Props) {
-
   const { me, roles } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
   const { workspace } = useParams<{ workspace: string }>();
   const [, startTransition] = useTransition();
-  const isAdmin = me.role === "admin";
+  const isAdmin = me.role === "admin" || me.role === "owner";
 
   const changeRole = (userId: string, role: string) =>
-    startTransition(async () => { await setMemberRole(workspace, userId, role); router.refresh(); });
+    startTransition(async () => {
+      await setMemberRole(workspace, userId, role);
+      router.refresh();
+    });
 
   const remove = (userId: string) =>
-    startTransition(async () => { await removeMember(workspace, userId); router.refresh(); });
+    startTransition(async () => {
+      await removeMember(workspace, userId);
+      router.refresh();
+    });
 
   return (
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
         <h2 className={styles.pageTitle}>{t.members.title}</h2>
         {isAdmin && (
-          <Button variant="primary" icon={<Icon icon="lucide:plus" width={15} />}>
+          <Button
+            variant="primary"
+            icon={<Icon icon="lucide:plus" width={15} />}
+          >
             {t.actions.inviteMember}
           </Button>
         )}
@@ -53,22 +61,47 @@ export function Members({ members, teams }: Props) {
           {isAdmin && <span />}
         </div>
         {members.map((member) => {
-          const memberTeams = teams.filter((tm) => tm.members.includes(member.id));
+          const memberTeams = teams.filter((tm) =>
+            tm.members.includes(member.id),
+          );
           return (
             <div key={member.id} className={styles.row}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Avatar user={member} size={32} />
                 <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>{member.name}</div>
-                  <div className="faint" style={{ fontSize: 12 }}>{member.email}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>
+                    {member.name}
+                  </div>
+                  <div className="faint" style={{ fontSize: 12 }}>
+                    {member.email}
+                  </div>
                 </div>
               </div>
 
               {isAdmin && member.id !== me.id ? (
-                <InlinePicker trigger={<Badge as="button" active={member.role === "admin"} style={{ cursor: "pointer" }}>{member.role}</Badge>} width={200} stop>
+                <InlinePicker
+                  trigger={
+                    <Badge
+                      as="button"
+                      active={member.role === "admin"}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {member.role}
+                    </Badge>
+                  }
+                  width={200}
+                  stop
+                >
                   {(close) => (
-                    <SelectMenu items={roles.map((r) => ({ value: r.id, label: r.name }))}
-                      value={member.role} onPick={(v) => { changeRole(member.id, v as string); close(); }} onClose={close} />
+                    <SelectMenu
+                      items={roles.map((r) => ({ value: r.id, label: r.name }))}
+                      value={member.role}
+                      onPick={(v) => {
+                        changeRole(member.id, v as string);
+                        close();
+                      }}
+                      onClose={close}
+                    />
                   )}
                 </InlinePicker>
               ) : (
@@ -77,15 +110,28 @@ export function Members({ members, teams }: Props) {
 
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {memberTeams.map((tm) => (
-                  <Label key={tm.id} color={tm.color} size="sm">{tm.name}</Label>
+                  <Label key={tm.id} color={tm.color} size="sm">
+                    {tm.name}
+                  </Label>
                 ))}
-                {memberTeams.length === 0 && <span className="faint" style={{ fontSize: 12 }}>{t.members.noTeams}</span>}
+                {memberTeams.length === 0 && (
+                  <span className="faint" style={{ fontSize: 12 }}>
+                    {t.members.noTeams}
+                  </span>
+                )}
               </div>
 
               {isAdmin && (
-                <button className="iconbtn" title={t.members.removeTitle}
+                <button
+                  type="button"
+                  className="iconbtn"
+                  title={t.members.removeTitle}
                   disabled={member.id === me.id}
-                  onClick={() => { if (confirm(`${t.members.removeTitle} ${member.name}?`)) remove(member.id); }}>
+                  onClick={() => {
+                    if (confirm(`${t.members.removeTitle} ${member.name}?`))
+                      remove(member.id);
+                  }}
+                >
                   <Icon icon="lucide:trash-2" width={15} />
                 </button>
               )}

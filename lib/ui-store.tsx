@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useReducer } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+} from "react";
 import type { Toast } from "@/types";
 
 interface UIState {
@@ -35,7 +41,10 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [ui.toast]);
 
-  const toast = useCallback((msg: string) => dispatch({ type: "TOAST", toast: { msg } }), []);
+  const toast = useCallback(
+    (msg: string) => dispatch({ type: "TOAST", toast: { msg } }),
+    [],
+  );
 
   return <Ctx.Provider value={{ ui, toast }}>{children}</Ctx.Provider>;
 }

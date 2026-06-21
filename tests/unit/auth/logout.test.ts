@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -16,7 +16,7 @@ mock.module("@/lib/session", () => ({
 import { logout } from "@/features/auth/actions";
 import { clearSession } from "@/lib/session";
 
-const mockClearSession = clearSession as any;
+const mockClearSession = clearSession as ReturnType<typeof mock>;
 
 describe("logout()", () => {
   beforeEach(() => {

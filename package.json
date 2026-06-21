@@ -14,9 +14,9 @@
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d --wait && bun prisma generate && bun prisma migrate deploy && bun prisma db seed",
     "db:logs": "docker compose logs -f postgres",
-    "test": "bun test tests/unit/auth tests/unit/middleware tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects && bun test tests/unit/session",
+    "test": "bun test tests/unit/auth tests/unit/middleware tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects tests/unit/permissions && bun test tests/unit/session",
     "test:watch": "bun test --watch tests/",
-    "test:coverage": "bun test --coverage tests/unit/auth tests/unit/middleware tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects && bun test --coverage tests/unit/session"
+    "test:coverage": "bun test --coverage tests/unit/auth tests/unit/middleware tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects tests/unit/permissions && bun test --coverage tests/unit/session"
   },
   "prisma": {
     "seed": "bun prisma/seed.ts"
@@ -37,6 +37,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
     "@types/bcryptjs": "^3.0.0",
+    "@types/bun": "^1.3.14",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",

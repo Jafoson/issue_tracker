@@ -27,12 +27,14 @@ export function Button({
     styles.btn,
     styles[variant],
     styles[size],
-    full           && styles.full,
-    isIconOnly     && styles.iconOnly,
-    !isIconOnly && !!icon      && styles.hasIcon,
+    full && styles.full,
+    isIconOnly && styles.iconOnly,
+    !isIconOnly && !!icon && styles.hasIcon,
     !isIconOnly && !!iconRight && styles.hasIconRight,
     className,
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <button className={cls} {...rest}>

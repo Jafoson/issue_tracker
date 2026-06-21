@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { IssueDetail } from "./IssueDetail";
 import type { Issue } from "@/types";
+import { IssueDetail } from "./IssueDetail";
 
 interface Props {
   issue: Issue;

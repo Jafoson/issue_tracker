@@ -22,7 +22,7 @@ model Workspace {
   statuses   WorkspaceStatus[]
   priorities WorkspacePriority[]
   issueTypes WorkspaceIssueType[]
-  roles      WorkspaceRole[]
+  roles      Role[]
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -35,12 +35,13 @@ model User {
   color        String
   passwordHash String?
 
-  workspaces      WorkspaceMember[]
-  assignedIssues  Issue[]      @relation("IssueAssignee")
-  reportedIssues  Issue[]      @relation("IssueReporter")
-  comments        Comment[]
-  leadingTeams    Team[]       @relation("TeamLead")
-  teamMemberships TeamMember[]
+  workspaces         WorkspaceMember[]
+  assignedIssues     Issue[]         @relation("IssueAssignee")
+  reportedIssues     Issue[]         @relation("IssueReporter")
+  comments           Comment[]
+  leadingTeams       Team[]          @relation("TeamLead")
+  teamMemberships    TeamMember[]
+  projectMemberships ProjectMember[]
 }
 
 model WorkspaceMember {
@@ -65,14 +66,30 @@ model Project {
   prefix       String
   color        String
   lastIssueKey Int    @default(0)
+  visibility   String @default("public") // "public" | "private"
 
   workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   issues    Issue[]
   teams     TeamProject[]
   labels    Label[]
+  members   ProjectMember[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
+}
+
+// ─── Project membership (projekt-spezifische Rollen & Guests) ─────────────────
+
+model ProjectMember {
+  projectId String
+  userId    String
+  role      String // = Role.key dieses Workspace; überschreibt die Workspace-Rolle für dieses Projekt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId],    references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@index([userId])
 }
 
 // ─── Global config (shared across workspaces via join tables) ─────────────────
@@ -137,22 +154,46 @@ model WorkspaceIssueType {
   @@id([workspaceId, issueTypeId])
 }
 
-model Role {
-  id   String @id
-  name String
-  desc String @default("")
+// ─── Rollen & Permissions (RBAC) ──────────────────────────────────────────────
 
-  workspaces WorkspaceRole[]
+// Rollen sind workspace-spezifisch: jeder Workspace hat seine eigenen Role-Zeilen
+// (die 7 Default-Rollen werden geseedet, Admins können via workspace.role.manage
+// eigene anlegen). `key` ist die stabile, code-referenzierbare ID und entspricht
+// WorkspaceMember.role / ProjectMember.role innerhalb desselben Workspace.
+model Role {
+  id          String  @id
+  workspaceId String
+  key         String
+  name        String
+  desc        String  @default("")
+  rank        Int     @default(0)
+  editable    Boolean @default(true)
+
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  permissions RolePermission[]
+
+  @@unique([workspaceId, key])
+  @@index([workspaceId])
 }
 
-model WorkspaceRole {
-  workspaceId String
-  roleId      String
+// Permission-Keys sind global und hardcoded im Code (lib/rbac.ts). Die Tabelle
+// dient als FK-Ziel und dokumentiert die verfügbaren Permissions.
+model Permission {
+  key  String @id
+  desc String @default("")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  role      Role      @relation(fields: [roleId],      references: [id], onDelete: Cascade)
+  roles RolePermission[]
+}
 
-  @@id([workspaceId, roleId])
+model RolePermission {
+  roleId        String
+  permissionKey String
+
+  role       Role       @relation(fields: [roleId],        references: [id],  onDelete: Cascade)
+  permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@id([roleId, permissionKey])
+  @@index([permissionKey])
 }
 
 // ─── Labels (workspace-specific) ─────────────────────────────────────────────

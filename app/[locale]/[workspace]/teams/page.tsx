@@ -1,5 +1,10 @@
-import { getMembers, getTeams, getProjects, getIssuesByProject } from "@/features/issues/queries";
 import { Teams } from "@/features/admin/components/Teams/Teams";
+import {
+  getIssuesByProject,
+  getMembers,
+  getProjects,
+  getTeams,
+} from "@/features/issues/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +15,19 @@ export default async function TeamsPage({
 }) {
   const { workspace } = await params;
   const [members, teams, projects] = await Promise.all([
-    getMembers(workspace), getTeams(workspace), getProjects(workspace),
+    getMembers(workspace),
+    getTeams(workspace),
+    getProjects(workspace),
   ]);
-  const allIssues = (await Promise.all(projects.map((p) => getIssuesByProject(p.id)))).flat();
-  return <Teams teams={teams} members={members} projects={projects} allIssues={allIssues} />;
+  const allIssues = (
+    await Promise.all(projects.map((p) => getIssuesByProject(p.id)))
+  ).flat();
+  return (
+    <Teams
+      teams={teams}
+      members={members}
+      projects={projects}
+      allIssues={allIssues}
+    />
+  );
 }

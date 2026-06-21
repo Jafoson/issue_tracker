@@ -1,19 +1,35 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // next/headers is mocked in tests/setup.ts (preload) because it's a special
 // Next.js module that must be intercepted before lib/session.ts is first loaded.
 // We access the pre-created mock functions via globalThis.
-const jar = (globalThis as any).__mockCookieFns as { set: any; get: any; delete: any };
+const jar = (
+  globalThis as unknown as {
+    __mockCookieFns: {
+      set: ReturnType<typeof mock>;
+      get: ReturnType<typeof mock>;
+      delete: ReturnType<typeof mock>;
+    };
+  }
+).__mockCookieFns;
 const mockSet = jar.set;
 const mockGet = jar.get;
 const mockDelete = jar.delete;
 
 mock.module("jose", () => {
   class MockSignJWT {
-    setProtectedHeader(_: unknown) { return this; }
-    setIssuedAt() { return this; }
-    setExpirationTime(_: unknown) { return this; }
-    sign(_: unknown) { return Promise.resolve("mock-jwt-token"); }
+    setProtectedHeader(_: unknown) {
+      return this;
+    }
+    setIssuedAt() {
+      return this;
+    }
+    setExpirationTime(_: unknown) {
+      return this;
+    }
+    sign(_: unknown) {
+      return Promise.resolve("mock-jwt-token");
+    }
   }
   return {
     SignJWT: MockSignJWT,
@@ -22,13 +38,15 @@ mock.module("jose", () => {
 });
 
 mock.module("@/lib/session-secret", () => ({
-  sessionSecret: new TextEncoder().encode("test-secret-minimum-32-chars-long!!"),
+  sessionSecret: new TextEncoder().encode(
+    "test-secret-minimum-32-chars-long!!",
+  ),
 }));
 
-import { createSession, getSession, clearSession } from "@/lib/session";
 import { jwtVerify } from "jose";
+import { clearSession, createSession, getSession } from "@/lib/session";
 
-const mockJwtVerify = jwtVerify as any;
+const mockJwtVerify = jwtVerify as ReturnType<typeof mock>;
 
 describe("createSession()", () => {
   beforeEach(() => {
@@ -40,7 +58,7 @@ describe("createSession()", () => {
     expect(mockSet).toHaveBeenCalledWith(
       "session",
       expect.any(String),
-      expect.objectContaining({ httpOnly: true })
+      expect.objectContaining({ httpOnly: true }),
     );
   });
 
@@ -49,7 +67,7 @@ describe("createSession()", () => {
     expect(mockSet).toHaveBeenCalledWith(
       "session",
       expect.any(String),
-      expect.objectContaining({ sameSite: "lax" })
+      expect.objectContaining({ sameSite: "lax" }),
     );
   });
 
@@ -59,7 +77,7 @@ describe("createSession()", () => {
     expect(mockSet).toHaveBeenCalledWith(
       "session",
       expect.any(String),
-      expect.objectContaining({ maxAge })
+      expect.objectContaining({ maxAge }),
     );
   });
 });

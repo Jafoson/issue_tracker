@@ -12,8 +12,20 @@ import type { Project } from "@/types";
 const BASE = "/de/fuchsly";
 
 const projects: Project[] = [
-  { id: "p-1", name: "Fuchsly", slug: "fuchsly", prefix: "FUX", color: "#3b82f6" },
-  { id: "p-2", name: "Side Project", slug: "side-project", prefix: "SID", color: "#22c55e" },
+  {
+    id: "p-1",
+    name: "Fuchsly",
+    slug: "fuchsly",
+    prefix: "FUX",
+    color: "#3b82f6",
+  },
+  {
+    id: "p-2",
+    name: "Side Project",
+    slug: "side-project",
+    prefix: "SID",
+    color: "#22c55e",
+  },
 ];
 
 // Only the `nav` slice is used by the helpers — cast a minimal stub as T.
@@ -116,33 +128,62 @@ describe("tabMeta()", () => {
 
 describe("Projekte mit gleichem Namen aber unterschiedlichem Slug", () => {
   const dupeProjects: Project[] = [
-    { id: "p-fuch",  name: "Fuchsly", slug: "fuchsly",   prefix: "FUCH", color: "#f59e0b" },
-    { id: "p-fuc1",  name: "Fuchsly", slug: "fuchsly-1", prefix: "FUC1", color: "#a78bfa" },
+    {
+      id: "p-fuch",
+      name: "Fuchsly",
+      slug: "fuchsly",
+      prefix: "FUCH",
+      color: "#f59e0b",
+    },
+    {
+      id: "p-fuc1",
+      name: "Fuchsly",
+      slug: "fuchsly-1",
+      prefix: "FUC1",
+      color: "#a78bfa",
+    },
   ];
 
   it("löst /project/fuchsly auf das erste Projekt auf", () => {
-    expect(tabColor(`${BASE}/project/fuchsly`, dupeProjects, BASE)).toBe("#f59e0b");
+    expect(tabColor(`${BASE}/project/fuchsly`, dupeProjects, BASE)).toBe(
+      "#f59e0b",
+    );
   });
 
   it("löst /project/fuchsly-1 auf das zweite Projekt auf", () => {
-    expect(tabColor(`${BASE}/project/fuchsly-1`, dupeProjects, BASE)).toBe("#a78bfa");
+    expect(tabColor(`${BASE}/project/fuchsly-1`, dupeProjects, BASE)).toBe(
+      "#a78bfa",
+    );
   });
 
   it("verwechselt fuchsly und fuchsly-1 nicht", () => {
-    const metaFuch = tabMeta(`${BASE}/project/fuchsly`,   dupeProjects, t, BASE);
-    const metaFuc1 = tabMeta(`${BASE}/project/fuchsly-1`, dupeProjects, t, BASE);
+    const metaFuch = tabMeta(`${BASE}/project/fuchsly`, dupeProjects, t, BASE);
+    const metaFuc1 = tabMeta(
+      `${BASE}/project/fuchsly-1`,
+      dupeProjects,
+      t,
+      BASE,
+    );
     expect(metaFuch.color).toBe("#f59e0b");
     expect(metaFuc1.color).toBe("#a78bfa");
     expect(metaFuch.color).not.toBe(metaFuc1.color);
   });
 
   it("List-View von fuchsly-1 wird nicht als fuchsly erkannt", () => {
-    expect(tabColor(`${BASE}/project/fuchsly-1/list`, dupeProjects, BASE)).toBe("#a78bfa");
-    expect(tabColor(`${BASE}/project/fuchsly/list`,   dupeProjects, BASE)).toBe("#f59e0b");
+    expect(tabColor(`${BASE}/project/fuchsly-1/list`, dupeProjects, BASE)).toBe(
+      "#a78bfa",
+    );
+    expect(tabColor(`${BASE}/project/fuchsly/list`, dupeProjects, BASE)).toBe(
+      "#f59e0b",
+    );
   });
 
   it("tabTitle gibt den richtigen Namen zurück (beide heißen Fuchsly)", () => {
-    expect(tabTitle(`${BASE}/project/fuchsly`,   dupeProjects, t, BASE)).toBe("Fuchsly");
-    expect(tabTitle(`${BASE}/project/fuchsly-1`, dupeProjects, t, BASE)).toBe("Fuchsly");
+    expect(tabTitle(`${BASE}/project/fuchsly`, dupeProjects, t, BASE)).toBe(
+      "Fuchsly",
+    );
+    expect(tabTitle(`${BASE}/project/fuchsly-1`, dupeProjects, t, BASE)).toBe(
+      "Fuchsly",
+    );
   });
 });

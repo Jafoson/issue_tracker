@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
+import { MyIssues } from "@/features/issues/components/MyIssues/MyIssues";
 import { getMyIssues } from "@/features/issues/queries";
 import { getSession } from "@/lib/session";
-import { MyIssues } from "@/features/issues/components/MyIssues/MyIssues";
 
 export const dynamic = "force-dynamic";
 

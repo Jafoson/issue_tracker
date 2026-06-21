@@ -12,24 +12,43 @@ interface InlinePickerProps {
   stop?: boolean;
 }
 
-export function InlinePicker({ trigger, children, width, maxWidth, align, stop }: InlinePickerProps) {
+export function InlinePicker({
+  trigger,
+  children,
+  width,
+  maxWidth,
+  align,
+  stop,
+}: InlinePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const close = () => setOpen(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const triggerWithRef = cloneElement(trigger as React.ReactElement<any>, {
-    ref,
-    onClick: (e: React.MouseEvent) => {
-      if (stop) e.stopPropagation();
-      setOpen((o) => !o);
+  const triggerWithRef = cloneElement(
+    trigger as React.ReactElement<{
+      ref?: React.Ref<HTMLElement>;
+      onClick?: (e: React.MouseEvent) => void;
+    }>,
+    {
+      ref,
+      onClick: (e: React.MouseEvent) => {
+        if (stop) e.stopPropagation();
+        setOpen((o) => !o);
+      },
     },
-  });
+  );
 
   return (
     <>
       {triggerWithRef}
-      <Popover anchorRef={ref} open={open} onClose={close} width={width} maxWidth={maxWidth} align={align}>
+      <Popover
+        anchorRef={ref}
+        open={open}
+        onClose={close}
+        width={width}
+        maxWidth={maxWidth}
+        align={align}
+      >
         {typeof children === "function" ? children(close) : children}
       </Popover>
     </>

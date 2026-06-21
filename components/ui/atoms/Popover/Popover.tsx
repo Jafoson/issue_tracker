@@ -45,7 +45,8 @@ export function Popover({
             : a.left;
       let top = side === "top" ? a.top - h - offset : a.bottom + offset;
       left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
-      if (top + h > window.innerHeight - 8) top = Math.max(8, a.top - h - offset);
+      if (top + h > window.innerHeight - 8)
+        top = Math.max(8, a.top - h - offset);
       top = Math.max(8, top);
       setPos({ left, top });
     };

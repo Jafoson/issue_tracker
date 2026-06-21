@@ -25,7 +25,7 @@ export function TabBar() {
   if (!ready) return <div className={styles.bar} />;
 
   return (
-    <div className={styles.bar}>
+    <div className={styles.bar} role="tablist">
       {tabs.map((tab) => {
         const isActive = tab.id === activeId;
         const { title, color, icon } = tabMeta(tab.href, projects, t, base);
@@ -33,7 +33,8 @@ export function TabBar() {
         return (
           <div
             key={tab.id}
-            role="button"
+            role="tab"
+            aria-selected={isActive}
             tabIndex={0}
             className={`${styles.tab}${isActive ? ` ${styles.active}` : ""}`}
             onClick={() => switchTab(tab.id)}

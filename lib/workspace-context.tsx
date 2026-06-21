@@ -1,7 +1,15 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { User, Project, Label, Status, Priority, IssueType, Role } from "@/types";
+import type {
+  IssueType,
+  Label,
+  Priority,
+  Project,
+  Role,
+  Status,
+  User,
+} from "@/types";
 
 export interface SearchableIssue {
   id: string;
@@ -29,10 +37,17 @@ const Ctx = createContext<WorkspaceData | null>(null);
 
 export function useWorkspace() {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("useWorkspace must be used within WorkspaceProvider");
+  if (!ctx)
+    throw new Error("useWorkspace must be used within WorkspaceProvider");
   return ctx;
 }
 
-export function WorkspaceProvider({ children, value }: { children: React.ReactNode; value: WorkspaceData }) {
+export function WorkspaceProvider({
+  children,
+  value,
+}: {
+  children: React.ReactNode;
+  value: WorkspaceData;
+}) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

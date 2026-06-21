@@ -7,7 +7,8 @@ const loaders = {
 
 export type Locale = keyof typeof loaders;
 
-export const hasLocale = (locale: string): locale is Locale => locale in loaders;
+export const hasLocale = (locale: string): locale is Locale =>
+  locale in loaders;
 
 export async function getStaticMessages(locale: Locale) {
   return loaders[locale]();

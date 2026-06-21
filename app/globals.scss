@@ -21,7 +21,15 @@ body {
 
 #__next, main { height: 100vh; }
 
-button { font-family: inherit; cursor: pointer; color: inherit; }
+button {
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: inherit;
+}
 input, textarea, select { font-family: inherit; }
 ::selection { background: var(--accent-soft); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -334,6 +342,7 @@ textarea.field { resize: vertical; line-height: 1.5; }
 
 /* ---------- List View ---------- */
 .orbit-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -341,6 +350,8 @@ textarea.field { resize: vertical; line-height: 1.5; }
   height: var(--row-h);
   border-bottom: 1px solid var(--border-faint);
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
   transition: background .1s;
 
   &:hover, &.active { background: var(--card-hover); }
@@ -358,7 +369,17 @@ textarea.field { resize: vertical; line-height: 1.5; }
   animation: fadeIn .16s ease both;
 }
 
+/* Full-bleed click/keyboard target that closes the overlay (sits behind the panel). */
+.orbit-backdrop {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  cursor: default;
+}
+
 .orbit-panel {
+  position: relative;
+  z-index: 1;
   width: min(760px, 92vw);
   height: 100%;
   background: var(--surface-2);
@@ -371,6 +392,8 @@ textarea.field { resize: vertical; line-height: 1.5; }
 
 /* ---------- Composer ---------- */
 .orbit-comp {
+  position: relative;
+  z-index: 1;
   width: min(620px, 94vw);
   background: var(--panel);
   border: 1px solid var(--border-strong);
@@ -381,6 +404,8 @@ textarea.field { resize: vertical; line-height: 1.5; }
 
 /* ---------- Command Palette ---------- */
 .orbit-cmd {
+  position: relative;
+  z-index: 1;
   width: min(620px, 94vw);
   background: var(--elev);
   border: 1px solid var(--border-strong);

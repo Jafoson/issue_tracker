@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { initials } from "@/lib/utils/string";
 import type { User } from "@/types";
@@ -15,7 +16,10 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
   const [imgFailed, setImgFailed] = useState(false);
 
   const ringStyle = ring
-    ? { boxShadow: "0 0 0 2px var(--panel), inset 0 0 0 1px rgba(255,255,255,.12)" }
+    ? {
+        boxShadow:
+          "0 0 0 2px var(--panel), inset 0 0 0 1px rgba(255,255,255,.12)",
+      }
     : undefined;
 
   if (!user) {
@@ -23,7 +27,8 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
       <span
         className="avatar"
         style={{
-          width: size, height: size,
+          width: size,
+          height: size,
           background: "transparent",
           border: "1.4px dashed var(--text-3)",
           color: "var(--text-3)",
@@ -31,9 +36,17 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
           fontSize: size * 0.5,
         }}
       >
-        <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="8" r="3.4"/>
-          <path d="M5 20a7 7 0 0 1 14 0"/>
+        <svg
+          width={size * 0.55}
+          height={size * 0.55}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="8" r="3.4" />
+          <path d="M5 20a7 7 0 0 1 14 0" />
         </svg>
       </span>
     );
@@ -46,7 +59,8 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
     <span
       className="avatar"
       style={{
-        width: size, height: size,
+        width: size,
+        height: size,
         background: `linear-gradient(150deg, ${color}, color-mix(in oklab, ${color} 70%, #000))`,
         fontSize: Math.max(9, size * 0.42),
         color: "#fff",
@@ -56,11 +70,13 @@ export function Avatar({ user, size = 22, ring }: AvatarProps) {
     >
       {label}
       {user.image && !imgFailed && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={user.image}
           alt=""
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+          fill
+          unoptimized
+          sizes={`${size}px`}
+          style={{ objectFit: "cover", borderRadius: "50%" }}
           onError={() => setImgFailed(true)}
         />
       )}
@@ -75,7 +91,12 @@ interface AvatarStackProps {
   max?: number;
 }
 
-export function AvatarStack({ ids, users, size = 22, max = 4 }: AvatarStackProps) {
+export function AvatarStack({
+  ids,
+  users,
+  size = 22,
+  max = 4,
+}: AvatarStackProps) {
   const shown = ids.slice(0, max);
   const extra = ids.length - shown.length;
   const userById = (id: string) => users.find((u) => u.id === id) ?? null;
@@ -92,7 +113,8 @@ export function AvatarStack({ ids, users, size = 22, max = 4 }: AvatarStackProps
           className="avatar"
           style={{
             marginLeft: -7,
-            width: size, height: size,
+            width: size,
+            height: size,
             background: "var(--elev)",
             color: "var(--text-2)",
             fontSize: size * 0.4,

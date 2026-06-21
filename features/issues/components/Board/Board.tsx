@@ -129,6 +129,7 @@ export function Board({ issues, projectId }: BoardProps) {
         );
         const isOver = overCol === s.id;
         return (
+          // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop drop zone — no native HTML element represents this
           <div
             key={s.id}
             className={`orbit-col${isOver ? " drag-over" : ""}`}
@@ -152,6 +153,7 @@ export function Board({ issues, projectId }: BoardProps) {
                 {colIssues.length}
               </Badge>
               <button
+                type="button"
                 className="iconbtn"
                 style={{ marginLeft: "auto" }}
                 title={t.actions.newIssue}

@@ -3,7 +3,9 @@ export interface User {
   name: string;
   handle: string;
   email: string;
-  role: "admin" | "member" | "viewer";
+  // Role-Key innerhalb des Workspace (owner | admin | manager | project_lead |
+  // member | viewer | guest oder eine benutzerdefinierte Rolle).
+  role: string;
   color: string;
   image?: string;
   pending?: boolean;

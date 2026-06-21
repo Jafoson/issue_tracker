@@ -5,6 +5,14 @@
   flex: 1;
 }
 
+/* Stretched link: covers the whole row to open the issue; the interactive
+   pickers sit above it via z-index. */
+.stretchedLink {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
 .rowLeft {
   display: flex;
   align-items: center;

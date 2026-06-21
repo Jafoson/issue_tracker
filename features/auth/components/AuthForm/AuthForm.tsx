@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Icon } from "@iconify/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { login, register } from "@/features/auth/actions";
 import styles from "./authForm.module.scss";
 
@@ -16,18 +16,24 @@ interface AuthFormProps {
 export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [name, setName]         = useState("");
-  const [email, setEmail]       = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Focus the email field on the login screen (ersetzt autoFocus).
+  useEffect(() => {
+    if (mode === "login") emailRef.current?.focus();
+  }, [mode]);
 
   function submit() {
     setError("");
     const fd = new FormData();
-    fd.append("email",    email.trim());
+    fd.append("email", email.trim());
     fd.append("password", password);
-    fd.append("locale",   locale);
+    fd.append("locale", locale);
     if (callbackUrl) fd.append("callbackUrl", callbackUrl);
     if (mode === "register") fd.append("name", name.trim());
 
@@ -62,7 +68,9 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
         <div className={styles.fields}>
           {!isLogin && (
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="auth-name">Full name</label>
+              <label className={styles.label} htmlFor="auth-name">
+                Full name
+              </label>
               <input
                 id="auth-name"
                 className={styles.input}
@@ -77,8 +85,11 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
           )}
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="auth-email">Email</label>
+            <label className={styles.label} htmlFor="auth-email">
+              Email
+            </label>
             <input
+              ref={emailRef}
               id="auth-email"
               className={styles.input}
               type="email"
@@ -87,12 +98,13 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              autoFocus={isLogin}
             />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="auth-password">Password</label>
+            <label className={styles.label} htmlFor="auth-password">
+              Password
+            </label>
             <div className={styles.passwordWrap}>
               <input
                 id="auth-password"
@@ -111,7 +123,10 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
                 onClick={() => setShowPw((v) => !v)}
                 aria-label={showPw ? "Hide password" : "Show password"}
               >
-                <Icon icon={showPw ? "lucide:eye-off" : "lucide:eye"} width={15} />
+                <Icon
+                  icon={showPw ? "lucide:eye-off" : "lucide:eye"}
+                  width={15}
+                />
               </button>
             </div>
           </div>
@@ -124,15 +139,20 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
           </div>
         )}
 
-        <button className={styles.submit} onClick={submit}>
+        <button type="button" className={styles.submit} onClick={submit}>
           {isLogin ? "Sign in" : "Create account"}
         </button>
 
         <p className={styles.switch}>
           {isLogin ? (
-            <>No account? <Link href={`/${locale}/register`}>Sign up</Link></>
+            <>
+              No account? <Link href={`/${locale}/register`}>Sign up</Link>
+            </>
           ) : (
-            <>Already have an account? <Link href={`/${locale}/login`}>Sign in</Link></>
+            <>
+              Already have an account?{" "}
+              <Link href={`/${locale}/login`}>Sign in</Link>
+            </>
           )}
         </p>
       </div>

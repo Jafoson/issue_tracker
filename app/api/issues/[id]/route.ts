@@ -3,7 +3,10 @@ import { getIssueById, getIssueByRef } from "@/features/issues/queries";
 
 const REF = /^[A-Za-z0-9]+-\d+$/;
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const ws = new URL(req.url).searchParams.get("ws");
 

@@ -56,9 +56,7 @@ export function TopbarClient() {
     "";
 
   const currentProject =
-    projects.find((p) => p.slug === currentSlug) ??
-    projects[0] ??
-    null;
+    projects.find((p) => p.slug === currentSlug) ?? projects[0] ?? null;
 
   const SORT_OPTIONS = sortOptions(t);
 

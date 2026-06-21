@@ -1,6 +1,14 @@
 const PALETTE = [
-  "#6e63e6", "#d5733b", "#3b9d6e", "#c2456b", "#3b7bd5",
-  "#a05fd0", "#cf9a3b", "#5aa0a0", "#e5664a", "#cf6fb0",
+  "#6e63e6",
+  "#d5733b",
+  "#3b9d6e",
+  "#c2456b",
+  "#3b7bd5",
+  "#a05fd0",
+  "#cf9a3b",
+  "#5aa0a0",
+  "#e5664a",
+  "#cf6fb0",
 ];
 
 export function randomColor(): string {

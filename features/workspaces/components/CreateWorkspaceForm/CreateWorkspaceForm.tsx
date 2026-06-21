@@ -1,19 +1,27 @@
 "use client";
 
-import { useRef, useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Icon } from "@iconify/react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { createWorkspace, suggestWorkspaceSlug } from "@/features/workspaces/actions";
+import {
+  createWorkspace,
+  suggestWorkspaceSlug,
+} from "@/features/workspaces/actions";
 import styles from "./createWorkspaceForm.module.scss";
 
 const COLORS = [
-  "#6e63e6", "#3b9d6e", "#d5733b", "#3b7bd5",
-  "#c2456b", "#a05fd0", "#cf9a3b",
+  "#6e63e6",
+  "#3b9d6e",
+  "#d5733b",
+  "#3b7bd5",
+  "#c2456b",
+  "#a05fd0",
+  "#cf9a3b",
 ];
 
 function toSlug(name: string) {
-  return name.toLowerCase()
+  return name
+    .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-")
@@ -24,14 +32,16 @@ function toSlug(name: string) {
 export function CreateWorkspaceForm({ locale }: { locale: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [name, setName]               = useState("");
-  const [slug, setSlug]               = useState("");
-  const [color, setColor]             = useState(COLORS[0]);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [color, setColor] = useState(COLORS[0]);
   const [slugTouched, setSlugTouched] = useState(false);
-  const [error, setError]             = useState("");
+  const [error, setError] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { nameRef.current?.focus(); }, []);
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (slugTouched) return;
@@ -43,7 +53,10 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
       const free = await suggestWorkspaceSlug(base);
       if (!cancelled) setSlug(free);
     }, 300);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [name, slugTouched]);
 
   useEffect(() => {
@@ -55,14 +68,20 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
   });
 
   function submit() {
-    if (!name.trim()) { setError("Workspace name is required."); return; }
-    if (!slug.trim()) { setError("Slug is required."); return; }
+    if (!name.trim()) {
+      setError("Workspace name is required.");
+      return;
+    }
+    if (!slug.trim()) {
+      setError("Slug is required.");
+      return;
+    }
     setError("");
 
     const fd = new FormData();
-    fd.append("name",   name.trim());
-    fd.append("slug",   slug.trim());
-    fd.append("color",  color);
+    fd.append("name", name.trim());
+    fd.append("slug", slug.trim());
+    fd.append("color", color);
     fd.append("locale", locale);
 
     startTransition(async () => {
@@ -90,7 +109,9 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
             {letter}
           </div>
           <div className={styles.nameField}>
-            <label className={styles.label} htmlFor="ws-name">Workspace name</label>
+            <label className={styles.label} htmlFor="ws-name">
+              Workspace name
+            </label>
             <input
               ref={nameRef}
               id="ws-name"
@@ -103,7 +124,7 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Icon color</label>
+          <span className={styles.label}>Icon color</span>
           <div className={styles.swatches}>
             {COLORS.map((c) => (
               <button
@@ -118,12 +139,17 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="ws-slug">Slug</label>
+          <label className={styles.label} htmlFor="ws-slug">
+            Slug
+          </label>
           <input
             id="ws-slug"
             className={styles.input}
             value={slug}
-            onChange={(e) => { setSlugTouched(true); setSlug(toSlug(e.target.value)); }}
+            onChange={(e) => {
+              setSlugTouched(true);
+              setSlug(toSlug(e.target.value));
+            }}
             spellCheck={false}
           />
         </div>
@@ -132,11 +158,16 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
 
         <div className={styles.footer}>
           <div className={styles.shortcut}>
-            <kbd>⌘</kbd><kbd>↵</kbd> to create
+            <kbd>⌘</kbd>
+            <kbd>↵</kbd> to create
           </div>
           <div className={styles.footerActions}>
-            <Button variant="ghost" onClick={() => router.back()}>Cancel</Button>
-            <Button variant="primary" onClick={submit}>Create workspace</Button>
+            <Button variant="ghost" onClick={() => router.back()}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={submit}>
+              Create workspace
+            </Button>
           </div>
         </div>
       </div>

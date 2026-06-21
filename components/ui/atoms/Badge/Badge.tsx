@@ -10,9 +10,9 @@ type BadgeProps = {
   dot?: string;
   size?: BadgeSize;
 } & React.HTMLAttributes<HTMLElement> & {
-  as?: "span" | "div" | "button";
-  disabled?: boolean;
-};
+    as?: "span" | "div" | "button";
+    disabled?: boolean;
+  };
 
 export function Badge({
   children,
@@ -32,7 +32,9 @@ export function Badge({
     mono && styles.mono,
     size === "sm" && styles.sm,
     className,
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <Tag className={cls} style={style} {...rest}>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { getIssueByRef } from "@/features/issues/queries";
 import { IssueDetailPage } from "@/features/issues/components/IssueDetail/IssueDetailPage";
+import { getIssueByRef } from "@/features/issues/queries";
 
 export const dynamic = "force-dynamic";
 

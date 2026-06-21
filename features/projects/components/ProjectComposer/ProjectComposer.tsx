@@ -104,11 +104,14 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
 
       {open &&
         createPortal(
-          <div
-            className={`orbit-overlay ${styles.overlay}`}
-            onClick={() => setOpen(false)}
-          >
-            <div className="orbit-comp" onClick={(e) => e.stopPropagation()}>
+          <div className={`orbit-overlay ${styles.overlay}`}>
+            <button
+              type="button"
+              className="orbit-backdrop"
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+            />
+            <div className="orbit-comp">
               <div className={styles.header}>
                 <div className={styles.headerLeft}>
                   <Icon
