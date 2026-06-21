@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../lib/generated/prisma/client";
 import { provisionWorkspaceRbac } from "../lib/rbac-provision";
+import { uid } from "../lib/utils/id";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter: new PrismaPg(pool) });
@@ -716,10 +717,64 @@ const ISSUES = [
   },
 ];
 
+// ─── ID-Mapping ───────────────────────────────────────────────────────────────
+//
+// Die obigen Datensätze referenzieren sich gegenseitig über kurze, lesbare
+// Handles ("u1", "p1", "l1", "i1", "c1", "t1"). Diese sind NUR seed-interne
+// Schlüssel — in die DB schreiben wir echte, nicht-erratbare IDs, die mit
+// derselben uid()-Funktion erzeugt werden wie in den Server Actions
+// (lib/utils/id.ts → Präfix + crypto.randomUUID()). Das verhindert, dass die
+// DB vorhersagbare/aufzählbare IDs enthält (IDOR-Schutz).
+//
+// Semantische IDs bleiben bewusst stabil, weil sie im Code als Werte genutzt
+// werden: Status.id ("backlog"…), IssueType.id ("feature"…), Priority.id (0…4),
+// der Workspace-Slug und die Role-Keys.
+
+const realUserId = new Map(USERS.map((u) => [u.id, uid("u")]));
+const realProjectId = new Map(PROJECTS.map((p) => [p.id, uid("p")]));
+const realLabelId = new Map(LABELS.map((l) => [l.id, uid("l")]));
+const realTeamId = new Map(TEAMS.map((t) => [t.id, uid("t")]));
+const realIssueId = new Map(ISSUES.map((i) => [i.id, uid("i")]));
+const realCommentId = new Map(
+  ISSUES.flatMap((i) => i.comments.map((c) => [c.id, uid("c")] as const)),
+);
+
+// Lookups, die hart fehlschlagen statt eine kaputte Referenz zu schreiben.
+const ref = <K>(map: Map<K, string>, key: K, what: string): string => {
+  const id = map.get(key);
+  if (!id) throw new Error(`Seed: ${what} "${String(key)}" nicht gemappt`);
+  return id;
+};
+
 // ─── Seed ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("🌱  Seeding database…");
+
+  // Sauber aufräumen: Mit zufälligen IDs ist Upsert-nach-id nicht mehr
+  // idempotent, ein erneuter Lauf würde sonst Duplikate erzeugen. In
+  // FK-sicherer Reihenfolge löschen (Kinder vor Eltern).
+  await db.comment.deleteMany();
+  await db.issue.deleteMany();
+  await db.teamMember.deleteMany();
+  await db.teamProject.deleteMany();
+  await db.projectMember.deleteMany();
+  await db.team.deleteMany();
+  await db.label.deleteMany();
+  await db.rolePermission.deleteMany();
+  await db.role.deleteMany();
+  await db.workspaceMember.deleteMany();
+  await db.workspaceStatus.deleteMany();
+  await db.workspacePriority.deleteMany();
+  await db.workspaceIssueType.deleteMany();
+  await db.project.deleteMany();
+  await db.workspace.deleteMany();
+  await db.user.deleteMany();
+  await db.permission.deleteMany();
+  await db.status.deleteMany();
+  await db.priority.deleteMany();
+  await db.issueType.deleteMany();
+  console.log("   ✓ cleaned existing rows");
 
   await db.workspace.upsert({
     where: { id: WS },
@@ -764,57 +819,100 @@ async function main() {
   console.log("   ✓ RBAC roles & permissions");
 
   for (const u of USERS) {
-    await db.user.upsert({ where: { id: u.id }, update: {}, create: u });
+    const id = ref(realUserId, u.id, "user");
+    await db.user.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        name: u.name,
+        handle: u.handle,
+        email: u.email,
+        color: u.color,
+      },
+    });
   }
   console.log(`   ✓ ${USERS.length} users`);
 
   for (const m of WORKSPACE_MEMBERS) {
+    const userId = ref(realUserId, m.userId, "member user");
     await db.workspaceMember.upsert({
       where: {
-        workspaceId_userId: { workspaceId: m.workspaceId, userId: m.userId },
+        workspaceId_userId: { workspaceId: m.workspaceId, userId },
       },
       update: { role: m.role, pending: m.pending },
-      create: m,
+      create: {
+        workspaceId: m.workspaceId,
+        userId,
+        role: m.role,
+        pending: m.pending,
+      },
     });
   }
   console.log(`   ✓ ${WORKSPACE_MEMBERS.length} workspace members`);
 
   for (const p of PROJECTS) {
-    await db.project.upsert({ where: { id: p.id }, update: {}, create: p });
+    const id = ref(realProjectId, p.id, "project");
+    await db.project.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        workspaceId: p.workspaceId,
+        name: p.name,
+        slug: p.slug,
+        prefix: p.prefix,
+        color: p.color,
+      },
+    });
   }
   console.log(`   ✓ ${PROJECTS.length} projects`);
 
   for (const l of LABELS) {
-    await db.label.upsert({ where: { id: l.id }, update: {}, create: l });
+    const id = ref(realLabelId, l.id, "label");
+    await db.label.upsert({
+      where: { id },
+      update: {},
+      create: {
+        id,
+        workspaceId: l.workspaceId,
+        name: l.name,
+        slug: l.slug,
+        color: l.color,
+      },
+    });
   }
   console.log(`   ✓ ${LABELS.length} labels`);
 
   for (const t of TEAMS) {
+    const teamId = ref(realTeamId, t.id, "team");
     await db.team.upsert({
-      where: { id: t.id },
+      where: { id: teamId },
       update: {},
       create: {
-        id: t.id,
+        id: teamId,
         workspaceId: t.workspaceId,
         name: t.name,
         key: t.key,
         color: t.color,
         desc: t.desc,
-        leadId: t.lead,
+        leadId: ref(realUserId, t.lead, "team lead"),
       },
     });
-    for (const userId of t.members) {
+    for (const member of t.members) {
+      const userId = ref(realUserId, member, "team member");
       await db.teamMember.upsert({
-        where: { teamId_userId: { teamId: t.id, userId } },
+        where: { teamId_userId: { teamId, userId } },
         update: {},
-        create: { teamId: t.id, userId },
+        create: { teamId, userId },
       });
     }
-    for (const projectId of t.projects) {
+    for (const project of t.projects) {
+      const projectId = ref(realProjectId, project, "team project");
       await db.teamProject.upsert({
-        where: { teamId_projectId: { teamId: t.id, projectId } },
+        where: { teamId_projectId: { teamId, projectId } },
         update: {},
-        create: { teamId: t.id, projectId },
+        create: { teamId, projectId },
       });
     }
   }
@@ -824,46 +922,49 @@ async function main() {
   // highest key per project so the project counter can be persisted below.
   const keyCounter: Record<string, number> = {};
   for (const issue of ISSUES) {
-    const projectId = projectOf[issue.id] ?? "p1";
-    keyCounter[projectId] = (keyCounter[projectId] ?? 0) + 1;
-    const key = keyCounter[projectId];
+    const localProject = projectOf[issue.id] ?? "p1";
+    keyCounter[localProject] = (keyCounter[localProject] ?? 0) + 1;
+    const key = keyCounter[localProject];
+    const issueId = ref(realIssueId, issue.id, "issue");
     await db.issue.upsert({
-      where: { id: issue.id },
+      where: { id: issueId },
       update: {},
       create: {
-        id: issue.id,
+        id: issueId,
         key,
         title: issue.title,
         status: issue.status,
         priority: issue.priority,
         description: issue.desc,
         type: typeOf[issue.id] ?? "feature",
-        labels: issue.labels,
+        labels: issue.labels.map((l) => ref(realLabelId, l, "issue label")),
         created: issue.created,
         updated: issue.updated,
-        assigneeId: issue.assignee,
-        reporterId: issue.reporter,
-        projectId,
+        assigneeId: issue.assignee
+          ? ref(realUserId, issue.assignee, "assignee")
+          : null,
+        reporterId: ref(realUserId, issue.reporter, "reporter"),
+        projectId: ref(realProjectId, localProject, "issue project"),
       },
     });
     for (const c of issue.comments) {
       await db.comment.upsert({
-        where: { id: c.id },
+        where: { id: ref(realCommentId, c.id, "comment") },
         update: {},
         create: {
-          id: c.id,
+          id: ref(realCommentId, c.id, "comment"),
           body: c.body,
           created: c.time,
-          issueId: issue.id,
-          authorId: c.author,
+          issueId,
+          authorId: ref(realUserId, c.author, "comment author"),
         },
       });
     }
   }
   // Persist the counter so newly created issues continue after the seed data.
-  for (const [projectId, last] of Object.entries(keyCounter)) {
+  for (const [localProject, last] of Object.entries(keyCounter)) {
     await db.project.update({
-      where: { id: projectId },
+      where: { id: ref(realProjectId, localProject, "counter project") },
       data: { lastIssueKey: last },
     });
   }
