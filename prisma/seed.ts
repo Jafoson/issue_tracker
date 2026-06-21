@@ -76,9 +76,9 @@ const WORKSPACE_MEMBERS = [
 ];
 
 const PROJECTS = [
-  { id: "p1", workspaceId: WS, name: "Web App",  prefix: "NIM", color: "#6e63e6" },
-  { id: "p2", workspaceId: WS, name: "Mobile",   prefix: "MOB", color: "#3b9d6e" },
-  { id: "p3", workspaceId: WS, name: "Platform", prefix: "PLT", color: "#d5733b" },
+  { id: "p1", workspaceId: WS, name: "Web App",  slug: "web-app",  prefix: "NIM", color: "#6e63e6" },
+  { id: "p2", workspaceId: WS, name: "Mobile",   slug: "mobile",   prefix: "MOB", color: "#3b9d6e" },
+  { id: "p3", workspaceId: WS, name: "Platform", slug: "platform", prefix: "PLT", color: "#d5733b" },
 ];
 
 const TEAMS = [

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getIssuesByProject, getProjects, toProjectSlug } from "@/features/issues/queries";
+import { getIssuesByProject, getProjects } from "@/features/issues/queries";
 import { ListView } from "@/features/issues/components/ListView/ListView";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function ListPage({
   const filters = await searchParams;
 
   const projects = await getProjects(workspace);
-  const project = projects.find((p) => toProjectSlug(p.name) === projectSlug);
+  const project = projects.find((p) => p.slug === projectSlug);
   if (!project) notFound();
 
   const issues = await getIssuesByProject(project.id, filters);

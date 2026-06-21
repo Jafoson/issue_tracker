@@ -3,7 +3,6 @@ import Link from "next/link";
 import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
 import { ProjectComposer } from "@/features/projects/components/ProjectComposer/ProjectComposer";
 import type { ProjectWithStats } from "@/features/projects/queries";
-import { toProjectSlug } from "@/lib/slug";
 import type { User } from "@/types";
 import styles from "./projectList.module.scss";
 
@@ -33,7 +32,7 @@ export function ProjectList({ projects, members, base, workspaceId }: Props) {
         {projects.map((project) => (
           <Link
             key={project.id}
-            href={`${base}/project/${toProjectSlug(project.name)}`}
+            href={`${base}/project/${project.slug}`}
             className={styles.row}
           >
             <span className={styles.nameCell}>

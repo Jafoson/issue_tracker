@@ -71,8 +71,12 @@ export async function createWorkspace(formData: FormData): Promise<WorkspaceResu
         data: { workspaceId: finalSlug, userId: session.userId, role: "admin", pending: false },
       });
 
+      const projectSlug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "project";
       await tx.project.create({
-        data: { id: projectId, workspaceId: finalSlug, name, prefix, color },
+        data: { id: projectId, workspaceId: finalSlug, name, slug: projectSlug, prefix, color },
       });
     });
   } catch (e) {

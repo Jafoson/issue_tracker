@@ -104,7 +104,7 @@ describe("createWorkspace()", () => {
 
     it("hängt eine Nummer an wenn der Slug bereits vergeben ist", async () => {
       mockWorkspaceFindUnique.mockImplementation(async ({ where }: any) =>
-        where.id === "existing" ? { id: "existing" } : null,
+        where.slug === "existing" ? { id: "existing" } : null,
       );
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
@@ -115,7 +115,7 @@ describe("createWorkspace()", () => {
     it("zählt weiter hoch wenn auch der erste Fallback-Slug vergeben ist", async () => {
       const taken = new Set(["existing", "existing1"]);
       mockWorkspaceFindUnique.mockImplementation(async ({ where }: any) =>
-        taken.has(where.id) ? { id: where.id } : null,
+        taken.has(where.slug) ? { id: where.slug } : null,
       );
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),

@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/utils/id";
 
 type ProjectResult = { ok: true } | { error: string };
 
-// Derive a prefix candidate from the project name (letters/digits, uppercased, max 4).
 function basePrefix(name: string): string {
   return (
     name
@@ -17,8 +17,6 @@ function basePrefix(name: string): string {
   );
 }
 
-// Find a free prefix within the workspace. The combination (workspaceId, prefix)
-// is unique, so append 1, 2, 3… until one is available.
 async function uniquePrefix(
   workspaceId: string,
   base: string,
@@ -35,6 +33,20 @@ async function uniquePrefix(
     prefix = `${base.slice(0, 4 - suffix.length)}${suffix}`;
   }
   return prefix;
+}
+
+async function uniqueSlug(workspaceId: string, base: string): Promise<string> {
+  let slug = base || "project";
+  let n = 0;
+  while (
+    await db.project.findUnique({
+      where: { workspaceId_slug: { workspaceId, slug } },
+      select: { id: true },
+    })
+  ) {
+    slug = `${base}-${++n}`;
+  }
+  return slug;
 }
 
 export async function createProject(data: {
@@ -67,12 +79,14 @@ export async function createProject(data: {
       .toUpperCase()
       .slice(0, 4) || basePrefix(name);
   const prefix = await uniquePrefix(data.workspaceId, desired);
+  const slug = await uniqueSlug(data.workspaceId, slugify(name));
 
   await db.project.create({
     data: {
       id: uid("p"),
       workspaceId: data.workspaceId,
       name,
+      slug,
       prefix,
       color: data.color,
     },

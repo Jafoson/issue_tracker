@@ -25,9 +25,6 @@ function mapIssue(i: {
 
 // ── Cached queries (deduplicated per request) ─────────────────────────────────
 
-import { toProjectSlug } from "@/lib/slug";
-export { toProjectSlug };
-
 export const getWorkspace = cache(async (id: string) => {
   return db.workspace.findUnique({ where: { id }, select: { id: true, name: true, color: true } });
 });
@@ -46,7 +43,7 @@ export const getProjects = cache(async (workspaceId: string): Promise<Project[]>
     where: { workspaceId },
     orderBy: { name: "asc" },
   });
-  return rows.map((p) => ({ id: p.id, name: p.name, prefix: p.prefix, color: p.color }));
+  return rows.map((p) => ({ id: p.id, name: p.name, slug: p.slug, prefix: p.prefix, color: p.color }));
 });
 
 export const getMembers = cache(async (workspaceId: string): Promise<User[]> => {

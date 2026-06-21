@@ -61,6 +61,7 @@ model Project {
   id           String @id
   workspaceId  String
   name         String
+  slug         String
   prefix       String
   color        String
   lastIssueKey Int    @default(0)
@@ -71,6 +72,7 @@ model Project {
   labels    Label[]
 
   @@unique([workspaceId, prefix])
+  @@unique([workspaceId, slug])
 }
 
 // ─── Global config (shared across workspaces via join tables) ─────────────────

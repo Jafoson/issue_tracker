@@ -16,6 +16,7 @@ export const getProjectsWithStats = cache(async (workspaceId: string): Promise<P
   return projects.map((p) => ({
     id: p.id,
     name: p.name,
+    slug: p.slug,
     prefix: p.prefix,
     color: p.color,
     issueCount: p._count.issues,

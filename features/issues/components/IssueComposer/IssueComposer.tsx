@@ -46,7 +46,9 @@ export function IssueComposer({ open, initialStatus, onClose }: IssueComposerPro
 
   const defaultProjectId = (() => {
     const seg = pathname.split("/");
-    if (seg[4] === "board" || seg[4] === "list") return seg[5] ?? projects[0]?.id ?? "";
+    if (seg[3] === "project" && seg[4]) {
+      return projects.find((p) => p.slug === seg[4])?.id ?? projects[0]?.id ?? "";
+    }
     return projects[0]?.id ?? "";
   })();
 

@@ -1,4 +1,3 @@
-import { toProjectSlug } from "@/lib/slug";
 import type { T } from "@/lib/translations-context";
 import type { Project } from "@/types";
 
@@ -10,7 +9,7 @@ function projectFromPath(
 ): Project | null {
   const m = path.match(new RegExp(`^${base}/project/([^/]+)`));
   if (!m) return null;
-  return projects.find((p) => toProjectSlug(p.name) === m[1]) ?? null;
+  return projects.find((p) => p.slug === m[1]) ?? null;
 }
 
 /** Human title for a tab path (no query string). */

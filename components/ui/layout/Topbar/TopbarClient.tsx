@@ -7,7 +7,6 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { TabBar } from "@/components/ui/layout/TabBar/TabBar";
-import { toProjectSlug } from "@/lib/slug";
 import type { T } from "@/lib/translations-context";
 import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
@@ -53,10 +52,11 @@ export function TopbarClient() {
 
   const currentSlug =
     pathname.match(new RegExp(`^${base}/project/([^/]+)`))?.[1] ??
-    toProjectSlug(projects[0]?.name ?? "");
+    projects[0]?.slug ??
+    "";
 
   const currentProject =
-    projects.find((p) => toProjectSlug(p.name) === currentSlug) ??
+    projects.find((p) => p.slug === currentSlug) ??
     projects[0] ??
     null;
 

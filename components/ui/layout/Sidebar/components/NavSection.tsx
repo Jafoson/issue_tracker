@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
 import { ProjectComposer } from "@/features/projects/components/ProjectComposer/ProjectComposer";
-import { toProjectSlug } from "@/lib/slug";
 import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
 
@@ -22,7 +21,8 @@ export function NavSection() {
 
   const getInitialOpen = () => {
     for (const p of projects) {
-      if (pathname.startsWith(`${base}/project/${toProjectSlug(p.name)}`))
+      const projPath = `${base}/project/${p.slug}`;
+      if (pathname === projPath || pathname.startsWith(`${projPath}/`))
         return p.id;
     }
     return null;
@@ -51,10 +51,10 @@ export function NavSection() {
       </div>
       <div className={styles.projectList}>
         {projects.map((p) => {
-          const slug = toProjectSlug(p.name);
-          const isProjectActive = pathname.startsWith(
-            `${base}/project/${slug}`,
-          );
+          const slug = p.slug;
+          const projPath = `${base}/project/${slug}`;
+          const isProjectActive =
+            pathname === projPath || pathname.startsWith(`${projPath}/`);
           const isOpen = openId === p.id;
 
           return (
