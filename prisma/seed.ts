@@ -12,7 +12,7 @@ const WS = "nimbus";
 
 // Bootstrap: erster Plattform-Admin (SaaS-Betreiber-Ebene über allen Workspaces).
 // u1 (Mara) wird global zum Plattform-Admin ernannt. Hat keinen Durchgriff auf
-// Tenant-Inhalte, nur auf Plattform-Operationen (siehe lib/platform.ts).
+// Tenant-Inhalte, nur auf Plattform-Operationen.
 const PLATFORM_ADMIN_IDS = new Set(["u1"]);
 
 // ─── Workspace Config ─────────────────────────────────────────────────────────

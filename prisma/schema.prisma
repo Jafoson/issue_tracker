@@ -15,8 +15,7 @@ model Workspace {
   slug      String   @unique
   color     String   @default("#6e63e6")
   // Plattform-Ebene: ein Workspace = ein Tenant. `suspended` deaktiviert den
-  // Zugriff ohne Löschen (vom Plattform-Admin gesetzt). `createdAt` für die
-  // Tenant-Übersicht im Admin-Panel.
+  // Zugriff ohne Löschen (vom Plattform-Admin gesetzt).
   suspended Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -40,7 +39,7 @@ model User {
   color        String
   passwordHash String?
   // Globale Plattform-Ebene über allen Workspaces (SaaS-Betreiber). Gibt KEINEN
-  // Zugriff auf Tenant-Inhalte — nur auf Plattform-Operationen (siehe lib/platform.ts).
+  // Zugriff auf Tenant-Inhalte — nur auf Plattform-Operationen.
   isPlatformAdmin Boolean @default(false)
 
   workspaces         WorkspaceMember[]
