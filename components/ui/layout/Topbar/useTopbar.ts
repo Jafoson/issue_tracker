@@ -32,13 +32,9 @@ export function useTopbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/${workspace}`;
-
-  const { priorities, members, labels } = useWorkspace();
+  const { locale } = useParams<{ locale: string }>();
+  const { priorities, members, labels, workspace } = useWorkspace();
+  const base = `/${locale}/${workspace.id}`;
 
   const showFilters = pathname.startsWith(`${base}/project/`);
   const showSort =

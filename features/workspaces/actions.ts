@@ -116,5 +116,5 @@ export async function createWorkspace(
     return { error: "Something went wrong. Please try again." };
   }
 
-  return { redirectTo: `/${locale}/w/${finalSlug}/board/${projectId}` };
+  return { redirectTo: `/${locale}/${finalSlug}` };
 }

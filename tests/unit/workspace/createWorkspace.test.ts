@@ -135,8 +135,8 @@ describe("createWorkspace()", () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toContain(
-        "/de/w/existing1/board/",
+      expect((result as { redirectTo: string }).redirectTo).toBe(
+        "/de/existing1",
       );
     });
 
@@ -149,8 +149,8 @@ describe("createWorkspace()", () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toContain(
-        "/de/w/existing2/board/",
+      expect((result as { redirectTo: string }).redirectTo).toBe(
+        "/de/existing2",
       );
     });
   });
@@ -171,7 +171,7 @@ describe("createWorkspace()", () => {
       expect(result).toMatchObject({ redirectTo: expect.any(String) });
     });
 
-    it("leitet zum Board weiter mit korrektem Workspace-Slug", async () => {
+    it("leitet zum Workspace weiter mit korrektem Workspace-Slug", async () => {
       const result = await createWorkspace(
         makeFormData({
           name: "My Workspace",
@@ -179,8 +179,8 @@ describe("createWorkspace()", () => {
           locale: "de",
         }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toContain(
-        "/de/w/my-workspace/board/",
+      expect((result as { redirectTo: string }).redirectTo).toBe(
+        "/de/my-workspace",
       );
     });
 

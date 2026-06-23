@@ -10,14 +10,11 @@ import { useWorkspace } from "@/lib/workspace-context";
 import styles from "../sidebar.module.scss";
 
 export function NavSection() {
-  const { projects } = useWorkspace();
+  const { projects, workspace } = useWorkspace();
   const t = useTranslations();
   const pathname = usePathname();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/${workspace}`;
+  const { locale } = useParams<{ locale: string }>();
+  const base = `/${locale}/${workspace.id}`;
 
   const getInitialOpen = () => {
     for (const p of projects) {
@@ -35,7 +32,7 @@ export function NavSection() {
       <div className={styles.sectionHeader}>
         <span className="orbit-section-h">{t.settings.projects}</span>
         <ProjectComposer
-          workspaceId={workspace}
+          workspaceId={workspace.id}
           trigger={(open) => (
             <button
               type="button"

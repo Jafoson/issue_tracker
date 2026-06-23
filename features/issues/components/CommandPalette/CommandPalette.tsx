@@ -22,14 +22,11 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
-  const { searchIssues, projects } = useWorkspace();
+  const { searchIssues, projects, workspace } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/w/${workspace}`;
+  const { locale } = useParams<{ locale: string }>();
+  const base = `/${locale}/${workspace.id}`;
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,7 +75,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const boardHits = projects
     .filter((p) => p.name.toLowerCase().includes(lq) || "board".includes(lq))
     .map((p) => ({
-      href: `${base}/board/${p.id}`,
+      href: `${base}/project/${p.slug}`,
       label: () => p.name,
       icon: "lucide:layout-dashboard",
     }));

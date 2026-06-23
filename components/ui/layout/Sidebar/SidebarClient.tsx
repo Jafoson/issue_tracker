@@ -2,6 +2,8 @@
 
 import { useParams, usePathname } from "next/navigation";
 import { useTranslations } from "@/lib/translations-context";
+import { useWorkspace } from "@/lib/workspace-context";
+import { AdminNav } from "./components/AdminNav";
 import { NavLink } from "./components/NavLink";
 import { NavSection } from "./components/NavSection";
 import { QuickActions } from "./components/QuickActions";
@@ -16,11 +18,20 @@ interface SidebarClientProps {
 export function SidebarClient({ onLogout }: SidebarClientProps) {
   const t = useTranslations();
   const pathname = usePathname();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/${workspace}`;
+  // Die Workspace-ID kommt aus dem Context (nicht aus der URL), damit dieselbe
+  // Sidebar auch im plattformweiten /admin-Bereich (ohne [workspace]-Segment) trägt.
+  const { isPlatformAdmin, workspace } = useWorkspace();
+  const { locale } = useParams<{ locale: string }>();
+  const base = `/${locale}/${workspace.id}`;
+
+  // Plattformweiter Admin-Bereich: eigene Kategorie-Sidebar, gleiche Shell.
+  const adminBase = `/${locale}/admin`;
+  const isAdminMode =
+    pathname === adminBase || pathname.startsWith(`${adminBase}/`);
+  if (isAdminMode) {
+    return <AdminNav onLogout={onLogout} />;
+  }
+
   const navTop: Array<
     | {
         href: string;
@@ -38,6 +49,15 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
   const navBottom = [
     { href: `${base}/members`, icon: "lucide:users", label: t.nav.members },
     { href: `${base}/teams`, icon: "lucide:users-2", label: t.nav.teams },
+    ...(isPlatformAdmin
+      ? [
+          {
+            href: `/${locale}/admin`,
+            icon: "lucide:shield",
+            label: t.nav.adminSettings,
+          },
+        ]
+      : []),
   ];
 
   const isActive = (href: string) =>

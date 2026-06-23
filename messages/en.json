@@ -9,7 +9,12 @@
     "settings": "Settings",
     "newWorkspace": "New workspace",
     "projects": "Projects",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "admin": "Admin",
+    "adminSettings": "Admin Settings",
+    "general": "General",
+    "roles": "Roles & Permissions",
+    "backToWorkspace": "Back to workspace"
   },
   "actions": {
     "newIssue": "New issue",
@@ -111,6 +116,25 @@
     "openIssues": "open issues",
     "projects": "projects",
     "members": "members"
+  },
+  "roles": {
+    "title": "Roles & Permissions",
+    "subtitle": "Permissions granted to each role in this workspace.",
+    "permissions": "Permissions",
+    "noPermissions": "No permissions"
+  },
+  "platform": {
+    "overview": "Overview",
+    "overviewDesc": "Platform-wide metrics across all workspaces.",
+    "workspaces": "Workspaces",
+    "users": "Users",
+    "projects": "Projects",
+    "membersTitle": "All users",
+    "membersDesc": "Every user account on the platform – across all workspaces.",
+    "colUser": "User",
+    "colEmail": "Email",
+    "colWorkspaces": "Workspaces",
+    "platformAdmin": "Platform admin"
   },
   "comments": {
     "title": "Comments",

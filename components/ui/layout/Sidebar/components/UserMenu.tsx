@@ -16,16 +16,13 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ onLogout }: UserMenuProps) {
-  const { me } = useWorkspace();
+  const { me, workspace } = useWorkspace();
   const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/${workspace}`;
+  const { locale } = useParams<{ locale: string }>();
+  const base = `/${locale}/${workspace.id}`;
   const inboxActive = pathname === `${base}/inbox`;
 
   return (

@@ -9,16 +9,13 @@ import { tabMeta } from "./tabMeta";
 import { useTabBar } from "./useTabBar";
 
 export function TabBar() {
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/${workspace}`;
-  const { projects } = useWorkspace();
+  const { locale } = useParams<{ locale: string }>();
+  const { projects, workspace } = useWorkspace();
+  const base = `/${locale}/${workspace.id}`;
   const t = useTranslations();
 
   const { tabs, activeId, ready, switchTab, openTab, closeTab } = useTabBar(
-    workspace,
+    workspace.id,
     `${base}/my`,
   );
 

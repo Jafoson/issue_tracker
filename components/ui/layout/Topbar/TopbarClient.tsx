@@ -26,13 +26,10 @@ function sortOptions(t: T) {
 }
 
 export function TopbarClient() {
-  const { projects } = useWorkspace();
+  const { projects, workspace } = useWorkspace();
   const t = useTranslations();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
-  const base = `/${locale}/${workspace}`;
+  const { locale } = useParams<{ locale: string }>();
+  const base = `/${locale}/${workspace.id}`;
 
   const {
     router,

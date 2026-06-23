@@ -1,17 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
-import {
-  getIssueTypes,
-  getLabels,
-  getMembers,
-  getPriorities,
-  getProjects,
-  getRoles,
-  getSearchIssues,
-  getStatuses,
-  getUserWorkspaces,
-  getWorkspace,
-} from "@/features/issues/queries";
+import { loadWorkspaceData } from "@/features/issues/queries";
 import { getStaticMessages, hasLocale } from "@/lib/i18n";
 import { getSession } from "@/lib/session";
 
@@ -30,56 +19,14 @@ export default async function AppLayout({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const ws = await getWorkspace(workspaceId);
-  if (!ws) notFound();
-
-  const [
-    projects,
-    members,
-    labels,
-    searchIssues,
-    statuses,
-    priorities,
-    issueTypes,
-    roles,
-    userWorkspaces,
-    messages,
-  ] = await Promise.all([
-    getProjects(workspaceId),
-    getMembers(workspaceId),
-    getLabels(workspaceId),
-    getSearchIssues(workspaceId),
-    getStatuses(workspaceId),
-    getPriorities(workspaceId),
-    getIssueTypes(workspaceId),
-    getRoles(workspaceId),
-    getUserWorkspaces(session.userId),
+  const [data, messages] = await Promise.all([
+    loadWorkspaceData(workspaceId, session.userId),
     getStaticMessages(locale),
   ]);
-
-  const me =
-    members.find((m) => m.id === session.userId) ??
-    members.find((m) => m.role === "admin") ??
-    members[0];
-  if (!me) redirect(`/${locale}/login`);
+  if (!data) notFound();
 
   return (
-    <AppShell
-      messages={messages}
-      workspace={{
-        workspace: ws,
-        userWorkspaces,
-        me,
-        members,
-        projects,
-        labels,
-        statuses,
-        priorities,
-        issueTypes,
-        roles,
-        searchIssues,
-      }}
-    >
+    <AppShell messages={messages} workspace={data}>
       {children}
     </AppShell>
   );

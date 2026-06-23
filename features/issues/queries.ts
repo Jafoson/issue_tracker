@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
-import type { SearchableIssue } from "@/lib/workspace-context";
+import type { SearchableIssue, WorkspaceData } from "@/lib/workspace-context";
 import type {
   Issue,
   IssueType,
@@ -89,6 +89,16 @@ export const getProjects = cache(
       prefix: p.prefix,
       color: p.color,
     }));
+  },
+);
+
+export const getIsPlatformAdmin = cache(
+  async (userId: string): Promise<boolean> => {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { isPlatformAdmin: true },
+    });
+    return user?.isPlatformAdmin ?? false;
   },
 );
 
@@ -305,6 +315,62 @@ export async function getIssueById(id: string): Promise<Issue | null> {
     include: { comments: { orderBy: { created: "asc" } } },
   });
   return i ? mapIssue(i) : null;
+}
+
+// Lädt den kompletten Workspace-Context für die App-Shell. Wird sowohl vom
+// Workspace-Layout als auch vom plattformweiten /admin-Layout genutzt, damit
+// beide dieselbe Shell (Sidebar, Topbar, Tabs, Context) teilen.
+export async function loadWorkspaceData(
+  workspaceId: string,
+  userId: string,
+): Promise<WorkspaceData | null> {
+  const ws = await getWorkspace(workspaceId);
+  if (!ws) return null;
+
+  const [
+    projects,
+    members,
+    labels,
+    searchIssues,
+    statuses,
+    priorities,
+    issueTypes,
+    roles,
+    userWorkspaces,
+    isPlatformAdmin,
+  ] = await Promise.all([
+    getProjects(workspaceId),
+    getMembers(workspaceId),
+    getLabels(workspaceId),
+    getSearchIssues(workspaceId),
+    getStatuses(workspaceId),
+    getPriorities(workspaceId),
+    getIssueTypes(workspaceId),
+    getRoles(workspaceId),
+    getUserWorkspaces(userId),
+    getIsPlatformAdmin(userId),
+  ]);
+
+  const me =
+    members.find((m) => m.id === userId) ??
+    members.find((m) => m.role === "admin") ??
+    members[0];
+  if (!me) return null;
+
+  return {
+    workspace: ws,
+    userWorkspaces,
+    me,
+    members,
+    projects,
+    labels,
+    statuses,
+    priorities,
+    issueTypes,
+    roles,
+    searchIssues,
+    isPlatformAdmin,
+  };
 }
 
 export async function getIssueByRef(

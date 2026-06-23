@@ -60,10 +60,8 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   const [localLabels, setLocalLabels] = useState<Label[]>([]);
   const t = useTranslations();
   const router = useRouter();
-  const { locale, workspace } = useParams<{
-    locale: string;
-    workspace: string;
-  }>();
+  const { locale } = useParams<{ locale: string }>();
+  const workspace = workspaceData.id;
   const [, startTransition] = useTransition();
   const [issue, setIssue] = useState<Issue | null>(initialIssue ?? null);
   const [commentBody, setCommentBody] = useState("");
