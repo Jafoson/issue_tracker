@@ -149,7 +149,7 @@ export function Board({ issues, projectId }: BoardProps) {
             <div className={styles.colHeader}>
               <StatusIcon status={s.id} size={16} />
               <span className={styles.colTitle}>{s.name}</span>
-              <Badge mono size="sm">
+              <Badge mono>
                 {colIssues.length}
               </Badge>
               <button

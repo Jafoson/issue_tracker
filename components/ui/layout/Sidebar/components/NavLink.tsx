@@ -29,7 +29,7 @@ export function NavLink({
       <Icon icon={icon} width={17} />
       <span>{label}</span>
       {badge && (
-        <Badge variant="count" style={{ marginLeft: "auto" }}>
+        <Badge style={{ marginLeft: "auto" }}>
           {badge}
         </Badge>
       )}

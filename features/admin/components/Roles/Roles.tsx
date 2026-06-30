@@ -31,7 +31,7 @@ export function Roles() {
                 aria-expanded={isOpen}
               >
                 <span className={styles.roleName}>{role.name}</span>
-                <Badge variant="count">{permissions.length}</Badge>
+                <Badge>{permissions.length}</Badge>
                 <span className={styles.cardDesc}>{role.desc}</span>
                 <Icon
                   icon="lucide:chevron-right"

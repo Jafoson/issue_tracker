@@ -78,14 +78,12 @@ export function UserMenu({ onLogout }: UserMenuProps) {
       >
         <Icon icon="lucide:bell" width={16} />
         <Badge
-          variant="count"
+          active={true}
+          size="sm"
           style={{
             position: "absolute",
             top: -5,
-            right: -5,
-            fontSize: 9,
-            minWidth: 14,
-            height: 14,
+            right: -6,
             padding: "0 3px",
           }}
         >

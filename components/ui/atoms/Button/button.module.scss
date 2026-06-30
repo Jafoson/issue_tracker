@@ -1,4 +1,5 @@
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -10,8 +11,13 @@
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s, transform 0.06s;
 
+  &::after { content: ''; display: block; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: inherit; opacity: 0; transition: opacity 0.12s; }
+  &:hover:not(:disabled)::after { opacity: var(--opacity-hover); }
+  &:focus-visible:not(:disabled)::after { opacity: var(--opacity-focus); }
+  &:active:not(:disabled)::after { opacity: var(--opacity-active); }
+
   &:active:not(:disabled) { transform: translateY(1px); }
-  &:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+  &:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; pointer-events: none; }
 
   /* ── Sizes (base padding, no icon) ── */
   &.sm { height: 26px; padding: 0 8px;  font-size: var(--text-xs);   gap: 5px; }
@@ -25,60 +31,49 @@
 /* ── Variants ── */
 
 .primary {
-  background: var(--accent);
+  background: var(--primary);
   border: 1px solid transparent;
-  color: var(--text-on-accent);
+  color: var(--on-primary);
   font-weight: 600;
 
-  &:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--accent) 88%, #fff);
-  }
+  &::after { background: var(--on-primary); }
 }
 
 .elevated {
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
-  &:hover:not(:disabled) {
-    background: var(--card-hover);
-    border-color: var(--border-strong);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
-  }
+  &::after { background: var(--on-surface); }
 }
 
 .ghost {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-2);
+  color: var(--on-background);
 
-  &:hover:not(:disabled) {
-    background: var(--card-hover);
-    color: var(--text);
-  }
+  &::after { background: var(--on-background); }
 }
 
 .outline {
   background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text);
+  border: 1px solid var(--outline);
+  color: var(--on-surface);
 
-  &:hover:not(:disabled) {
-    background: var(--card-hover);
-  }
+  &::after { background: var(--on-surface); }
 }
 
 .text {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-2);
+  color: var(--on-background);
 
   &.sm { padding-inline: 4px; }
   &.md { padding-inline: 6px; }
   &.lg { padding-inline: 8px; }
 
-  &:hover:not(:disabled) { color: var(--text); }
+  &::after { background: var(--on-background); }
 }
 
 /* ── Icon modifiers ── */
