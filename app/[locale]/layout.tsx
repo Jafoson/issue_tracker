@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
@@ -21,6 +22,11 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 });
+
+export const metadata: Metadata = {
+  title: "Orbit — Issue Tracker",
+  description: "Open source issue tracker",
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
