@@ -109,7 +109,8 @@
     "colRole": "Rolle",
     "colTeams": "Teams",
     "noTeams": "Keine Teams",
-    "removeTitle": "Mitglied entfernen"
+    "removeTitle": "Mitglied entfernen",
+    "activeProjects": "{count, plural, one {# aktives Projekt} other {# aktive Projekte}}"
   },
   "teams": {
     "title": "Teams",
@@ -143,7 +144,8 @@
   "empty": {
     "noIssues": "Keine Aufgaben",
     "noAssignedIssues": "Dir sind keine Aufgaben zugewiesen",
-    "allCaughtUp": "Alles erledigt!"
+    "allCaughtUp": "Alles erledigt!",
+    "noResults": "Keine Ergebnisse für „{q}“"
   },
   "palette": {
     "navigation": "Navigation",
@@ -166,7 +168,14 @@
     "continueWithGoogle": "Mit Google fortfahren",
     "or": "oder",
     "noAccount": "Noch kein Konto?",
-    "requestAccess": "Zugang anfragen"
+    "requestAccess": "Zugang anfragen",
+    "signInTo": "Bei {ws} anmelden"
+  },
+  "filters": {
+    "statuses": "{count} Status",
+    "priorities": "{count, plural, one {# Priorität} other {# Prioritäten}}",
+    "people": "{count, plural, one {# Person} other {# Personen}}",
+    "labels": "{count, plural, one {# Label} other {# Labels}}"
   },
   "toast": {
     "issueCreated": "Aufgabe erstellt"

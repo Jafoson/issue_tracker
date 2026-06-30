@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import {
   assigneeIdToSlug,
   assigneeSlugToId,
@@ -32,9 +28,8 @@ export function useTopbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const { locale } = useParams<{ locale: string }>();
   const { priorities, members, labels, workspace } = useWorkspace();
-  const base = `/${locale}/${workspace.id}`;
+  const base = `/${workspace.id}`;
 
   const showFilters = pathname.startsWith(`${base}/project/`);
   const showSort =

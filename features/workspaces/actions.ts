@@ -38,7 +38,6 @@ export async function createWorkspace(
   const name = (formData.get("name") as string | null)?.trim() ?? "";
   const slug = (formData.get("slug") as string | null)?.trim() ?? "";
   const color = (formData.get("color") as string | null)?.trim() || "#6e63e6";
-  const locale = (formData.get("locale") as string | null) ?? "de";
 
   if (!name || !slug) return { error: "Name and slug are required." };
   if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug) && slug.length > 1) {
@@ -116,5 +115,6 @@ export async function createWorkspace(
     return { error: "Something went wrong. Please try again." };
   }
 
-  return { redirectTo: `/${locale}/${finalSlug}` };
+  // Locale-freier Pfad – der Client navigiert über next-intl (auto-Präfix).
+  return { redirectTo: `/${finalSlug}` };
 }

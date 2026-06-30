@@ -9,9 +9,10 @@ export default async function IssuePage({
 }: {
   params: Promise<{ locale: string; workspace: string; issueRef: string }>;
 }) {
-  const { locale, workspace, issueRef } = await params;
+  const { workspace, issueRef } = await params;
   const issue = await getIssueByRef(workspace, issueRef);
   if (!issue) notFound();
 
-  return <IssueDetailPage issue={issue} backHref={`/${locale}/${workspace}`} />;
+  // Locale-frei – IssueDetailPage navigiert über next-intl (auto-Präfix).
+  return <IssueDetailPage issue={issue} backHref={`/${workspace}`} />;
 }

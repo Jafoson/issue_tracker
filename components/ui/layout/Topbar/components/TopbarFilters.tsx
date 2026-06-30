@@ -12,7 +12,7 @@ import {
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
-import type { T } from "@/lib/translations-context";
+import type { Translator } from "@/i18n/types";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 import styles from "../topbar.module.scss";
@@ -30,7 +30,7 @@ interface TopbarFiltersProps {
   onToggle: (key: string, value: string | number) => void;
   onClear: (key: string) => void;
   onClearAll: () => void;
-  t: T;
+  t: Translator;
   end?: React.ReactNode;
   projectId: string;
   projectName: string;
@@ -168,10 +168,10 @@ export function TopbarFilters({
               }
             >
               {f.statuses.length === 0
-                ? t.fields.status
+                ? t("fields.status")
                 : f.statuses.length === 1
                   ? statusName(f.statuses[0])
-                  : t.filters.statuses(f.statuses.length)}
+                  : t("filters.statuses", { count: f.statuses.length })}
             </Button>
           }
           width={200}
@@ -236,10 +236,10 @@ export function TopbarFilters({
               }
             >
               {f.priorities.length === 0
-                ? t.fields.priority
+                ? t("fields.priority")
                 : f.priorities.length === 1
                   ? priorityName(f.priorities[0])
-                  : t.filters.priorities(f.priorities.length)}
+                  : t("filters.priorities", { count: f.priorities.length })}
             </Button>
           }
           width={190}
@@ -281,10 +281,10 @@ export function TopbarFilters({
               }
             >
               {f.assignees.length === 0
-                ? t.fields.assignee
+                ? t("fields.assignee")
                 : f.assignees.length === 1
-                  ? (assigneeUser?.name.split(" ")[0] ?? t.fields.assignee)
-                  : t.filters.people(f.assignees.length)}
+                  ? (assigneeUser?.name.split(" ")[0] ?? t("fields.assignee"))
+                  : t("filters.people", { count: f.assignees.length })}
             </Button>
           }
           width={210}
@@ -320,10 +320,10 @@ export function TopbarFilters({
               }
             >
               {f.labels.length === 0
-                ? t.fields.label
+                ? t("fields.label")
                 : f.labels.length === 1
-                  ? (selectedLabel1?.name ?? t.fields.label)
-                  : t.filters.labels(f.labels.length)}
+                  ? (selectedLabel1?.name ?? t("fields.label"))
+                  : t("filters.labels", { count: f.labels.length })}
             </Button>
           }
           width={220}
@@ -357,7 +357,7 @@ export function TopbarFilters({
           style={{ color: "var(--accent)" }}
           onClick={onClearAll}
         >
-          {t.actions.clear}
+          {t("actions.clear")}
         </Button>
       )}
 

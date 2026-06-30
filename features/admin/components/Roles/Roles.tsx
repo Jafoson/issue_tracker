@@ -1,9 +1,9 @@
 "use client";
 import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { DEFAULT_ROLES, PERMISSION_DESCRIPTIONS } from "@/lib/rbac";
-import { useTranslations } from "@/lib/translations-context";
 import styles from "./roles.module.scss";
 
 export function Roles() {
@@ -13,9 +13,9 @@ export function Roles() {
   return (
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
-        <h2 className={styles.pageTitle}>{t.roles.title}</h2>
+        <h2 className={styles.pageTitle}>{t("roles.title")}</h2>
       </div>
-      <p className={styles.subtitle}>{t.roles.subtitle}</p>
+      <p className={styles.subtitle}>{t("roles.subtitle")}</p>
 
       <div className={styles.list}>
         {DEFAULT_ROLES.map((role) => {
@@ -44,7 +44,7 @@ export function Roles() {
                 <ul className={styles.perms}>
                   {permissions.length === 0 ? (
                     <li className={styles.permEmpty}>
-                      {t.roles.noPermissions}
+                      {t("roles.noPermissions")}
                     </li>
                   ) : (
                     permissions.map((perm) => (

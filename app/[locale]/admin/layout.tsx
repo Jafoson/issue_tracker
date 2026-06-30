@@ -5,7 +5,6 @@ import {
   getIsPlatformAdmin,
   loadWorkspaceData,
 } from "@/features/issues/queries";
-import { getStaticMessages, hasLocale } from "@/lib/i18n";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +20,6 @@ export default async function AdminLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  if (!hasLocale(locale)) notFound();
 
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
@@ -32,15 +30,8 @@ export default async function AdminLayout({
   const firstWorkspaceId = await getFirstWorkspaceId(session.userId);
   if (!firstWorkspaceId) redirect(`/${locale}/create-workspace`);
 
-  const [data, messages] = await Promise.all([
-    loadWorkspaceData(firstWorkspaceId, session.userId),
-    getStaticMessages(locale),
-  ]);
+  const data = await loadWorkspaceData(firstWorkspaceId, session.userId);
   if (!data) notFound();
 
-  return (
-    <AppShell messages={messages} workspace={data}>
-      {children}
-    </AppShell>
-  );
+  return <AppShell workspace={data}>{children}</AppShell>;
 }

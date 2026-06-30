@@ -1,8 +1,8 @@
 import { Icon } from "@iconify/react";
-import Link from "next/link";
 import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
 import { ProjectComposer } from "@/features/projects/components/ProjectComposer/ProjectComposer";
 import type { ProjectWithStats } from "@/features/projects/queries";
+import { Link } from "@/i18n/navigation";
 import type { User } from "@/types";
 import styles from "./projectList.module.scss";
 

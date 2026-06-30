@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Sidebar } from "@/components/ui/layout/Sidebar/Sidebar";
 import { Topbar } from "@/components/ui/layout/Topbar/Topbar";
@@ -8,8 +8,7 @@ import { logout } from "@/features/auth/actions";
 import { CommandPalette } from "@/features/issues/components/CommandPalette/CommandPalette";
 import { IssueComposer } from "@/features/issues/components/IssueComposer/IssueComposer";
 import { IssueDetail } from "@/features/issues/components/IssueDetail/IssueDetail";
-import type { StaticMessages } from "@/lib/i18n";
-import { TranslationsProvider } from "@/lib/translations-context";
+import { useRouter } from "@/i18n/navigation";
 import { UIProvider, useUI } from "@/lib/ui-store";
 import type { WorkspaceData } from "@/lib/workspace-context";
 import { WorkspaceProvider } from "@/lib/workspace-context";
@@ -28,7 +27,6 @@ function Toast() {
 function Shell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { locale } = useParams<{ locale: string }>();
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerStatus, setComposerStatus] = useState<string | undefined>(
     undefined,
@@ -37,7 +35,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   async function handleLogout() {
     await logout();
-    router.push(`/${locale}/login`);
+    router.push("/login");
   }
 
   const issueRef = searchParams.get("issue");
@@ -98,21 +96,17 @@ function Shell({ children }: { children: React.ReactNode }) {
 export function AppShell({
   children,
   workspace,
-  messages,
 }: {
   children: React.ReactNode;
   workspace: WorkspaceData;
-  messages: StaticMessages;
 }) {
   return (
     <UIProvider>
-      <TranslationsProvider messages={messages}>
-        <WorkspaceProvider value={workspace}>
-          <Suspense fallback={null}>
-            <Shell>{children}</Shell>
-          </Suspense>
-        </WorkspaceProvider>
-      </TranslationsProvider>
+      <WorkspaceProvider value={workspace}>
+        <Suspense fallback={null}>
+          <Shell>{children}</Shell>
+        </Suspense>
+      </WorkspaceProvider>
     </UIProvider>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import { Icon } from "@iconify/react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
@@ -9,7 +10,6 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { removeMember, setMemberRole } from "@/features/issues/actions";
-import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Team, User } from "@/types";
 import styles from "./members.module.scss";
@@ -42,22 +42,22 @@ export function Members({ members, teams }: Props) {
   return (
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
-        <h2 className={styles.pageTitle}>{t.members.title}</h2>
+        <h2 className={styles.pageTitle}>{t("members.title")}</h2>
         {isAdmin && (
           <Button
             variant="primary"
             icon={<Icon icon="lucide:plus" width={15} />}
           >
-            {t.actions.inviteMember}
+            {t("actions.inviteMember")}
           </Button>
         )}
       </div>
 
       <div className={styles.table}>
         <div className={styles.tableHeader}>
-          <span>{t.members.colUser}</span>
-          <span>{t.members.colRole}</span>
-          <span>{t.members.colTeams}</span>
+          <span>{t("members.colUser")}</span>
+          <span>{t("members.colRole")}</span>
+          <span>{t("members.colTeams")}</span>
           {isAdmin && <span />}
         </div>
         {members.map((member) => {
@@ -116,7 +116,7 @@ export function Members({ members, teams }: Props) {
                 ))}
                 {memberTeams.length === 0 && (
                   <span className="faint" style={{ fontSize: 12 }}>
-                    {t.members.noTeams}
+                    {t("members.noTeams")}
                   </span>
                 )}
               </div>
@@ -125,10 +125,10 @@ export function Members({ members, teams }: Props) {
                 <button
                   type="button"
                   className="iconbtn"
-                  title={t.members.removeTitle}
+                  title={t("members.removeTitle")}
                   disabled={member.id === me.id}
                   onClick={() => {
-                    if (confirm(`${t.members.removeTitle} ${member.name}?`))
+                    if (confirm(`${t("members.removeTitle")} ${member.name}?`))
                       remove(member.id);
                   }}
                 >

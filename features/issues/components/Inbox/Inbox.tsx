@@ -1,11 +1,10 @@
 "use client";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
-
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { useTranslations } from "@/lib/translations-context";
+import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue } from "@/types";
@@ -41,7 +40,7 @@ export function Inbox({ issues }: Props) {
     return (
       <div className={styles.empty}>
         <Icon icon="lucide:inbox" width={36} style={{ opacity: 0.3 }} />
-        <p>{t.empty.allCaughtUp}</p>
+        <p>{t("empty.allCaughtUp")}</p>
       </div>
     );
   }
@@ -62,7 +61,7 @@ export function Inbox({ issues }: Props) {
               <div className={styles.meta}>
                 <span className={styles.author}>{author?.name}</span>
                 <span className="faint" style={{ fontSize: 12 }}>
-                  {t.comments.commentedOn}
+                  {t("comments.commentedOn")}
                 </span>
                 <StatusIcon status={issue.status} size={13} />
                 <span className={styles.issueTitle}>{issue.title}</span>

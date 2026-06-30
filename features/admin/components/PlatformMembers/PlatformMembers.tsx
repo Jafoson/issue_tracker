@@ -1,9 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import type { PlatformUser } from "@/features/admin/queries";
-import { useTranslations } from "@/lib/translations-context";
 import styles from "./platformMembers.module.scss";
 
 interface Props {
@@ -16,15 +16,15 @@ export function PlatformMembers({ users }: Props) {
   return (
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
-        <h2 className={styles.pageTitle}>{t.platform.membersTitle}</h2>
+        <h2 className={styles.pageTitle}>{t("platform.membersTitle")}</h2>
       </div>
-      <p className={styles.subtitle}>{t.platform.membersDesc}</p>
+      <p className={styles.subtitle}>{t("platform.membersDesc")}</p>
 
       <div className={styles.table}>
         <div className={styles.tableHeader}>
-          <span>{t.platform.colUser}</span>
-          <span>{t.platform.colEmail}</span>
-          <span>{t.platform.colWorkspaces}</span>
+          <span>{t("platform.colUser")}</span>
+          <span>{t("platform.colEmail")}</span>
+          <span>{t("platform.colWorkspaces")}</span>
         </div>
         {users.map((u) => (
           <div key={u.id} className={styles.row}>
@@ -45,7 +45,7 @@ export function PlatformMembers({ users }: Props) {
                   {u.name}
                   {u.isPlatformAdmin && (
                     <Badge size="sm" active>
-                      {t.platform.platformAdmin}
+                      {t("platform.platformAdmin")}
                     </Badge>
                   )}
                 </div>

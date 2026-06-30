@@ -1,6 +1,7 @@
 "use client";
 import { Icon } from "@iconify/react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
@@ -13,7 +14,6 @@ import {
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
-import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 import styles from "./issueComposer.module.scss";
@@ -136,7 +136,7 @@ export function IssueComposer({
         size="sm"
         icon={<Icon icon="lucide:tag" width={13} />}
       >
-        {t.fields.label}
+        {t("fields.label")}
       </Button>
     );
   } else if (labels.length === 1) {
@@ -158,7 +158,7 @@ export function IssueComposer({
           />
         }
       >
-        {l?.name ?? t.filters.labels(1)}
+        {l?.name ?? t("filters.labels", { count: 1 })}
       </Button>
     );
   } else {
@@ -186,7 +186,7 @@ export function IssueComposer({
           </span>
         }
       >
-        {t.filters.labels(labels.length)}
+        {t("filters.labels", { count: labels.length })}
       </Button>
     );
   }
@@ -250,7 +250,7 @@ export function IssueComposer({
               )}
             </InlinePicker>
             <span className={styles.sep}>›</span>
-            <span className={styles.pageTitle}>{t.actions.newIssue}</span>
+            <span className={styles.pageTitle}>{t("actions.newIssue")}</span>
           </div>
 
           <div className={styles.headerRight}>
@@ -280,7 +280,7 @@ export function IssueComposer({
           <input
             ref={titleRef}
             className={styles.titleInput}
-            placeholder={t.placeholders.issueTitle}
+            placeholder={t("placeholders.issueTitle")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -290,7 +290,7 @@ export function IssueComposer({
           <textarea
             key={expanded ? "expanded" : "compact"}
             className={styles.descInput}
-            placeholder={t.placeholders.addDescription}
+            placeholder={t("placeholders.addDescription")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={expanded ? 18 : 4}
@@ -367,7 +367,7 @@ export function IssueComposer({
               >
                 {assigneeUser
                   ? assigneeUser.name.split(" ")[0]
-                  : t.fields.assignee}
+                  : t("fields.assignee")}
               </Button>
             }
             width={220}
@@ -378,7 +378,7 @@ export function IssueComposer({
                 items={[
                   {
                     value: null,
-                    label: t.fields.unassigned,
+                    label: t("fields.unassigned"),
                     icon: <Avatar user={null} size={18} />,
                   },
                   ...members.map((u) => ({
@@ -425,7 +425,7 @@ export function IssueComposer({
             disabled={!title.trim()}
             onClick={submit}
           >
-            {t.actions.createIssue}
+            {t("actions.createIssue")}
           </Button>
         </div>
       </div>

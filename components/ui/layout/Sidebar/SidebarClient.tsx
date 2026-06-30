@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, usePathname } from "next/navigation";
-import { useTranslations } from "@/lib/translations-context";
+import { useTranslations } from "next-intl";
+import { usePathname } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { AdminNav } from "./components/AdminNav";
 import { NavLink } from "./components/NavLink";
@@ -21,11 +21,10 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
   // Die Workspace-ID kommt aus dem Context (nicht aus der URL), damit dieselbe
   // Sidebar auch im plattformweiten /admin-Bereich (ohne [workspace]-Segment) trägt.
   const { isPlatformAdmin, workspace } = useWorkspace();
-  const { locale } = useParams<{ locale: string }>();
-  const base = `/${locale}/${workspace.id}`;
+  const base = `/${workspace.id}`;
 
   // Plattformweiter Admin-Bereich: eigene Kategorie-Sidebar, gleiche Shell.
-  const adminBase = `/${locale}/admin`;
+  const adminBase = "/admin";
   const isAdminMode =
     pathname === adminBase || pathname.startsWith(`${adminBase}/`);
   if (isAdminMode) {
@@ -41,20 +40,24 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
       }
     | "separator"
   > = [
-    { href: `${base}/my`, icon: "lucide:user", label: t.nav.myIssues },
+    { href: `${base}/my`, icon: "lucide:user", label: t("nav.myIssues") },
     "separator",
-    { href: `${base}/projects`, icon: "lucide:folders", label: t.nav.projects },
+    {
+      href: `${base}/projects`,
+      icon: "lucide:folders",
+      label: t("nav.projects"),
+    },
   ];
 
   const navBottom = [
-    { href: `${base}/members`, icon: "lucide:users", label: t.nav.members },
-    { href: `${base}/teams`, icon: "lucide:users-2", label: t.nav.teams },
+    { href: `${base}/members`, icon: "lucide:users", label: t("nav.members") },
+    { href: `${base}/teams`, icon: "lucide:users-2", label: t("nav.teams") },
     ...(isPlatformAdmin
       ? [
           {
-            href: `/${locale}/admin`,
+            href: "/admin",
             icon: "lucide:shield",
-            label: t.nav.adminSettings,
+            label: t("nav.adminSettings"),
           },
         ]
       : []),

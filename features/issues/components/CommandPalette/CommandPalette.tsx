@@ -1,18 +1,18 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import type { T } from "@/lib/translations-context";
-import { useTranslations } from "@/lib/translations-context";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import type { Translator } from "@/i18n/types";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "./commandPalette.module.scss";
 
 interface NavEntry {
   href: string;
-  label: (t: T) => string;
+  label: (t: Translator) => string;
   icon: string;
 }
 
@@ -25,8 +25,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const { searchIssues, projects, workspace } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
-  const { locale } = useParams<{ locale: string }>();
-  const base = `/${locale}/${workspace.id}`;
+  const pathname = usePathname();
+  const base = `/${workspace.id}`;
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,27 +35,27 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     {
       href: `${base}/my`,
       icon: "lucide:user",
-      label: (t) => t.palette.goto.my,
+      label: (t) => t("palette.goto.my"),
     },
     {
       href: `${base}/inbox`,
       icon: "lucide:inbox",
-      label: (t) => t.palette.goto.inbox,
+      label: (t) => t("palette.goto.inbox"),
     },
     {
       href: `${base}/members`,
       icon: "lucide:users",
-      label: (t) => t.palette.goto.members,
+      label: (t) => t("palette.goto.members"),
     },
     {
       href: `${base}/teams`,
       icon: "lucide:users-2",
-      label: (t) => t.palette.goto.teams,
+      label: (t) => t("palette.goto.teams"),
     },
     {
       href: `${base}/settings`,
       icon: "lucide:settings",
-      label: (t) => t.palette.goto.settings,
+      label: (t) => t("palette.goto.settings"),
     },
   ];
 
@@ -123,7 +123,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     if (item.kind === "nav") {
       router.push(item.href);
     } else {
-      router.push(`?issue=${item.identifier}`, { scroll: false });
+      router.push(`${pathname}?issue=${item.identifier}`, { scroll: false });
     }
     onClose();
   };
@@ -144,7 +144,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           <input
             ref={inputRef}
             className={styles.input}
-            placeholder={t.placeholders.searchIssues}
+            placeholder={t("placeholders.searchIssues")}
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
@@ -168,11 +168,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
         <div className={styles.results}>
           {results.length === 0 && (
-            <div className={styles.empty}>{t.empty.noResults(q)}</div>
+            <div className={styles.empty}>{t("empty.noResults", { q })}</div>
           )}
           {allNavHits.length > 0 && (
             <>
-              <div className={styles.groupLabel}>{t.palette.navigation}</div>
+              <div className={styles.groupLabel}>{t("palette.navigation")}</div>
               {allNavHits.map((e, idx) => (
                 <button
                   type="button"
@@ -196,7 +196,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           )}
           {issueHits.length > 0 && (
             <>
-              <div className={styles.groupLabel}>{t.palette.issues}</div>
+              <div className={styles.groupLabel}>{t("palette.issues")}</div>
               {issueHits.map((i, idx) => {
                 const absIdx = allNavHits.length + idx;
                 const identifier = `${projects.find((p) => p.id === i.project)?.prefix ?? "?"}-${i.key}`;
@@ -232,15 +232,15 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         </div>
 
         <div className={styles.footer}>
-          <span className="kbd">↑↓</span> {t.palette.navigate}
+          <span className="kbd">↑↓</span> {t("palette.navigate")}
           <span className="kbd" style={{ marginLeft: 8 }}>
             ↵
           </span>{" "}
-          {t.palette.select}
+          {t("palette.select")}
           <span className="kbd" style={{ marginLeft: 8 }}>
             ESC
           </span>{" "}
-          {t.palette.close}
+          {t("palette.close")}
         </div>
       </div>
     </div>,

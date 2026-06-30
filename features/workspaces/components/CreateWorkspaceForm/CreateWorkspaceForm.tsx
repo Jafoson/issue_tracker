@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import {
   createWorkspace,
   suggestWorkspaceSlug,
 } from "@/features/workspaces/actions";
+import { useRouter } from "@/i18n/navigation";
 import styles from "./createWorkspaceForm.module.scss";
 
 const COLORS = [
@@ -29,7 +29,7 @@ function toSlug(name: string) {
     .slice(0, 48);
 }
 
-export function CreateWorkspaceForm({ locale }: { locale: string }) {
+export function CreateWorkspaceForm() {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [name, setName] = useState("");
@@ -82,7 +82,6 @@ export function CreateWorkspaceForm({ locale }: { locale: string }) {
     fd.append("name", name.trim());
     fd.append("slug", slug.trim());
     fd.append("color", color);
-    fd.append("locale", locale);
 
     startTransition(async () => {
       const result = await createWorkspace(fd);

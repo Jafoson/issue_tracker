@@ -1,14 +1,13 @@
 "use client";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
-
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import {
   PriorityIcon,
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { useTranslations } from "@/lib/translations-context";
+import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue } from "@/types";
@@ -42,7 +41,7 @@ export function MyIssues({ issues }: Props) {
     return (
       <div className={styles.empty}>
         <Icon icon="lucide:check" width={36} style={{ opacity: 0.3 }} />
-        <p>{t.empty.noAssignedIssues}</p>
+        <p>{t("empty.noAssignedIssues")}</p>
       </div>
     );
   }

@@ -1,9 +1,9 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Input } from "@/components/ui/atoms/Input/Input";
-import { useTranslations } from "@/lib/translations-context";
 
 import styles from "./login.module.scss";
 
@@ -45,8 +45,8 @@ export function Login({ onLogin }: LoginProps) {
         <div className={styles.logo}>
           <OrbitLogo size={36} />
         </div>
-        <h1 className={styles.title}>{t.login.signInTo("Orbit")}</h1>
-        <p className={styles.sub}>{t.login.subtitle}</p>
+        <h1 className={styles.title}>{t("login.signInTo", { ws: "Orbit" })}</h1>
+        <p className={styles.sub}>{t("login.subtitle")}</p>
 
         <Button
           variant="elevated"
@@ -56,32 +56,32 @@ export function Login({ onLogin }: LoginProps) {
           className={styles.googleBtn}
           onClick={onLogin}
         >
-          {t.login.continueWithGoogle}
+          {t("login.continueWithGoogle")}
         </Button>
 
         <div className={styles.divider}>
-          <span>{t.login.or}</span>
+          <span>{t("login.or")}</span>
         </div>
 
         <Input
           variant="text"
-          label={t.placeholders.email}
+          label={t("placeholders.email")}
           placeholder="you@company.com"
         />
         <Input
           variant="password"
-          label={t.placeholders.password}
+          label={t("placeholders.password")}
           placeholder="••••••••"
         />
 
         <Button variant="primary" full onClick={onLogin}>
-          {t.actions.signIn}
+          {t("actions.signIn")}
         </Button>
 
         <p className={styles.footnote}>
-          {t.login.noAccount}{" "}
+          {t("login.noAccount")}{" "}
           <button type="button" onClick={onLogin}>
-            {t.login.requestAccess}
+            {t("login.requestAccess")}
           </button>
         </p>
       </div>

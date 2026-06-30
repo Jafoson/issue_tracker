@@ -1,7 +1,7 @@
 "use client";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
@@ -19,7 +19,7 @@ import {
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
-import { useTranslations } from "@/lib/translations-context";
+import { Link } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue, Label } from "@/types";
@@ -60,7 +60,6 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
   const [localLabels, setLocalLabels] = useState<Label[]>([]);
   const t = useTranslations();
   const router = useRouter();
-  const { locale } = useParams<{ locale: string }>();
   const workspace = workspaceData.id;
   const [, startTransition] = useTransition();
   const [issue, setIssue] = useState<Issue | null>(initialIssue ?? null);
@@ -199,9 +198,9 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
         <div className={styles.headerRight}>
           {!inline && (
             <Link
-              href={`/${locale}/${workspace}/issue/${identifier}`}
+              href={`/${workspace}/issue/${identifier}`}
               className="iconbtn"
-              title={t.actions.openFullscreen}
+              title={t("actions.openFullscreen")}
             >
               <Icon icon="lucide:maximize-2" width={16} />
             </Link>
@@ -227,7 +226,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
             <div className={styles.commentsHeader}>
               <Icon icon="lucide:message-square" width={14} className="faint" />
               <span style={{ fontSize: 13, fontWeight: 550 }}>
-                {t.comments.title}
+                {t("comments.title")}
                 {issue.comments.length > 0 && ` (${issue.comments.length})`}
               </span>
             </div>
@@ -264,7 +263,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               <div className={styles.commentBox}>
                 <textarea
                   className="field"
-                  placeholder={t.placeholders.addComment}
+                  placeholder={t("placeholders.addComment")}
                   value={commentBody}
                   onChange={(e) => setCommentBody(e.target.value)}
                   onKeyDown={(e) => {
@@ -280,7 +279,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                     style={{ marginTop: 6 }}
                     onClick={handleAddComment}
                   >
-                    {t.actions.comment}
+                    {t("actions.comment")}
                   </Button>
                 )}
               </div>
@@ -289,7 +288,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
         </div>
 
         <aside className={styles.sidebar}>
-          <SideField label={t.fields.status}>
+          <SideField label={t("fields.status")}>
             <InlinePicker
               trigger={
                 <button type="button" className={styles.sideBtn}>
@@ -317,7 +316,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               )}
             </InlinePicker>
           </SideField>
-          <SideField label={t.fields.priority}>
+          <SideField label={t("fields.priority")}>
             <InlinePicker
               trigger={
                 <button type="button" className={styles.sideBtn}>
@@ -345,12 +344,12 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               )}
             </InlinePicker>
           </SideField>
-          <SideField label={t.fields.assignee}>
+          <SideField label={t("fields.assignee")}>
             <InlinePicker
               trigger={
                 <button type="button" className={styles.sideBtn}>
                   <Avatar user={assignee} size={16} />
-                  {assignee?.name ?? t.fields.unassigned}
+                  {assignee?.name ?? t("fields.unassigned")}
                 </button>
               }
               width={220}
@@ -361,7 +360,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                   items={[
                     {
                       value: null,
-                      label: t.fields.unassigned,
+                      label: t("fields.unassigned"),
                       icon: <Avatar user={null} size={18} />,
                     },
                     ...members.map((u) => ({
@@ -381,7 +380,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               )}
             </InlinePicker>
           </SideField>
-          <SideField label={t.fields.labels}>
+          <SideField label={t("fields.labels")}>
             <InlinePicker
               trigger={
                 <button
@@ -396,7 +395,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                   {issue.labels.length === 0 ? (
                     <>
                       <Icon icon="lucide:tag" width={13} />
-                      {t.fields.none}
+                      {t("fields.none")}
                     </>
                   ) : (
                     issue.labels.map((lid) => {
@@ -435,7 +434,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               )}
             </InlinePicker>
           </SideField>
-          <SideField label={t.fields.project}>
+          <SideField label={t("fields.project")}>
             <div className={styles.sideBtn} style={{ cursor: "default" }}>
               <span
                 className="dot"
@@ -444,18 +443,18 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               {project.name}
             </div>
           </SideField>
-          <SideField label={t.fields.creator}>
+          <SideField label={t("fields.creator")}>
             <div className={styles.sideBtn} style={{ cursor: "default" }}>
               <Avatar user={creator} size={16} />
-              {creator?.name ?? t.fields.unassigned}
+              {creator?.name ?? t("fields.unassigned")}
             </div>
           </SideField>
-          <SideField label={t.fields.created}>
+          <SideField label={t("fields.created")}>
             <span className={styles.sideBtn} style={{ cursor: "default" }}>
               {new Date(issue.created).toLocaleDateString()}
             </span>
           </SideField>
-          <SideField label={t.fields.updated}>
+          <SideField label={t("fields.updated")}>
             <span className={styles.sideBtn} style={{ cursor: "default" }}>
               {timeAgo(issue.updated)}
             </span>
@@ -468,7 +467,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               style={{ color: "var(--red, #e05252)" }}
               onClick={handleDelete}
             >
-              {t.actions.deleteIssue}
+              {t("actions.deleteIssue")}
             </Button>
           </div>
         </aside>

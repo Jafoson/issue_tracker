@@ -1,6 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { hasLocale } from "@/lib/i18n";
 import { getSession } from "@/lib/session";
 
 export default async function LocaleRootPage({
@@ -8,8 +7,8 @@ export default async function LocaleRootPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
+  // Locale-Validierung übernimmt app/[locale]/layout.tsx (hasLocale → notFound).
   const { locale } = await params;
-  if (!hasLocale(locale)) notFound();
 
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);

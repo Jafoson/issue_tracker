@@ -134,7 +134,7 @@ describe("register()", () => {
           locale: "de",
         }),
       );
-      expect(result).toEqual({ redirectTo: "/de/create-workspace" });
+      expect(result).toEqual({ redirectTo: "/create-workspace" });
     });
 
     it("erstellt Session nach der Registrierung", async () => {
@@ -186,7 +186,7 @@ describe("register()", () => {
       expect(createdData.email).toBe("user@example.com");
     });
 
-    it("verwendet 'de' als Standard-Locale", async () => {
+    it("gibt einen locale-freien Pfad zurück (Locale ergänzt der Client via next-intl)", async () => {
       const result = await register(
         makeFormData({
           name: "Test User",
@@ -194,7 +194,9 @@ describe("register()", () => {
           password: "password123",
         }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toMatch(/^\/de\//);
+      expect((result as { redirectTo: string }).redirectTo).toBe(
+        "/create-workspace",
+      );
     });
   });
 });

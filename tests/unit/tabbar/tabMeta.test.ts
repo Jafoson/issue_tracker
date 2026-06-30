@@ -6,7 +6,7 @@ import {
   tabMeta,
   tabTitle,
 } from "@/components/ui/layout/TabBar/tabMeta";
-import type { T } from "@/lib/translations-context";
+import type { Translator } from "@/i18n/types";
 import type { Project } from "@/types";
 
 const BASE = "/de/fuchsly";
@@ -28,19 +28,19 @@ const projects: Project[] = [
   },
 ];
 
-// Only the `nav` slice is used by the helpers — cast a minimal stub as T.
-const t = {
-  nav: {
-    myIssues: "Meine Aufgaben",
-    inbox: "Posteingang",
-    board: "Board",
-    issues: "Aufgaben",
-    members: "Mitglieder",
-    teams: "Teams",
-    settings: "Einstellungen",
-    projects: "Projekte",
-  },
-} as unknown as T;
+// Only the `nav` slice is used by the helpers — fake translator returning the
+// German values for the nav keys that tabMeta/tabTitle look up.
+const dict: Record<string, string> = {
+  "nav.myIssues": "Meine Aufgaben",
+  "nav.inbox": "Posteingang",
+  "nav.board": "Board",
+  "nav.issues": "Aufgaben",
+  "nav.members": "Mitglieder",
+  "nav.teams": "Teams",
+  "nav.settings": "Einstellungen",
+  "nav.projects": "Projekte",
+};
+const t = ((key: string) => dict[key] ?? key) as unknown as Translator;
 
 describe("tabTitle()", () => {
   it("gibt den Projektnamen für eine Projekt-Board-URL zurück", () => {

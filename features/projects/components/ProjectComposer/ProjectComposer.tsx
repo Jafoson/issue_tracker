@@ -2,11 +2,11 @@
 
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { createProject } from "@/features/projects/actions";
-import { useTranslations } from "@/lib/translations-context";
 import styles from "./projectComposer.module.scss";
 
 const COLORS = [
@@ -98,7 +98,7 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
           icon={<Icon icon="lucide:plus" width={15} />}
           onClick={() => setOpen(true)}
         >
-          {t.actions.newProject}
+          {t("actions.newProject")}
         </Button>
       )}
 
@@ -120,7 +120,7 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
                     className={styles.headerIcon}
                   />
                   <span className={styles.headerTitle}>
-                    {t.projects.modalTitle}
+                    {t("projects.modalTitle")}
                   </span>
                 </div>
                 <Button
@@ -128,14 +128,14 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
                   size="sm"
                   icon={<Icon icon="lucide:x" width={16} />}
                   onClick={() => setOpen(false)}
-                  title={t.actions.cancel}
+                  title={t("actions.cancel")}
                 />
               </div>
 
               <div className={styles.body}>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="project-name">
-                    {t.placeholders.projectName}
+                    {t("placeholders.projectName")}
                   </label>
                   <input
                     ref={nameRef}
@@ -149,10 +149,10 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
 
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="project-prefix">
-                    {t.projects.identifier}
+                    {t("projects.identifier")}
                     <span className={styles.labelHint}>
                       {" · "}
-                      {t.projects.issuePrefix}
+                      {t("projects.issuePrefix")}
                     </span>
                   </label>
                   <div className={styles.prefixRow}>
@@ -169,13 +169,13 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
                       }}
                     />
                     <span className={styles.prefixExample}>
-                      {t.projects.example} {effectivePrefix || "WEB"}-123
+                      {t("projects.example")} {effectivePrefix || "WEB"}-123
                     </span>
                   </div>
                 </div>
 
                 <div className={styles.field}>
-                  <span className={styles.label}>{t.fields.color}</span>
+                  <span className={styles.label}>{t("fields.color")}</span>
                   <div className={styles.swatches}>
                     {COLORS.map((c) => (
                       <button
@@ -195,18 +195,18 @@ export function ProjectComposer({ workspaceId, trigger }: Props) {
               <div className={styles.footer}>
                 <div className={styles.shortcut}>
                   <kbd>⌘</kbd>
-                  <kbd>↵</kbd> {t.projects.toCreate}
+                  <kbd>↵</kbd> {t("projects.toCreate")}
                 </div>
                 <div className={styles.footerActions}>
                   <Button variant="outline" onClick={() => setOpen(false)}>
-                    {t.actions.cancel}
+                    {t("actions.cancel")}
                   </Button>
                   <Button
                     variant="primary"
                     disabled={!name.trim() || isPending}
                     onClick={submit}
                   >
-                    {t.actions.createProject}
+                    {t("actions.createProject")}
                   </Button>
                 </div>
               </div>

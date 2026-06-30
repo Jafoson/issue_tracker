@@ -1,7 +1,8 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "@/i18n/navigation";
 
 export type Tab = {
   id: string;

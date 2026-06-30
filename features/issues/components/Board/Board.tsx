@@ -1,12 +1,12 @@
 "use client";
 import { Icon } from "@iconify/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import React, { useOptimistic, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { reorderIssue } from "@/features/issues/actions";
 import { BoardCard } from "@/features/issues/components/BoardCard/BoardCard";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { useTranslations } from "@/lib/translations-context";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue } from "@/types";
 import styles from "./board.module.scss";
@@ -156,7 +156,7 @@ export function Board({ issues, projectId }: BoardProps) {
                 type="button"
                 className="iconbtn"
                 style={{ marginLeft: "auto" }}
-                title={t.actions.newIssue}
+                title={t("actions.newIssue")}
                 onClick={() =>
                   (
                     window as { __openComposer?: (status?: string) => void }
@@ -194,7 +194,7 @@ export function Board({ issues, projectId }: BoardProps) {
               <button
                 type="button"
                 className={styles.addCard}
-                title={t.actions.newIssue}
+                title={t("actions.newIssue")}
                 onClick={() =>
                   (
                     window as { __openComposer?: (status?: string) => void }
@@ -202,7 +202,7 @@ export function Board({ issues, projectId }: BoardProps) {
                 }
               >
                 <Icon icon="lucide:plus" width={15} />
-                <span>{t.actions.newIssue}</span>
+                <span>{t("actions.newIssue")}</span>
               </button>
             </div>
           </div>

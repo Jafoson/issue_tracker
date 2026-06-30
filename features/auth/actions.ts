@@ -30,9 +30,9 @@ export async function login(formData: FormData): Promise<AuthResult> {
     select: { workspaceId: true },
   });
 
-  const locale = (formData.get("locale") as string | null) ?? "de";
-  if (membership) return { redirectTo: `/${locale}/${membership.workspaceId}` };
-  return { redirectTo: `/${locale}/create-workspace` };
+  // Locale-freie Pfade – der Client navigiert über next-intl (auto-Präfix).
+  if (membership) return { redirectTo: `/${membership.workspaceId}` };
+  return { redirectTo: "/create-workspace" };
 }
 
 export async function register(formData: FormData): Promise<AuthResult> {
@@ -40,7 +40,6 @@ export async function register(formData: FormData): Promise<AuthResult> {
   const email =
     (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
   const password = (formData.get("password") as string | null) ?? "";
-  const locale = (formData.get("locale") as string | null) ?? "de";
 
   if (!name || !email || !password)
     return { error: "All fields are required." };
@@ -87,7 +86,7 @@ export async function register(formData: FormData): Promise<AuthResult> {
   }
 
   await createSession(id);
-  return { redirectTo: `/${locale}/create-workspace` };
+  return { redirectTo: "/create-workspace" };
 }
 
 export async function logout(): Promise<void> {

@@ -1,23 +1,22 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
-import { useTranslations } from "@/lib/translations-context";
+import { useRouter } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 
 export function WorkspaceMenu() {
   const { workspace, userWorkspaces } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
-  const { locale } = useParams<{ locale: string }>();
   const ref = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 
   function goTo(wsId: string) {
     setOpen(false);
-    router.push(`/${locale}/${wsId}`);
+    router.push(`/${wsId}`);
   }
 
   function initial(name: string) {
@@ -109,11 +108,11 @@ export function WorkspaceMenu() {
           className="menu-item"
           onClick={() => {
             setOpen(false);
-            router.push(`/${locale}/create-workspace`);
+            router.push("/create-workspace");
           }}
         >
           <Icon icon="lucide:plus" width={16} className="faint" />
-          {t.nav.newWorkspace}
+          {t("nav.newWorkspace")}
         </button>
       </Popover>
     </>

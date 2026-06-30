@@ -1,9 +1,9 @@
 import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import type { T } from "@/lib/translations-context";
+import type { Translator } from "@/i18n/types";
 
 interface QuickActionsProps {
-  t: T;
+  t: Translator;
 }
 
 export function QuickActions({ t }: QuickActionsProps) {
@@ -24,7 +24,7 @@ export function QuickActions({ t }: QuickActionsProps) {
           (window as { __openComposer?: () => void }).__openComposer?.()
         }
       >
-        {t.actions.newIssue}
+        {t("actions.newIssue")}
       </Button>
       <button
         type="button"
@@ -34,7 +34,7 @@ export function QuickActions({ t }: QuickActionsProps) {
         }
       >
         <Icon icon="lucide:search" width={15} />
-        <span>{t.placeholders.search}</span>
+        <span>{t("placeholders.search")}</span>
         <span className="kbd" style={{ marginLeft: "auto" }}>
           ⌘K
         </span>

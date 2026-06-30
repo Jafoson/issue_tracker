@@ -1,19 +1,17 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { login, register } from "@/features/auth/actions";
+import { Link, useRouter } from "@/i18n/navigation";
 import styles from "./authForm.module.scss";
 
 interface AuthFormProps {
   mode: "login" | "register";
-  locale: string;
   callbackUrl?: string;
 }
 
-export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
+export function AuthForm({ mode, callbackUrl }: AuthFormProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [name, setName] = useState("");
@@ -33,7 +31,6 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
     const fd = new FormData();
     fd.append("email", email.trim());
     fd.append("password", password);
-    fd.append("locale", locale);
     if (callbackUrl) fd.append("callbackUrl", callbackUrl);
     if (mode === "register") fd.append("name", name.trim());
 
@@ -146,12 +143,11 @@ export function AuthForm({ mode, locale, callbackUrl }: AuthFormProps) {
         <p className={styles.switch}>
           {isLogin ? (
             <>
-              No account? <Link href={`/${locale}/register`}>Sign up</Link>
+              No account? <Link href="/register">Sign up</Link>
             </>
           ) : (
             <>
-              Already have an account?{" "}
-              <Link href={`/${locale}/login`}>Sign in</Link>
+              Already have an account? <Link href="/login">Sign in</Link>
             </>
           )}
         </p>

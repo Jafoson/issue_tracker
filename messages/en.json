@@ -109,7 +109,8 @@
     "colRole": "Role",
     "colTeams": "Teams",
     "noTeams": "No teams",
-    "removeTitle": "Remove member"
+    "removeTitle": "Remove member",
+    "activeProjects": "{count, plural, one {# active project} other {# active projects}}"
   },
   "teams": {
     "title": "Teams",
@@ -143,7 +144,8 @@
   "empty": {
     "noIssues": "No issues",
     "noAssignedIssues": "You have no assigned issues",
-    "allCaughtUp": "All caught up!"
+    "allCaughtUp": "All caught up!",
+    "noResults": "No results for \"{q}\""
   },
   "palette": {
     "navigation": "Navigation",
@@ -166,7 +168,14 @@
     "continueWithGoogle": "Continue with Google",
     "or": "or",
     "noAccount": "Don't have an account?",
-    "requestAccess": "Request access"
+    "requestAccess": "Request access",
+    "signInTo": "Sign in to {ws}"
+  },
+  "filters": {
+    "statuses": "{count, plural, one {# status} other {# statuses}}",
+    "priorities": "{count, plural, one {# priority} other {# priorities}}",
+    "people": "{count, plural, one {# person} other {# people}}",
+    "labels": "{count, plural, one {# label} other {# labels}}"
   },
   "toast": {
     "issueCreated": "Issue created"

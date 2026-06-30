@@ -135,9 +135,7 @@ describe("createWorkspace()", () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toBe(
-        "/de/existing1",
-      );
+      expect((result as { redirectTo: string }).redirectTo).toBe("/existing1");
     });
 
     it("zählt weiter hoch wenn auch der erste Fallback-Slug vergeben ist", async () => {
@@ -149,9 +147,7 @@ describe("createWorkspace()", () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "existing", locale: "de" }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toBe(
-        "/de/existing2",
-      );
+      expect((result as { redirectTo: string }).redirectTo).toBe("/existing2");
     });
   });
 
@@ -180,7 +176,7 @@ describe("createWorkspace()", () => {
         }),
       );
       expect((result as { redirectTo: string }).redirectTo).toBe(
-        "/de/my-workspace",
+        "/my-workspace",
       );
     });
 

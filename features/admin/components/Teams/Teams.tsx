@@ -1,9 +1,8 @@
 "use client";
 import { Icon } from "@iconify/react";
-
+import { useTranslations } from "next-intl";
 import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { useTranslations } from "@/lib/translations-context";
 
 import { useWorkspace } from "@/lib/workspace-context";
 
@@ -25,13 +24,13 @@ export function Teams({ teams, members, projects, allIssues }: Props) {
   return (
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
-        <h2 className={styles.pageTitle}>{t.teams.title}</h2>
+        <h2 className={styles.pageTitle}>{t("teams.title")}</h2>
         {isAdmin && (
           <Button
             variant="primary"
             icon={<Icon icon="lucide:plus" width={15} />}
           >
-            {t.actions.newTeam}
+            {t("actions.newTeam")}
           </Button>
         )}
       </div>
@@ -71,19 +70,19 @@ export function Teams({ teams, members, projects, allIssues }: Props) {
                 <div className={styles.stat}>
                   <span className={styles.statNum}>{openIssues.length}</span>
                   <span className="faint" style={{ fontSize: 11.5 }}>
-                    {t.teams.openIssues}
+                    {t("teams.openIssues")}
                   </span>
                 </div>
                 <div className={styles.stat}>
                   <span className={styles.statNum}>{teamProjects.length}</span>
                   <span className="faint" style={{ fontSize: 11.5 }}>
-                    {t.teams.projects}
+                    {t("teams.projects")}
                   </span>
                 </div>
                 <div className={styles.stat}>
                   <span className={styles.statNum}>{teamMembers.length}</span>
                   <span className="faint" style={{ fontSize: 11.5 }}>
-                    {t.teams.members}
+                    {t("teams.members")}
                   </span>
                 </div>
               </div>

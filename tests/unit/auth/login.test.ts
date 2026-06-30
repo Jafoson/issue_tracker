@@ -122,7 +122,7 @@ describe("login()", () => {
           locale: "de",
         }),
       );
-      expect(result).toEqual({ redirectTo: "/de/my-workspace" });
+      expect(result).toEqual({ redirectTo: "/my-workspace" });
     });
 
     it("leitet zu create-workspace weiter wenn User keinen Workspace hat", async () => {
@@ -134,10 +134,10 @@ describe("login()", () => {
           locale: "de",
         }),
       );
-      expect(result).toEqual({ redirectTo: "/de/create-workspace" });
+      expect(result).toEqual({ redirectTo: "/create-workspace" });
     });
 
-    it("verwendet 'de' als Standard-Locale", async () => {
+    it("gibt einen locale-freien Pfad zurück (Locale ergänzt der Client via next-intl)", async () => {
       mockMemberFindFirst.mockResolvedValue(null);
       const result = await login(
         makeFormData({
@@ -145,7 +145,9 @@ describe("login()", () => {
           password: "correctpassword",
         }),
       );
-      expect((result as { redirectTo: string }).redirectTo).toMatch(/^\/de\//);
+      expect((result as { redirectTo: string }).redirectTo).toBe(
+        "/create-workspace",
+      );
     });
   });
 });

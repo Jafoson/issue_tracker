@@ -1,4 +1,4 @@
-import type { T } from "@/lib/translations-context";
+import type { Translator } from "@/i18n/types";
 import type { Project } from "@/types";
 
 /** Resolve the project a `/project/<slug>` path points at, if any. */
@@ -16,17 +16,17 @@ function projectFromPath(
 export function tabTitle(
   path: string,
   projects: Project[],
-  t: T,
+  t: Translator,
   base: string,
 ): string {
   if (path.match(new RegExp(`^${base}/project/([^/]+)`)))
-    return projectFromPath(path, projects, base)?.name ?? t.nav.board;
-  if (path.startsWith(`${base}/my`)) return t.nav.myIssues;
-  if (path.startsWith(`${base}/inbox`)) return t.nav.inbox;
-  if (path.startsWith(`${base}/members`)) return t.nav.members;
-  if (path.startsWith(`${base}/teams`)) return t.nav.teams;
-  if (path.startsWith(`${base}/settings`)) return t.nav.settings;
-  if (path.startsWith(`${base}/projects`)) return t.nav.projects;
+    return projectFromPath(path, projects, base)?.name ?? t("nav.board");
+  if (path.startsWith(`${base}/my`)) return t("nav.myIssues");
+  if (path.startsWith(`${base}/inbox`)) return t("nav.inbox");
+  if (path.startsWith(`${base}/members`)) return t("nav.members");
+  if (path.startsWith(`${base}/teams`)) return t("nav.teams");
+  if (path.startsWith(`${base}/settings`)) return t("nav.settings");
+  if (path.startsWith(`${base}/projects`)) return t("nav.projects");
   return "Orbit";
 }
 
@@ -70,7 +70,7 @@ export interface TabMeta {
 export function tabMeta(
   href: string,
   projects: Project[],
-  t: T,
+  t: Translator,
   base: string,
 ): TabMeta {
   const path = href.split("?")[0];
@@ -78,7 +78,7 @@ export function tabMeta(
 
   let title = tabTitle(path, projects, t, base);
   if (path.includes("/project/") && path.endsWith("/list"))
-    title = `${title} (${t.nav.issues})`;
+    title = `${title} (${t("nav.issues")})`;
 
   return {
     title,

@@ -1,17 +1,15 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useParams } from "next/navigation";
-import { useTranslations } from "@/lib/translations-context";
+import { useTranslations } from "next-intl";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "./tabBar.module.scss";
 import { tabMeta } from "./tabMeta";
 import { useTabBar } from "./useTabBar";
 
 export function TabBar() {
-  const { locale } = useParams<{ locale: string }>();
   const { projects, workspace } = useWorkspace();
-  const base = `/${locale}/${workspace.id}`;
+  const base = `/${workspace.id}`;
   const t = useTranslations();
 
   const { tabs, activeId, ready, switchTab, openTab, closeTab } = useTabBar(

@@ -1,35 +1,33 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { TabBar } from "@/components/ui/layout/TabBar/TabBar";
-import type { T } from "@/lib/translations-context";
-import { useTranslations } from "@/lib/translations-context";
+import type { Translator } from "@/i18n/types";
 import { useWorkspace } from "@/lib/workspace-context";
 import { TopbarFilters } from "./components/TopbarFilters";
 import styles from "./topbar.module.scss";
 import { type SortKey, useTopbar } from "./useTopbar";
 
-function sortOptions(t: T) {
+function sortOptions(t: Translator) {
   return [
-    { value: "priority" as SortKey, label: t.sort.priority },
-    { value: "status" as SortKey, label: t.sort.status },
-    { value: "updated" as SortKey, label: t.sort.updated },
-    { value: "created" as SortKey, label: t.sort.created },
-    { value: "title" as SortKey, label: t.sort.title },
-    { value: "assignee" as SortKey, label: t.sort.assignee },
+    { value: "priority" as SortKey, label: t("sort.priority") },
+    { value: "status" as SortKey, label: t("sort.status") },
+    { value: "updated" as SortKey, label: t("sort.updated") },
+    { value: "created" as SortKey, label: t("sort.created") },
+    { value: "title" as SortKey, label: t("sort.title") },
+    { value: "assignee" as SortKey, label: t("sort.assignee") },
   ];
 }
 
 export function TopbarClient() {
   const { projects, workspace } = useWorkspace();
   const t = useTranslations();
-  const { locale } = useParams<{ locale: string }>();
-  const base = `/${locale}/${workspace.id}`;
+  const base = `/${workspace.id}`;
 
   const {
     router,
@@ -84,7 +82,7 @@ export function TopbarClient() {
                       icon={<Icon icon="lucide:arrow-down" width={14} />}
                     >
                       {SORT_OPTIONS.find((o) => o.value === sortKey)?.label ??
-                        t.sort.label}
+                        t("sort.label")}
                     </Button>
                   }
                   width={180}

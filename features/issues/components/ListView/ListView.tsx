@@ -1,7 +1,7 @@
 "use client";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
@@ -12,8 +12,7 @@ import {
   PriorityIcon,
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { useTranslations } from "@/lib/translations-context";
-
+import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue } from "@/types";
@@ -171,7 +170,7 @@ function IssueRow({ issue }: { issue: Issue }) {
               items={[
                 {
                   value: null,
-                  label: t.fields.unassigned,
+                  label: t("fields.unassigned"),
                   icon: <Avatar user={null} size={18} />,
                 },
                 ...members.map((u) => ({
@@ -212,7 +211,7 @@ export function ListView({ issues }: Props) {
         }}
       >
         <Icon icon="lucide:list" width={32} />
-        <span style={{ fontSize: 14 }}>{t.empty.noIssues}</span>
+        <span style={{ fontSize: 14 }}>{t("empty.noIssues")}</span>
       </div>
     );
   }

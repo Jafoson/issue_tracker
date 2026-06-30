@@ -1,10 +1,9 @@
 "use client";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ProjectComposer } from "@/features/projects/components/ProjectComposer/ProjectComposer";
-import { useTranslations } from "@/lib/translations-context";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 
 import styles from "../sidebar.module.scss";
@@ -13,8 +12,7 @@ export function NavSection() {
   const { projects, workspace } = useWorkspace();
   const t = useTranslations();
   const pathname = usePathname();
-  const { locale } = useParams<{ locale: string }>();
-  const base = `/${locale}/${workspace.id}`;
+  const base = `/${workspace.id}`;
 
   const getInitialOpen = () => {
     for (const p of projects) {
@@ -30,7 +28,7 @@ export function NavSection() {
   return (
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
-        <span className="orbit-section-h">{t.settings.projects}</span>
+        <span className="orbit-section-h">{t("settings.projects")}</span>
         <ProjectComposer
           workspaceId={workspace.id}
           trigger={(open) => (
@@ -38,8 +36,8 @@ export function NavSection() {
               type="button"
               className={styles.addProject}
               onClick={open}
-              title={t.actions.newProject}
-              aria-label={t.actions.newProject}
+              title={t("actions.newProject")}
+              aria-label={t("actions.newProject")}
             >
               <Icon icon="lucide:plus" width={14} />
             </button>

@@ -7,12 +7,13 @@ export default async function ProjectsPage({
 }: {
   params: Promise<{ locale: string; workspace: string }>;
 }) {
-  const { locale, workspace } = await params;
+  const { workspace } = await params;
   const [projects, members] = await Promise.all([
     getProjectsWithStats(workspace),
     getMembers(workspace),
   ]);
-  const base = `/${locale}/${workspace}`;
+  // Locale-frei – ProjectList navigiert über next-intl (auto-Präfix).
+  const base = `/${workspace}`;
 
   return (
     <ProjectList
