@@ -11,7 +11,7 @@ import "@/styles/dimensions.css";
 import "@/styles/typography.css";
 
 // Base styles, resets & component utility classes
-import "../globals.scss";
+import "@/styles/globals.scss";
 
 const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
