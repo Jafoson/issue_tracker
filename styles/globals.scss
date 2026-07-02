@@ -51,6 +51,7 @@ input, textarea, select { font-family: inherit; }
 .scroll-y { overflow-y: auto; overflow-x: hidden; }
 .divider { height: 1px; background: var(--outline-variant); }
 .dot     { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.cursor-normal { cursor: default; }
 
 
 .iconbtn {
@@ -81,72 +82,6 @@ input, textarea, select { font-family: inherit; }
   line-height: 1.5;
 }
 
-/* ---------- Avatar ---------- */
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  font-weight: 600;
-  flex: none;
-  font-size: 11px;
-  letter-spacing: .01em;
-  user-select: none;
-}
-
-/* ---------- Popover / Menu ---------- */
-.menu {
-  background: var(--elev);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-pop);
-  padding: 5px;
-  min-width: 200px;
-  z-index: var(--z-popover);
-  animation: pop .12s ease;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 34px;
-  padding: 0 9px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover, &.active { background: var(--card-hover); }
-  .check { margin-left: auto; color: var(--accent); display: flex; }
-}
-
-.menu-label {
-  font-size: var(--text-xs);
-  color: var(--text-3);
-  padding: 7px 9px 4px;
-  font-weight: 600;
-  letter-spacing: .03em;
-  text-transform: uppercase;
-}
-
-.menu-input {
-  width: 100%;
-  height: 32px;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0 9px;
-  font-size: 13px;
-  margin-bottom: 4px;
-  outline: none;
-
-  &:focus { border-color: var(--accent); }
-}
 
 /* ---------- Field ---------- */
 .field {

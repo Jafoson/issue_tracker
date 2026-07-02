@@ -19,6 +19,7 @@
   --shadow-pop:
     0 16px 40px -12px rgba(0, 0, 0, 0.6), 0 4px 12px -4px rgba(0, 0, 0, 0.4);
   --shadow-panel: -24px 0 60px -24px rgba(0, 0, 0, 0.6);
+  --shadow-input: 0 0 0 3px var(--shadow);
 
   /* Z-index scale */
   --z-popover: 1700;

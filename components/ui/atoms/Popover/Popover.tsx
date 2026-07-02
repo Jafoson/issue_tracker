@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import styles from "./Popover.module.scss";
 
 interface PopoverProps {
   anchorRef: React.RefObject<HTMLElement | null>;
@@ -90,7 +91,7 @@ export function Popover({
   return createPortal(
     <div
       ref={ref}
-      className="menu"
+      className={styles.menu}
       style={{
         position: "fixed",
         left: pos?.left ?? -9999,

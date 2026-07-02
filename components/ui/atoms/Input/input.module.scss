@@ -6,10 +6,10 @@
 }
 
 .label {
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 550;
-  color: var(--text-2);
-  line-height: 1;
+  color: var(--on-surface);
+  line-height: var(--leading-tight);
 }
 
 /* ── Input wrapper (positions icons) ── */
@@ -23,9 +23,9 @@
 .input {
   width: 100%;
   height: 36px;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
   padding: 0 11px;
   font-size: var(--text-base);
@@ -33,17 +33,17 @@
   outline: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 
-  &::placeholder { color: var(--text-3); }
+  &::placeholder { color: var(--on-surface-variant); }
 
   &:focus {
-    border-color: var(--accent);
+    border-color: var(--tertiary);
     box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   /* Error state */
   &.hasError {
-    border-color: var(--red);
-    &:focus { box-shadow: 0 0 0 3px color-mix(in oklab, var(--red) 18%, transparent); }
+    border-color: var(--error);
+    &:focus { box-shadow: 0 0 0 3px color-mix(in oklab, var(--error) 18%, transparent); }
   }
 
   /* Icon padding adjustments */
@@ -84,7 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-3);
+  color: var(--on-surface-variant);
   pointer-events: none;
 }
 
@@ -102,13 +102,13 @@
     border-radius: var(--radius-sm);
     border: none;
     background: transparent;
-    color: var(--text-3);
+    color: var(--on-surface-variant);
     cursor: pointer;
     transition: background 0.1s, color 0.1s;
 
     &:hover {
-      background: var(--card-hover);
-      color: var(--text-2);
+      background: var(--surface-container-low);
+      color: var(--on-surface);
     }
   }
 }
@@ -118,9 +118,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
-.errorText { color: var(--red); }
-.hintText  { color: var(--text-3); }
+.errorText { color: var(--error); }
+.hintText  { color: var(--on-surface-variant); }

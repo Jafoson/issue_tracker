@@ -1,7 +1,4 @@
 "use client";
-
-import Image from "next/image";
-import { useState } from "react";
 import { initials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
@@ -13,73 +10,26 @@ interface AvatarProps {
 }
 
 export function Avatar({ user, size = 22, ring }: AvatarProps) {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  const ringStyle = ring
-    ? {
-        boxShadow:
-          "0 0 0 2px var(--panel), inset 0 0 0 1px rgba(255,255,255,.12)",
-      }
-    : undefined;
-
   if (!user) {
-    return (
-      <span
-        className="avatar"
-        style={{
-          width: size,
-          height: size,
-          background: "transparent",
-          border: "1.4px dashed var(--text-3)",
-          color: "var(--text-3)",
-          boxShadow: "none",
-          fontSize: size * 0.5,
-        }}
-      >
-        <svg
-          width={size * 0.55}
-          height={size * 0.55}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="8" r="3.4" />
-          <path d="M5 20a7 7 0 0 1 14 0" />
-        </svg>
-      </span>
-    );
+    return;
   }
 
-  const color = user.color || "#6e63e6";
+  const color = user.color || "var(--primary)";
   const label = initials(user.name) || user.name?.[0]?.toUpperCase() || "?";
 
   return (
     <span
-      className="avatar"
+      className={`${styles.avatar} ${ring ? styles.ring : ""}`}
       style={{
         width: size,
         height: size,
-        background: `linear-gradient(150deg, ${color}, color-mix(in oklab, ${color} 70%, #000))`,
-        fontSize: Math.max(9, size * 0.42),
-        color: "#fff",
         position: "relative",
-        ...ringStyle,
+        background: color,
+        color: `oklch(from ${color} clamp(0.05, calc((0.60 - l) * 999), 0.95) 0 h)`,
+        fontSize: `clamp(var(--text-xxs), ${size * 0.6}px, var(--text-sm))`,
       }}
     >
       {label}
-      {user.image && !imgFailed && (
-        <Image
-          src={user.image}
-          alt=""
-          fill
-          unoptimized
-          sizes={`${size}px`}
-          style={{ objectFit: "cover", borderRadius: "50%" }}
-          onError={() => setImgFailed(true)}
-        />
-      )}
     </span>
   );
 }

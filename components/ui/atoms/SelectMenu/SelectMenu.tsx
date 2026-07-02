@@ -1,10 +1,11 @@
 "use client";
 
-import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/atoms/Input/Input";
+import SelectItem from "./atoms/SelectItem";
+import styles from "./SelectMenu.module.scss";
 
-interface SelectItem {
+export interface ISelectItem {
   value: string | number | null;
   label: string;
   icon?: React.ReactNode;
@@ -12,7 +13,7 @@ interface SelectItem {
 }
 
 interface SelectMenuProps {
-  items: SelectItem[];
+  items: ISelectItem[];
   value: (string | number | null) | (string | number | null)[];
   onPick: (value: string | number | null) => void;
   onClose?: () => void;
@@ -59,41 +60,19 @@ export function SelectMenu({
           style={{ marginBottom: 4 }}
         />
       )}
-      <div style={{ maxHeight: 280, overflowY: "auto", margin: "0 -1px" }}>
+      <div className={styles.content}>
         {filtered.map((it) => (
-          <button
-            type="button"
+          <SelectItem
             key={String(it.value)}
-            className={`menu-item${isSel(it.value) ? " active" : ""}`}
-            onClick={() => {
-              onPick(it.value);
-              if (!multi) onClose?.();
-            }}
-          >
-            {it.icon}
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-              {it.label}
-            </span>
-            {it.hint && (
-              <span
-                className="faint"
-                style={{ marginLeft: "auto", fontSize: 12 }}
-              >
-                {it.hint}
-              </span>
-            )}
-            {isSel(it.value) && (
-              <span
-                className="check"
-                style={{ marginLeft: it.hint ? 8 : "auto" }}
-              >
-                <Icon icon="lucide:check" width={15} />
-              </span>
-            )}
-          </button>
+            it={it}
+            isSel={isSel}
+            onPick={onPick}
+            onClose={onClose}
+            multi={multi}
+          />
         ))}
         {filtered.length === 0 && (
-          <div className="menu-item faint" style={{ cursor: "default" }}>
+          <div className={`${styles.menuItem} ${styles.faint} ${styles["cursor-normal"]}`}>
             No matches
           </div>
         )}

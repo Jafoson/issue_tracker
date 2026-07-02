@@ -8,3 +8,20 @@
   border-radius: 50%;
   display: block;
 }
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+  user-select: none;
+  flex: none;
+
+}
+
+.ring {
+  box-shadow: 0 0 0 2px var(--shadow);
+  border-radius: var(--radius-pill);
+}

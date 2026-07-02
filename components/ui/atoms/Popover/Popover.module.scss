@@ -1,0 +1,10 @@
+.menu{
+    background: var(--surface);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-pop);
+    min-width: 200px;
+    z-index: var(--z-popover);
+    padding: 5px;
+    animation: pop .12s ease;
+}
