@@ -1,8 +1,4 @@
-"use client";
-
-import { Suspense } from "react";
 import { Sidebar } from "@/components/ui/layout/Sidebar/Sidebar";
-import type { WorkspaceData } from "@/lib/workspace-context";
 import { TabBar } from "../TabBar/TabBar";
 import styles from "./appShell.module.scss";
 
@@ -20,8 +16,6 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={null}>
       <Shell>{children}</Shell>
-    </Suspense>
   );
 }

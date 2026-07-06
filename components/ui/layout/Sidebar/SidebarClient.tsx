@@ -6,7 +6,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { NavLink } from "./components/NavLink";
 import { NavSection } from "./components/NavSection";
 import { QuickActions } from "./components/QuickActions";
-import { UserMenu } from "./components/UserMenu";
+import { UserMenu } from "./components/UserMenu/UserMenu";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import styles from "./sidebar.module.scss";
 

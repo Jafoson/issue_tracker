@@ -1,5 +1,8 @@
-import { SidebarClient } from "./SidebarClient";
+import { UserMenu } from "./components/UserMenu/UserMenu";
+import styles from "./sidebar.module.scss";
 
 export function Sidebar() {
-  return <SidebarClient />;
+  return <aside className={styles.aside}>
+     <UserMenu />
+  </aside>;
 }

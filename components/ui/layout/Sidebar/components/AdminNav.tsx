@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "../sidebar.module.scss";
 import { NavLink } from "./NavLink";
-import { UserMenu } from "./UserMenu";
+import { UserMenu } from "./UserMenu/UserMenu";
 
 interface AdminNavProps {
   onLogout: () => void;
