@@ -25,16 +25,20 @@ export const authConfig = {
   pages: { signIn: "/login" },
   providers: oauthProviders,
   callbacks: {
-    // User-Id + globale Rolle in das JWT übernehmen (bei Login liegt `user` vor).
+    // User-Id + globale Rolle + Avatar-Farbe in das JWT übernehmen (bei Login liegt `user` vor).
     jwt({ token, user }) {
       if (user?.id) token.id = user.id;
-      if (user) token.globalRole = user.globalRole ?? "member";
+      if (user) {
+        token.globalRole = user.globalRole ?? "member";
+        token.color = user.color;
+      }
       return token;
     },
-    // Id + globale Rolle aus dem Token in die Session spiegeln (serverseitig verfügbar).
+    // Id + globale Rolle + Farbe aus dem Token in die Session spiegeln (serverseitig verfügbar).
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string;
       session.user.globalRole = (token.globalRole as string) ?? "member";
+      session.user.color = (token.color as string) ?? "var(--primary)";
       return session;
     },
   },

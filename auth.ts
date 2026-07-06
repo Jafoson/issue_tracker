@@ -60,8 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           email: user.email,
           image: user.image,
-          // Globale Plattform-Rolle (admin | member) mitgeben, damit sie ins
-          // JWT/die Session wandert.
+          color: user.color,
           globalRole: user.globalRole,
         };
       },

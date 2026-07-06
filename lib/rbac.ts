@@ -222,3 +222,21 @@ export const DEFAULT_ROLES: DefaultRole[] = [
 export function roleRank(key: string): number {
   return DEFAULT_ROLES.find((r) => r.key === key)?.rank ?? -1;
 }
+
+// ─── Globale Plattform-Rolle ──────────────────────────────────────────────────
+//
+// Steht ÜBER allen Workspaces (SaaS-Betreiber-Ebene) und ist strikt getrennt von
+// den workspace-spezifischen RBAC-Rollen oben (DEFAULT_ROLES / model Role). Sie
+// steuert nur Plattform-Operationen (Zugang zum /admin-Bereich), gibt aber KEINEN
+// Zugriff auf Tenant-Inhalte. Persistiert als String-Spalte `User.globalRole`.
+export const GLOBAL_ROLES = ["admin", "member"] as const;
+export type GlobalRole = (typeof GLOBAL_ROLES)[number];
+
+/**
+ * Narrowt einen beliebigen (DB-)String auf die `GlobalRole`-Union. Alles außer
+ * "admin" fällt sicher auf "member" zurück — so muss an DB-Grenzen nicht blind
+ * per `as GlobalRole` gecastet werden (was bei Datenmüll lügen würde).
+ */
+export function toGlobalRole(value: string | null | undefined): GlobalRole {
+  return value === "admin" ? "admin" : "member";
+}

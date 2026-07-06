@@ -3,19 +3,25 @@ import { initials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
 
+export type AvatarData = {
+  name: string;
+  color: string;
+  image?: string;
+}
+
 interface AvatarProps {
-  user: User | null;
+  avatar: AvatarData | null;
   size?: number;
   ring?: boolean;
 }
 
-export function Avatar({ user, size = 22, ring }: AvatarProps) {
-  if (!user) {
+export function Avatar({ avatar, size = 22, ring }: AvatarProps) {
+  if (!avatar) {
     return;
   }
 
-  const color = user.color || "var(--primary)";
-  const label = initials(user.name) || user.name?.[0]?.toUpperCase() || "?";
+  const color = avatar.color || "var(--primary)";
+  const label = initials(avatar.name) || avatar.name?.[0]?.toUpperCase() || "?";
 
   return (
     <span
@@ -55,7 +61,7 @@ export function AvatarStack({
     <div className={styles.stack}>
       {shown.map((id, i) => (
         <span key={id} style={{ marginLeft: i ? -7 : 0, zIndex: 10 - i }}>
-          <Avatar user={userById(id)} size={size} ring />
+          <Avatar avatar={userById(id)} size={size} ring />
         </span>
       ))}
       {extra > 0 && (

@@ -1,13 +1,25 @@
 
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
-import { Button } from "@/components/ui/atoms/Button/Button";;
+import { Button } from "@/components/ui/atoms/Button/Button";
+import type { AvatarData } from "@/components/ui/atoms/Avatar/Avatar";
 import styles from "../../sidebar.module.scss";
 import {auth} from "@/auth";
 
 export async function UserMenu() {
   const session = await auth();
+  let me: AvatarData;
+  
   if (!session?.user) {
-    return null;
+    me = {
+      name: "Unknown User",
+      color: "var(--secondary)",
+    };
+  }
+  else {
+    me = {
+      name: session.user.name || "Unknown User",
+      color: session.user.color || "var(--primary)",
+    };
   }
 
   return (
@@ -16,7 +28,7 @@ export async function UserMenu() {
         variant="ghost"
         style={{ gap: 8, flex: "none", minWidth: 0 }}
       >
-        <Avatar user={session?.user} size={28} />
+        <Avatar avatar={me} size={28} />
         <span
           style={{
             display: "block",
