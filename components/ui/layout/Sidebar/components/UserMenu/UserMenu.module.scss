@@ -1,17 +1,37 @@
-.content{
-    display: flex;
-    line-height: var(--leading-tight);
-    height: 100%;
+.wrapper {
+    position: relative;
     width: 100%;
-    justify-content: space-between;
-    align-items: center;
 }
 
-.title{
+/* Platz rechts freihalten, damit der Name nicht unter dem Bell-Button liegt */
+.trigger {
+    padding-right: 44px;
+}
+
+.title {
     display: block;
     font-weight: 600;
     font-size: var(--text-base);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Eigener Positions-Wrapper, damit der :active-Transform des Buttons
+   (translateY(1px)) nicht mit der Zentrierung kollidiert */
+.bellSlot {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    display: flex;
+}
+
+.bellBadge{
+    position: absolute;
+    top: -3px;
+    right: -6px;
+    & > span{
+        font-size: var(--text-xxs);
+    }
 }

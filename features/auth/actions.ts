@@ -82,7 +82,7 @@ export async function register(formData: FormData): Promise<AuthResult> {
 }
 
 export async function logout(): Promise<void> {
-  await signOut({ redirect: false });
+  await signOut({ redirect: true, redirectTo: "/login" });
 }
 
 /** OAuth-Login (GitHub/Google). Leitet direkt zum Provider weiter. */

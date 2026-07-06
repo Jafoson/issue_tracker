@@ -5,10 +5,14 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { useRouter } from "@/i18n/navigation";
-import { useWorkspace } from "@/lib/workspace-context";
+import { Workspace } from "@/lib/workspace-context";
 
-export function WorkspaceMenu() {
-  const { workspace, userWorkspaces } = useWorkspace();
+interface WorkspaceMenuProps {
+  workspace: Workspace;
+  userWorkspaces: Workspace[]; 
+}
+
+export function WorkspaceMenuClient({ workspace, userWorkspaces }: WorkspaceMenuProps) {
   const t = useTranslations();
   const router = useRouter();
   const ref = useRef<HTMLButtonElement>(null);

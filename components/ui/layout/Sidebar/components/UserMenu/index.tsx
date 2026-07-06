@@ -2,9 +2,12 @@ import type { AvatarData } from "@/components/ui/atoms/Avatar/Avatar";
 import {auth} from "@/auth";
 import UserMenuClient from "./UserMenuClient";
 
+//TODO add Notification logic and add this in Badge
+
 export async function UserMenu() {
   const session = await auth();
   let me: AvatarData;
+
   
   if (!session?.user) {
     me = {
