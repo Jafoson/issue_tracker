@@ -11,15 +11,27 @@ declare module "next-intl" {
   }
 }
 
-// Auth.js: `id` auf der Session verfügbar machen (aus dem JWT-Callback gespiegelt).
+// Auth.js: `id` und die globale Plattform-Rolle auf der Session verfügbar machen
+// (aus dem JWT-Callback gespiegelt).
 declare module "next-auth" {
   interface Session {
-    user: { id: string } & DefaultSession["user"];
+    user: { id: string; isPlatformAdmin: boolean } & DefaultSession["user"];
+  }
+  // Was `authorize`/der Adapter zurückgeben und der jwt-Callback als `user` erhält.
+  interface User {
+    isPlatformAdmin?: boolean;
+  }
+}
+
+declare module "next-auth/adapters" {
+  interface AdapterUser {
+    isPlatformAdmin?: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
+    isPlatformAdmin?: boolean;
   }
 }

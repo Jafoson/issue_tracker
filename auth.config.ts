@@ -25,14 +25,16 @@ export const authConfig = {
   pages: { signIn: "/login" },
   providers: oauthProviders,
   callbacks: {
-    // User-Id in das JWT übernehmen (bei Login liegt `user` vor).
+    // User-Id + globale Rolle in das JWT übernehmen (bei Login liegt `user` vor).
     jwt({ token, user }) {
       if (user?.id) token.id = user.id;
+      if (user) token.isPlatformAdmin = user.isPlatformAdmin ?? false;
       return token;
     },
-    // Id aus dem Token in die Session spiegeln, damit sie serverseitig verfügbar ist.
+    // Id + globale Rolle aus dem Token in die Session spiegeln (serverseitig verfügbar).
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string;
+      session.user.isPlatformAdmin = (token.isPlatformAdmin as boolean) ?? false;
       return session;
     },
   },

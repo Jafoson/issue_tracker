@@ -2,11 +2,13 @@
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";;
 import styles from "../../sidebar.module.scss";
-import {useSession} from "next-auth/react";
+import {auth} from "@/auth";
 
-export function UserMenu() {
-  const { data: session } = useSession();
-  const me = session?.user;
+export async function UserMenu() {
+  const session = await auth();
+  if (!session?.user) {
+    return null;
+  }
 
   return (
     <div className={styles.userRow}>
@@ -14,7 +16,7 @@ export function UserMenu() {
         variant="ghost"
         style={{ gap: 8, flex: "none", minWidth: 0 }}
       >
-        <Avatar user={me} size={28} />
+        <Avatar user={session?.user} size={28} />
         <span
           style={{
             display: "block",
@@ -41,3 +43,4 @@ export function UserMenu() {
     </div>
   );
 }
+
