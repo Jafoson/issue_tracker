@@ -1,140 +1,41 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// next/headers is mocked in tests/setup.ts (preload) because it's a special
-// Next.js module that must be intercepted before lib/session.ts is first loaded.
-// We access the pre-created mock functions via globalThis.
-const jar = (
-  globalThis as unknown as {
-    __mockCookieFns: {
-      set: ReturnType<typeof mock>;
-      get: ReturnType<typeof mock>;
-      delete: ReturnType<typeof mock>;
-    };
-  }
-).__mockCookieFns;
-const mockSet = jar.set;
-const mockGet = jar.get;
-const mockDelete = jar.delete;
-
-mock.module("jose", () => {
-  class MockSignJWT {
-    setProtectedHeader(_: unknown) {
-      return this;
-    }
-    setIssuedAt() {
-      return this;
-    }
-    setExpirationTime(_: unknown) {
-      return this;
-    }
-    sign(_: unknown) {
-      return Promise.resolve("mock-jwt-token");
-    }
-  }
-  return {
-    SignJWT: MockSignJWT,
-    jwtVerify: mock(),
-  };
-});
-
-mock.module("@/lib/session-secret", () => ({
-  sessionSecret: new TextEncoder().encode(
-    "test-secret-minimum-32-chars-long!!",
-  ),
+// lib/session.ts ist jetzt ein dünner Wrapper über Auth.js `auth()`.
+mock.module("@/auth", () => ({
+  auth: mock(),
 }));
 
-import { jwtVerify } from "jose";
-import { clearSession, createSession, getSession } from "@/lib/session";
+import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 
-const mockJwtVerify = jwtVerify as ReturnType<typeof mock>;
-
-describe("createSession()", () => {
-  beforeEach(() => {
-    mockSet.mockReset();
-  });
-
-  it("setzt httpOnly Session-Cookie", async () => {
-    await createSession("user-123");
-    expect(mockSet).toHaveBeenCalledWith(
-      "session",
-      expect.any(String),
-      expect.objectContaining({ httpOnly: true }),
-    );
-  });
-
-  it("setzt sameSite lax auf dem Cookie", async () => {
-    await createSession("user-123");
-    expect(mockSet).toHaveBeenCalledWith(
-      "session",
-      expect.any(String),
-      expect.objectContaining({ sameSite: "lax" }),
-    );
-  });
-
-  it("setzt maxAge auf 30 Tage", async () => {
-    await createSession("user-123");
-    const maxAge = 60 * 60 * 24 * 30;
-    expect(mockSet).toHaveBeenCalledWith(
-      "session",
-      expect.any(String),
-      expect.objectContaining({ maxAge }),
-    );
-  });
-});
+const mockAuth = auth as unknown as ReturnType<typeof mock>;
 
 describe("getSession()", () => {
   beforeEach(() => {
-    mockGet.mockReset();
-    mockJwtVerify.mockReset();
+    mockAuth.mockReset();
   });
 
-  it("gibt userId zurück wenn Token gültig ist", async () => {
-    mockGet.mockReturnValue({ value: "valid-token" });
-    mockJwtVerify.mockResolvedValue({ payload: { sub: "user-123" } });
+  it("gibt userId zurück wenn eine Session mit user.id existiert", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-123" } });
     const session = await getSession();
     expect(session).toEqual({ userId: "user-123" });
   });
 
-  it("gibt null zurück wenn kein Session-Cookie vorhanden ist", async () => {
-    mockGet.mockReturnValue(undefined);
+  it("gibt null zurück wenn keine Session vorhanden ist", async () => {
+    mockAuth.mockResolvedValue(null);
     const session = await getSession();
     expect(session).toBeNull();
   });
 
-  it("gibt null zurück wenn Token ungültig ist", async () => {
-    mockGet.mockReturnValue({ value: "invalid-token" });
-    mockJwtVerify.mockRejectedValue(new Error("Invalid signature"));
+  it("gibt null zurück wenn die Session keinen user hat", async () => {
+    mockAuth.mockResolvedValue({});
     const session = await getSession();
     expect(session).toBeNull();
   });
 
-  it("gibt null zurück wenn payload.sub fehlt", async () => {
-    mockGet.mockReturnValue({ value: "token-without-sub" });
-    mockJwtVerify.mockResolvedValue({ payload: {} });
+  it("gibt null zurück wenn user.id fehlt", async () => {
+    mockAuth.mockResolvedValue({ user: { name: "Ada" } });
     const session = await getSession();
     expect(session).toBeNull();
-  });
-
-  it("verifiziert das Token mit dem Session-Secret", async () => {
-    mockGet.mockReturnValue({ value: "my-token" });
-    mockJwtVerify.mockResolvedValue({ payload: { sub: "user-id" } });
-    await getSession();
-    expect(mockJwtVerify).toHaveBeenCalledWith("my-token", expect.anything());
-  });
-});
-
-describe("clearSession()", () => {
-  beforeEach(() => {
-    mockDelete.mockReset();
-  });
-
-  it("löscht den Session-Cookie", async () => {
-    await clearSession();
-    expect(mockDelete).toHaveBeenCalledWith("session");
-  });
-
-  it("gibt undefined zurück", async () => {
-    const result = await clearSession();
-    expect(result).toBeUndefined();
   });
 });

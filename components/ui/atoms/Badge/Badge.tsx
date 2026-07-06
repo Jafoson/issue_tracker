@@ -1,11 +1,10 @@
 import styles from "./badge.module.scss";
 
-
 type BadgeProps = {
   size?: "sm" | "md";
   active?: boolean;
   mono?: boolean;
-  dot?: boolean ;
+  dot?: boolean;
 } & React.HTMLAttributes<HTMLElement> & {
     as?: "span" | "div" | "button";
     disabled?: boolean;

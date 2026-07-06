@@ -10,7 +10,6 @@ import { UserMenu } from "./components/UserMenu";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import styles from "./sidebar.module.scss";
 
-
 export function SidebarClient() {
   const t = useTranslations();
   const pathname = usePathname();
@@ -23,7 +22,6 @@ export function SidebarClient() {
   const adminBase = "/admin";
   const isAdminMode =
     pathname === adminBase || pathname.startsWith(`${adminBase}/`);
-
 
   const navTop: Array<
     | {

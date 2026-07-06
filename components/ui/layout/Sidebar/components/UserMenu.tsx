@@ -4,13 +4,12 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "../sidebar.module.scss";
 import { NavLink } from "./NavLink";
-import { Button } from "@/components/ui/atoms/Button/Button";
-
 
 export function UserMenu() {
   const { me, workspace } = useWorkspace();
@@ -23,7 +22,11 @@ export function UserMenu() {
 
   return (
     <div ref={ref} className={styles.userRow}>
-      <Button variant="ghost" onClick={() => setOpen(!open)} style={{ gap: 8, flex: "none", minWidth: 0 }}>
+      <Button
+        variant="ghost"
+        onClick={() => setOpen(!open)}
+        style={{ gap: 8, flex: "none", minWidth: 0 }}
+      >
         <Avatar user={me} size={28} />
         <span
           style={{
@@ -124,7 +127,11 @@ export function UserMenu() {
           onClick={() => setOpen(false)}
         />
         <div className="divider" style={{ margin: "4px 0" }} />
-        <button type="button" className="menu-item" onClick={() => console.log("Logging out...")}>
+        <button
+          type="button"
+          className="menu-item"
+          onClick={() => console.log("Logging out...")}
+        >
           <Icon icon="lucide:log-out" width={16} className="faint" />{" "}
           {t("nav.signOut")}
         </button>

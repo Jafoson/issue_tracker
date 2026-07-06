@@ -19,8 +19,6 @@ mock.module("@/lib/db", () => ({
 }));
 
 mock.module("@/lib/session", () => ({
-  createSession: mock(),
-  clearSession: mock(),
   getSession: mock(),
 }));
 

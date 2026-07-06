@@ -9,10 +9,12 @@ mock.module("@/lib/db", () => ({
   },
 }));
 
-mock.module("@/lib/session", () => ({
-  createSession: mock(),
-  clearSession: mock(),
-  getSession: mock(),
+class AuthError extends Error {}
+mock.module("next-auth", () => ({ AuthError }));
+
+mock.module("@/auth", () => ({
+  signIn: mock(),
+  signOut: mock(),
 }));
 
 mock.module("bcryptjs", () => ({
@@ -23,13 +25,13 @@ mock.module("bcryptjs", () => ({
 }));
 
 import bcrypt from "bcryptjs";
+import { signIn } from "@/auth";
 import { register } from "@/features/auth/actions";
 import { db } from "@/lib/db";
-import { createSession } from "@/lib/session";
 
 const mockUserFindUnique = db.user.findUnique as ReturnType<typeof mock>;
 const mockUserCreate = db.user.create as ReturnType<typeof mock>;
-const mockCreateSession = createSession as ReturnType<typeof mock>;
+const mockSignIn = signIn as ReturnType<typeof mock>;
 const mockBcryptHash = bcrypt.hash as ReturnType<typeof mock>;
 
 function makeFormData(data: Record<string, string>): FormData {
@@ -42,12 +44,14 @@ describe("register()", () => {
   beforeEach(() => {
     mockUserFindUnique.mockReset();
     mockUserCreate.mockReset();
-    mockCreateSession.mockReset();
+    mockSignIn.mockReset();
     mockBcryptHash.mockReset();
+    // findUnique wird sowohl für den Existenz-Check als auch von generateHandle
+    // (Handle-Eindeutigkeit) genutzt → null = frei.
     mockUserFindUnique.mockResolvedValue(null);
     mockBcryptHash.mockResolvedValue("hashed-password");
     mockUserCreate.mockResolvedValue({});
-    mockCreateSession.mockResolvedValue(undefined);
+    mockSignIn.mockResolvedValue(undefined);
   });
 
   describe("Validierung", () => {
@@ -131,13 +135,12 @@ describe("register()", () => {
           name: "Test User",
           email: "new@example.com",
           password: "password123",
-          locale: "de",
         }),
       );
       expect(result).toEqual({ redirectTo: "/create-workspace" });
     });
 
-    it("erstellt Session nach der Registrierung", async () => {
+    it("meldet nach der Registrierung über signIn an", async () => {
       await register(
         makeFormData({
           name: "Test User",
@@ -145,7 +148,12 @@ describe("register()", () => {
           password: "password123",
         }),
       );
-      expect(mockCreateSession).toHaveBeenCalledTimes(1);
+      expect(mockSignIn).toHaveBeenCalledTimes(1);
+      expect(mockSignIn).toHaveBeenCalledWith("credentials", {
+        email: "new@example.com",
+        password: "password123",
+        redirect: false,
+      });
     });
 
     it("hasht das Passwort mit bcrypt (cost=12)", async () => {
@@ -172,6 +180,8 @@ describe("register()", () => {
       expect(createdData.name).toBe("Test User");
       expect(createdData.email).toBe("new@example.com");
       expect(createdData.passwordHash).toBe("hashed-password");
+      expect(createdData.handle).toBeTruthy();
+      expect(createdData.color).toBeTruthy();
     });
 
     it("normalisiert Email zu Kleinbuchstaben", async () => {

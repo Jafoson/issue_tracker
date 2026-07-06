@@ -44,9 +44,7 @@ export function PlatformMembers({ users }: Props) {
                 <div className={styles.userName}>
                   {u.name}
                   {u.isPlatformAdmin && (
-                    <Badge active>
-                      {t("platform.platformAdmin")}
-                    </Badge>
+                    <Badge active>{t("platform.platformAdmin")}</Badge>
                   )}
                 </div>
                 <div className="faint" style={{ fontSize: 12 }}>

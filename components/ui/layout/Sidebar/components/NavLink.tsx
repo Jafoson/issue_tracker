@@ -28,11 +28,7 @@ export function NavLink({
     >
       <Icon icon={icon} width={17} />
       <span>{label}</span>
-      {badge && (
-        <Badge style={{ marginLeft: "auto" }}>
-          {badge}
-        </Badge>
-      )}
+      {badge && <Badge style={{ marginLeft: "auto" }}>{badge}</Badge>}
     </Link>
   );
 }

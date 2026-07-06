@@ -1,10 +1,21 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
+import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
-import { clearSession, createSession } from "@/lib/session";
+import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 
 type AuthResult = { redirectTo: string } | { error: string };
+
+async function defaultRedirectFor(userId: string): Promise<string> {
+  const membership = await db.workspaceMember.findFirst({
+    where: { userId },
+    select: { workspaceId: true },
+  });
+  // Locale-freie Pfade – der Client navigiert über next-intl (auto-Präfix).
+  return membership ? `/${membership.workspaceId}` : "/create-workspace";
+}
 
 export async function login(formData: FormData): Promise<AuthResult> {
   const email =
@@ -13,26 +24,24 @@ export async function login(formData: FormData): Promise<AuthResult> {
 
   if (!email || !password) return { error: "Email and password are required." };
 
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user || !user.passwordHash)
-    return { error: "Invalid email or password." };
-
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return { error: "Invalid email or password." };
-
-  await createSession(user.id);
+  try {
+    await signIn("credentials", { email, password, redirect: false });
+  } catch (error) {
+    if (error instanceof AuthError)
+      return { error: "Invalid email or password." };
+    throw error;
+  }
 
   const callbackUrl = (formData.get("callbackUrl") as string | null) ?? "";
   if (callbackUrl) return { redirectTo: callbackUrl };
 
-  const membership = await db.workspaceMember.findFirst({
-    where: { userId: user.id },
-    select: { workspaceId: true },
+  const user = await db.user.findUnique({
+    where: { email },
+    select: { id: true },
   });
-
-  // Locale-freie Pfade – der Client navigiert über next-intl (auto-Präfix).
-  if (membership) return { redirectTo: `/${membership.workspaceId}` };
-  return { redirectTo: "/create-workspace" };
+  return {
+    redirectTo: user ? await defaultRedirectFor(user.id) : "/create-workspace",
+  };
 }
 
 export async function register(formData: FormData): Promise<AuthResult> {
@@ -52,43 +61,31 @@ export async function register(formData: FormData): Promise<AuthResult> {
   if (existing) return { error: "An account with this email already exists." };
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const id = crypto.randomUUID();
-
-  const baseHandle =
-    email
-      .split("@")[0]
-      .replace(/[^a-z0-9]/gi, "")
-      .toLowerCase()
-      .slice(0, 12) || "user";
-  let handle = baseHandle;
-  let suffix = 1;
-  while (await db.user.findUnique({ where: { handle } })) {
-    handle = `${baseHandle}${suffix++}`;
-  }
-
-  const colors = [
-    "#6e63e6",
-    "#3b9d6e",
-    "#d5733b",
-    "#3b7bd5",
-    "#c2456b",
-    "#a05fd0",
-    "#cf9a3b",
-  ];
-  const color = colors[Math.floor(Math.random() * colors.length)];
+  const handle = await generateHandle(email);
 
   try {
     await db.user.create({
-      data: { id, name, handle, email, color, passwordHash },
+      data: { name, handle, email, color: pickUserColor(), passwordHash },
     });
   } catch {
     return { error: "Registration failed. Please try again." };
   }
 
-  await createSession(id);
+  // Session über Auth.js etablieren (Credentials-Login mit den frischen Daten).
+  try {
+    await signIn("credentials", { email, password, redirect: false });
+  } catch (error) {
+    if (!(error instanceof AuthError)) throw error;
+  }
+
   return { redirectTo: "/create-workspace" };
 }
 
 export async function logout(): Promise<void> {
-  await clearSession();
+  await signOut({ redirect: false });
+}
+
+/** OAuth-Login (GitHub/Google). Leitet direkt zum Provider weiter. */
+export async function signInWithOAuth(provider: string): Promise<void> {
+  await signIn(provider, { redirectTo: "/" });
 }

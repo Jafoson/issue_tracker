@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { enabledOAuthProviders } from "@/auth.config";
 import { AuthForm } from "@/features/auth/components/AuthForm/AuthForm";
 import { getSession } from "@/lib/session";
 
@@ -14,5 +15,11 @@ export default async function LoginPage({
   const session = await getSession();
   if (session) redirect(callbackUrl ?? "/");
 
-  return <AuthForm mode="login" callbackUrl={callbackUrl} />;
+  return (
+    <AuthForm
+      mode="login"
+      callbackUrl={callbackUrl}
+      oauthProviders={enabledOAuthProviders}
+    />
+  );
 }

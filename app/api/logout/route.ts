@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { clearSession } from "@/lib/session";
+import { signOut } from "@/auth";
 
+// Serverseitiger Logout-Endpunkt. Wird u.a. genutzt, um eine veraltete Session
+// (gültiges JWT, aber User nicht mehr in der DB) zu bereinigen und so eine
+// Redirect-Schleife mit dem Proxy zu vermeiden. `?to=` steuert das Ziel.
 export async function GET(request: Request) {
-  await clearSession();
-  const { searchParams } = new URL(request.url);
-  const to = searchParams.get("to") ?? "/de/login";
-  return NextResponse.redirect(new URL(to, request.url));
+  const to = new URL(request.url).searchParams.get("to") ?? "/de/login";
+  return signOut({ redirectTo: to });
 }

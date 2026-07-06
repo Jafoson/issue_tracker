@@ -11,6 +11,10 @@ const cookieFns = { set: mock(), get: mock(), delete: mock() };
   globalThis as unknown as { __mockCookieFns: typeof cookieFns }
 ).__mockCookieFns = cookieFns;
 
+const headerFns = { get: mock(), has: mock(), entries: mock(() => []) };
+
 mock.module("next/headers", () => ({
   cookies: () => Promise.resolve(cookieFns),
+  // next-auth (via @/auth) importiert `headers` — muss im Mock vorhanden sein.
+  headers: () => Promise.resolve(headerFns),
 }));

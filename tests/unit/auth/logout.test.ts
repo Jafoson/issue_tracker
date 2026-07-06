@@ -1,32 +1,25 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-mock.module("@/lib/db", () => ({
-  db: {
-    user: { findUnique: mock() },
-    workspaceMember: { findFirst: mock() },
-  },
+mock.module("@/auth", () => ({
+  signIn: mock(),
+  signOut: mock(),
 }));
 
-mock.module("@/lib/session", () => ({
-  createSession: mock(),
-  clearSession: mock(),
-  getSession: mock(),
-}));
-
+import { signOut } from "@/auth";
 import { logout } from "@/features/auth/actions";
-import { clearSession } from "@/lib/session";
 
-const mockClearSession = clearSession as ReturnType<typeof mock>;
+const mockSignOut = signOut as ReturnType<typeof mock>;
 
 describe("logout()", () => {
   beforeEach(() => {
-    mockClearSession.mockReset();
-    mockClearSession.mockResolvedValue(undefined);
+    mockSignOut.mockReset();
+    mockSignOut.mockResolvedValue(undefined);
   });
 
-  it("ruft clearSession auf", async () => {
+  it("ruft signOut mit redirect:false auf", async () => {
     await logout();
-    expect(mockClearSession).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledWith({ redirect: false });
   });
 
   it("gibt keinen Wert zurück", async () => {

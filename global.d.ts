@@ -1,3 +1,4 @@
+import type { DefaultSession } from "next-auth";
 import type { routing } from "@/i18n/routing";
 import type messages from "./messages/de.json";
 
@@ -7,5 +8,18 @@ declare module "next-intl" {
   interface AppConfig {
     Locale: (typeof routing.locales)[number];
     Messages: typeof messages;
+  }
+}
+
+// Auth.js: `id` auf der Session verfügbar machen (aus dem JWT-Callback gespiegelt).
+declare module "next-auth" {
+  interface Session {
+    user: { id: string } & DefaultSession["user"];
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
   }
 }

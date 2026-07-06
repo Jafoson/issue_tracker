@@ -32,12 +32,17 @@ model Workspace {
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 model User {
-  id           String  @id
-  name         String
-  handle       String  @unique
-  email        String  @unique
-  color        String
-  passwordHash String?
+  // @default(cuid()) ist für den Auth.js-Adapter nötig: dessen createUser strippt
+  // die id und überlässt die Generierung der DB. Bestehende Zeilen sind unberührt.
+  id            String    @id @default(cuid())
+  name          String
+  handle        String    @unique
+  email         String    @unique
+  color         String
+  passwordHash  String?
+  // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
+  emailVerified DateTime?
+  image         String?
   // Globale Plattform-Ebene über allen Workspaces (SaaS-Betreiber). Gibt KEINEN
   // Zugriff auf Tenant-Inhalte — nur auf Plattform-Operationen.
   isPlatformAdmin Boolean @default(false)
@@ -49,6 +54,48 @@ model User {
   leadingTeams       Team[]          @relation("TeamLead")
   teamMemberships    TeamMember[]
   projectMemberships ProjectMember[]
+  accounts           Account[]
+  sessions           Session[]
+}
+
+// ─── Auth.js (NextAuth) ─────────────────────────────────────────────────────────
+// Standard-Adapter-Modelle. Session bleibt bei JWT-Strategie ungenutzt, wird aber
+// vom PrismaAdapter typseitig erwartet.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model WorkspaceMember {

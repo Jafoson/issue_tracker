@@ -72,7 +72,9 @@ export function SelectMenu({
           />
         ))}
         {filtered.length === 0 && (
-          <div className={`${styles.menuItem} ${styles.faint} ${styles["cursor-normal"]}`}>
+          <div
+            className={`${styles.menuItem} ${styles.faint} ${styles["cursor-normal"]}`}
+          >
             No matches
           </div>
         )}

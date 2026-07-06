@@ -2,16 +2,26 @@
 
 import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { login, register } from "@/features/auth/actions";
+import { login, register, signInWithOAuth } from "@/features/auth/actions";
 import { Link, useRouter } from "@/i18n/navigation";
 import styles from "./authForm.module.scss";
 
 interface AuthFormProps {
   mode: "login" | "register";
   callbackUrl?: string;
+  oauthProviders?: string[];
 }
 
-export function AuthForm({ mode, callbackUrl }: AuthFormProps) {
+const OAUTH_META: Record<string, { label: string; icon: string }> = {
+  github: { label: "GitHub", icon: "lucide:github" },
+  google: { label: "Google", icon: "logos:google-icon" },
+};
+
+export function AuthForm({
+  mode,
+  callbackUrl,
+  oauthProviders = [],
+}: AuthFormProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [name, setName] = useState("");
@@ -139,6 +149,32 @@ export function AuthForm({ mode, callbackUrl }: AuthFormProps) {
         <button type="button" className={styles.submit} onClick={submit}>
           {isLogin ? "Sign in" : "Create account"}
         </button>
+
+        {oauthProviders.length > 0 && (
+          <>
+            <div className={styles.divider}>or</div>
+            <div className={styles.oauth}>
+              {oauthProviders.map((provider) => {
+                const meta = OAUTH_META[provider] ?? {
+                  label: provider,
+                  icon: "lucide:log-in",
+                };
+                return (
+                  <form
+                    key={provider}
+                    className={styles.oauthForm}
+                    action={signInWithOAuth.bind(null, provider)}
+                  >
+                    <button type="submit" className={styles.oauthBtn}>
+                      <Icon icon={meta.icon} width={16} />
+                      Continue with {meta.label}
+                    </button>
+                  </form>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <p className={styles.switch}>
           {isLogin ? (

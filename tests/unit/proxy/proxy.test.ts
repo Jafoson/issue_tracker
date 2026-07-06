@@ -1,35 +1,39 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
-
-mock.module("jose", () => ({
-  jwtVerify: mock(),
-}));
-
-mock.module("@/lib/session-secret", () => ({
-  sessionSecret: new TextEncoder().encode(
-    "test-secret-minimum-32-chars-long!!",
-  ),
-}));
-
-import { jwtVerify } from "jose";
+import { describe, expect, it, mock } from "bun:test";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
-import proxy, { config } from "@/proxy";
 
-const mockJwtVerify = jwtVerify as ReturnType<typeof mock>;
+// Edge-`auth`-Wrapper simulieren: setzt req.auth anhand eines Test-Cookies
+// `authed=1` und delegiert dann an den übergebenen Handler.
+mock.module("@/auth.edge", () => ({
+  auth:
+    (handler: (req: unknown) => unknown) =>
+    (req: {
+      cookies: { get: (n: string) => { value: string } | undefined };
+    }) => {
+      (req as unknown as { auth: unknown }).auth =
+        req.cookies.get("authed")?.value === "1" ? { user: { id: "u" } } : null;
+      return handler(req);
+    },
+}));
 
-function makeRequest(path: string, options?: { cookie?: string }) {
+// proxy.ts ruft `auth(...)` bereits zur Import-Zeit auf → dynamisch NACH dem
+// mock.module importieren, damit der Mock greift. Der auth-Wrapper hat eine
+// Middleware-Signatur; im Test rufen wir ihn als einfache (req)=>Response-Fn auf.
+const proxyModule = await import("@/proxy");
+const proxy = proxyModule.default as unknown as (
+  req: unknown,
+) => Promise<Response>;
+const { config } = proxyModule;
+
+function makeRequest(path: string, options?: { authed?: boolean }) {
   const headers: Record<string, string> = {};
-  if (options?.cookie) headers.Cookie = options.cookie;
+  if (options?.authed) headers.Cookie = "authed=1";
   const { NextRequest } = require("next/server");
   return new NextRequest(`http://localhost${path}`, { headers });
 }
 
 describe("proxy() – Auth-Gate", () => {
-  beforeEach(() => {
-    mockJwtVerify.mockReset();
-  });
-
   describe("Geschützte Routen ohne Session", () => {
-    it("leitet zu /login weiter wenn kein Session-Cookie vorhanden ist", async () => {
+    it("leitet zu /login weiter wenn keine Session vorhanden ist", async () => {
       const response = await proxy(makeRequest("/de/myworkspace/board"));
       expect(response.status).toBe(307);
       expect(response.headers.get("Location") ?? "").toContain("/de/login");
@@ -44,15 +48,6 @@ describe("proxy() – Auth-Gate", () => {
     it("verwendet die korrekte Locale im Login-Redirect", async () => {
       const response = await proxy(makeRequest("/en/workspace/board"));
       expect(response.headers.get("Location") ?? "").toContain("/en/login");
-    });
-
-    it("leitet weiter wenn Session-Token ungültig ist", async () => {
-      mockJwtVerify.mockRejectedValue(new Error("Invalid token"));
-      const response = await proxy(
-        makeRequest("/de/dashboard", { cookie: "session=invalid-token" }),
-      );
-      expect(response.status).toBe(307);
-      expect(response.headers.get("Location") ?? "").toContain("/de/login");
     });
   });
 
@@ -71,18 +66,9 @@ describe("proxy() – Auth-Gate", () => {
   });
 
   describe("Gültige Session", () => {
-    beforeEach(() => {
-      mockJwtVerify.mockResolvedValue({ payload: { sub: "user-id" } });
-    });
-
-    it("ruft jwtVerify mit dem Session-Token auf", async () => {
-      await proxy(makeRequest("/de/workspace", { cookie: "session=my-token" }));
-      expect(mockJwtVerify).toHaveBeenCalledWith("my-token", expect.anything());
-    });
-
     it("leitet eine gültige Session NICHT zum Login um", async () => {
       const response = await proxy(
-        makeRequest("/de/myworkspace/board", { cookie: "session=valid-token" }),
+        makeRequest("/de/myworkspace/board", { authed: true }),
       );
       expect(response.headers.get("Location") ?? "").not.toContain("/login");
     });
