@@ -10,7 +10,7 @@ export interface CurrentUser {
   handle: string;
   email: string;
   color: string;
-  isPlatformAdmin: boolean;
+  globalRole: string;
 }
 
 export interface PlatformUser {
@@ -19,7 +19,7 @@ export interface PlatformUser {
   handle: string;
   email: string;
   color: string;
-  isPlatformAdmin: boolean;
+  globalRole: string;
   workspaceCount: number;
 }
 
@@ -39,7 +39,7 @@ export const getCurrentUser = cache(
         handle: true,
         email: true,
         color: true,
-        isPlatformAdmin: true,
+        globalRole: true,
       },
     });
     return user;
@@ -55,7 +55,7 @@ export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
       handle: true,
       email: true,
       color: true,
-      isPlatformAdmin: true,
+      globalRole: true,
       _count: { select: { workspaces: true } },
     },
   });
@@ -65,7 +65,7 @@ export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
     handle: u.handle,
     email: u.email,
     color: u.color,
-    isPlatformAdmin: u.isPlatformAdmin,
+    globalRole: u.globalRole,
     workspaceCount: u._count.workspaces,
   }));
 });

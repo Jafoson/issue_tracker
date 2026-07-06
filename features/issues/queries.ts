@@ -92,13 +92,13 @@ export const getProjects = cache(
   },
 );
 
-export const getIsPlatformAdmin = cache(
-  async (userId: string): Promise<boolean> => {
+export const getGlobalRole = cache(
+  async (userId: string): Promise<string> => {
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { isPlatformAdmin: true },
+      select: { globalRole: true },
     });
-    return user?.isPlatformAdmin ?? false;
+    return user?.globalRole ?? "member";
   },
 );
 
@@ -337,7 +337,7 @@ export async function loadWorkspaceData(
     issueTypes,
     roles,
     userWorkspaces,
-    isPlatformAdmin,
+    globalRole,
   ] = await Promise.all([
     getProjects(workspaceId),
     getMembers(workspaceId),
@@ -348,7 +348,7 @@ export async function loadWorkspaceData(
     getIssueTypes(workspaceId),
     getRoles(workspaceId),
     getUserWorkspaces(userId),
-    getIsPlatformAdmin(userId),
+    getGlobalRole(userId),
   ]);
 
   const me =
@@ -369,7 +369,7 @@ export async function loadWorkspaceData(
     issueTypes,
     roles,
     searchIssues,
-    isPlatformAdmin,
+    globalRole,
   };
 }
 

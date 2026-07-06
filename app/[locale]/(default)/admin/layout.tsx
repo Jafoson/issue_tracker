@@ -1,10 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 import { getFirstWorkspaceId } from "@/features/admin/queries";
-import {
-  getIsPlatformAdmin,
-  loadWorkspaceData,
-} from "@/features/issues/queries";
+import { getGlobalRole, loadWorkspaceData } from "@/features/issues/queries";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +21,8 @@ export default async function AdminLayout({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const isPlatformAdmin = await getIsPlatformAdmin(session.userId);
-  if (!isPlatformAdmin) notFound();
+  const globalRole = await getGlobalRole(session.userId);
+  if (globalRole !== "admin") notFound();
 
   const firstWorkspaceId = await getFirstWorkspaceId(session.userId);
   if (!firstWorkspaceId) redirect(`/${locale}/create-workspace`);

@@ -43,9 +43,10 @@ model User {
   // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
   emailVerified DateTime?
   image         String?
-  // Globale Plattform-Ebene über allen Workspaces (SaaS-Betreiber). Gibt KEINEN
-  // Zugriff auf Tenant-Inhalte — nur auf Plattform-Operationen.
-  isPlatformAdmin Boolean @default(false)
+  // Globale Plattform-Rolle über allen Workspaces (SaaS-Betreiber): "admin" |
+  // "member". Gibt KEINEN Zugriff auf Tenant-Inhalte — nur auf Plattform-
+  // Operationen. Nicht zu verwechseln mit WorkspaceMember.role (Workspace-Rolle).
+  globalRole String @default("member")
 
   workspaces         WorkspaceMember[]
   assignedIssues     Issue[]         @relation("IssueAssignee")

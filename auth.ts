@@ -6,7 +6,6 @@ import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { db } from "@/lib/db";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
-import type { User as AppUser } from "@/types/user";
 
 // PrismaAdapter mit createUser-Override: OAuth-User liefern nur name/email/image,
 // aber `handle` und `color` sind NOT NULL. Wir ergänzen sie hier (wie beim Register).
@@ -53,20 +52,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await db.user.findUnique({ where: { email } });
         if (!user?.passwordHash) return null;
 
-        const ok = await bcrypt.compare(password, user.passwordHash);
-        if (!ok) return null;
+        const passwordOk = await bcrypt.compare(password, user.passwordHash);
+        if (!passwordOk) return null;
 
-        // Domain-User (types/user.ts) zurückgeben; isPlatformAdmin ergänzen, damit
-        // die globale Plattform-Rolle ins JWT/die Session wandert.
-        const authUser: AppUser & { isPlatformAdmin: boolean } = {
+        return {
           id: user.id,
           name: user.name,
           email: user.email,
-          color: user.color,
-          image: user.image ?? undefined,
-          isPlatformAdmin: user.isPlatformAdmin,
+          image: user.image,
+          // Globale Plattform-Rolle (admin | member) mitgeben, damit sie ins
+          // JWT/die Session wandert.
+          globalRole: user.globalRole,
         };
-        return authUser;
       },
     }),
   ],

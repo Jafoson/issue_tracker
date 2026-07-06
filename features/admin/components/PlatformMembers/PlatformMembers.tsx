@@ -43,7 +43,7 @@ export function PlatformMembers({ users }: Props) {
               <div>
                 <div className={styles.userName}>
                   {u.name}
-                  {u.isPlatformAdmin && (
+                  {u.globalRole === "admin" && (
                     <Badge active>{t("platform.platformAdmin")}</Badge>
                   )}
                 </div>

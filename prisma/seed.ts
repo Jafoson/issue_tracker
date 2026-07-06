@@ -827,14 +827,16 @@ async function main() {
     const id = ref(realUserId, u.id, "user");
     await db.user.upsert({
       where: { id },
-      update: { isPlatformAdmin: PLATFORM_ADMIN_IDS.has(u.id) },
+      update: {
+        globalRole: PLATFORM_ADMIN_IDS.has(u.id) ? "admin" : "member",
+      },
       create: {
         id,
         name: u.name,
         handle: u.handle,
         email: u.email,
         color: u.color,
-        isPlatformAdmin: PLATFORM_ADMIN_IDS.has(u.id),
+        globalRole: PLATFORM_ADMIN_IDS.has(u.id) ? "admin" : "member",
       },
     });
   }

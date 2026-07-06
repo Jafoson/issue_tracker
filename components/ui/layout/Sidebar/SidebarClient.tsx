@@ -15,7 +15,7 @@ export function SidebarClient() {
   const pathname = usePathname();
   // Die Workspace-ID kommt aus dem Context (nicht aus der URL), damit dieselbe
   // Sidebar auch im plattformweiten /admin-Bereich (ohne [workspace]-Segment) trägt.
-  const { isPlatformAdmin, workspace } = useWorkspace();
+  const { globalRole, workspace } = useWorkspace();
   const base = `/${workspace.id}`;
 
   // Plattformweiter Admin-Bereich: eigene Kategorie-Sidebar, gleiche Shell.
@@ -44,7 +44,7 @@ export function SidebarClient() {
   const navBottom = [
     { href: `${base}/members`, icon: "lucide:users", label: t("nav.members") },
     { href: `${base}/teams`, icon: "lucide:users-2", label: t("nav.teams") },
-    ...(isPlatformAdmin
+    ...(globalRole === "admin"
       ? [
           {
             href: "/admin",

@@ -28,13 +28,13 @@ export const authConfig = {
     // User-Id + globale Rolle in das JWT übernehmen (bei Login liegt `user` vor).
     jwt({ token, user }) {
       if (user?.id) token.id = user.id;
-      if (user) token.isPlatformAdmin = user.isPlatformAdmin ?? false;
+      if (user) token.globalRole = user.globalRole ?? "member";
       return token;
     },
     // Id + globale Rolle aus dem Token in die Session spiegeln (serverseitig verfügbar).
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string;
-      session.user.isPlatformAdmin = (token.isPlatformAdmin as boolean) ?? false;
+      session.user.globalRole = (token.globalRole as string) ?? "member";
       return session;
     },
   },

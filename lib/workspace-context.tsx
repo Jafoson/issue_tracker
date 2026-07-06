@@ -31,9 +31,10 @@ export interface WorkspaceData {
   issueTypes: IssueType[];
   roles: Role[];
   searchIssues: SearchableIssue[];
-  // Ob der aktuell eingeloggte User globaler Plattform-Admin ist (steuert den
-  // Zugang zum /admin-Bereich). Bezieht sich nur auf `me`, nicht auf `members`.
-  isPlatformAdmin: boolean;
+  // Globale Plattform-Rolle des aktuell eingeloggten Users ("admin" | "member";
+  // steuert den Zugang zum /admin-Bereich). Bezieht sich nur auf `me`, nicht auf
+  // `members`.
+  globalRole: string;
 }
 
 const Ctx = createContext<WorkspaceData | null>(null);
