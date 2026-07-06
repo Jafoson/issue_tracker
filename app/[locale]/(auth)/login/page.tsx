@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/features/auth/components/AuthForm/AuthForm";
-import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
 export default async function LoginPage({
@@ -10,7 +9,10 @@ export default async function LoginPage({
 }) {
   const { callbackUrl } = await searchParams;
 
-  if (callbackUrl) redirect(callbackUrl);
+  // Bereits eingeloggt? Dann von der Login-Seite weg zur Zielseite.
+  // Ohne die Session-Prüfung entstünde eine Redirect-Schleife mit dem Proxy.
+  const session = await getSession();
+  if (session) redirect(callbackUrl ?? "/");
 
   return <AuthForm mode="login" callbackUrl={callbackUrl} />;
 }

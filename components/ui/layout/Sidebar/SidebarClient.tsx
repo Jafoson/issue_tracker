@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { AdminNav } from "./components/AdminNav";
 import { NavLink } from "./components/NavLink";
 import { NavSection } from "./components/NavSection";
 import { QuickActions } from "./components/QuickActions";
@@ -11,11 +10,8 @@ import { UserMenu } from "./components/UserMenu";
 import { WorkspaceMenu } from "./components/WorkspaceMenu";
 import styles from "./sidebar.module.scss";
 
-interface SidebarClientProps {
-  onLogout: () => void;
-}
 
-export function SidebarClient({ onLogout }: SidebarClientProps) {
+export function SidebarClient() {
   const t = useTranslations();
   const pathname = usePathname();
   // Die Workspace-ID kommt aus dem Context (nicht aus der URL), damit dieselbe
@@ -27,9 +23,7 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
   const adminBase = "/admin";
   const isAdminMode =
     pathname === adminBase || pathname.startsWith(`${adminBase}/`);
-  if (isAdminMode) {
-    return <AdminNav onLogout={onLogout} />;
-  }
+
 
   const navTop: Array<
     | {
@@ -110,7 +104,7 @@ export function SidebarClient({ onLogout }: SidebarClientProps) {
         ))}
       </nav>
 
-      <UserMenu onLogout={onLogout} />
+      <UserMenu />
     </aside>
   );
 }

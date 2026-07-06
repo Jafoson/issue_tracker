@@ -9,12 +9,10 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "../sidebar.module.scss";
 import { NavLink } from "./NavLink";
+import { Button } from "@/components/ui/atoms/Button/Button";
 
-interface UserMenuProps {
-  onLogout: () => void;
-}
 
-export function UserMenu({ onLogout }: UserMenuProps) {
+export function UserMenu() {
   const { me, workspace } = useWorkspace();
   const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
@@ -25,18 +23,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
 
   return (
     <div ref={ref} className={styles.userRow}>
-      <button
-        type="button"
-        className="orbit-user"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          background: "transparent",
-          border: "none",
-        }}
-      >
+      <Button variant="ghost" onClick={() => setOpen(!open)} style={{ gap: 8, flex: "none", minWidth: 0 }}>
         <Avatar user={me} size={28} />
         <span
           style={{
@@ -69,7 +56,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
             {me.role}
           </span>
         </span>
-      </button>
+      </Button>
 
       <Link
         href={`${base}/inbox`}
@@ -137,7 +124,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
           onClick={() => setOpen(false)}
         />
         <div className="divider" style={{ margin: "4px 0" }} />
-        <button type="button" className="menu-item" onClick={onLogout}>
+        <button type="button" className="menu-item" onClick={() => console.log("Logging out...")}>
           <Icon icon="lucide:log-out" width={16} className="faint" />{" "}
           {t("nav.signOut")}
         </button>

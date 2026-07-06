@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 import { loadWorkspaceData } from "@/features/issues/queries";
 import { getSession } from "@/lib/session";
+import { WorkspaceProvider } from "@/lib/workspace-context";
+import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 
 export const dynamic = "force-dynamic";
 
@@ -20,5 +21,5 @@ export default async function AppLayout({
   const data = await loadWorkspaceData(workspaceId, session.userId);
   if (!data) notFound();
 
-  return <AppShell workspace={data}>{children}</AppShell>;
+  return <WorkspaceProvider value={data}><AppShell>{children}</AppShell></WorkspaceProvider>;
 }
