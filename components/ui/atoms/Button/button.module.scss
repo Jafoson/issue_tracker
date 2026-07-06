@@ -98,3 +98,13 @@
   &.md { padding-right: 9px; }
   &.lg { padding-right: 12px; }
 }
+
+.textAlign-left {
+  justify-content: flex-start;
+}
+.textAlign-center {
+  justify-content: center;
+}
+.textAlign-right {
+  justify-content: flex-end;
+}

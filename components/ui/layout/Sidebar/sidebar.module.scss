@@ -135,17 +135,3 @@
     color: var(--text);
   }
 }
-
-.userRow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-top: 1px solid var(--border);
-  padding-top: 6px;
-  margin-top: 4px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background .12s;
-
-  &:hover { background: var(--card-hover); }
-}

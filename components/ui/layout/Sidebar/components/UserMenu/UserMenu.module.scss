@@ -1,0 +1,17 @@
+.content{
+    display: flex;
+    line-height: var(--leading-tight);
+    height: 100%;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title{
+    display: block;
+    font-weight: 600;
+    font-size: var(--text-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

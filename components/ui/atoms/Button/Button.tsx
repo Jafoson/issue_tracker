@@ -9,6 +9,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   full?: boolean;
   icon?: React.ReactNode;
   iconRight?: React.ReactNode;
+  textAlign?: "left" | "center" | "right";
 }
 
 export function Button({
@@ -19,6 +20,7 @@ export function Button({
   icon,
   iconRight,
   className,
+  textAlign = "center",
   ...rest
 }: ButtonProps) {
   const isIconOnly = (!!icon || !!iconRight) && !children;
@@ -31,6 +33,7 @@ export function Button({
     isIconOnly && styles.iconOnly,
     !isIconOnly && !!icon && styles.hasIcon,
     !isIconOnly && !!iconRight && styles.hasIconRight,
+    textAlign && styles[`textAlign-${textAlign}`],
     className,
   ]
     .filter(Boolean)
