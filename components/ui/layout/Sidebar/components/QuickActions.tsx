@@ -1,20 +1,14 @@
+"use client"
+
 import { Icon } from "@iconify/react";
-import { Button } from "@/components/ui/atoms/Button/Button";
-import type { Translator } from "@/i18n/types";
+import { Button } from "@/components/ui/atoms/Button/Button"; 
+import { useTranslations } from "next-intl";
+import styles from "../sidebar.module.scss"
 
-interface QuickActionsProps {
-  t: Translator;
-}
-
-export function QuickActions({ t }: QuickActionsProps) {
+export function QuickActions() {
+  const t = useTranslations()
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-        padding: "6px 8px",
-      }}
+    <div className={styles.quickActions}
     >
       <Button
         variant="primary"
@@ -26,9 +20,10 @@ export function QuickActions({ t }: QuickActionsProps) {
       >
         {t("actions.newIssue")}
       </Button>
-      <button
-        type="button"
-        className="orbit-search-btn"
+      <Button
+      variant="outline"
+      className={styles.search}
+      size="md"
         onClick={() =>
           (window as { __openPalette?: () => void }).__openPalette?.()
         }
@@ -38,7 +33,7 @@ export function QuickActions({ t }: QuickActionsProps) {
         <span className="kbd" style={{ marginLeft: "auto" }}>
           ⌘K
         </span>
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,15 +1,27 @@
-import { useWorkspace } from "@/lib/workspace-context";
+import {
+  getCurrentWorkspace,
+  getMyWorkspaces,
+} from "@/features/workspaces/queries";
 import { WorkspaceMenuClient } from "./WorkSpaceMenuClient";
 
+async function WorkspaceMenu() {
+  const [workspace, userWorkspaces] = await Promise.all([
+    getCurrentWorkspace(),
+    getMyWorkspaces(),
+  ]);
 
-const { workspace, userWorkspaces } = useWorkspace();
+  //TODO: add logic to handle if user is not part of any workspace
 
-function WorkspaceMenu() {
+  if (!workspace) return null;
+
   return (
     <div>
-        <WorkspaceMenuClient workspace={workspace} userWorkspaces={userWorkspaces} />
+      <WorkspaceMenuClient
+        workspace={workspace}
+        userWorkspaces={userWorkspaces}
+      />
     </div>
-  )
+  );
 }
 
-export default WorkspaceMenu
+export default WorkspaceMenu;

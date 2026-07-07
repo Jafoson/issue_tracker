@@ -1,0 +1,24 @@
+.title{
+    font-Weight: 600;
+    font-size: var(--text-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.icon{
+    margin-left: auto;
+    color: var(--surface-bright);
+}
+
+.label{
+    font-size: var(--text-base);
+    padding-left: 4px;
+    padding-bottom: 8px;
+}
+
+.active{
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+}

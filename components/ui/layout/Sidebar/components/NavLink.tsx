@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Link } from "@/i18n/navigation";
+import styles from "@/components/ui/atoms/Button/button.module.scss"
 
 interface NavLinkProps {
   href: string;
@@ -22,7 +23,7 @@ export function NavLink({
   return (
     <Link
       href={href}
-      className="orbit-nav"
+      className={`${styles.btn} ${styles.ghost} ${styles.md} ${styles.full} ${styles.hasIcon} ${styles["textAlign-left"]} ${styles.link}`}
       data-active={active}
       onClick={onClick}
     >

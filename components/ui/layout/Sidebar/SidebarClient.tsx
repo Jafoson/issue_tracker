@@ -7,7 +7,6 @@ import { NavLink } from "./components/NavLink";
 import { NavSection } from "./components/NavSection";
 import { QuickActions } from "./components/QuickActions";
 import { UserMenu } from "./components/UserMenu";
-import { WorkspaceMenu } from "./components/WorkSpaceMenu/WorkSpaceMenuClient";
 import styles from "./sidebar.module.scss";
 
 export function SidebarClient() {
@@ -65,9 +64,8 @@ export function SidebarClient() {
 
   return (
     <aside className={styles.aside}>
-      <WorkspaceMenu />
 
-      <QuickActions t={t} />
+      <QuickActions/>
 
       <nav className={styles.nav}>
         {navTop.map((item) =>

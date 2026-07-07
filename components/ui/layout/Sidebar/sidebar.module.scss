@@ -13,10 +13,10 @@
 }
 
 .quickActions {
-  margin: 10px 0 4px;
+  margin: 6px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
 }
 
 .nav {
@@ -134,4 +134,8 @@
   &:global([data-active="true"]) {
     color: var(--text);
   }
+}
+
+.search{
+  background: var(--surface-container-low);
 }

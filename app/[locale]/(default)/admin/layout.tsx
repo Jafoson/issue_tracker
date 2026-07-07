@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 import { getFirstWorkspaceId } from "@/features/admin/queries";
 import { getGlobalRole, loadWorkspaceData } from "@/features/issues/queries";
+import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,10 @@ export default async function AdminLayout({
 
   const firstWorkspaceId = await getFirstWorkspaceId(session.userId);
   if (!firstWorkspaceId) redirect(`/${locale}/create-workspace`);
+
+  // Der /admin-Bereich hat kein [workspace]-Segment → Store mit dem ersten
+  // Workspace des Users seeden, damit die Sidebar-Server-Components ihn kennen.
+  setCurrentWorkspaceId(firstWorkspaceId);
 
   const data = await loadWorkspaceData(firstWorkspaceId, session.userId);
   if (!data) notFound();

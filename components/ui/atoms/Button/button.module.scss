@@ -9,6 +9,7 @@
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+  text-decoration: none;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s, transform 0.06s;
 
   &::after { content: ''; display: block; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: inherit; opacity: 0; transition: opacity 0.12s; }
@@ -26,6 +27,13 @@
 
   /* ── Width ── */
   &.full { width: 100%; }
+
+  &[data-active = true]{
+  background-color: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  border: 1px solid var(--tertiary);
+  font-weight: 600;
+}
 }
 
 /* ── Variants ── */
@@ -108,3 +116,8 @@
 .textAlign-right {
   justify-content: flex-end;
 }
+
+.link{
+  font-size: var(--text-base) !important;
+}
+
