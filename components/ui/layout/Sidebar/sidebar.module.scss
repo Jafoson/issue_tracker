@@ -139,3 +139,20 @@
 .search{
   background: var(--surface-container-low);
 }
+
+.navGroup{
+  flex: 1;
+}
+
+.titleWrapper{
+  padding-top: 1rem;
+  padding-inline: 0.5rem;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  & span{
+    color: var(--on-surface-variant);
+  }
+}

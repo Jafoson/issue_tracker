@@ -22,24 +22,6 @@ export function SidebarClient() {
   const isAdminMode =
     pathname === adminBase || pathname.startsWith(`${adminBase}/`);
 
-  const navTop: Array<
-    | {
-        href: string;
-        icon: string;
-        label: string;
-        badge?: number;
-      }
-    | "separator"
-  > = [
-    { href: `${base}/my`, icon: "lucide:user", label: t("nav.myIssues") },
-    "separator",
-    {
-      href: `${base}/projects`,
-      icon: "lucide:folders",
-      label: t("nav.projects"),
-    },
-  ];
-
   const navBottom = [
     { href: `${base}/members`, icon: "lucide:users", label: t("nav.members") },
     { href: `${base}/teams`, icon: "lucide:users-2", label: t("nav.teams") },
@@ -67,23 +49,6 @@ export function SidebarClient() {
 
       <QuickActions/>
 
-      <nav className={styles.nav}>
-        {navTop.map((item) =>
-          item === "separator" ? (
-            <div key="nav-separator" style={{ height: 10 }} />
-          ) : (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              icon={item.icon}
-              label={item.label}
-              active={isActive(item.href)}
-              badge={item.badge}
-            />
-          ),
-        )}
-      </nav>
-
       <NavSection />
 
       <div style={{ marginTop: "auto" }} />
@@ -95,7 +60,6 @@ export function SidebarClient() {
             href={item.href}
             icon={item.icon}
             label={item.label}
-            active={isActive(item.href)}
           />
         ))}
       </nav>

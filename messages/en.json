@@ -14,7 +14,8 @@
     "adminSettings": "Admin Settings",
     "general": "General",
     "roles": "Roles & Permissions",
-    "backToWorkspace": "Back to workspace"
+    "backToWorkspace": "Back to workspace",
+    "workspaces": "Workspaces"
   },
   "actions": {
     "newIssue": "New issue",

@@ -1,0 +1,35 @@
+.tabList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  position: relative;
+}
+
+.toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+}
+
+.chevron {
+  flex: none;
+  transition: transform 0.15s;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.nested {
+  padding-left: 12px;
+  margin-top: 1px;
+}

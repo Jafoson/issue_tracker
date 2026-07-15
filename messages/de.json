@@ -14,7 +14,8 @@
     "adminSettings": "Admin Einstellungen",
     "general": "Allgemein",
     "roles": "Rollen & Rechte",
-    "backToWorkspace": "Zurück zum Workspace"
+    "backToWorkspace": "Zurück zum Workspace",
+    "workspaces": "Workspaces"
   },
   "actions": {
     "newIssue": "Neue Aufgabe",
