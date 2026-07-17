@@ -1,39 +1,29 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
-import { getFirstWorkspaceId } from "@/features/admin/queries";
-import { getGlobalRole, loadWorkspaceData } from "@/features/issues/queries";
+import { loadWorkspaceData } from "@/features/issues/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getSession } from "@/lib/session";
+import { WorkspaceProvider } from "@/lib/workspace-context";
 
 export const dynamic = "force-dynamic";
 
-// Plattform-Ebene: steht über allen Workspaces, nur für globale Plattform-Admins.
-// Nutzt dieselbe AppShell wie der Workspace-Bereich (gleiche Sidebar, Topbar,
-// Tabs, Context) — der Context wird mit dem ersten Workspace des Users gefüllt.
-export default async function AdminLayout({
+export default async function AppLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string; workspace: string }>;
 }) {
   const { locale } = await params;
+
+  // Aktive Workspace-ID request-scoped ablegen, damit verschachtelte Server
+  // Components sie via getCurrentWorkspace() lesen können (analog zur Session).
 
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const globalRole = await getGlobalRole(session.userId);
-  if (globalRole !== "admin") notFound();
 
-  const firstWorkspaceId = await getFirstWorkspaceId(session.userId);
-  if (!firstWorkspaceId) redirect(`/${locale}/create-workspace`);
-
-  // Der /admin-Bereich hat kein [workspace]-Segment → Store mit dem ersten
-  // Workspace des Users seeden, damit die Sidebar-Server-Components ihn kennen.
-  setCurrentWorkspaceId(firstWorkspaceId);
-
-  const data = await loadWorkspaceData(firstWorkspaceId, session.userId);
-  if (!data) notFound();
-
-  return <AppShell workspace={data}>{children}</AppShell>;
+  return (
+      <AppShell isAdminRoute>{children}</AppShell>
+  );
 }

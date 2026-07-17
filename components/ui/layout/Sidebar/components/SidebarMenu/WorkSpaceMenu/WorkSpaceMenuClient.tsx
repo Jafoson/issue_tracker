@@ -8,7 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Workspace } from "@/lib/workspace-context";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
-import styles from "./WorkSpaceMenu.module.scss";
+import styles from "../SidebarMenu.module.scss";
 
 interface WorkspaceMenuProps {
   workspace: Workspace;

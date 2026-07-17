@@ -1,7 +1,7 @@
 import NavGroup from "./components/NavGroups";
 import { QuickActions } from "./components/QuickActions";
 import { UserMenu } from "./components/UserMenu";
-import WorkspaceMenu from "./components/WorkSpaceMenu";
+import SidebarMenu from "./components/SidebarMenu";
 import styles from "./sidebar.module.scss";
 
 interface SidebarProps{
@@ -10,8 +10,8 @@ interface SidebarProps{
 
 export function Sidebar({isAdminRoute = false}: SidebarProps) {
   return <aside className={styles.aside}>
-    <WorkspaceMenu />
-    <QuickActions/>
+    <SidebarMenu isAdminRoute={isAdminRoute}/>
+    {!isAdminRoute && <QuickActions/>}
     <NavGroup isAdminRoute={isAdminRoute}/>
     <UserMenu />
   </aside>;
