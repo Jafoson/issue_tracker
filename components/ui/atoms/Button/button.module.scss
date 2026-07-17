@@ -29,9 +29,7 @@
   &.full { width: 100%; }
 
   &[data-active = true]{
-  background-color: var(--tertiary-container);
-  color: var(--on-tertiary-container);
-  border: 1px solid var(--tertiary);
+  background-color: var(--surface-container-high);
   font-weight: 600;
 }
 }
