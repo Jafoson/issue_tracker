@@ -15,7 +15,8 @@
     "general": "Allgemein",
     "roles": "Rollen & Rechte",
     "backToWorkspace": "Zurück zum Workspace",
-    "workspaces": "Workspaces"
+    "workspaces": "Workspaces",
+    "workspaceSettings": "Workspace Einstellungen"
   },
   "actions": {
     "newIssue": "Neue Aufgabe",

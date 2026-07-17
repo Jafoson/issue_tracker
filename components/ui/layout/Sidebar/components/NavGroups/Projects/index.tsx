@@ -66,7 +66,9 @@ export default function NavGroupProjects() {
           )}
         />
     </div>
-    <TabList tabs={showProjects()}/>
+    <div className={styles.projectTabsWrapper}>
+        <TabList tabs={showProjects()}/>
+    </div>
     </>
   )
 }

@@ -15,7 +15,9 @@
     "general": "General",
     "roles": "Roles & Permissions",
     "backToWorkspace": "Back to workspace",
-    "workspaces": "Workspaces"
+    "workspaces": "Workspaces",
+    "workspaceSettings": "Workspace Settings"
+
   },
   "actions": {
     "newIssue": "New issue",

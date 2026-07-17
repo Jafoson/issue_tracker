@@ -142,6 +142,10 @@
 
 .navGroup{
   flex: 1;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  padding-bottom: 12px;
 }
 
 .titleWrapper{
@@ -155,4 +159,10 @@
   & span{
     color: var(--on-surface-variant);
   }
+}
+
+.projectTabsWrapper{
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

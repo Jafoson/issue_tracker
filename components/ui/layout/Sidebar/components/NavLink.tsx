@@ -1,9 +1,9 @@
 "use client"
 
-import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Link, usePathname } from "@/i18n/navigation";
 import styles from "@/components/ui/atoms/Button/button.module.scss"
+import { Icon } from "@iconify/react";
 
 export interface NavLinkProps {
   href: string;
