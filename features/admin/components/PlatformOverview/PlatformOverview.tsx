@@ -1,9 +1,7 @@
-"use client";
-
-import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import type { PlatformStats } from "@/features/admin/queries";
 import styles from "./platformOverview.module.scss";
+import AdminOverviewCard, { AdminOverviewCardProps } from "./components/Card";
 
 interface Props {
   stats: PlatformStats;
@@ -12,7 +10,7 @@ interface Props {
 export function PlatformOverview({ stats }: Props) {
   const t = useTranslations();
 
-  const cards = [
+  const cards: AdminOverviewCardProps[] = [
     {
       icon: "lucide:building-2",
       label: t("platform.workspaces"),
@@ -33,13 +31,7 @@ export function PlatformOverview({ stats }: Props) {
 
       <div className={styles.grid}>
         {cards.map((c) => (
-          <div key={c.label} className={styles.card}>
-            <div className={styles.cardIcon}>
-              <Icon icon={c.icon} width={20} />
-            </div>
-            <div className={styles.cardValue}>{c.value}</div>
-            <div className={styles.cardLabel}>{c.label}</div>
-          </div>
+          <AdminOverviewCard card={c} key={c.label}/>
         ))}
       </div>
     </div>

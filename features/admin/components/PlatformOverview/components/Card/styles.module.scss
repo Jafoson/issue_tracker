@@ -1,0 +1,29 @@
+.wrapper{
+    background: var(--surface-container);
+    outline: 1px solid var(--outline-variant);
+    border-radius: var(--radius-lg);
+    height: 100px;
+    display: flex;
+    gap: 16px;
+    padding: 6px 16px;
+    justify-content: start;
+    align-items: center;
+    color: var(--on-surface-variant);
+    & > h3{
+        text-align: end;
+        margin: 0;
+        font-size: 3rem;
+        color: var(--on-secondary-container);
+    }
+}
+
+.valueWrapper{
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+
+    & > h4 {
+        margin: 0;
+    }
+}

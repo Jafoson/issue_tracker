@@ -1,13 +1,13 @@
-"use client"
+import { getTranslations } from "next-intl/server";
+import { getCurrentWorkspace } from "@/features/workspaces/queries";
+import TabList, { type TabGroup } from "../components/TabList";
 
-import { useTranslations } from 'next-intl';
-import TabList, { TabGroup } from '../components/TabList';
-import { useWorkspace } from '@/lib/workspace-context';
+async function NavGroupWorkspace() {
+  const t = await getTranslations("nav");
+  const workspace = await getCurrentWorkspace();
+  if (!workspace) return null;
 
-function NavGroupWorkspace() {
- const t = useTranslations("nav");
- const { workspace } = useWorkspace();
- const base = `/${workspace.id}`;
+  const base = `/${workspace.id}`;
 
   const tabs: TabGroup[] = [
     {
@@ -30,4 +30,4 @@ function NavGroupWorkspace() {
   return <TabList tabs={tabs} />;
 }
 
-export default NavGroupWorkspace
+export default NavGroupWorkspace;

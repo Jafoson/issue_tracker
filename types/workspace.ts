@@ -1,3 +1,17 @@
+export interface Workspace {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface SearchableIssue {
+  id: string;
+  key: number;
+  title: string;
+  status: string;
+  project: string;
+}
+
 export interface Project {
   id: string;
   name: string;

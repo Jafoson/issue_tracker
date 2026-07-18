@@ -5,8 +5,5 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
   const stats = await getPlatformStats();
-  // return <PlatformOverview stats={stats} />;
-  return <div>
-    Hello
-  </div>
+  return <PlatformOverview stats={stats} />;
 }
