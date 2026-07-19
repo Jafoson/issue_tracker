@@ -9,17 +9,15 @@ export type Tab = {
   href: string;
 };
 
-function storageKey(ws: string) {
-  return `orbit-tabs-${ws}`;
-}
-function activeKey(ws: string) {
-  return `orbit-active-${ws}`;
-}
+// Ein einziger, globaler Tab-Set über alle Bereiche (Workspaces + Admin).
+// Die Tabs speichern jeweils die volle URL, der Kontext wird daraus abgeleitet.
+const TABS_KEY = "orbit-tabs";
+const ACTIVE_KEY = "orbit-active";
 
-function load(ws: string, fallback: string): { tabs: Tab[]; activeId: string } {
+function load(fallback: string): { tabs: Tab[]; activeId: string } {
   try {
-    const raw = localStorage.getItem(storageKey(ws));
-    const rawActive = localStorage.getItem(activeKey(ws));
+    const raw = localStorage.getItem(TABS_KEY);
+    const rawActive = localStorage.getItem(ACTIVE_KEY);
     if (raw) {
       const tabs = JSON.parse(raw) as Tab[];
       if (Array.isArray(tabs) && tabs.length > 0) {
@@ -35,11 +33,11 @@ function load(ws: string, fallback: string): { tabs: Tab[]; activeId: string } {
   return { tabs: [{ id, href: fallback }], activeId: id };
 }
 
-function save(ws: string, tabs: Tab[]) {
-  localStorage.setItem(storageKey(ws), JSON.stringify(tabs));
+function save(tabs: Tab[]) {
+  localStorage.setItem(TABS_KEY, JSON.stringify(tabs));
 }
 
-export function useTabBar(workspace: string, defaultHref: string) {
+export function useTabBar(defaultHref: string) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,11 +58,11 @@ export function useTabBar(workspace: string, defaultHref: string) {
   const prevActiveIdRef = useRef("");
 
   useEffect(() => {
-    const s = load(workspace, defaultHref);
+    const s = load(defaultHref);
     setTabs(s.tabs);
     setActiveId(s.activeId);
     setReady(true);
-  }, [workspace, defaultHref]);
+  }, [defaultHref]);
 
   // Track navigation within the current tab — including the query string, so
   // each tab keeps its own filters/sort even after switching away and back.
@@ -83,14 +81,14 @@ export function useTabBar(workspace: string, defaultHref: string) {
       const next = prev.map((t) =>
         t.id === activeId ? { ...t, href: currentHref } : t,
       );
-      save(workspace, next);
+      save(next);
       return next;
     });
-  }, [currentHref, activeId, ready, workspace]);
+  }, [currentHref, activeId, ready]);
 
   useEffect(() => {
-    if (activeId) localStorage.setItem(activeKey(workspace), activeId);
-  }, [activeId, workspace]);
+    if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
+  }, [activeId]);
 
   function switchTab(id: string) {
     const tab = tabs.find((t) => t.id === id);
@@ -103,7 +101,7 @@ export function useTabBar(workspace: string, defaultHref: string) {
     const id = crypto.randomUUID();
     const tab = { id, href: defaultHref };
     const next = [...tabs, tab];
-    save(workspace, next);
+    save(next);
     setTabs(next);
     setActiveId(id);
     router.push(defaultHref);
@@ -113,7 +111,7 @@ export function useTabBar(workspace: string, defaultHref: string) {
     if (tabs.length <= 1) return;
     const idx = tabs.findIndex((t) => t.id === id);
     const next = tabs.filter((t) => t.id !== id);
-    save(workspace, next);
+    save(next);
     setTabs(next);
     if (id === activeId) {
       const target = next[Math.max(0, idx - 1)];

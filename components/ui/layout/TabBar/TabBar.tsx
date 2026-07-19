@@ -1,75 +1,28 @@
-"use client";
+import {
+  getCurrentWorkspace,
+  getWorkspaceProjects,
+} from "@/features/workspaces/queries";
+import { TabBarClient } from "./TabBarClient";
 
-import { Icon } from "@iconify/react";
-import { useTranslations } from "next-intl";
-import { useWorkspace } from "@/lib/workspace-context";
-import styles from "./tabBar.module.scss";
-import { tabMeta } from "./tabMeta";
-import { useTabBar } from "./useTabBar";
+// Server Component: bestimmt den Tab-Kontext und reicht ihn an die Client-Logik.
+// - Admin-Bereich: eigener Namespace + `/admin`-Routen, kein Workspace nötig.
+// - Workspace-Shell: Workspace + Projekte serverseitig laden. Ohne aktiven
+//   Workspace (sollte hier nicht vorkommen) wird nichts gerendert.
+export async function TabBar({
+  isAdminRoute = false,
+}: {
+  isAdminRoute?: boolean;
+}) {
+  if (isAdminRoute) {
+    return <TabBarClient defaultHref="/admin" projects={[]} />;
+  }
 
-export function TabBar() {
-  const { projects, workspace } = useWorkspace();
-  const base = `/${workspace.id}`;
-  const t = useTranslations();
+  const workspace = await getCurrentWorkspace();
+  if (!workspace) return null;
 
-  const { tabs, activeId, ready, switchTab, openTab, closeTab } = useTabBar(
-    workspace.id,
-    `${base}/my`,
-  );
-
-  if (!ready) return <div className={styles.bar} />;
+  const projects = await getWorkspaceProjects();
 
   return (
-    <div className={styles.bar} role="tablist">
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeId;
-        const { title, color, icon } = tabMeta(tab.href, projects, t, base);
-
-        return (
-          <div
-            key={tab.id}
-            role="tab"
-            aria-selected={isActive}
-            tabIndex={0}
-            className={`${styles.tab}${isActive ? ` ${styles.active}` : ""}`}
-            onClick={() => switchTab(tab.id)}
-            onKeyDown={(e) =>
-              e.key === "Enter" || e.key === " " ? switchTab(tab.id) : undefined
-            }
-          >
-            {color ? (
-              <span className={styles.dot} style={{ background: color }} />
-            ) : (
-              <Icon
-                icon={icon ?? "lucide:layout-dashboard"}
-                width={14}
-                className={styles.icon}
-              />
-            )}
-            <span className={styles.label}>{title}</span>
-            <button
-              type="button"
-              className={styles.close}
-              aria-label="Close tab"
-              onClick={(e) => {
-                e.stopPropagation();
-                closeTab(tab.id);
-              }}
-            >
-              <Icon icon="lucide:x" width={10} />
-            </button>
-          </div>
-        );
-      })}
-
-      <button
-        type="button"
-        className={styles.add}
-        aria-label="Open new tab"
-        onClick={openTab}
-      >
-        <Icon icon="lucide:plus" width={14} />
-      </button>
-    </div>
+    <TabBarClient defaultHref={`/${workspace.id}/my`} projects={projects} />
   );
 }

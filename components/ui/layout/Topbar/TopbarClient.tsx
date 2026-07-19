@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import { TabBar } from "@/components/ui/layout/TabBar/TabBar";
 import type { Translator } from "@/i18n/types";
 import { useWorkspace } from "@/lib/workspace-context";
 import { TopbarFilters } from "./components/TopbarFilters";
@@ -57,10 +56,6 @@ export function TopbarClient() {
 
   return (
     <header className={`${styles.header}${isPending ? " loading" : ""}`}>
-      <div className={styles.topRow}>
-        <TabBar />
-      </div>
-
       {showFilters && (
         <TopbarFilters
           f={f}
