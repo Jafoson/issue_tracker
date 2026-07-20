@@ -7,7 +7,7 @@ export type AvatarData = {
   name: string;
   color: string;
   image?: string;
-}
+};
 
 interface AvatarProps {
   avatar: AvatarData | null;

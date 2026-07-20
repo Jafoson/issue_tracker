@@ -22,8 +22,5 @@ export default async function AppLayout({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-
-  return (
-      <AppShell isAdminRoute>{children}</AppShell>
-  );
+  return <AppShell isAdminRoute>{children}</AppShell>;
 }

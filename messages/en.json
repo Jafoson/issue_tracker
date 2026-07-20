@@ -17,7 +17,6 @@
     "backToWorkspace": "Back to workspace",
     "workspaces": "Workspaces",
     "workspaceSettings": "Workspace Settings"
-
   },
   "actions": {
     "newIssue": "New issue",

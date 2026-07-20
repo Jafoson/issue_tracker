@@ -1,28 +1,17 @@
-import { useTranslations } from 'next-intl';
-import TabList, { TabGroup } from '../components/TabList';
+import { useTranslations } from "next-intl";
+import { ADMIN_NAV, adminPath } from "@/lib/nav";
+import TabList, { type TabGroup } from "../components/TabList";
 
 function NavGroupAdmin() {
- const t = useTranslations("nav");
+  const t = useTranslations("nav");
 
-  const tabs: TabGroup[] = [
-    {
-      href: "/admin",
-      icon: "lucide:settings",
-      label: t("general"),
-    },
-    {
-      href: "/admin/members",
-      icon: "lucide:users",
-      label: t("members"),
-    },
-    {
-      href: "/admin/roles",
-      icon: "lucide:shield-check",
-      label: t("roles"),
-    },
-  ];
+  const tabs: TabGroup[] = ADMIN_NAV.map((entry) => ({
+    href: adminPath(entry.section),
+    icon: entry.icon,
+    label: t(entry.labelKey),
+  }));
 
   return <TabList tabs={tabs} />;
 }
 
-export default NavGroupAdmin
+export default NavGroupAdmin;

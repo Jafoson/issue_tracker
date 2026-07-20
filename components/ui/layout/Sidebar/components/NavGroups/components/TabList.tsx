@@ -44,17 +44,19 @@ function TabItem({ item }: { item: TabGroup }) {
         {hasGroup && (
           <span className={styles.toggle}>
             <Button
-            type="button"
-            icon={<Icon
-              icon="lucide:chevron-right"
-              width={15}
-              className={`${styles.chevron} ${expanded ? styles.chevronOpen : ""}`}
-            />}
-            variant="text"
-            onClick={() => setExpanded((value) => !value)}
-            aria-expanded={expanded}
-            aria-label={expanded ? "Collapse" : "Expand"}
-          />
+              type="button"
+              icon={
+                <Icon
+                  icon="lucide:chevron-right"
+                  width={15}
+                  className={`${styles.chevron} ${expanded ? styles.chevronOpen : ""}`}
+                />
+              }
+              variant="text"
+              onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
+              aria-label={expanded ? "Collapse" : "Expand"}
+            />
           </span>
         )}
       </div>

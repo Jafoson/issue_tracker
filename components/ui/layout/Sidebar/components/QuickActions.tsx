@@ -1,15 +1,14 @@
-"use client"
+"use client";
 
 import { Icon } from "@iconify/react";
-import { Button } from "@/components/ui/atoms/Button/Button"; 
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { useTranslations } from "next-intl";
-import styles from "../sidebar.module.scss"
+import styles from "../sidebar.module.scss";
 
 export function QuickActions() {
-  const t = useTranslations()
+  const t = useTranslations();
   return (
-    <div className={styles.quickActions}
-    >
+    <div className={styles.quickActions}>
       <Button
         variant="primary"
         full
@@ -21,9 +20,9 @@ export function QuickActions() {
         {t("actions.newIssue")}
       </Button>
       <Button
-      variant="outline"
-      className={styles.search}
-      size="md"
+        variant="outline"
+        className={styles.search}
+        size="md"
         onClick={() =>
           (window as { __openPalette?: () => void }).__openPalette?.()
         }

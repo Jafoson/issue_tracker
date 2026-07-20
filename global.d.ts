@@ -15,7 +15,11 @@ declare module "next-intl" {
 // (aus dem JWT-Callback gespiegelt).
 declare module "next-auth" {
   interface Session {
-    user: { id: string; globalRole: string; color: string } & DefaultSession["user"];
+    user: {
+      id: string;
+      globalRole: string;
+      color: string;
+    } & DefaultSession["user"];
   }
   // Was `authorize`/der Adapter zurückgeben und der jwt-Callback als `user` erhält.
   interface User {

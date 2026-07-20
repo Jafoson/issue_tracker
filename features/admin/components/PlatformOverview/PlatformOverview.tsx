@@ -31,7 +31,7 @@ export function PlatformOverview({ stats }: Props) {
 
       <div className={styles.grid}>
         {cards.map((c) => (
-          <AdminOverviewCard card={c} key={c.label}/>
+          <AdminOverviewCard card={c} key={c.label} />
         ))}
       </div>
     </div>

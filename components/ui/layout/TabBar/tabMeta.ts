@@ -1,4 +1,10 @@
 import type { Translator } from "@/i18n/types";
+import {
+  ADMIN_NAV,
+  findBySection,
+  PROJECT_NAV,
+  WORKSPACE_SECTIONS,
+} from "@/lib/nav";
 import type { Project } from "@/types";
 
 // Der Tab-Set ist global — Tabs verschiedener Bereiche liegen zusammen. Der
@@ -26,30 +32,16 @@ export function tabTitle(
   const { root, section } = segments(path);
 
   if (root === "admin") {
-    if (!section) return t("nav.general");
-    if (section === "members") return t("nav.members");
-    if (section === "roles") return t("nav.roles");
-    return "Orbit";
+    const entry = findBySection(ADMIN_NAV, section);
+    return entry ? t(`nav.${entry.labelKey}`) : "Orbit";
   }
 
-  switch (section) {
-    case "project":
-      return projectFromPath(path, projects)?.name ?? t("nav.board");
-    case "my":
-      return t("nav.myIssues");
-    case "inbox":
-      return t("nav.inbox");
-    case "members":
-      return t("nav.members");
-    case "teams":
-      return t("nav.teams");
-    case "settings":
-      return t("nav.settings");
-    case "projects":
-      return t("nav.projects");
-    default:
-      return "Orbit";
+  if (section === "project") {
+    return projectFromPath(path, projects)?.name ?? t("nav.board");
   }
+
+  const entry = findBySection(WORKSPACE_SECTIONS, section);
+  return entry ? t(`nav.${entry.labelKey}`) : "Orbit";
 }
 
 /** Project color for a project tab path, else null. */
@@ -62,31 +54,21 @@ export function tabIcon(path: string): string {
   const { root, section } = segments(path);
 
   if (root === "admin") {
-    if (section === "members") return "lucide:users";
-    if (section === "roles") return "lucide:shield-check";
-    return "lucide:settings";
+    return findBySection(ADMIN_NAV, section)?.icon ?? "lucide:settings";
   }
 
-  if (section === "project" && path.endsWith("/list")) return "lucide:list";
-
-  switch (section) {
-    case "project":
-      return "lucide:layout-dashboard";
-    case "my":
-      return "lucide:user";
-    case "inbox":
-      return "lucide:inbox";
-    case "members":
-      return "lucide:users";
-    case "teams":
-      return "lucide:users-2";
-    case "settings":
-      return "lucide:settings";
-    case "projects":
-      return "lucide:folders";
-    default:
-      return "lucide:layout-dashboard";
+  if (section === "project") {
+    const projectSection = path.endsWith("/list") ? "list" : "";
+    return (
+      findBySection(PROJECT_NAV, projectSection)?.icon ??
+      "lucide:layout-dashboard"
+    );
   }
+
+  return (
+    findBySection(WORKSPACE_SECTIONS, section)?.icon ??
+    "lucide:layout-dashboard"
+  );
 }
 
 export interface TabMeta {

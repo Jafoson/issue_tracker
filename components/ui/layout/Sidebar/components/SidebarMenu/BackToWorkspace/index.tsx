@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/atoms/Button/Button"
-import { useRouter } from "@/i18n/navigation"
-import { Icon } from "@iconify/react"
-import { useTranslations } from "next-intl"
-import styles from "../SidebarMenu.module.scss"
+import { Button } from "@/components/ui/atoms/Button/Button";
+import { useRouter } from "@/i18n/navigation";
+import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
+import styles from "../SidebarMenu.module.scss";
 
 function BackToWorkspaceClient() {
-  const t = useTranslations("nav")
-  const router = useRouter()
+  const t = useTranslations("nav");
+  const router = useRouter();
 
   return (
-        <Button
+    <Button
       full
       variant="elevated"
       size="lg"
@@ -21,7 +21,7 @@ function BackToWorkspaceClient() {
     >
       {t("backToWorkspace")}
     </Button>
-  )
+  );
 }
 
-export default BackToWorkspaceClient
+export default BackToWorkspaceClient;

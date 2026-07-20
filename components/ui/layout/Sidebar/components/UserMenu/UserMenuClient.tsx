@@ -1,25 +1,23 @@
-"use client"
+"use client";
 
-import { Avatar, AvatarData } from '@/components/ui/atoms/Avatar/Avatar';
-import { Button } from '@/components/ui/atoms/Button/Button';
-import styles from './UserMenu.module.scss';
-import { Icon } from '@iconify/react';
-import { Badge } from '@/components/ui/atoms/Badge/Badge';
-import { useRef, useState } from 'react';
-import { Popover } from '@/components/ui/atoms/Popover/Popover';
+import { Avatar, AvatarData } from "@/components/ui/atoms/Avatar/Avatar";
+import { Button } from "@/components/ui/atoms/Button/Button";
+import styles from "./UserMenu.module.scss";
+import { Icon } from "@iconify/react";
+import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import { useRef, useState } from "react";
+import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { useTranslations } from "next-intl";
-import {logout} from "@/features/auth/actions";
-
-
+import { logout } from "@/features/auth/actions";
 
 interface UserMenuClientProps {
   me: AvatarData;
 }
 
 function UserMenuClient({ me }: UserMenuClientProps) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [open, setOpen] = useState(false);
-    const t = useTranslations("nav");
+  const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const t = useTranslations("nav");
 
   return (
     <div className={styles.wrapper} ref={ref}>
@@ -42,7 +40,7 @@ function UserMenuClient({ me }: UserMenuClientProps) {
           icon={<Icon icon="lucide:bell" height={20} />}
         />
         <Badge size="sm" active className={styles.bellBadge}>
-            <span>9</span>
+          <span>9</span>
         </Badge>
       </span>
       <Popover
@@ -53,15 +51,25 @@ function UserMenuClient({ me }: UserMenuClientProps) {
         width={210}
       >
         <>
-            <Button variant="ghost" size="lg" full icon={<Icon icon="lucide:log-out" height={16} />} textAlign='left' onClick={() => {logout(); setOpen(false);}}>
-                {t("signOut")}
-            </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            full
+            icon={<Icon icon="lucide:log-out" height={16} />}
+            textAlign="left"
+            onClick={() => {
+              logout();
+              setOpen(false);
+            }}
+          >
+            {t("signOut")}
+          </Button>
         </>
       </Popover>
     </div>
-  )
+  );
 }
 
-export default UserMenuClient
+export default UserMenuClient;
 
 // add UserSettings and Notifications in the future

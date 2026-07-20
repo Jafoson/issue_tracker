@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Link, usePathname } from "@/i18n/navigation";
-import styles from "@/components/ui/atoms/Button/button.module.scss"
+import styles from "@/components/ui/atoms/Button/button.module.scss";
 import { Icon } from "@iconify/react";
 
 export interface NavLinkProps {
@@ -26,18 +26,19 @@ export function NavLink({
 }: NavLinkProps) {
   const pathname = usePathname();
 
-  function isActive (){
-    if (activeHref){
-      return pathname === activeHref
+  function isActive() {
+    if (activeHref) {
+      return pathname === activeHref;
     }
-    return pathname === href
-
+    return pathname === href;
   }
-  function LeadingIcon(){
-    if (!icon){
-      return <Icon width={17} icon="material-symbols:circle" color={color}/>
+  function LeadingIcon() {
+    if (!icon) {
+      return <Icon width={17} icon="material-symbols:circle" color={color} />;
     }
-    return <Icon icon={icon} width={17} color={color? color: "currentColor"}/>
+    return (
+      <Icon icon={icon} width={17} color={color ? color : "currentColor"} />
+    );
   }
 
   return (
@@ -47,7 +48,7 @@ export function NavLink({
       data-active={isActive() ? "true" : undefined}
       onClick={onClick}
     >
-      <LeadingIcon/>
+      <LeadingIcon />
       <span>{label}</span>
       {badge && <Badge style={{ marginLeft: "auto" }}>{badge}</Badge>}
     </Link>

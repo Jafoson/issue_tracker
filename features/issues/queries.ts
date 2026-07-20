@@ -92,15 +92,13 @@ export const getProjects = cache(
   },
 );
 
-export const getGlobalRole = cache(
-  async (userId: string): Promise<string> => {
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { globalRole: true },
-    });
-    return user?.globalRole ?? "member";
-  },
-);
+export const getGlobalRole = cache(async (userId: string): Promise<string> => {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { globalRole: true },
+  });
+  return user?.globalRole ?? "member";
+});
 
 export const getMembers = cache(
   async (workspaceId: string): Promise<User[]> => {
