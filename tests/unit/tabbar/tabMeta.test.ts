@@ -5,6 +5,7 @@ import {
   tabIcon,
   tabMeta,
   tabTitle,
+  workspaceIdFromPath,
 } from "@/components/ui/layout/TabBar/tabMeta";
 import type { Translator } from "@/i18n/types";
 import type { Project } from "@/types";
@@ -139,6 +140,18 @@ describe("tabMeta()", () => {
     expect(meta.title).toBe("Meine Aufgaben");
     expect(meta.color).toBeNull();
     expect(meta.icon).toBe("lucide:user");
+  });
+});
+
+describe("workspaceIdFromPath()", () => {
+  it("liefert die Workspace-ID für Workspace-Routen", () => {
+    expect(workspaceIdFromPath(`${BASE}/my`)).toBe("fuchsly");
+    expect(workspaceIdFromPath(`${BASE}/project/fuchsly/list`)).toBe("fuchsly");
+  });
+
+  it("liefert null für Admin-Routen", () => {
+    expect(workspaceIdFromPath("/admin")).toBeNull();
+    expect(workspaceIdFromPath("/admin/members")).toBeNull();
   });
 });
 

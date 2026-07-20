@@ -16,6 +16,17 @@ function segments(path: string): { root: string; section: string } {
   return { root: parts[1] ?? "", section: parts[2] ?? "" };
 }
 
+/**
+ * Workspace ID a tab's path belongs to, or `null` for admin tabs (which carry
+ * no workspace context). Lets each tab decide independently whether workspace
+ * lookups (projects, …) apply to it, instead of assuming the currently active
+ * workspace.
+ */
+export function workspaceIdFromPath(path: string): string | null {
+  const { root } = segments(path);
+  return root && root !== "admin" ? root : null;
+}
+
 /** Resolve the project a `/<workspace>/project/<slug>` path points at, if any. */
 function projectFromPath(path: string, projects: Project[]): Project | null {
   const m = path.match(/^\/[^/]+\/project\/([^/]+)/);

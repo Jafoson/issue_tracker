@@ -14,7 +14,13 @@ export async function TabBar({
   isAdminRoute?: boolean;
 }) {
   if (isAdminRoute) {
-    return <TabBarClient defaultHref="/admin" projects={[]} />;
+    return (
+      <TabBarClient
+        defaultHref="/admin"
+        projects={[]}
+        currentWorkspaceId={null}
+      />
+    );
   }
 
   const workspace = await getCurrentWorkspace();
@@ -23,6 +29,10 @@ export async function TabBar({
   const projects = await getWorkspaceProjects();
 
   return (
-    <TabBarClient defaultHref={`/${workspace.id}/my`} projects={projects} />
+    <TabBarClient
+      defaultHref={`/my`}
+      projects={projects}
+      currentWorkspaceId={workspace.id}
+    />
   );
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import { db } from "@/lib/db";
 import { provisionWorkspaceRbac } from "@/lib/rbac-provision";
 import { getSession } from "@/lib/session";
@@ -8,8 +9,34 @@ import {
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
 } from "@/lib/workspace-defaults";
+import type { Project } from "@/types";
 
 type WorkspaceResult = { redirectTo: string } | { error: string };
+
+/**
+ * Projekte für mehrere Workspaces auf einmal, gefiltert auf die Workspaces des
+ * eingeloggten Users. Wird von der TabBar aufgerufen: jeder Tab trägt seine
+ * eigene Workspace-ID in der URL, auch wenn sie vom gerade aktiven Workspace
+ * abweicht — der Client fragt hier gezielt die fehlenden Workspaces nach.
+ */
+export async function getProjectsForWorkspaces(
+  workspaceIds: string[],
+): Promise<Record<string, Project[]>> {
+  const session = await getSession();
+  if (!session) return {};
+
+  const memberOf = new Set(
+    (await getUserWorkspaces(session.userId)).map((w) => w.id),
+  );
+  const allowed = [...new Set(workspaceIds)].filter((id) => memberOf.has(id));
+
+  const entries = await Promise.all(
+    allowed.map(
+      async (id): Promise<[string, Project[]]> => [id, await getProjects(id)],
+    ),
+  );
+  return Object.fromEntries(entries);
+}
 
 // Find a free workspace slug, appending 1, 2, 3… until one is available.
 async function uniqueWorkspaceSlug(base: string): Promise<string> {

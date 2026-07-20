@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { Translator } from "@/i18n/types";
+import { type NavLabelKey, WORKSPACE_SECTIONS, workspacePath } from "@/lib/nav";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "./commandPalette.module.scss";
 
@@ -15,6 +16,17 @@ interface NavEntry {
   label: (t: Translator) => string;
   icon: string;
 }
+
+// Which WORKSPACE_SECTIONS entries show up as "go to" results, and the
+// (differently-phrased) palette label for each — icon/href still come from
+// lib/nav.ts so they can't drift from the Sidebar/TabBar.
+const PALETTE_GOTO: [NavLabelKey, (t: Translator) => string][] = [
+  ["myIssues", (t) => t("palette.goto.my")],
+  ["inbox", (t) => t("palette.goto.inbox")],
+  ["members", (t) => t("palette.goto.members")],
+  ["teams", (t) => t("palette.goto.teams")],
+  ["settings", (t) => t("palette.goto.settings")],
+];
 
 interface CommandPaletteProps {
   open: boolean;
@@ -31,33 +43,15 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const NAV_ENTRIES: NavEntry[] = [
-    {
-      href: `${base}/my`,
-      icon: "lucide:user",
-      label: (t) => t("palette.goto.my"),
-    },
-    {
-      href: `${base}/inbox`,
-      icon: "lucide:inbox",
-      label: (t) => t("palette.goto.inbox"),
-    },
-    {
-      href: `${base}/members`,
-      icon: "lucide:users",
-      label: (t) => t("palette.goto.members"),
-    },
-    {
-      href: `${base}/teams`,
-      icon: "lucide:users-2",
-      label: (t) => t("palette.goto.teams"),
-    },
-    {
-      href: `${base}/settings`,
-      icon: "lucide:settings",
-      label: (t) => t("palette.goto.settings"),
-    },
-  ];
+  const NAV_ENTRIES: NavEntry[] = PALETTE_GOTO.map(([labelKey, label]) => {
+    const entry = WORKSPACE_SECTIONS.find((e) => e.labelKey === labelKey);
+    if (!entry) throw new Error(`No WORKSPACE_SECTIONS entry for ${labelKey}`);
+    return {
+      href: workspacePath(workspace.id, entry.section),
+      icon: entry.icon,
+      label,
+    };
+  });
 
   useEffect(() => {
     if (open) {

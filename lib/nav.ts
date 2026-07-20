@@ -68,6 +68,7 @@ export const PROJECT_NAV: NavEntry[] = [
   { section: "", icon: "lucide:layout-dashboard", labelKey: "board" },
   { section: "list", icon: "lucide:list", labelKey: "issues" },
   { section: "members", icon: "lucide:users", labelKey: "members" },
+  { section: "settings", icon: "lucide:settings", labelKey: "settings" },
 ];
 
 export function workspacePath(workspaceId: string, section: string): string {
