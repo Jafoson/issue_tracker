@@ -1,0 +1,23 @@
+.overlay {
+  justify-content: center;
+  align-items: center;
+  padding-top: 12vh;
+  position: fixed;
+  inset: 0;
+  background: rgb(0, 0, 0, 0.32);
+  display: flex;
+  animation: fadeIn .16s ease both;
+}
+
+.backdrop{
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.comp{
+  position: relative;
+  z-index: 1;
+  animation: pop .16s ease;
+}

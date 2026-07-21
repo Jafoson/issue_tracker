@@ -7,6 +7,8 @@ import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { Issue, Status } from "@/types";
 import styles from "./boardColumn.module.scss";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import { useModal } from "@/lib/context";
+
 
 interface BoardColumnProps {
   status: Status;
@@ -43,6 +45,14 @@ export function BoardColumn({
   onCardDragOver,
   onCardClick,
 }: BoardColumnProps) {
+  const {openModal} = useModal()
+
+  function showCreateIssueModal(){
+    openModal(<div>
+      HALLO ICH BIN EIN MODAL
+    </div>)
+  }
+
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop drop zone — no native HTML element represents this
     <div
@@ -60,7 +70,7 @@ export function BoardColumn({
           variant="ghost"
           className={`${styles.headerAdd}`}
           title={newIssueLabel}
-          onClick={() => {}}
+          onClick={showCreateIssueModal}
           icon={<Icon icon="lucide:plus" width={15} />}
         />
       </div>

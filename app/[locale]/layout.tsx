@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { ModalProvider } from "@/lib/context";
 
 // Design tokens — imported first so they're available everywhere
 import "@/styles/colors.css";
@@ -54,7 +55,9 @@ export default async function LocaleLayout({
     >
       <body>
         {/* Messages/Locale werden automatisch aus der Server-Konfiguration übernommen. */}
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <ModalProvider>{children}</ModalProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
