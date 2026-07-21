@@ -56,7 +56,7 @@ export function BoardCard({
   return (
     // biome-ignore lint/a11y/useSemanticElements: card contains block-level content; a <button> would be invalid HTML
     <div
-      className={`orbit-card${isDragging ? " dragging" : ""}`}
+      className={`${styles.card}${isDragging ? ` ${styles.dragging}` : ""}`}
       role="button"
       tabIndex={0}
       draggable

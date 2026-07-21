@@ -1,3 +1,25 @@
+.card {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  padding: var(--card-pad);
+  box-shadow: var(--shadow-card);
+  user-select: none;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .04s;
+
+  &:hover { border-color: var(--outline); background: var(--surface-container-high); }
+
+  :global([data-density="compact"]) & {
+    padding: 10px;
+  }
+}
+
+.dragging {
+  opacity: .5;
+  transform: rotate(1deg);
+}
+
 .cardTop {
   display: flex;
   align-items: center;
@@ -21,7 +43,7 @@
   font-weight: 600;
   line-height: 1.45;
   margin: 0 0 12px;
-  color: var(--text);
+  color: var(--on-surface);
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;
@@ -45,12 +67,12 @@
 .id {
   font-size: 11px;
   font-family: var(--font-mono);
-  color: var(--text-3);
+  color: var(--outline);
 }
 
 .time {
   font-size: 11px;
-  color: var(--text-3);
+  color: var(--outline);
   margin-left: auto;
 }
 
@@ -59,6 +81,6 @@
   align-items: center;
   gap: 3px;
   font-size: 11px;
-  color: var(--text-3);
+  color: var(--outline);
   margin-left: 4px;
 }

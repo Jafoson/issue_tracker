@@ -83,25 +83,6 @@ input, textarea, select { font-family: inherit; }
 }
 
 
-/* ---------- Field ---------- */
-.field {
-  width: 100%;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 9px 11px;
-  font-size: var(--text-base);
-  outline: none;
-  transition: border-color .12s;
-
-  &:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-  }
-}
-
-textarea.field { resize: vertical; line-height: 1.5; }
 
 /* ---------- Markdown ---------- */
 .md {
@@ -158,122 +139,6 @@ textarea.field { resize: vertical; line-height: 1.5; }
 /* ============================================================
    Orbit Component Classes
    ============================================================ */
-
-/* ---------- Sidebar ---------- */
-.orbit-ws {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: calc(100% - 16px);
-  margin: 0 8px;
-  padding: 7px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  transition: background .12s;
-
-  &:hover { background: var(--card-hover); }
-}
-
-.orbit-search-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 7px;
-  height: 32px;
-  padding: 0 10px;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-3);
-  font-size: 13px;
-  transition: border-color .12s, color .12s;
-
-  &:hover { border-color: var(--border-strong); color: var(--text-2); }
-}
-
-.orbit-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 33px;
-  padding: 0 9px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-2);
-  font-size: 13.5px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: background .12s, color .12s;
-
-  &:hover { background: var(--card-hover); color: var(--text); }
-
-  &[data-active="true"] {
-    background: var(--accent-soft);
-    color: var(--text);
-
-    svg { color: var(--accent); }
-  }
-}
-
-
-.orbit-section-h {
-  font-size: var(--text-xs);
-  font-weight: 650;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  padding: 0 9px;
-}
-
-.orbit-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 6px 8px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  transition: background .12s;
-
-  &:hover { background: var(--card-hover); }
-}
-
-/* ---------- Board ---------- */
-.orbit-col {
-  width: 312px;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-radius: var(--radius-lg);
-  border: 2px solid transparent;
-  transition: background .15s, border-color .15s;
-
-  &.drag-over {
-    background: var(--accent-soft);
-    border-color: var(--accent);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent);
-  }
-}
-
-.orbit-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--card-pad);
-  box-shadow: var(--shadow-card);
-  user-select: none;
-  cursor: pointer;
-  transition: border-color .12s, background .12s, transform .04s;
-
-  &:hover { border-color: var(--border-strong); background: var(--card-hover); }
-  &.dragging { opacity: .5; transform: rotate(1deg); }
-}
 
 /* ---------- List View ---------- */
 .orbit-row {
@@ -368,7 +233,6 @@ textarea.field { resize: vertical; line-height: 1.5; }
 /* ---------- Density overrides ---------- */
 [data-density="compact"] {
   .orbit-row  { height: 38px; }
-  .orbit-card { padding: 10px; }
   .orbit-nav  { height: 30px; }
 }
 
