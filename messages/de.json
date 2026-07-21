@@ -74,6 +74,7 @@
     "none": "Keine",
     "name": "Name",
     "email": "E-Mail",
+    "password": "Passwort",
     "role": "Rolle",
     "prefix": "Kürzel",
     "color": "Farbe"
@@ -167,11 +168,21 @@
   },
   "login": {
     "subtitle": "Weiter zu Orbit Issue Tracker",
-    "continueWithGoogle": "Mit Google fortfahren",
     "or": "oder",
     "noAccount": "Noch kein Konto?",
     "requestAccess": "Zugang anfragen",
-    "signInTo": "Bei {ws} anmelden"
+    "signInTo": "Bei {ws} anmelden",
+    "signInTitle": "Bei Orbit anmelden",
+    "registerTitle": "Konto erstellen",
+    "signInSubtitle": "Melde dich mit deinen Zugangsdaten an.",
+    "registerSubtitle": "Starte in Sekunden mit der Aufgabenverwaltung.",
+    "fullName": "Vollständiger Name",
+    "fullNamePlaceholder": "Ada Lovelace",
+    "passwordPlaceholderRegister": "Mindestens 8 Zeichen",
+    "createAccount": "Konto erstellen",
+    "continueWith": "Weiter mit {provider}",
+    "haveAccount": "Bereits ein Konto?",
+    "signUp": "Registrieren"
   },
   "filters": {
     "statuses": "{count} Status",

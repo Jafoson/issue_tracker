@@ -30,7 +30,7 @@ export async function TabBar({
 
   return (
     <TabBarClient
-      defaultHref={`/my`}
+      defaultHref={`/${workspace.id}/my`}
       projects={projects}
       currentWorkspaceId={workspace.id}
     />

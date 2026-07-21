@@ -74,6 +74,7 @@
     "none": "None",
     "name": "Name",
     "email": "Email",
+    "password": "Password",
     "role": "Role",
     "prefix": "Prefix",
     "color": "Color"
@@ -167,11 +168,21 @@
   },
   "login": {
     "subtitle": "Continue to Orbit Issue Tracker",
-    "continueWithGoogle": "Continue with Google",
     "or": "or",
     "noAccount": "Don't have an account?",
     "requestAccess": "Request access",
-    "signInTo": "Sign in to {ws}"
+    "signInTo": "Sign in to {ws}",
+    "signInTitle": "Sign in to Orbit",
+    "registerTitle": "Create your account",
+    "signInSubtitle": "Enter your credentials to continue.",
+    "registerSubtitle": "Start tracking issues in seconds.",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Ada Lovelace",
+    "passwordPlaceholderRegister": "At least 8 characters",
+    "createAccount": "Create account",
+    "continueWith": "Continue with {provider}",
+    "haveAccount": "Already have an account?",
+    "signUp": "Sign up"
   },
   "filters": {
     "statuses": "{count, plural, one {# status} other {# statuses}}",

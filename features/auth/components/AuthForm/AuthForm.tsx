@@ -1,7 +1,10 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Button } from "@/components/ui/atoms/Button/Button";
+import { Input } from "@/components/ui/atoms/Input/Input";
 import { login, register, signInWithOAuth } from "@/features/auth/actions";
 import { Link, useRouter } from "@/i18n/navigation";
 import styles from "./authForm.module.scss";
@@ -22,12 +25,12 @@ export function AuthForm({
   callbackUrl,
   oauthProviders = [],
 }: AuthFormProps) {
+  const t = useTranslations();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -64,79 +67,49 @@ export function AuthForm({
         </div>
 
         <h1 className={styles.title}>
-          {isLogin ? "Sign in to Orbit" : "Create your account"}
+          {isLogin ? t("login.signInTitle") : t("login.registerTitle")}
         </h1>
         <p className={styles.sub}>
-          {isLogin
-            ? "Enter your credentials to continue."
-            : "Start tracking issues in seconds."}
+          {isLogin ? t("login.signInSubtitle") : t("login.registerSubtitle")}
         </p>
 
         <div className={styles.fields}>
           {!isLogin && (
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="auth-name">
-                Full name
-              </label>
-              <input
-                id="auth-name"
-                className={styles.input}
-                type="text"
-                autoComplete="name"
-                placeholder="Ada Lovelace"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()}
-              />
-            </div>
-          )}
-
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="auth-email">
-              Email
-            </label>
-            <input
-              ref={emailRef}
-              id="auth-email"
-              className={styles.input}
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            <Input
+              id="auth-name"
+              label={t("login.fullName")}
+              autoComplete="name"
+              placeholder={t("login.fullNamePlaceholder")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
             />
-          </div>
+          )}
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="auth-password">
-              Password
-            </label>
-            <div className={styles.passwordWrap}>
-              <input
-                id="auth-password"
-                className={styles.input}
-                type={showPw ? "text" : "password"}
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                placeholder={isLogin ? "••••••••" : "At least 8 characters"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()}
-              />
-              <button
-                type="button"
-                className={styles.eyeBtn}
-                tabIndex={-1}
-                onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? "Hide password" : "Show password"}
-              >
-                <Icon
-                  icon={showPw ? "lucide:eye-off" : "lucide:eye"}
-                  width={15}
-                />
-              </button>
-            </div>
-          </div>
+          <Input
+            ref={emailRef}
+            id="auth-email"
+            label={t("fields.email")}
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
+
+          <Input
+            id="auth-password"
+            variant="password"
+            label={t("fields.password")}
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            placeholder={
+              isLogin ? "••••••••" : t("login.passwordPlaceholderRegister")
+            }
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+          />
         </div>
 
         {error && (
@@ -146,13 +119,13 @@ export function AuthForm({
           </div>
         )}
 
-        <button type="button" className={styles.submit} onClick={submit}>
-          {isLogin ? "Sign in" : "Create account"}
-        </button>
+        <Button type="button" variant="primary" size="lg" full onClick={submit}>
+          {isLogin ? t("actions.signIn") : t("login.createAccount")}
+        </Button>
 
         {oauthProviders.length > 0 && (
           <>
-            <div className={styles.divider}>or</div>
+            <div className={styles.divider}>{t("login.or")}</div>
             <div className={styles.oauth}>
               {oauthProviders.map((provider) => {
                 const meta = OAUTH_META[provider] ?? {
@@ -165,10 +138,15 @@ export function AuthForm({
                     className={styles.oauthForm}
                     action={signInWithOAuth.bind(null, provider)}
                   >
-                    <button type="submit" className={styles.oauthBtn}>
-                      <Icon icon={meta.icon} width={16} />
-                      Continue with {meta.label}
-                    </button>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="lg"
+                      full
+                      icon={<Icon icon={meta.icon} width={16} />}
+                    >
+                      {t("login.continueWith", { provider: meta.label })}
+                    </Button>
                   </form>
                 );
               })}
@@ -179,11 +157,13 @@ export function AuthForm({
         <p className={styles.switch}>
           {isLogin ? (
             <>
-              No account? <Link href="/register">Sign up</Link>
+              {t("login.noAccount")}{" "}
+              <Link href="/register">{t("login.signUp")}</Link>
             </>
           ) : (
             <>
-              Already have an account? <Link href="/login">Sign in</Link>
+              {t("login.haveAccount")}{" "}
+              <Link href="/login">{t("actions.signIn")}</Link>
             </>
           )}
         </p>

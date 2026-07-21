@@ -32,7 +32,6 @@ export interface NavEntry {
 export const GLOBAL_NAV: NavEntry[] = [
   { section: "my", icon: "lucide:user", labelKey: "myIssues" },
   { section: "projects", icon: "lucide:folders", labelKey: "projects" },
-  { section: "workspaces", icon: "lucide:building-2", labelKey: "workspaces" },
 ];
 
 /** Sidebar "Workspace" group — workspace administration. */
