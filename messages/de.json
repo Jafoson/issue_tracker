@@ -33,6 +33,7 @@
     "requestAccess": "Zugang anfragen",
     "newProject": "Neues Projekt",
     "createProject": "Projekt erstellen",
+    "createWorkspace": "Workspace erstellen",
     "cancel": "Abbrechen"
   },
   "placeholders": {
@@ -202,5 +203,16 @@
     "identifier": "Bezeichner",
     "issuePrefix": "Aufgaben-Kürzel",
     "example": "z. B."
+  },
+  "workspaces": {
+    "modalTitle": "Workspace erstellen",
+    "modalDescription": "Ein Workspace ist der Ort, an dem die Projekte und Aufgaben deines Teams leben.",
+    "name": "Workspace-Name",
+    "namePlaceholder": "Acme GmbH",
+    "iconColor": "Icon-Farbe",
+    "slug": "Slug",
+    "toCreate": "zum Erstellen",
+    "nameRequired": "Der Workspace-Name ist erforderlich.",
+    "slugRequired": "Der Slug ist erforderlich."
   }
 }

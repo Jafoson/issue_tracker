@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import {
@@ -7,17 +8,10 @@ import {
   suggestWorkspaceSlug,
 } from "@/features/workspaces/actions";
 import { useRouter } from "@/i18n/navigation";
+import { COLORS } from "@/styles/colors";
+import { IconColorPicker } from "./components/IconColorPicker";
+import { WorkspaceNameField } from "./components/WorkspaceNameField";
 import styles from "./createWorkspaceForm.module.scss";
-
-const COLORS = [
-  "#6e63e6",
-  "#3b9d6e",
-  "#d5733b",
-  "#3b7bd5",
-  "#c2456b",
-  "#a05fd0",
-  "#cf9a3b",
-];
 
 function toSlug(name: string) {
   return name
@@ -30,6 +24,7 @@ function toSlug(name: string) {
 }
 
 export function CreateWorkspaceForm() {
+  const t = useTranslations();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [name, setName] = useState("");
@@ -49,13 +44,13 @@ export function CreateWorkspaceForm() {
     setSlug(base); // instant preview while we ask the server for a free slug
     if (!base) return;
     let cancelled = false;
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       const free = await suggestWorkspaceSlug(base);
       if (!cancelled) setSlug(free);
     }, 300);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
   }, [name, slugTouched]);
 
@@ -69,11 +64,11 @@ export function CreateWorkspaceForm() {
 
   function submit() {
     if (!name.trim()) {
-      setError("Workspace name is required.");
+      setError(t("workspaces.nameRequired"));
       return;
     }
     if (!slug.trim()) {
-      setError("Slug is required.");
+      setError(t("workspaces.slugRequired"));
       return;
     }
     setError("");
@@ -90,82 +85,39 @@ export function CreateWorkspaceForm() {
     });
   }
 
-  const letter = name.trim()[0]?.toUpperCase() ?? "W";
-
   return (
     <div className={styles.backdrop}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <span className={styles.headerTitle}>Create a workspace</span>
+          <span className={styles.headerTitle}>
+            {t("workspaces.modalTitle")}
+          </span>
         </div>
 
-        <p className={styles.description}>
-          A workspace is where your team's projects and issues live.
-        </p>
+        <p className={styles.description}>{t("workspaces.modalDescription")}</p>
 
-        <div className={styles.nameRow}>
-          <div className={styles.iconPreview} style={{ background: color }}>
-            {letter}
-          </div>
-          <div className={styles.nameField}>
-            <label className={styles.label} htmlFor="ws-name">
-              Workspace name
-            </label>
-            <input
-              ref={nameRef}
-              id="ws-name"
-              className={styles.input}
-              placeholder="Acme Inc."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-        </div>
+        <WorkspaceNameField
+          name={name}
+          onNameChange={setName}
+          color={color}
+          nameRef={nameRef}
+        />
 
-        <div className={styles.field}>
-          <span className={styles.label}>Icon color</span>
-          <div className={styles.swatches}>
-            {COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`${styles.swatch}${c === color ? ` ${styles.swatchActive}` : ""}`}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="ws-slug">
-            Slug
-          </label>
-          <input
-            id="ws-slug"
-            className={styles.input}
-            value={slug}
-            onChange={(e) => {
-              setSlugTouched(true);
-              setSlug(toSlug(e.target.value));
-            }}
-            spellCheck={false}
-          />
-        </div>
+        <IconColorPicker color={color} onChange={setColor} />
 
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.footer}>
           <div className={styles.shortcut}>
             <kbd>⌘</kbd>
-            <kbd>↵</kbd> to create
+            <kbd>↵</kbd> {t("workspaces.toCreate")}
           </div>
           <div className={styles.footerActions}>
             <Button variant="ghost" onClick={() => router.back()}>
-              Cancel
+              {t("actions.cancel")}
             </Button>
             <Button variant="primary" onClick={submit}>
-              Create workspace
+              {t("actions.createWorkspace")}
             </Button>
           </div>
         </div>

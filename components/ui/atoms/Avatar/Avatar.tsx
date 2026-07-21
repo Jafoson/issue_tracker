@@ -44,7 +44,7 @@ export function Avatar({ avatar, size = 22, ring }: AvatarProps) {
         position: "relative",
         background: color,
         color: `oklch(from ${color} clamp(0.05, calc((0.60 - l) * 999), 0.95) 0 h)`,
-        fontSize: `clamp(var(--text-xxs), ${size * 0.6}px, var(--text-sm))`,
+        fontSize: `clamp(var(--text-xxs), ${size * 0.6}px, var(--text-2xl))`,
       }}
     >
       {label}

@@ -33,6 +33,7 @@
     "requestAccess": "Request access",
     "newProject": "New project",
     "createProject": "Create project",
+    "createWorkspace": "Create workspace",
     "cancel": "Cancel"
   },
   "placeholders": {
@@ -202,5 +203,16 @@
     "identifier": "Identifier",
     "issuePrefix": "issue prefix",
     "example": "e.g."
+  },
+  "workspaces": {
+    "modalTitle": "Create a workspace",
+    "modalDescription": "A workspace is where your team's projects and issues live.",
+    "name": "Workspace name",
+    "namePlaceholder": "Acme Inc.",
+    "iconColor": "Icon color",
+    "slug": "Slug",
+    "toCreate": "to create",
+    "nameRequired": "Workspace name is required.",
+    "slugRequired": "Slug is required."
   }
 }
