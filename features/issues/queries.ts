@@ -105,12 +105,13 @@ export const getMembers = cache(
     const rows = await db.workspaceMember.findMany({
       where: { workspaceId },
       include: { user: true },
-      orderBy: { user: { name: "asc" } },
+      orderBy: [{ user: { firstName: "asc" } }, { user: { lastName: "asc" } }],
     });
     return rows.map((m) => {
       return {
         id: m.user.id,
-        name: m.user.name,
+        firstName: m.user.firstName,
+        lastName: m.user.lastName,
         handle: m.user.handle,
         email: m.user.email,
         color: m.user.color,

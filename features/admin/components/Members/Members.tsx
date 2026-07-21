@@ -10,6 +10,7 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { removeMember, setMemberRole } from "@/features/issues/actions";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Team, User } from "@/types";
 import styles from "./members.module.scss";
@@ -67,10 +68,10 @@ export function Members({ members, teams }: Props) {
           return (
             <div key={member.id} className={styles.row}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Avatar user={member} size={32} />
+                <Avatar avatar={member} size={32} />
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 500 }}>
-                    {member.name}
+                    {fullName(member)}
                   </div>
                   <div className="faint" style={{ fontSize: 12 }}>
                     {member.email}
@@ -128,7 +129,11 @@ export function Members({ members, teams }: Props) {
                   title={t("members.removeTitle")}
                   disabled={member.id === me.id}
                   onClick={() => {
-                    if (confirm(`${t("members.removeTitle")} ${member.name}?`))
+                    if (
+                      confirm(
+                        `${t("members.removeTitle")} ${fullName(member)}?`,
+                      )
+                    )
                       remove(member.id);
                   }}
                 >

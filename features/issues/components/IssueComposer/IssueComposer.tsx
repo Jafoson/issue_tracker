@@ -14,6 +14,7 @@ import {
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 import styles from "./issueComposer.module.scss";
@@ -363,11 +364,9 @@ export function IssueComposer({
               <Button
                 variant="ghost"
                 size="sm"
-                icon={<Avatar user={assigneeUser} size={15} />}
+                icon={<Avatar avatar={assigneeUser} size={15} />}
               >
-                {assigneeUser
-                  ? assigneeUser.name.split(" ")[0]
-                  : t("fields.assignee")}
+                {assigneeUser ? assigneeUser.firstName : t("fields.assignee")}
               </Button>
             }
             width={220}
@@ -379,12 +378,12 @@ export function IssueComposer({
                   {
                     value: null,
                     label: t("fields.unassigned"),
-                    icon: <Avatar user={null} size={18} />,
+                    icon: <Avatar avatar={null} size={18} />,
                   },
                   ...members.map((u) => ({
                     value: u.id,
-                    label: u.name,
-                    icon: <Avatar user={u} size={18} />,
+                    label: fullName(u),
+                    icon: <Avatar avatar={u} size={18} />,
                   })),
                 ]}
                 value={assignee}

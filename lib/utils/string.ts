@@ -7,6 +7,27 @@ export function initials(name: string): string {
     .toUpperCase();
 }
 
+export function personInitials(firstName: string, lastName: string): string {
+  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
+}
+
+export function fullName(person: {
+  firstName: string;
+  lastName: string;
+}): string {
+  return `${person.firstName} ${person.lastName}`.trim();
+}
+
+export function splitName(full: string): {
+  firstName: string;
+  lastName: string;
+} {
+  const trimmed = full.trim().replace(/\s+/g, " ");
+  const idx = trimmed.indexOf(" ");
+  if (idx === -1) return { firstName: trimmed, lastName: "" };
+  return { firstName: trimmed.slice(0, idx), lastName: trimmed.slice(idx + 1) };
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

@@ -14,6 +14,7 @@ import {
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue } from "@/types";
 import styles from "./listView.module.scss";
@@ -158,7 +159,7 @@ function IssueRow({ issue }: { issue: Issue }) {
               onClick={(e) => e.stopPropagation()}
               style={{ padding: "2px", position: "relative", zIndex: 2 }}
             >
-              <Avatar user={assignee} size={22} />
+              <Avatar avatar={assignee} size={22} />
             </button>
           }
           width={220}
@@ -171,12 +172,12 @@ function IssueRow({ issue }: { issue: Issue }) {
                 {
                   value: null,
                   label: t("fields.unassigned"),
-                  icon: <Avatar user={null} size={18} />,
+                  icon: <Avatar avatar={null} size={18} />,
                 },
                 ...members.map((u) => ({
                   value: u.id,
-                  label: u.name,
-                  icon: <Avatar user={u} size={18} />,
+                  label: fullName(u),
+                  icon: <Avatar avatar={u} size={18} />,
                 })),
               ]}
               value={issue.assignee}

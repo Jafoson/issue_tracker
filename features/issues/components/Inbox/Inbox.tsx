@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue } from "@/types";
 import styles from "./inbox.module.scss";
@@ -56,10 +57,12 @@ export function Inbox({ issues }: Props) {
             href={issueHref(issue)}
             scroll={false}
           >
-            <Avatar user={author} size={30} />
+            <Avatar avatar={author} size={30} />
             <div className={styles.content}>
               <div className={styles.meta}>
-                <span className={styles.author}>{author?.name}</span>
+                <span className={styles.author}>
+                  {author && fullName(author)}
+                </span>
                 <span className="faint" style={{ fontSize: 12 }}>
                   {t("comments.commentedOn")}
                 </span>

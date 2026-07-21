@@ -6,7 +6,8 @@ import { db } from "@/lib/db";
 
 export interface CurrentUser {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   handle: string;
   email: string;
   color: string;
@@ -15,7 +16,8 @@ export interface CurrentUser {
 
 export interface PlatformUser {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   handle: string;
   email: string;
   color: string;
@@ -35,7 +37,8 @@ export const getCurrentUser = cache(
       where: { id: userId },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         handle: true,
         email: true,
         color: true,
@@ -48,10 +51,11 @@ export const getCurrentUser = cache(
 
 export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
   const rows = await db.user.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     select: {
       id: true,
-      name: true,
+      firstName: true,
+      lastName: true,
       handle: true,
       email: true,
       color: true,
@@ -61,7 +65,8 @@ export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
   });
   return rows.map((u) => ({
     id: u.id,
-    name: u.name,
+    firstName: u.firstName,
+    lastName: u.lastName,
     handle: u.handle,
     email: u.email,
     color: u.color,

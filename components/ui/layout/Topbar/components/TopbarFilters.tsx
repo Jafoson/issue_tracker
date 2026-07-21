@@ -13,6 +13,7 @@ import {
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import type { Translator } from "@/i18n/types";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 import styles from "../topbar.module.scss";
@@ -271,7 +272,7 @@ export function TopbarFilters({
               size="sm"
               icon={
                 f.assignees.length > 0 ? (
-                  <Avatar user={assigneeUser} size={15} />
+                  <Avatar avatar={assigneeUser} size={15} />
                 ) : (
                   <Icon icon="lucide:user" width={14} />
                 )
@@ -283,7 +284,9 @@ export function TopbarFilters({
               {f.assignees.length === 0
                 ? t("fields.assignee")
                 : f.assignees.length === 1
-                  ? (assigneeUser?.name.split(" ")[0] ?? t("fields.assignee"))
+                  ? assigneeUser
+                    ? assigneeUser.firstName
+                    : t("fields.assignee")
                   : t("filters.people", { count: f.assignees.length })}
             </Button>
           }
@@ -293,8 +296,8 @@ export function TopbarFilters({
           <SelectMenu
             items={members.map((u) => ({
               value: u.id,
-              label: u.name,
-              icon: <Avatar user={u} size={18} />,
+              label: fullName(u),
+              icon: <Avatar avatar={u} size={18} />,
             }))}
             value={f.assignees}
             onPick={(v) => onToggle("assignee", v as string)}

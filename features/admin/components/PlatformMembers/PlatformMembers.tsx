@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import type { PlatformUser } from "@/features/admin/queries";
+import { fullName } from "@/lib/utils/string";
 import styles from "./platformMembers.module.scss";
 
 interface Props {
@@ -29,20 +30,10 @@ export function PlatformMembers({ users }: Props) {
         {users.map((u) => (
           <div key={u.id} className={styles.row}>
             <div className={styles.userCell}>
-              <Avatar
-                user={{
-                  id: u.id,
-                  name: u.name,
-                  handle: u.handle,
-                  email: u.email,
-                  color: u.color,
-                  role: "",
-                }}
-                size={32}
-              />
+              <Avatar avatar={u} size={32} />
               <div>
                 <div className={styles.userName}>
-                  {u.name}
+                  {fullName(u)}
                   {u.globalRole === "admin" && (
                     <Badge active>{t("platform.platformAdmin")}</Badge>
                   )}

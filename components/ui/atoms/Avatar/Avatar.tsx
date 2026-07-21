@@ -1,13 +1,20 @@
 "use client";
-import { initials } from "@/lib/utils/string";
+import { initials, personInitials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
 
-export type AvatarData = {
-  name: string;
+// Zwei Varianten: benannte Entitäten (Workspace, ...) mit einem einzelnen `name`,
+// und Personen (User) mit getrennten `firstName`/`lastName` für korrekte Initialen.
+export type PersonAvatarData = {
+  firstName: string;
+  lastName: string;
   color: string;
   image?: string;
 };
+
+export type AvatarData =
+  | { name: string; color: string; image?: string }
+  | PersonAvatarData;
 
 interface AvatarProps {
   avatar: AvatarData | null;
@@ -21,7 +28,12 @@ export function Avatar({ avatar, size = 22, ring }: AvatarProps) {
   }
 
   const color = avatar.color || "var(--primary)";
-  const label = initials(avatar.name) || avatar.name?.[0]?.toUpperCase() || "?";
+  const label =
+    "firstName" in avatar
+      ? personInitials(avatar.firstName, avatar.lastName) ||
+        avatar.firstName?.[0]?.toUpperCase() ||
+        "?"
+      : initials(avatar.name) || avatar.name?.[0]?.toUpperCase() || "?";
 
   return (
     <span

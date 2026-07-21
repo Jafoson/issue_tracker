@@ -1,6 +1,6 @@
 import { enabledOAuthProviders } from "@/auth.config";
-import { AuthForm } from "@/features/auth/components/AuthForm/AuthForm";
+import { RegisterForm } from "@/features/auth/components/RegisterForm/RegisterForm";
 
 export default async function RegisterPage() {
-  return <AuthForm mode="register" oauthProviders={enabledOAuthProviders} />;
+  return <RegisterForm oauthProviders={enabledOAuthProviders} />;
 }

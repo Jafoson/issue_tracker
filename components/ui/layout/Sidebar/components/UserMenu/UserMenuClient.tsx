@@ -1,17 +1,21 @@
 "use client";
 
-import { Avatar, AvatarData } from "@/components/ui/atoms/Avatar/Avatar";
-import { Button } from "@/components/ui/atoms/Button/Button";
-import styles from "./UserMenu.module.scss";
 import { Icon } from "@iconify/react";
-import { Badge } from "@/components/ui/atoms/Badge/Badge";
-import { useRef, useState } from "react";
-import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { useTranslations } from "next-intl";
+import { useRef, useState } from "react";
+import {
+  Avatar,
+  type PersonAvatarData,
+} from "@/components/ui/atoms/Avatar/Avatar";
+import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import { Button } from "@/components/ui/atoms/Button/Button";
+import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { logout } from "@/features/auth/actions";
+import { fullName } from "@/lib/utils/string";
+import styles from "./UserMenu.module.scss";
 
 interface UserMenuClientProps {
-  me: AvatarData;
+  me: PersonAvatarData;
 }
 
 function UserMenuClient({ me }: UserMenuClientProps) {
@@ -30,7 +34,7 @@ function UserMenuClient({ me }: UserMenuClientProps) {
         className={styles.trigger}
         style={{ height: "48px", borderRadius: "var(--radius)" }}
       >
-        <span className={styles.title}>{me.name}</span>
+        <span className={styles.title}>{fullName(me)}</span>
       </Button>
 
       <span className={styles.bellSlot}>

@@ -35,7 +35,8 @@ model User {
   // @default(cuid()) ist für den Auth.js-Adapter nötig: dessen createUser strippt
   // die id und überlässt die Generierung der DB. Bestehende Zeilen sind unberührt.
   id            String    @id @default(cuid())
-  name          String
+  firstName     String
+  lastName      String
   handle        String    @unique
   email         String    @unique
   color         String

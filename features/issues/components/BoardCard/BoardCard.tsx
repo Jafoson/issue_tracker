@@ -75,7 +75,7 @@ export function BoardCard({
           </Label>
         )}
         <div className={styles.cardTopRight}>
-          <Avatar user={assignee} size={28} />
+          <Avatar avatar={assignee} size={28} />
         </div>
       </div>
 

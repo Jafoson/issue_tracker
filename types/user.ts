@@ -1,6 +1,7 @@
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   // Role-Key innerhalb des Workspace (owner | admin | manager | project_lead |
   // member | viewer | guest oder eine benutzerdefinierte Rolle).

@@ -19,12 +19,16 @@ declare module "next-auth" {
       id: string;
       globalRole: string;
       color: string;
+      firstName: string;
+      lastName: string;
     } & DefaultSession["user"];
   }
   // Was `authorize`/der Adapter zurückgeben und der jwt-Callback als `user` erhält.
   interface User {
     globalRole?: string;
     color?: string;
+    firstName?: string;
+    lastName?: string;
   }
 }
 
@@ -32,6 +36,8 @@ declare module "next-auth/adapters" {
   interface AdapterUser {
     globalRole?: string;
     color?: string;
+    firstName?: string;
+    lastName?: string;
   }
 }
 
@@ -40,5 +46,7 @@ declare module "next-auth/jwt" {
     id?: string;
     globalRole?: string;
     color?: string;
+    firstName?: string;
+    lastName?: string;
   }
 }

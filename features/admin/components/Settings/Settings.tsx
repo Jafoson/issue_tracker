@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import styles from "./settings.module.scss";
 
@@ -113,7 +114,7 @@ export function Settings() {
           <div>
             <div className={styles.rowLabel}>{t("fields.name")}</div>
             <div className="faint" style={{ fontSize: 12.5 }}>
-              {me.name}
+              {fullName(me)}
             </div>
           </div>
           <Button

@@ -55,23 +55,46 @@ describe("register()", () => {
   });
 
   describe("Validierung", () => {
-    it("gibt Fehler zurück wenn Name fehlt", async () => {
+    it("gibt Fehler zurück wenn Vorname fehlt", async () => {
       const result = await register(
-        makeFormData({ email: "user@example.com", password: "password123" }),
+        makeFormData({
+          lastName: "User",
+          email: "user@example.com",
+          password: "password123",
+        }),
+      );
+      expect(result).toEqual({ error: "All fields are required." });
+    });
+
+    it("gibt Fehler zurück wenn Nachname fehlt", async () => {
+      const result = await register(
+        makeFormData({
+          firstName: "Test",
+          email: "user@example.com",
+          password: "password123",
+        }),
       );
       expect(result).toEqual({ error: "All fields are required." });
     });
 
     it("gibt Fehler zurück wenn Email fehlt", async () => {
       const result = await register(
-        makeFormData({ name: "Test User", password: "password123" }),
+        makeFormData({
+          firstName: "Test",
+          lastName: "User",
+          password: "password123",
+        }),
       );
       expect(result).toEqual({ error: "All fields are required." });
     });
 
     it("gibt Fehler zurück wenn Passwort fehlt", async () => {
       const result = await register(
-        makeFormData({ name: "Test User", email: "user@example.com" }),
+        makeFormData({
+          firstName: "Test",
+          lastName: "User",
+          email: "user@example.com",
+        }),
       );
       expect(result).toEqual({ error: "All fields are required." });
     });
@@ -79,7 +102,8 @@ describe("register()", () => {
     it("gibt Fehler zurück wenn Passwort zu kurz ist (< 8 Zeichen)", async () => {
       const result = await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "user@example.com",
           password: "short",
         }),
@@ -92,7 +116,8 @@ describe("register()", () => {
     it("akzeptiert Passwort mit genau 8 Zeichen", async () => {
       const result = await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "user@example.com",
           password: "12345678",
         }),
@@ -105,7 +130,8 @@ describe("register()", () => {
     it("gibt Fehler zurück bei ungültigem Email-Format", async () => {
       const result = await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "not-an-email",
           password: "password123",
         }),
@@ -117,7 +143,8 @@ describe("register()", () => {
       mockUserFindUnique.mockResolvedValueOnce({ id: "existing" });
       const result = await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "existing@example.com",
           password: "password123",
         }),
@@ -132,7 +159,8 @@ describe("register()", () => {
     it("leitet nach der Registrierung zu create-workspace weiter", async () => {
       const result = await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "new@example.com",
           password: "password123",
         }),
@@ -143,7 +171,8 @@ describe("register()", () => {
     it("meldet nach der Registrierung über signIn an", async () => {
       await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "new@example.com",
           password: "password123",
         }),
@@ -159,7 +188,8 @@ describe("register()", () => {
     it("hasht das Passwort mit bcrypt (cost=12)", async () => {
       await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "new@example.com",
           password: "mypassword",
         }),
@@ -170,14 +200,16 @@ describe("register()", () => {
     it("erstellt User mit gehashtem Passwort und korrekten Feldern", async () => {
       await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "new@example.com",
           password: "password123",
         }),
       );
       expect(mockUserCreate).toHaveBeenCalledTimes(1);
       const createdData = mockUserCreate.mock.calls[0][0].data;
-      expect(createdData.name).toBe("Test User");
+      expect(createdData.firstName).toBe("Test");
+      expect(createdData.lastName).toBe("User");
       expect(createdData.email).toBe("new@example.com");
       expect(createdData.passwordHash).toBe("hashed-password");
       expect(createdData.handle).toBeTruthy();
@@ -187,7 +219,8 @@ describe("register()", () => {
     it("normalisiert Email zu Kleinbuchstaben", async () => {
       await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "User@EXAMPLE.COM",
           password: "password123",
         }),
@@ -199,7 +232,8 @@ describe("register()", () => {
     it("gibt einen locale-freien Pfad zurück (Locale ergänzt der Client via next-intl)", async () => {
       const result = await register(
         makeFormData({
-          name: "Test User",
+          firstName: "Test",
+          lastName: "User",
           email: "new@example.com",
           password: "password123",
         }),

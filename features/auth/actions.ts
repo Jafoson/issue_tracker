@@ -45,12 +45,13 @@ export async function login(formData: FormData): Promise<AuthResult> {
 }
 
 export async function register(formData: FormData): Promise<AuthResult> {
-  const name = (formData.get("name") as string | null)?.trim() ?? "";
+  const firstName = (formData.get("firstName") as string | null)?.trim() ?? "";
+  const lastName = (formData.get("lastName") as string | null)?.trim() ?? "";
   const email =
     (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
   const password = (formData.get("password") as string | null) ?? "";
 
-  if (!name || !email || !password)
+  if (!firstName || !lastName || !email || !password)
     return { error: "All fields are required." };
   if (password.length < 8)
     return { error: "Password must be at least 8 characters." };
@@ -65,7 +66,14 @@ export async function register(formData: FormData): Promise<AuthResult> {
 
   try {
     await db.user.create({
-      data: { name, handle, email, color: pickUserColor(), passwordHash },
+      data: {
+        firstName,
+        lastName,
+        handle,
+        email,
+        color: pickUserColor(),
+        passwordHash,
+      },
     });
   } catch {
     return { error: "Registration failed. Please try again." };

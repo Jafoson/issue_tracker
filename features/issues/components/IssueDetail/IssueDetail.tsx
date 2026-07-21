@@ -21,6 +21,7 @@ import {
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import { Link } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
+import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue, Label } from "@/types";
 import styles from "./issueDetail.module.scss";
@@ -234,7 +235,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               const author = members.find((m) => m.id === c.author) ?? null;
               return (
                 <div key={c.id} className={styles.comment}>
-                  <Avatar user={author} size={26} />
+                  <Avatar avatar={author} size={26} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
@@ -245,7 +246,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                       }}
                     >
                       <span style={{ fontWeight: 550, fontSize: 13 }}>
-                        {author?.name}
+                        {author && fullName(author)}
                       </span>
                       <span className="faint mono" style={{ fontSize: 11 }}>
                         {timeAgo(c.time)}
@@ -259,7 +260,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
               );
             })}
             <div className={styles.commentInput}>
-              <Avatar user={me} size={26} />
+              <Avatar avatar={me} size={26} />
               <div className={styles.commentBox}>
                 <textarea
                   className="field"
@@ -348,8 +349,8 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
             <InlinePicker
               trigger={
                 <button type="button" className={styles.sideBtn}>
-                  <Avatar user={assignee} size={16} />
-                  {assignee?.name ?? t("fields.unassigned")}
+                  <Avatar avatar={assignee} size={16} />
+                  {assignee ? fullName(assignee) : t("fields.unassigned")}
                 </button>
               }
               width={220}
@@ -361,12 +362,12 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                     {
                       value: null,
                       label: t("fields.unassigned"),
-                      icon: <Avatar user={null} size={18} />,
+                      icon: <Avatar avatar={null} size={18} />,
                     },
                     ...members.map((u) => ({
                       value: u.id,
-                      label: u.name,
-                      icon: <Avatar user={u} size={18} />,
+                      label: fullName(u),
+                      icon: <Avatar avatar={u} size={18} />,
                     })),
                   ]}
                   value={issue.assignee}
@@ -445,8 +446,8 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
           </SideField>
           <SideField label={t("fields.creator")}>
             <div className={styles.sideBtn} style={{ cursor: "default" }}>
-              <Avatar user={creator} size={16} />
-              {creator?.name ?? t("fields.unassigned")}
+              <Avatar avatar={creator} size={16} />
+              {creator ? fullName(creator) : t("fields.unassigned")}
             </div>
           </SideField>
           <SideField label={t("fields.created")}>
