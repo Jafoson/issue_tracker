@@ -2,13 +2,13 @@
 import { Icon } from "@iconify/react";
 import React from "react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { BoardCard } from "@/features/issues/components/BoardCard/BoardCard";
+import { CreateIssueModal } from "@/features/issues/components/CreateIssueModal/CreateIssueModal";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
+import { useModal } from "@/lib/context";
 import type { Issue, Status } from "@/types";
 import styles from "./boardColumn.module.scss";
-import { Button } from "@/components/ui/atoms/Button/Button";
-import { useModal } from "@/lib/context";
-
 
 interface BoardColumnProps {
   status: Status;
@@ -45,12 +45,16 @@ export function BoardColumn({
   onCardDragOver,
   onCardClick,
 }: BoardColumnProps) {
-  const {openModal} = useModal()
+  const { openModal } = useModal();
 
-  function showCreateIssueModal(){
-    openModal(<div>
-      HALLO ICH BIN EIN MODAL
-    </div>)
+  function showCreateIssueModal() {
+    openModal(({ close }) => (
+      <CreateIssueModal
+        projectId={projectId}
+        initialStatus={status.id}
+        close={close}
+      />
+    ));
   }
 
   return (
@@ -102,7 +106,7 @@ export function BoardColumn({
           type="button"
           className={styles.addCard}
           title={newIssueLabel}
-          onClick={() => {}}
+          onClick={showCreateIssueModal}
         >
           <Icon icon="lucide:plus" width={15} />
           <span>{newIssueLabel}</span>

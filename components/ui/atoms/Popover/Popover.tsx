@@ -79,10 +79,13 @@ export function Popover({
       }
     };
     document.addEventListener("mousedown", onDown, true);
-    document.addEventListener("keydown", onKey, true);
+    // window, not document: capture fires window → document, so this must run
+    // before ModalContext's document-level Escape handler — otherwise Escape
+    // closes the whole modal instead of just this popover.
+    window.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("mousedown", onDown, true);
-      document.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("keydown", onKey, true);
     };
   }, [open, onClose, anchorRef]);
 

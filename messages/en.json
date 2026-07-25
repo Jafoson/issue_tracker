@@ -196,6 +196,9 @@
   "toast": {
     "issueCreated": "Issue created"
   },
+  "issues": {
+    "toCreate": "to create"
+  },
   "projects": {
     "modalDescription": "A project groups related issues under a shared prefix.",
     "toCreate": "to create",

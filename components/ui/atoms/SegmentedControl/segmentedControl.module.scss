@@ -1,7 +1,7 @@
 .root {
   display: inline-flex;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  background: var(--surface-container-low);
+  border: 1px solid var(--surface-variant);
   border-radius: var(--radius-sm);
   padding: 3px;
   gap: 2px;
@@ -13,14 +13,32 @@
   border-radius: calc(var(--radius-sm) - 2px);
   border: none;
   background: transparent;
-  color: var(--text-2);
+  color: var(--on-surface-variant);
   font-size: 13px;
   font-weight: 450;
   white-space: nowrap;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
+  position: relative;
 
-  &:hover { color: var(--text); }
+  &::after{
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    background: var(--on-surface);
+    border-radius: inherit;
+    opacity: 0;
+    transition: background 0.12s;
+  }
+
+  &:hover { color: var(--on-surface); }
+  &:hover::after{
+    opacity: 0.12;
+  }
+
 
   /* icon-only: quadratisch */
   &.iconOnly {
@@ -33,16 +51,24 @@
 
   /* variant primary (default): Accent-Farbe */
   &.active {
-    background: var(--accent);
-    color: #fff;
+    background: var(--primary);
+    color: var(--on-primary);
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+
+    &::after{
+      background: var(--on-primary);
+    }
   }
 
   /* variant surface: invertierte Surface-Farbe */
   &.active.activeSurface {
-    background: var(--text);
-    color: var(--surface-1);
+    background: var(--on-surface);
+    color: var(--surface);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+    &::after{
+      background: var(--surface)
+    }
   }
 }
