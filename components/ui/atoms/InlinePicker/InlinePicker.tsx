@@ -27,12 +27,14 @@ export function InlinePicker({
   const triggerWithRef = cloneElement(
     trigger as React.ReactElement<{
       ref?: React.Ref<HTMLElement>;
-      onClick?: (e: React.MouseEvent) => void;
+      onClick?: (e?: React.MouseEvent) => void;
     }>,
     {
       ref,
-      onClick: (e: React.MouseEvent) => {
-        if (stop) e.stopPropagation();
+      // Optional event: triggers activated via keyboard (e.g. Chip) call the
+      // handler without one.
+      onClick: (e?: React.MouseEvent) => {
+        if (stop) e?.stopPropagation();
         setOpen((o) => !o);
       },
     },

@@ -29,6 +29,7 @@
     "edit": "Bearbeiten",
     "rename": "Umbenennen",
     "clear": "Zurücksetzen",
+    "clearFilter": "Filter {field} zurücksetzen",
     "signIn": "Anmelden",
     "requestAccess": "Zugang anfragen",
     "newProject": "Neues Projekt",

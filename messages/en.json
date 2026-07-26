@@ -29,6 +29,7 @@
     "edit": "Edit",
     "rename": "Rename",
     "clear": "Clear",
+    "clearFilter": "Clear {field} filter",
     "signIn": "Sign in",
     "requestAccess": "Request access",
     "newProject": "New project",

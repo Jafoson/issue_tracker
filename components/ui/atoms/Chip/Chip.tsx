@@ -9,6 +9,7 @@ interface ChipProps
   variant?: ChipVariant;
   type?: ChipType;
   icon?: React.ReactNode;
+  trailing?: React.ReactNode;
   selected?: boolean;
   disabled?: boolean;
   onClick?: () => void;
@@ -21,6 +22,7 @@ export function Chip({
   variant = "outline",
   type = "assist",
   icon,
+  trailing,
   selected = false,
   disabled = false,
   onClick,
@@ -30,13 +32,15 @@ export function Chip({
   ...rest
 }: ChipProps) {
   const clickable = !!onClick && !disabled;
-  const removable = type === "input" && !!onRemove;
+  // Assist chips are pure actions — nothing to take back off them.
+  const removable = type !== "assist" && !!onRemove;
+  // An explicit icon wins: it usually carries more meaning (status, avatar,
+  // label color) than the generic selection checkmark it would replace.
   const leadingIcon =
-    type === "filter" && selected ? (
+    icon ??
+    (type === "filter" && selected ? (
       <Icon icon="lucide:check" width={14} />
-    ) : (
-      icon
-    );
+    ) : null);
 
   const cls = [
     styles.chip,
@@ -46,6 +50,7 @@ export function Chip({
     disabled && styles.disabled,
     !!leadingIcon && styles.hasIcon,
     removable && styles.hasRemove,
+    !removable && !!trailing && styles.hasTrailing,
     className,
   ]
     .filter(Boolean)
@@ -55,6 +60,9 @@ export function Chip({
     <>
       {leadingIcon && <span className={styles.icon}>{leadingIcon}</span>}
       <span className={styles.label}>{children}</span>
+      {!removable && trailing && (
+        <span className={styles.trailing}>{trailing}</span>
+      )}
       {removable && (
         <button
           type="button"

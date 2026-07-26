@@ -1,4 +1,4 @@
-import { Topbar } from "@/components/ui/layout/Topbar/Topbar";
+import { Topbar } from "@/features/issues/components/Topbar/Topbar";
 import styles from "./layout.module.scss";
 
 export default function ProjectLayout({

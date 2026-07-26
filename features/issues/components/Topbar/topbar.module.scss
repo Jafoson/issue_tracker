@@ -1,0 +1,54 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--outline-variant);
+  border-top: 1px solid var(--outline-variant);
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0;
+  transition: opacity 0.12s;
+}
+
+/* Navigation is in flight — dim the controls until the new URL lands. */
+.pending .filterRow {
+  opacity: 0.6;
+}
+
+.trailing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.clearAll {
+  color: var(--tertiary);
+}
+
+/* ── Filter chip icons ── */
+
+.glyph {
+  flex: none;
+  display: block;
+}
+
+.labelDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+  display: inline-block;
+}
+
+.labelDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
