@@ -1,6 +1,4 @@
 import { Icon } from "@iconify/react";
-import { LabelIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import type { Label } from "@/types";
 import styles from "../topbar.module.scss";
 
 /**
@@ -27,16 +25,5 @@ export function MultiPriorityIcon({ size = 14 }: { size?: number }) {
       className={styles.glyphMuted}
       aria-hidden="true"
     />
-  );
-}
-
-/** Up to three colored dots standing in for the selected labels. */
-export function LabelDots({ labels }: { labels: Label[] }) {
-  return (
-    <span className={styles.labelDots}>
-      {labels.slice(0, 3).map((l) => (
-        <LabelIcon key={l.id} color={l.color} size={11} />
-      ))}
-    </span>
   );
 }

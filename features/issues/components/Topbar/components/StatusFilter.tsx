@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { useWorkspace } from "@/lib/workspace-context";
-import { FilterChip } from "./FilterChip";
 import { MultiStatusIcon } from "./FilterIcons";
 
 interface StatusFilterProps {

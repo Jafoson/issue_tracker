@@ -3,10 +3,10 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { fullName } from "@/lib/utils/string";
 import { useWorkspace } from "@/lib/workspace-context";
-import { FilterChip } from "./FilterChip";
 
 interface AssigneeFilterProps {
   value: string[];

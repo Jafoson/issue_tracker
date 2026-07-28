@@ -36,6 +36,7 @@
     "createProject": "Create project",
     "createWorkspace": "Create workspace",
     "cancel": "Cancel",
+    "close": "Close",
     "newTab": "New tab",
     "closeTab": "Close tab"
   },
@@ -67,6 +68,7 @@
   },
   "fields": {
     "status": "Status",
+    "type": "Type",
     "priority": "Priority",
     "assignee": "Assignee",
     "label": "Label",

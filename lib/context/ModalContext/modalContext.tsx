@@ -136,7 +136,12 @@ function ModalFrame({
   const dismissible = modal.options.dismissible !== false;
 
   useEffect(() => {
-    panelRef.current?.focus();
+    // Nur einspringen, wenn der Inhalt nicht selbst schon fokussiert hat (z.B.
+    // per `autoFocus` auf dem Titelfeld) — sonst würde der Panel-Fokus die
+    // Eingabe direkt wieder wegnehmen.
+    const panel = panelRef.current;
+    if (panel && !panel.contains(document.activeElement)) panel.focus();
+
     const trigger = modal.trigger;
     return () => {
       if (trigger instanceof HTMLElement) trigger.focus();

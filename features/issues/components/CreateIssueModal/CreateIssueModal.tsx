@@ -3,23 +3,39 @@
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
+import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
+import {
+  ModalTextarea,
+  ModalTitleInput,
+} from "@/components/ui/layout/Modal/components/ModalFields";
+import {
+  ModalFooter,
+  ModalShortcut,
+} from "@/components/ui/layout/Modal/components/ModalFooter";
+import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
+import {
+  Modal,
+  ModalBody,
+  ModalToolbar,
+} from "@/components/ui/layout/Modal/Modal";
 import { createIssue } from "@/features/issues/actions";
 import {
+  LabelDots,
+  LabelIcon,
   PriorityIcon,
   StatusIcon,
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import { fullName } from "@/lib/utils/string";
+import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
-import styles from "./createIssueModal.module.scss";
 
 interface CreateIssueModalProps {
   projectId: string;
@@ -44,7 +60,7 @@ export function CreateIssueModal({
   } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const project = projects.find((p) => p.id === projectId);
 
@@ -56,12 +72,6 @@ export function CreateIssueModal({
   const [assignee, setAssignee] = useState<string | null>(null);
   const [labels, setLabels] = useState<string[]>([]);
   const [localLabels, setLocalLabels] = useState<Label[]>([]);
-  const titleRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const focusTimer = setTimeout(() => titleRef.current?.focus(), 50);
-    return () => clearTimeout(focusTimer);
-  }, []);
 
   const combinedLabels = [
     ...allLabels,
@@ -97,15 +107,7 @@ export function CreateIssueModal({
     });
   };
 
-  // Kein Dependency-Array — hält den Closure über den aktuellen Formularstand
-  // aktuell, damit ⌘/Ctrl+Enter immer den zuletzt eingegebenen Titel erfasst.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  });
+  useSubmitShortcut(submit);
 
   if (!project) return null;
 
@@ -113,72 +115,41 @@ export function CreateIssueModal({
     .map((id) => combinedLabels.find((l) => l.id === id))
     .filter(Boolean) as Label[];
 
-  let labelTrigger: React.ReactElement;
-  if (labels.length === 0) {
-    labelTrigger = (
-      <Button
-        variant="outline"
-        size="sm"
-        icon={<Icon icon="lucide:tag" width={13} />}
-      >
-        {t("fields.label")}
-      </Button>
+  const labelName = t("fields.label");
+  const labelLabel =
+    labels.length === 0
+      ? labelName
+      : labels.length === 1
+        ? (selectedLabelObjects[0]?.name ?? labelName)
+        : t("filters.labels", { count: labels.length });
+  const labelIcon =
+    selectedLabelObjects.length === 0 ? (
+      <Icon icon="lucide:tag" width={13} />
+    ) : selectedLabelObjects.length === 1 ? (
+      <LabelIcon color={selectedLabelObjects[0].color} size={13} />
+    ) : (
+      <LabelDots labels={selectedLabelObjects} />
     );
-  } else if (labels.length === 1) {
-    const l = selectedLabelObjects[0];
-    labelTrigger = (
-      <Button
-        variant="outline"
-        size="sm"
-        icon={<span className="dot" style={{ background: l?.color }} />}
-      >
-        {l?.name}
-      </Button>
-    );
-  } else {
-    labelTrigger = (
-      <Button
-        variant="outline"
-        size="sm"
-        icon={
-          <span className={styles.labelStack}>
-            {selectedLabelObjects.slice(0, 3).map((l) => (
-              <span
-                key={l.id}
-                className={styles.labelDot}
-                style={{ background: l.color }}
-              />
-            ))}
-          </span>
-        }
-      >
-        {t("filters.labels", { count: labels.length })}
-      </Button>
-    );
-  }
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
+    <Modal>
+      <ModalHeader
+        leading={
           <Badge>
             <span className="dot" style={{ background: project.color }} />
             {project.prefix}
           </Badge>
-          <span className={styles.headerTitle}>{t("actions.newIssue")}</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<Icon icon="lucide:x" width={15} />}
-          onClick={close}
-        />
-      </div>
+        }
+        title={t("actions.newIssue")}
+        onClose={close}
+        closeLabel={t("actions.close")}
+      />
 
-      <div className={styles.body}>
-        <input
-          ref={titleRef}
-          className={styles.titleInput}
+      <ModalBody>
+        {/* Der Fokus gehört beim Öffnen ins Titelfeld — der ModalFrame
+            respektiert das und greift dann nicht mehr auf das Panel zu. */}
+        <ModalTitleInput
+          autoFocus
           placeholder={t("placeholders.issueTitle")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -186,28 +157,25 @@ export function CreateIssueModal({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
         />
-        <textarea
-          className={styles.descInput}
+        <ModalTextarea
           placeholder={t("placeholders.addDescription")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
         />
-      </div>
+      </ModalBody>
 
-      <div className={styles.toolbar}>
-        <InlinePicker
-          trigger={
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<TypeIcon type={type} size={14} />}
-            >
-              {typeName(type)}
-            </Button>
-          }
+      {/* Typ, Status und Priorität sind Pflichtfelder — sie tragen immer einen
+          Wert, bleiben deshalb neutral und bekommen keinen Clear-Button.
+          Assignee und Labels sind optional und heben sich hervor, sobald sie
+          gesetzt sind. */}
+      <ModalToolbar>
+        <FilterChip
+          name={t("fields.type")}
+          label={typeName(type)}
+          icon={<TypeIcon type={type} size={14} />}
+          active={false}
           width={190}
-          stop
         >
           {(closeMenu) => (
             <SelectMenu
@@ -224,20 +192,14 @@ export function CreateIssueModal({
               onClose={closeMenu}
             />
           )}
-        </InlinePicker>
+        </FilterChip>
 
-        <InlinePicker
-          trigger={
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<StatusIcon status={status} size={14} />}
-            >
-              {statusName(status)}
-            </Button>
-          }
+        <FilterChip
+          name={t("fields.status")}
+          label={statusName(status)}
+          icon={<StatusIcon status={status} size={14} />}
+          active={false}
           width={200}
-          stop
         >
           {(closeMenu) => (
             <SelectMenu
@@ -254,20 +216,14 @@ export function CreateIssueModal({
               onClose={closeMenu}
             />
           )}
-        </InlinePicker>
+        </FilterChip>
 
-        <InlinePicker
-          trigger={
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<PriorityIcon priority={priority} size={14} />}
-            >
-              {priorityName(priority)}
-            </Button>
-          }
+        <FilterChip
+          name={t("fields.priority")}
+          label={priorityName(priority)}
+          icon={<PriorityIcon priority={priority} size={14} />}
+          active={false}
           width={190}
-          stop
         >
           {(closeMenu) => (
             <SelectMenu
@@ -284,26 +240,21 @@ export function CreateIssueModal({
               onClose={closeMenu}
             />
           )}
-        </InlinePicker>
+        </FilterChip>
 
-        <InlinePicker
-          trigger={
-            <Button
-              variant="outline"
-              size="sm"
-              icon={
-                assigneeUser ? (
-                  <Avatar avatar={assigneeUser} size={15} />
-                ) : (
-                  <Icon icon="lucide:circle-dashed" width={14} />
-                )
-              }
-            >
-              {assigneeUser ? assigneeUser.firstName : t("fields.assignee")}
-            </Button>
+        <FilterChip
+          name={t("fields.assignee")}
+          label={assigneeUser ? assigneeUser.firstName : t("fields.assignee")}
+          icon={
+            assigneeUser ? (
+              <Avatar avatar={assigneeUser} size={15} />
+            ) : (
+              <Icon icon="lucide:circle-dashed" width={14} />
+            )
           }
+          active={!!assigneeUser}
+          onClear={() => setAssignee(null)}
           width={220}
-          stop
         >
           {(closeMenu) => (
             <SelectMenu
@@ -328,9 +279,16 @@ export function CreateIssueModal({
               searchable
             />
           )}
-        </InlinePicker>
+        </FilterChip>
 
-        <InlinePicker trigger={labelTrigger} maxWidth={320} stop>
+        <FilterChip
+          name={labelName}
+          label={labelLabel}
+          icon={labelIcon}
+          active={labels.length > 0}
+          onClear={() => setLabels([])}
+          maxWidth={320}
+        >
           {(closeMenu) => (
             <LabelPickerMenu
               allLabels={combinedLabels}
@@ -348,23 +306,27 @@ export function CreateIssueModal({
               keepOpen
             />
           )}
-        </InlinePicker>
-      </div>
+        </FilterChip>
+      </ModalToolbar>
 
-      <div className={styles.footer}>
-        <div className={styles.shortcut}>
-          <kbd>⌘</kbd>
-          <kbd>↵</kbd> {t("issues.toCreate")}
-        </div>
-        <div className={styles.footerActions}>
-          <Button variant="ghost" onClick={close}>
-            {t("actions.cancel")}
-          </Button>
-          <Button variant="primary" disabled={!title.trim()} onClick={submit}>
-            {t("actions.createIssue")}
-          </Button>
-        </div>
-      </div>
-    </div>
+      <ModalFooter
+        hint={
+          <ModalShortcut keys={["⌘", "↵"]}>
+            {t("issues.toCreate")}
+          </ModalShortcut>
+        }
+      >
+        <Button variant="ghost" onClick={close}>
+          {t("actions.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          disabled={!title.trim() || isPending}
+          onClick={submit}
+        >
+          {t("actions.createIssue")}
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }

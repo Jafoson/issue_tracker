@@ -11,15 +11,24 @@ interface FilterChipProps {
   /** What the chip reads as right now — the field name, or the selection. */
   label: string;
   icon: React.ReactNode;
+  /** Highlights the chip and — together with `onClear` — reveals the clear button. */
   active: boolean;
-  onClear: () => void;
+  /**
+   * Leave out for mandatory fields: they always carry a value, so there is
+   * nothing to clear and the chip keeps its chevron instead.
+   */
+  onClear?: () => void;
   width?: number;
+  maxWidth?: number;
   children: React.ReactNode | ((close: () => void) => React.ReactNode);
 }
 
 /**
- * One filter facet in the topbar: a chip that opens a picker, and turns into a
- * clearable chip once something is selected.
+ * A chip that opens a picker — and, once something is selected, highlights
+ * itself and offers a clear button.
+ *
+ * Used for the topbar filter facets as well as the attribute pickers in the
+ * issue composer, so both rows stay visually identical.
  */
 export function FilterChip({
   name,
@@ -28,6 +37,7 @@ export function FilterChip({
   active,
   onClear,
   width,
+  maxWidth,
   children,
 }: FilterChipProps) {
   const t = useTranslations();
@@ -35,6 +45,7 @@ export function FilterChip({
   return (
     <InlinePicker
       width={width}
+      maxWidth={maxWidth}
       stop
       trigger={
         <Chip

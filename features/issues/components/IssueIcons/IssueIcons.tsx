@@ -88,6 +88,28 @@ export function LabelIcon({
   );
 }
 
+// ---- Label dots: stand-in for a multi-label selection ----
+/**
+ * Up to three label colours side by side. Bewusst ohne Überlappung: der Ring,
+ * der überlappende Punkte trennen müsste, hätte die Hintergrundfarbe des
+ * Trägers — und die wechselt, sobald ein Chip in den Selected-Zustand geht.
+ */
+export function LabelDots({
+  labels,
+  size = 11,
+}: {
+  labels: { id: string; color: string }[];
+  size?: number;
+}) {
+  return (
+    <span className={styles.labelDots}>
+      {labels.slice(0, 3).map((l) => (
+        <LabelIcon key={l.id} color={l.color} size={size} />
+      ))}
+    </span>
+  );
+}
+
 // ---- Type icon: geometric glyph per issue type ----
 export function TypeIcon({
   type,

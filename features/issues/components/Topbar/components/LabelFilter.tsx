@@ -4,12 +4,14 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { LabelIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
+import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
+import {
+  LabelDots,
+  LabelIcon,
+} from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
-import { FilterChip } from "./FilterChip";
-import { LabelDots } from "./FilterIcons";
 
 interface LabelFilterProps {
   value: string[];

@@ -1,0 +1,167 @@
+/* Gemeinsames Chrome für alle Modal-Inhalte.
+   Positionierung, Backdrop und Animation liefert der ModalFrame
+   (lib/context/ModalContext) — hier lebt nur die Panel-Optik. */
+
+.modal {
+  --modal-pad-x: 16px;
+
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 620px;
+  max-width: calc(100vw - 32px);
+  /* Der Overlay schiebt das Panel um 12vh nach unten — der Rest bleibt nutzbar,
+     überlanger Inhalt scrollt im Body statt aus dem Viewport zu laufen. */
+  max-height: calc(100dvh - 12vh - 32px);
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 14px var(--modal-pad-x) 10px;
+  background-color: var(--surface-container);
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headerTitle {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* ---------- Body ---------- */
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 16px var(--modal-pad-x);
+  overflow-y: auto;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--modal-pad-x);
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--modal-pad-x);
+  background-color: var(--surface-container);
+}
+
+.footerActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ---------- Trennlinien ---------- */
+
+.dividerBelow {
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.dividerAbove {
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* ---------- Tastenkürzel-Hinweis ---------- */
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  min-width: 20px;
+  padding: 0 4px;
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 4px;
+  font-size: var(--text-xxs);
+  font-family: inherit;
+  color: var(--on-surface-variant);
+}
+
+/* ---------- Composer-Felder ---------- */
+
+.titleInput {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  color: var(--on-surface);
+
+  &::placeholder {
+    color: var(--outline);
+    font-weight: 400;
+  }
+}
+
+.textarea {
+  width: 100%;
+  min-height: 60px;
+  background: none;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
+
+  &::placeholder {
+    color: var(--outline);
+  }
+}
