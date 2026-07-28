@@ -5,23 +5,60 @@
 
 .img {
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: inherit;
   display: block;
 }
 
+// Ecken skalieren mit der Größe: ein 64px-Avatar braucht mehr Rundung als ein 16px-Avatar.
+$square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
+
 .avatar {
+  /* Von der Komponente gesetzt: --avatar-size, --avatar-bg, --avatar-fg
+     und optional --avatar-font-size als Override. */
+  --avatar-size: 22px;
+  --avatar-font-size: max(7px, calc(var(--avatar-size) * 0.5));
+  --avatar-radius: #{$square-radius};
+
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  text-transform: uppercase;
-  border-radius: var(--radius);
-  user-select: none;
   flex: none;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  background: var(--avatar-bg, var(--primary));
+  color: var(--avatar-fg, var(--text-1));
+  font-size: var(--avatar-font-size);
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  border-radius: var(--avatar-radius);
+  user-select: none;
+}
 
+/* Zwei Initialen brauchen mehr Breite als eine — sonst laufen sie über den Rand. */
+.avatar[data-initials="2"] {
+  --avatar-font-size: max(7px, calc(var(--avatar-size) * 0.42));
+}
+
+.circle {
+  --avatar-radius: var(--radius-pill);
+}
+
+.square {
+  --avatar-radius: #{$square-radius};
 }
 
 .ring {
   box-shadow: 0 0 0 2px var(--shadow);
-  border-radius: var(--radius-pill);
+}
+
+/* "+N"-Chip am Ende eines AvatarStack */
+.more {
+  --avatar-bg: var(--elev);
+  --avatar-fg: var(--text-2);
+  --avatar-font-size: max(7px, calc(var(--avatar-size) * 0.4));
+
+  box-shadow: 0 0 0 2px var(--panel);
 }

@@ -52,7 +52,7 @@ export function AssigneeFilter({
         items={members.map((u) => ({
           value: u.id,
           label: fullName(u),
-          icon: <Avatar avatar={u} size={18} />,
+          icon: <Avatar avatar={u} size={22} />,
         }))}
         value={value}
         onPick={(v) => onToggle(v as string)}

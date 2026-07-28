@@ -1,4 +1,5 @@
 "use client";
+import type { CSSProperties } from "react";
 import { initials, personInitials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
@@ -16,36 +17,70 @@ export type AvatarData =
   | { name: string; color: string; image?: string }
   | PersonAvatarData;
 
+export type AvatarShape = "circle" | "square";
+
 interface AvatarProps {
   avatar: AvatarData | null;
   size?: number;
+  /**
+   * Schriftgröße der Initialen. Zahl = px, String = beliebiger CSS-Wert.
+   * Ohne Angabe skaliert sie proportional zu `size`.
+   */
+  fontSize?: number | string;
+  /**
+   * Rund oder abgerundetes Quadrat. Standard: Personen rund,
+   * benannte Entitäten (Workspace, Team, ...) quadratisch.
+   */
+  shape?: AvatarShape;
   ring?: boolean;
+  className?: string;
 }
 
-export function Avatar({ avatar, size = 22, ring }: AvatarProps) {
+const toCssLength = (value: number | string) =>
+  typeof value === "number" ? `${value}px` : value;
+
+export function Avatar({
+  avatar,
+  size = 22,
+  fontSize,
+  shape,
+  ring,
+  className,
+}: AvatarProps) {
   if (!avatar) {
     return;
   }
 
+  const isPerson = "firstName" in avatar;
   const color = avatar.color || "var(--primary)";
-  const label =
-    "firstName" in avatar
-      ? personInitials(avatar.firstName, avatar.lastName) ||
-        avatar.firstName?.[0]?.toUpperCase() ||
-        "?"
-      : initials(avatar.name) || avatar.name?.[0]?.toUpperCase() || "?";
+  const label = isPerson
+    ? personInitials(avatar.firstName, avatar.lastName) ||
+      avatar.firstName?.[0]?.toUpperCase() ||
+      "?"
+    : initials(avatar.name) || avatar.name?.[0]?.toUpperCase() || "?";
 
   return (
     <span
-      className={`${styles.avatar} ${ring ? styles.ring : ""}`}
-      style={{
-        width: size,
-        height: size,
-        position: "relative",
-        background: color,
-        color: `oklch(from ${color} clamp(0.05, calc((0.60 - l) * 999), 0.95) 0 h)`,
-        fontSize: `clamp(var(--text-xxs), ${size * 0.6}px, var(--text-2xl))`,
-      }}
+      className={[
+        styles.avatar,
+        styles[shape ?? (isPerson ? "circle" : "square")],
+        ring ? styles.ring : "",
+        className ?? "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-initials={label.length}
+      style={
+        {
+          "--avatar-size": `${size}px`,
+          "--avatar-bg": color,
+          // Heller Text auf dunklem Grund und umgekehrt.
+          "--avatar-fg": `oklch(from ${color} clamp(0.05, calc((0.60 - l) * 999), 0.95) 0 h)`,
+          ...(fontSize !== undefined && {
+            "--avatar-font-size": toCssLength(fontSize),
+          }),
+        } as CSSProperties
+      }
     >
       {label}
     </span>
@@ -57,6 +92,8 @@ interface AvatarStackProps {
   users: User[];
   size?: number;
   max?: number;
+  fontSize?: number | string;
+  shape?: AvatarShape;
 }
 
 export function AvatarStack({
@@ -64,30 +101,39 @@ export function AvatarStack({
   users,
   size = 22,
   max = 4,
+  fontSize,
+  shape,
 }: AvatarStackProps) {
   const shown = ids.slice(0, max);
   const extra = ids.length - shown.length;
   const userById = (id: string) => users.find((u) => u.id === id) ?? null;
+  const overlap = -Math.round(size * 0.3);
 
   return (
     <div className={styles.stack}>
       {shown.map((id, i) => (
-        <span key={id} style={{ marginLeft: i ? -7 : 0, zIndex: 10 - i }}>
-          <Avatar avatar={userById(id)} size={size} ring />
+        <span key={id} style={{ marginLeft: i ? overlap : 0, zIndex: 10 - i }}>
+          <Avatar
+            avatar={userById(id)}
+            size={size}
+            fontSize={fontSize}
+            shape={shape}
+            ring
+          />
         </span>
       ))}
       {extra > 0 && (
         <span
-          className="avatar"
-          style={{
-            marginLeft: -7,
-            width: size,
-            height: size,
-            background: "var(--elev)",
-            color: "var(--text-2)",
-            fontSize: size * 0.4,
-            boxShadow: "0 0 0 2px var(--panel)",
-          }}
+          className={`${styles.avatar} ${styles[shape ?? "circle"]} ${styles.more}`}
+          style={
+            {
+              marginLeft: overlap,
+              "--avatar-size": `${size}px`,
+              ...(fontSize !== undefined && {
+                "--avatar-font-size": toCssLength(fontSize),
+              }),
+            } as CSSProperties
+          }
         >
           +{extra}
         </span>
