@@ -254,6 +254,13 @@ export async function getIssuesByProject(
   const assignees = assigneeRows.map((u) => u.id);
   const labels = labelRows.map((l) => l.id);
 
+  // Die Suche filtert "nach Titel oder ID": `ORB-12` bzw. `12` trifft zusätzlich
+  // die Issue-Nummer. Die Ziffernlänge ist begrenzt, damit nichts den Int-Bereich
+  // der Spalte sprengt.
+  const q = filters.q?.trim();
+  const keyDigits = q?.match(/^(?:[a-z]+-)?(\d{1,9})$/i)?.[1];
+  const key = keyDigits ? Number(keyDigits) : undefined;
+
   const rows = await db.issue.findMany({
     where: {
       projectId,
@@ -261,10 +268,11 @@ export async function getIssuesByProject(
       ...(priorities.length && { priority: { in: priorities } }),
       ...(assignees.length && { assigneeId: { in: assignees } }),
       ...(labels.length && { labels: { hasSome: labels } }),
-      ...(filters.q && {
+      ...(q && {
         OR: [
-          { title: { contains: filters.q, mode: "insensitive" } },
-          { description: { contains: filters.q, mode: "insensitive" } },
+          { title: { contains: q, mode: "insensitive" as const } },
+          { description: { contains: q, mode: "insensitive" as const } },
+          ...(key !== undefined ? [{ key }] : []),
         ],
       }),
     },

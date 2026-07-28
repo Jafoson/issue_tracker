@@ -1,7 +1,9 @@
 .board {
   display: flex;
   gap: 0;
-  height: 100%;
+  /* Füllt die Restspalte unter der Topbar; die Spalten scrollen, nicht die Seite. */
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
   padding: 16px;
   align-items: stretch;

@@ -3,6 +3,7 @@
   flex-direction: column;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 /* Stretched link: covers the whole row to open the issue; the interactive

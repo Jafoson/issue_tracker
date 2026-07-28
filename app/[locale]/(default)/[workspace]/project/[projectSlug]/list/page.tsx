@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ListView } from "@/features/issues/components/ListView/ListView";
+import { Topbar } from "@/features/issues/components/Topbar/Topbar";
 import { getIssuesByProject, getProjects } from "@/features/issues/queries";
 
 export const dynamic = "force-dynamic";
@@ -19,5 +20,10 @@ export default async function ListPage({
   if (!project) notFound();
 
   const issues = await getIssuesByProject(project.id, filters);
-  return <ListView issues={issues} projectId={project.id} />;
+  return (
+    <>
+      <Topbar count={issues.length} />
+      <ListView issues={issues} projectId={project.id} />
+    </>
+  );
 }

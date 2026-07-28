@@ -40,6 +40,7 @@
   "placeholders": {
     "search": "Search…",
     "searchIssues": "Search issues, navigate…",
+    "filterIssues": "Filter by title or ID…",
     "issueTitle": "Issue title",
     "addDescription": "Add a description… (optional)",
     "addComment": "Add a comment…",

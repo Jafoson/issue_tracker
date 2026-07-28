@@ -1,5 +1,8 @@
 .root {
   display: inline-flex;
+  /* Gleiche Höhe wie ein Input daneben; die Items füllen sie aus. */
+  height: var(--control-h);
+  align-items: stretch;
   background: var(--surface-container-low);
   border: 1px solid var(--surface-variant);
   border-radius: var(--radius-sm);
@@ -8,7 +11,6 @@
 }
 
 .item {
-  height: 26px;
   padding: 0 12px;
   border-radius: calc(var(--radius-sm) - 2px);
   border: none;
@@ -40,9 +42,10 @@
   }
 
 
-  /* icon-only: quadratisch */
+  /* icon-only: quadratisch — die Breite folgt der Höhe der Zeile */
   &.iconOnly {
-    width: 26px;
+    flex: none;
+    aspect-ratio: 1;
     padding: 0;
     display: inline-flex;
     align-items: center;

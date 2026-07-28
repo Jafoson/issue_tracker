@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Board } from "@/features/issues/components/Board/Board";
+import { Topbar } from "@/features/issues/components/Topbar/Topbar";
 import { getIssuesByProject, getProjects } from "@/features/issues/queries";
 
 export const dynamic = "force-dynamic";
@@ -19,5 +20,10 @@ export default async function BoardPage({
   if (!project) notFound();
 
   const issues = await getIssuesByProject(project.id, filters);
-  return <Board issues={issues} projectId={project.id} />;
+  return (
+    <>
+      <Topbar count={issues.length} />
+      <Board issues={issues} projectId={project.id} />
+    </>
+  );
 }

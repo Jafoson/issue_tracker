@@ -1,11 +1,16 @@
 import { Suspense } from "react";
 import { TopbarClient } from "./TopbarClient";
 
-/** Filter/sort/view bar above the issue board and list. */
-export function Topbar() {
+interface TopbarProps {
+  /** Issues in the current view — already narrowed by the active filters. */
+  count: number;
+}
+
+/** Title, issue count, search, filter/sort/view bar above the board and list. */
+export function Topbar({ count }: TopbarProps) {
   return (
     <Suspense>
-      <TopbarClient />
+      <TopbarClient count={count} />
     </Suspense>
   );
 }

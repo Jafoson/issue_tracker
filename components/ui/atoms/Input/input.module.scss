@@ -22,7 +22,7 @@
 /* ── Base input ── */
 .input {
   width: 100%;
-  height: 36px;
+  height: var(--control-h);
   background: var(--surface-container-lowest);
   color: var(--on-surface);
   border: 1px solid var(--outline-variant);
@@ -64,7 +64,7 @@
 /* ── Size: sm ── */
 .sm {
   .input {
-    height: 30px;
+    height: var(--control-h-sm);
     font-size: var(--text-sm);
     padding: 0 9px;
     &.hasIconLeft  { padding-left: 30px; }

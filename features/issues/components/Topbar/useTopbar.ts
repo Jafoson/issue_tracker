@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import {
   assigneeIdToSlug,
@@ -25,6 +25,8 @@ export type SortKey =
 
 export type FilterKey = "status" | "priority" | "assignee" | "label";
 
+const FILTER_KEYS: FilterKey[] = ["status", "priority", "assignee", "label"];
+
 export type View = "board" | "list";
 
 export interface FilterState {
@@ -33,6 +35,9 @@ export interface FilterState {
   assignee: string[];
   label: string[];
 }
+
+/** Keystrokes are cheap, navigations are not — wait for a pause before pushing. */
+const SEARCH_DEBOUNCE_MS = 200;
 
 /**
  * Owns the topbar's entire URL state: which filters are active, how the list is
@@ -44,6 +49,9 @@ export function useTopbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  // A second transition for the search box: same concurrency, but its pending
+  // state is dropped — otherwise the bar would dim on every keystroke.
+  const [, startQuietTransition] = useTransition();
   const { priorities, members, labels, projects, workspace } = useWorkspace();
   const base = `/${workspace.id}`;
 
@@ -74,6 +82,20 @@ export function useTopbar() {
       .filter((id): id is string => Boolean(id)),
   };
 
+  // The typed text belongs to the search box alone (see IssueSearch): it renders
+  // every keystroke locally, while the URL follows on a debounce. The box is
+  // never re-seeded from `?q=` afterwards — a landing navigation always carries
+  // an older value than what is on screen, and pushing that back into the input
+  // would drop characters and cost the caret. The hook keeps only `typedQuery`,
+  // so a navigation from any other control can take the pending text along.
+  const urlQuery = searchParams.get("q") ?? "";
+  const typedQuery = useRef(urlQuery);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+
+  // Chips only — the search box clears itself through its own button, so it must
+  // not make the filter row's "clear" appear.
   const filterCount =
     filters.status.length +
     filters.priority.length +
@@ -98,12 +120,18 @@ export function useTopbar() {
     }
   }
 
-  function pushParams(updater: (p: URLSearchParams) => void) {
+  // Every URL write goes through here, so a navigation triggered by any other
+  // control also flushes the search text still sitting in the debounce. `quiet`
+  // keeps typing out of the pending state — a deliberate click may dim the bar
+  // while it lands, a keystroke may not.
+  function pushParams(updater: (p: URLSearchParams) => void, quiet = false) {
+    clearTimeout(searchTimer.current);
     const p = new URLSearchParams(searchParams.toString());
+    if (typedQuery.current) p.set("q", typedQuery.current);
+    else p.delete("q");
     updater(p);
-    startTransition(() =>
-      router.push(`${pathname}?${p.toString()}`, { scroll: false }),
-    );
+    const start = quiet ? startQuietTransition : startTransition;
+    start(() => router.push(`${pathname}?${p.toString()}`, { scroll: false }));
   }
 
   function toggleFilter(key: FilterKey, value: string | number) {
@@ -122,8 +150,24 @@ export function useTopbar() {
     pushParams((p) => p.delete(key));
   }
 
+  // Called on every keystroke — writes a ref and re-arms the timer, nothing that
+  // would render anything outside the search box.
+  function search(value: string) {
+    typedQuery.current = value;
+    clearTimeout(searchTimer.current);
+    // `pushParams` picks the text up from the ref — nothing else to change here.
+    searchTimer.current = setTimeout(
+      () => pushParams(() => {}, true),
+      SEARCH_DEBOUNCE_MS,
+    );
+  }
+
+  // Clears exactly what the filter row shows — the search box has its own button
+  // and keeps its text, the sort keeps its choice.
   function clearAll() {
-    startTransition(() => router.push(pathname, { scroll: false }));
+    pushParams((p) => {
+      for (const key of FILTER_KEYS) p.delete(key);
+    });
   }
 
   function setSort(key: SortKey) {
@@ -132,7 +176,11 @@ export function useTopbar() {
 
   // The view lives in the path, not the query — carry the filters across.
   function setView(next: View) {
-    const qs = searchParams.toString();
+    clearTimeout(searchTimer.current);
+    const p = new URLSearchParams(searchParams.toString());
+    if (typedQuery.current) p.set("q", typedQuery.current);
+    else p.delete("q");
+    const qs = p.toString();
     const suffix = qs ? `?${qs}` : "";
     startTransition(() =>
       router.push(
@@ -150,11 +198,13 @@ export function useTopbar() {
     project,
     filters,
     filterCount,
+    searchValue: urlQuery,
     sortKey,
     view,
     toggleFilter,
     clearFilter,
     clearAll,
+    search,
     setSort,
     setView,
   };

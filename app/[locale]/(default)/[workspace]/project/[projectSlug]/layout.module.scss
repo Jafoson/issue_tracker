@@ -1,14 +1,8 @@
+/* Topbar (flex: none) + View (flex: 1) — die View scrollt, die Spalte nicht. */
 .wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0;
-}
-
-.body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
   min-height: 0;
   overflow: hidden;
 }
