@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@iconify/react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import {
@@ -7,7 +8,7 @@ import {
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { onActivate } from "@/lib/a11y";
-import { timeAgo } from "@/lib/utils/date";
+import { useTimeAgo } from "@/lib/utils/useTimeAgo";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue, Label as LabelType } from "@/types";
 import styles from "./boardCard.module.scss";
@@ -32,6 +33,7 @@ export function BoardCard({
   onClick,
 }: BoardCardProps) {
   const { members, projects, labels, issueTypes } = useWorkspace();
+  const timeAgo = useTimeAgo();
   const project = projects.find((p) => p.id === issue.project) ??
     projects.find((p) => p.id === projectId) ?? {
       prefix: "?",
@@ -66,53 +68,39 @@ export function BoardCard({
       onClick={onClick}
       onKeyDown={onActivate(() => onClick?.())}
     >
-      {/* Top: type badge + avatar */}
-      <div className={styles.cardTop}>
-        {typeLabel && typeColor && (
-          <Label color={typeColor} filled hasIcon size="sm">
-            <TypeIcon type={issue.type} size={11} color={typeColor} />
-            {typeLabel}
-          </Label>
-        )}
-        <div className={styles.cardTopRight}>
-          <Avatar avatar={assignee} size={28} />
+      {/* Kopfzeile: Typ-Badge + Assignee — entfällt, wenn beides fehlt */}
+      {(typeLabel || assignee) && (
+        <div className={styles.header}>
+          {typeLabel && typeColor && (
+            <Label color={typeColor} filled hasIcon size="xs">
+              <TypeIcon type={issue.type} size={10} color={typeColor} />
+              {typeLabel}
+            </Label>
+          )}
+          <Avatar avatar={assignee} size={30} />
         </div>
-      </div>
+      )}
 
-      {/* Title */}
       <p className={styles.title}>{issue.title}</p>
 
-      {/* Labels */}
       {issueLabels.length > 0 && (
         <div className={styles.labels}>
           {issueLabels.map((l) => (
-            <Label key={l.id} color={l.color} size="sm">
+            <Label key={l.id} color={l.color} size="xs">
               {l.name}
             </Label>
           ))}
         </div>
       )}
 
-      {/* Bottom: priority + id | time + comments */}
-      <div className={styles.cardBottom}>
-        <PriorityIcon priority={issue.priority} size={13} />
+      {/* Meta: Priorität + Identifier | Zeit + Kommentare */}
+      <div className={styles.footer}>
+        <PriorityIcon priority={issue.priority} size={14} />
         <span className={styles.id}>{identifier}</span>
         <span className={styles.time}>{timeAgo(issue.updated)}</span>
         {issue.comments.length > 0 && (
           <span className={styles.comments}>
-            <svg
-              width={11}
-              height={11}
-              viewBox="0 0 16 16"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v7A1.5 1.5 0 0 1 12.5 12H9l-3 2v-2H3.5A1.5 1.5 0 0 1 2 10.5v-7Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-            </svg>
+            <Icon icon="lucide:message-square" width={12} aria-hidden="true" />
             {issue.comments.length}
           </span>
         )}

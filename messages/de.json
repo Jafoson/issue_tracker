@@ -221,5 +221,12 @@
     "toCreate": "zum Erstellen",
     "nameRequired": "Der Workspace-Name ist erforderlich.",
     "slugRequired": "Der Slug ist erforderlich."
+  },
+  "time": {
+    "justNow": "gerade eben",
+    "minutes": "vor {count} Min.",
+    "hours": "vor {count} Std.",
+    "days": "vor {count} T.",
+    "weeks": "vor {count} Wo."
   }
 }

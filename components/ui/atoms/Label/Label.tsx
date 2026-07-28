@@ -2,7 +2,7 @@ import styles from "./label.module.scss";
 
 interface LabelProps {
   color?: string;
-  size?: "sm" | "md";
+  size?: "xs" | "sm" | "md";
   filled?: boolean;
   className?: string;
   style?: React.CSSProperties;
@@ -23,7 +23,8 @@ export function Label({
     <span
       className={[
         styles.label,
-        size === "sm" && styles.sm,
+        // "md" ist der Basis-Stil und hat bewusst keine Modifier-Klasse.
+        styles[size],
         filled && styles.filled,
         className,
       ]

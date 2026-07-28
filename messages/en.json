@@ -221,5 +221,12 @@
     "toCreate": "to create",
     "nameRequired": "Workspace name is required.",
     "slugRequired": "Slug is required."
+  },
+  "time": {
+    "justNow": "just now",
+    "minutes": "{count}m ago",
+    "hours": "{count}h ago",
+    "days": "{count}d ago",
+    "weeks": "{count}w ago"
   }
 }

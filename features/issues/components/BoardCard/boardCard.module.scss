@@ -1,17 +1,29 @@
 .card {
-  background: var(--surface-container);
+  /* Padding und vertikaler Rhythmus liegen in Custom Properties, damit der
+     Density-Switch nur zwei Werte tauscht statt das Layout zu wiederholen. */
+  --pad: 14px;
+  --gap: 9px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: var(--pad);
+  background: var(--surface-container-low);
   border: 1px solid var(--outline-variant);
-  border-radius: var(--radius);
-  padding: var(--card-pad);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   user-select: none;
   cursor: pointer;
   transition: border-color .12s, background .12s, transform .04s;
 
-  &:hover { border-color: var(--outline); background: var(--surface-container-high); }
+  &:hover {
+    border-color: var(--outline);
+    background: var(--surface-container-high);
+  }
 
   :global([data-density="compact"]) & {
-    padding: 10px;
+    --pad: 10px;
+    --gap: 7px;
   }
 }
 
@@ -20,30 +32,22 @@
   transform: rotate(1deg);
 }
 
-.cardTop {
+/* Typ-Badge links, Assignee rechts — die Zeile hält ihre Höhe auch ohne Avatar. */
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
-}
-
-.typeBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.cardTopRight {
-  flex: none;
+  min-height: 22px;
 }
 
 .title {
-  font-size: 13.5px;
+  margin: 0;
+  font-size: var(--text-base);
   font-weight: 600;
-  line-height: 1.45;
-  margin: 0 0 12px;
+  line-height: var(--leading-normal);
   color: var(--on-surface);
+  overflow-wrap: anywhere;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;
@@ -54,25 +58,26 @@
 .labels {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.cardBottom {
-  display: flex;
-  align-items: center;
   gap: 5px;
 }
 
-.id {
-  font-size: 11px;
-  font-family: var(--font-mono);
+/* Meta-Zeile: Priorität + Identifier links, Zeit + Kommentare rechts. */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+  font-size: var(--text-sm);
   color: var(--outline);
 }
 
+.id {
+  font-family: var(--font-mono);
+  letter-spacing: .01em;
+  color: var(--on-surface-variant);
+}
+
 .time {
-  font-size: 11px;
-  color: var(--outline);
   margin-left: auto;
 }
 
@@ -80,7 +85,4 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 11px;
-  color: var(--outline);
-  margin-left: 4px;
 }

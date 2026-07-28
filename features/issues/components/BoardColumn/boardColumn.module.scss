@@ -1,5 +1,10 @@
 .col {
-  width: 312px;
+  /* Die Karten füllen die Spalte komplett — ihre Breite hängt allein an diesem
+     Wert, deshalb hier zentral tunen statt in der Karte selbst. Der min()-Guard
+     verhindert, dass eine Spalte auf schmalen Viewports breiter als der Screen wird. */
+  --col-w: 320px;
+
+  width: min(var(--col-w), 84vw);
   flex: none;
   display: flex;
   flex-direction: column;
