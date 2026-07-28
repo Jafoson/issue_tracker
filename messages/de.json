@@ -35,7 +35,9 @@
     "newProject": "Neues Projekt",
     "createProject": "Projekt erstellen",
     "createWorkspace": "Workspace erstellen",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "newTab": "Neuer Tab",
+    "closeTab": "Tab schließen"
   },
   "placeholders": {
     "search": "Suchen…",

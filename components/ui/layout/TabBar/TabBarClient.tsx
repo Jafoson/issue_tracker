@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
 import type { Project } from "@/types";
 import { Button } from "../../atoms/Button/Button";
 import { Tab } from "./Tab";
@@ -25,6 +26,7 @@ export function TabBarClient({
   projects,
   currentWorkspaceId,
 }: TabBarClientProps) {
+  const t = useTranslations();
   const { tabs, activeId, ready, switchTab, openTab, closeTab } = useTabBar({
     defaultHref,
     projects,
@@ -34,19 +36,27 @@ export function TabBarClient({
   if (!ready) return <div className={styles.bar} />;
 
   return (
-    <div className={styles.bar} role="tablist">
-      {tabs.map((tab) => (
-        <Tab
-          key={tab.id}
-          meta={tab.meta}
-          isActive={tab.id === activeId}
-          onSelect={() => switchTab(tab.id)}
-          onClose={() => closeTab(tab.id)}
-        />
-      ))}
+    <div className={styles.bar}>
+      {/* Eigener Scroll-Container: bei vielen Tabs scrollt die Leiste,
+          statt jeden Tab bis zur Unlesbarkeit zusammenzuschieben — der
+          Plus-Button bleibt dabei sichtbar. */}
+      <div className={styles.strip} role="tablist">
+        {tabs.map((tab) => (
+          <Tab
+            key={tab.id}
+            meta={tab.meta}
+            isActive={tab.id === activeId}
+            onSelect={() => switchTab(tab.id)}
+            onClose={() => closeTab(tab.id)}
+          />
+        ))}
+      </div>
 
       <Button
         variant="text"
+        size="sm"
+        className={styles.add}
+        aria-label={t("actions.newTab")}
         icon={<Icon icon="lucide:plus" width={14} />}
         onClick={openTab}
       />
