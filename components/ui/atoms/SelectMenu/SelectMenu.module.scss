@@ -71,3 +71,9 @@ position: relative;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.cursorNormal {
+  cursor: default;
+
+  &:hover::after { opacity: 0; }
+}

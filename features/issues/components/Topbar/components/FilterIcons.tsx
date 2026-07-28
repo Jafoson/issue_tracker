@@ -1,4 +1,5 @@
 import { Icon } from "@iconify/react";
+import { LabelIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { Label } from "@/types";
 import styles from "../topbar.module.scss";
 
@@ -34,11 +35,7 @@ export function LabelDots({ labels }: { labels: Label[] }) {
   return (
     <span className={styles.labelDots}>
       {labels.slice(0, 3).map((l) => (
-        <span
-          key={l.id}
-          className={styles.labelDot}
-          style={{ background: l.color }}
-        />
+        <LabelIcon key={l.id} color={l.color} size={11} />
       ))}
     </span>
   );

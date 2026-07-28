@@ -4,10 +4,10 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { LabelIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
-import styles from "../topbar.module.scss";
 import { FilterChip } from "./FilterChip";
 import { LabelDots } from "./FilterIcons";
 
@@ -60,10 +60,7 @@ export function LabelFilter({
         selected.length === 0 ? (
           <Icon icon="lucide:tag" width={13} />
         ) : selected.length === 1 ? (
-          <span
-            className={styles.labelDot}
-            style={{ background: selected[0].color }}
-          />
+          <LabelIcon color={selected[0].color} size={13} />
         ) : (
           <LabelDots labels={selected} />
         )

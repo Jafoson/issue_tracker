@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/atoms/Input/Input";
+import { SelectEmpty } from "./atoms/SelectAction";
 import SelectItem from "./atoms/SelectItem";
 import styles from "./SelectMenu.module.scss";
 
@@ -21,6 +22,11 @@ interface SelectMenuProps {
   placeholder?: string;
   multi?: boolean;
   footer?: React.ReactNode;
+  /**
+   * Replaces the default "no matches" row. Gets the live query so callers can
+   * offer to create whatever was typed.
+   */
+  emptyState?: (query: string) => React.ReactNode;
 }
 
 export function SelectMenu({
@@ -32,6 +38,7 @@ export function SelectMenu({
   placeholder,
   multi,
   footer,
+  emptyState,
 }: SelectMenuProps) {
   const [q, setQ] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,13 +78,8 @@ export function SelectMenu({
             multi={multi}
           />
         ))}
-        {filtered.length === 0 && (
-          <div
-            className={`${styles.menuItem} ${styles.faint} ${styles["cursor-normal"]}`}
-          >
-            No matches
-          </div>
-        )}
+        {filtered.length === 0 &&
+          (emptyState ? emptyState(q) : <SelectEmpty>No matches</SelectEmpty>)}
       </div>
       {footer}
     </>

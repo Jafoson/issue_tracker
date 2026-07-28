@@ -1,9 +1,14 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { Input } from "@/components/ui/atoms/Input/Input";
+import { useState, useTransition } from "react";
+import {
+  SelectAction,
+  SelectEmpty,
+} from "@/components/ui/atoms/SelectMenu/atoms/SelectAction";
+import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { createLabel } from "@/features/issues/actions";
+import { LabelIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { Label } from "@/types";
 import styles from "./labelPickerMenu.module.scss";
 
@@ -53,24 +58,15 @@ export function LabelPickerMenu({
   onClose,
   keepOpen,
 }: Props) {
-  const [q, setQ] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{
     name: string;
     scope: "project" | "workspace";
   } | null>(null);
   const [, startCreate] = useTransition();
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
   const visible = allLabels.filter(
     (l) => !l.projectId || l.projectId === projectId,
   );
-  const filtered = q
-    ? visible.filter((l) => l.name.toLowerCase().includes(q.toLowerCase()))
-    : visible;
 
   const handleColorPick = (color: string) => {
     if (!pending) return;
@@ -90,67 +86,26 @@ export function LabelPickerMenu({
   if (pending) {
     return (
       <>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "4px 4px 8px",
-          }}
-        >
+        <div className={styles.colorHeader}>
           <button
             type="button"
+            className={styles.backButton}
             onClick={() => setPending(null)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-3)",
-              display: "flex",
-              padding: 2,
-              borderRadius: "var(--radius-sm)",
-            }}
           >
             <Icon icon="lucide:arrow-left" width={14} />
           </button>
-          <span style={{ fontSize: 13, color: "var(--text-2)" }}>
-            Farbe für{" "}
-            <strong style={{ color: "var(--text)" }}>„{pending.name}"</strong>{" "}
-            wählen
+          <span>
+            Farbe für <strong>„{pending.name}"</strong> wählen
           </span>
         </div>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 6,
-            padding: "0 4px 4px",
-            justifyContent: "center",
-          }}
-        >
+        <div className={styles.swatches}>
           {LABEL_COLORS.map((color) => (
             <button
               key={color}
               type="button"
+              className={styles.swatch}
+              style={{ background: color }}
               onClick={() => handleColorPick(color)}
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: color,
-                border: "2px solid transparent",
-                cursor: "pointer",
-                flexShrink: 0,
-                transition: "transform 0.1s, border-color 0.1s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.transform =
-                  "scale(1.2)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.transform =
-                  "scale(1)";
-              }}
             />
           ))}
         </div>
@@ -159,93 +114,41 @@ export function LabelPickerMenu({
   }
 
   return (
-    <>
-      <Input
-        ref={inputRef}
-        variant="search"
-        size="sm"
-        placeholder="Label suchen…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        style={{ marginBottom: 4 }}
-      />
-      <div style={{ maxHeight: 240, overflowY: "auto", margin: "0 -1px" }}>
-        {filtered.map((l) => (
-          <label
-            key={l.id}
-            className={`menu-item ${styles.labelItem}${selected.includes(l.id) ? " active" : ""}`}
-          >
-            <input
-              type="checkbox"
-              className={styles.labelCheckbox}
-              checked={selected.includes(l.id)}
-              onChange={() => {
-                onPick(l.id);
-                if (!keepOpen) onClose();
-              }}
-            />
-            <span
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: "50%",
-                background: l.color,
-                display: "inline-block",
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-              {l.name}
-            </span>
-          </label>
-        ))}
-
-        {filtered.length === 0 && q.trim() && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              padding: "2px 0",
-            }}
-          >
-            <button
-              type="button"
-              className="menu-item"
+    <SelectMenu
+      multi
+      searchable
+      placeholder="Label suchen…"
+      value={selected}
+      onPick={(v) => {
+        onPick(v as string);
+        if (!keepOpen) onClose();
+      }}
+      onClose={onClose}
+      items={visible.map((l) => ({
+        value: l.id,
+        label: l.name,
+        icon: <LabelIcon color={l.color} />,
+      }))}
+      emptyState={(q) =>
+        q.trim() ? (
+          <>
+            <SelectAction
+              icon={<Icon icon="lucide:plus" width={14} />}
               onClick={() => setPending({ name: q.trim(), scope: "project" })}
             >
-              <Icon
-                icon="lucide:plus"
-                width={14}
-                height={14}
-                style={{ flexShrink: 0 }}
-              />
-              <span>
-                „{q.trim()}" in <strong>{projectName}</strong> anlegen
-              </span>
-            </button>
-            <button
-              type="button"
-              className="menu-item"
+              „{q.trim()}" in <strong>{projectName}</strong> anlegen
+            </SelectAction>
+            <SelectAction
+              icon={<Icon icon="lucide:plus" width={14} />}
               onClick={() => setPending({ name: q.trim(), scope: "workspace" })}
             >
-              <Icon
-                icon="lucide:plus"
-                width={14}
-                height={14}
-                style={{ flexShrink: 0 }}
-              />
-              <span>„{q.trim()}" im Workspace anlegen</span>
-            </button>
-          </div>
-        )}
-
-        {filtered.length === 0 && !q.trim() && (
-          <div className="menu-item faint" style={{ cursor: "default" }}>
-            Keine Labels vorhanden
-          </div>
-        )}
-      </div>
-    </>
+              „{q.trim()}" im Workspace anlegen
+            </SelectAction>
+          </>
+        ) : (
+          <SelectEmpty>Keine Labels vorhanden</SelectEmpty>
+        )
+      }
+    />
   );
 }

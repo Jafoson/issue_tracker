@@ -69,6 +69,25 @@ export function PriorityIcon({
   );
 }
 
+// ---- Label icon: filled dot in the label's colour, same glyph as the sidebar ----
+export function LabelIcon({
+  color,
+  size = 15,
+}: {
+  color: string;
+  size?: number;
+}) {
+  return (
+    <Icon
+      icon="material-symbols:circle"
+      width={size}
+      color={color}
+      className={styles.icon}
+      aria-hidden="true"
+    />
+  );
+}
+
 // ---- Type icon: geometric glyph per issue type ----
 export function TypeIcon({
   type,
