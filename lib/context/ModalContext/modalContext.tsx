@@ -42,6 +42,7 @@ interface ModalValue {
 }
 
 const Ctx = createContext<ModalValue | null>(null);
+const StackCtx = createContext<ModalEntry[] | null>(null);
 
 export function useModal() {
   const ctx = useContext(Ctx);
@@ -87,20 +88,38 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{ openModal, closeModal, closeAllModals }}>
-      {children}
-      {stack.length > 0 &&
-        createPortal(
-          stack.map((modal, index) => (
-            <ModalFrame
-              key={modal.id}
-              modal={modal}
-              index={index}
-              onClose={() => closeModal(modal.id)}
-            />
-          )),
-          document.body,
-        )}
+      <StackCtx.Provider value={stack}>{children}</StackCtx.Provider>
     </Ctx.Provider>
+  );
+}
+
+/**
+ * Rendert den Modal-Stack. Muss genau einmal unterhalb des `ModalProvider`
+ * platziert werden — und zwar an der Stelle im React-Baum, deren Contexts die
+ * Modal-Inhalte sehen sollen (z.B. innerhalb des `WorkspaceProvider`).
+ *
+ * Grund: `createPortal` verschiebt nur den DOM-Knoten nach `document.body`, die
+ * Context-Auflösung folgt weiter dem React-Baum. Würde der Provider den Stack
+ * selbst rendern, hingen die Inhalte an seiner Position — oberhalb aller
+ * Provider, die erst in tieferen Layouts gesetzt werden.
+ */
+export function ModalOutlet() {
+  const stack = useContext(StackCtx);
+  const { closeModal } = useModal();
+
+  // Auch der SSR-Guard für createPortal: serverseitig ist der Stack immer leer.
+  if (!stack || stack.length === 0) return null;
+
+  return createPortal(
+    stack.map((modal, index) => (
+      <ModalFrame
+        key={modal.id}
+        modal={modal}
+        index={index}
+        onClose={() => closeModal(modal.id)}
+      />
+    )),
+    document.body,
   );
 }
 

@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/ui/layout/Sidebar/Sidebar";
+import { ModalOutlet } from "@/lib/context";
 import { TabBar } from "../TabBar/TabBar";
 import styles from "./appShell.module.scss";
 
@@ -15,6 +16,9 @@ function Shell({ children, isAdminRoute }: AppShellProps) {
         <TabBar isAdminRoute={isAdminRoute} />
         <div className={styles.content}>{children}</div>
       </div>
+      {/* Rendert Modals hier im Baum — dadurch sehen sie den WorkspaceProvider,
+          der die AppShell umschließt. */}
+      <ModalOutlet />
     </div>
   );
 }
