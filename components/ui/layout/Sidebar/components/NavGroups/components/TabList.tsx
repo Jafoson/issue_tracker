@@ -2,10 +2,10 @@
 
 import { Icon } from "@iconify/react";
 import { useState } from "react";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { usePathname } from "@/i18n/navigation";
 import { NavLink, type NavLinkProps } from "../../NavLink";
 import styles from "./tabList.module.scss";
-import { Button } from "@/components/ui/atoms/Button/Button";
 
 export interface TabGroup extends NavLinkProps {
   group?: TabGroup[];

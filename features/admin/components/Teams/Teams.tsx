@@ -4,8 +4,6 @@ import { useTranslations } from "next-intl";
 import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 
-import { useWorkspace } from "@/lib/workspace-context";
-
 import type { Issue, Project, Team, User } from "@/types";
 import styles from "./teams.module.scss";
 
@@ -14,10 +12,10 @@ interface Props {
   members: User[];
   projects: Project[];
   allIssues: Issue[];
+  me: User;
 }
 
-export function Teams({ teams, members, projects, allIssues }: Props) {
-  const { me } = useWorkspace();
+export function Teams({ teams, members, projects, allIssues, me }: Props) {
   const t = useTranslations();
   const isAdmin = me.role === "admin" || me.role === "owner";
 

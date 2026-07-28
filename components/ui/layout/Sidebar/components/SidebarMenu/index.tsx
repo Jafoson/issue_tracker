@@ -1,5 +1,5 @@
-import WorkspaceMenu from "./WorkSpaceMenu";
 import BackToWorkspaceClient from "./BackToWorkspace";
+import WorkspaceMenu from "./WorkSpaceMenu";
 
 async function SidebarMenu({ isAdminRoute }: { isAdminRoute: boolean }) {
   function MenuSwitch() {

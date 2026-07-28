@@ -15,17 +15,38 @@ import {
 import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { fullName } from "@/lib/utils/string";
-import { useWorkspace } from "@/lib/workspace-context";
-import type { Issue } from "@/types";
+import type {
+  Issue,
+  Label as LabelType,
+  Priority,
+  Project,
+  Status,
+  User,
+} from "@/types";
 import styles from "./listView.module.scss";
+
+/** Nachschlagedaten, mit denen eine Zeile die IDs am Issue auflöst. */
+interface RowLookups {
+  projects: Project[];
+  members: User[];
+  labels: LabelType[];
+  statuses: Status[];
+  priorities: Priority[];
+}
 
 interface Props {
   issues: Issue[];
   projectId: string;
+  lookups: RowLookups;
 }
 
-function IssueRow({ issue }: { issue: Issue }) {
-  const { members, projects, labels, statuses, priorities } = useWorkspace();
+function IssueRow({
+  issue,
+  lookups: { members, projects, labels, statuses, priorities },
+}: {
+  issue: Issue;
+  lookups: RowLookups;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -34,6 +55,7 @@ function IssueRow({ issue }: { issue: Issue }) {
 
   const statusName = (id: string) =>
     statuses.find((s) => s.id === id)?.name ?? id;
+  const statusColor = (id: string) => statuses.find((s) => s.id === id)?.color;
   const priorityName = (id: number) =>
     priorities.find((p) => p.id === id)?.name ?? String(id);
   const project = projects.find((p) => p.id === issue.project) ?? {
@@ -106,7 +128,11 @@ function IssueRow({ issue }: { issue: Issue }) {
               onClick={(e) => e.stopPropagation()}
               style={{ position: "relative", zIndex: 2 }}
             >
-              <StatusIcon status={issue.status} size={15} />
+              <StatusIcon
+                status={issue.status}
+                size={15}
+                color={statusColor(issue.status)}
+              />
             </button>
           }
           width={200}
@@ -117,7 +143,7 @@ function IssueRow({ issue }: { issue: Issue }) {
               items={statuses.map((s) => ({
                 value: s.id,
                 label: statusName(s.id),
-                icon: <StatusIcon status={s.id} size={15} />,
+                icon: <StatusIcon status={s.id} size={15} color={s.color} />,
               }))}
               value={issue.status}
               onPick={(v) => {
@@ -195,7 +221,7 @@ function IssueRow({ issue }: { issue: Issue }) {
   );
 }
 
-export function ListView({ issues }: Props) {
+export function ListView({ issues, lookups }: Props) {
   const t = useTranslations();
 
   if (issues.length === 0) {
@@ -220,7 +246,7 @@ export function ListView({ issues }: Props) {
   return (
     <div className={styles.list}>
       {issues.map((issue) => (
-        <IssueRow key={issue.id} issue={issue} />
+        <IssueRow key={issue.id} issue={issue} lookups={lookups} />
       ))}
     </div>
   );

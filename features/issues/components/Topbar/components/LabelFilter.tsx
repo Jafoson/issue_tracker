@@ -10,25 +10,27 @@ import {
   LabelIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
-import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 
 interface LabelFilterProps {
   value: string[];
+  labels: Label[];
   projectId: string;
   projectName: string;
+  workspaceId: string;
   onToggle: (id: string) => void;
   onClear: () => void;
 }
 
 export function LabelFilter({
   value,
+  labels,
   projectId,
   projectName,
+  workspaceId,
   onToggle,
   onClear,
 }: LabelFilterProps) {
-  const { labels, workspace } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
   // Labels created from inside the picker show up immediately, before the
@@ -74,7 +76,7 @@ export function LabelFilter({
           selected={value}
           projectId={projectId}
           projectName={projectName}
-          workspaceId={workspace.id}
+          workspaceId={workspaceId}
           onPick={onToggle}
           onCreated={(l) => {
             setCreated((cur) => [...cur, l]);

@@ -1,7 +1,7 @@
 import NavGroup from "./components/NavGroups";
 import { QuickActions } from "./components/QuickActions";
-import { UserMenu } from "./components/UserMenu";
 import SidebarMenu from "./components/SidebarMenu";
+import { UserMenu } from "./components/UserMenu";
 import styles from "./sidebar.module.scss";
 
 interface SidebarProps {

@@ -4,21 +4,22 @@ import { useTranslations } from "next-intl";
 import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { PriorityIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { useWorkspace } from "@/lib/workspace-context";
+import type { Priority } from "@/types";
 import { MultiPriorityIcon } from "./FilterIcons";
 
 interface PriorityFilterProps {
   value: number[];
+  priorities: Priority[];
   onToggle: (id: number) => void;
   onClear: () => void;
 }
 
 export function PriorityFilter({
   value,
+  priorities,
   onToggle,
   onClear,
 }: PriorityFilterProps) {
-  const { priorities } = useWorkspace();
   const t = useTranslations();
 
   const name = t("fields.priority");

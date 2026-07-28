@@ -6,20 +6,21 @@ import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { fullName } from "@/lib/utils/string";
-import { useWorkspace } from "@/lib/workspace-context";
+import type { User } from "@/types";
 
 interface AssigneeFilterProps {
   value: string[];
+  members: User[];
   onToggle: (id: string) => void;
   onClear: () => void;
 }
 
 export function AssigneeFilter({
   value,
+  members,
   onToggle,
   onClear,
 }: AssigneeFilterProps) {
-  const { members } = useWorkspace();
   const t = useTranslations();
 
   const name = t("fields.assignee");

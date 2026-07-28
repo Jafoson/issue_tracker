@@ -1,7 +1,6 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useWorkspace } from "@/lib/workspace-context";
 import styles from "./issueIcons.module.scss";
 
 /**
@@ -26,17 +25,20 @@ const PRIORITY_ICONS: Record<number, string> = {
   4: "lucide:triangle-alert",
 };
 
+/** Neutraler Ton, wenn der Aufrufer keine Workspace-Farbe kennt. */
+const FALLBACK_STATUS_COLOR = "#8a9099";
+
 // ---- Status icon: tinted with the workspace's colour for that status ----
 export function StatusIcon({
   status,
   size = 15,
+  color = FALLBACK_STATUS_COLOR,
 }: {
   status: string;
   size?: number;
+  /** Farbe des Status aus den Workspace-Daten. */
+  color?: string;
 }) {
-  const { statuses } = useWorkspace();
-  const color = statuses.find((x) => x.id === status)?.color ?? "#8a9099";
-
   return (
     <Icon
       icon={STATUS_ICONS[status] ?? "lucide:circle"}
@@ -114,15 +116,13 @@ export function LabelDots({
 export function TypeIcon({
   type,
   size = 14,
-  color,
+  color = "#686d76",
 }: {
   type: string;
   size?: number;
+  /** Farbe des Issue-Typs aus den Workspace-Daten. */
   color?: string;
 }) {
-  const { issueTypes } = useWorkspace();
-  const t = issueTypes.find((x) => x.id === type);
-  const c = color ?? t?.color ?? "#686d76";
   const common = {
     width: size,
     height: size,
@@ -133,26 +133,40 @@ export function TypeIcon({
   if (type === "feature")
     return (
       <svg {...common} aria-hidden="true">
-        <path d="M8 1.4 14.6 8 8 14.6 1.4 8Z" fill={c} />
+        <path d="M8 1.4 14.6 8 8 14.6 1.4 8Z" fill={color} />
       </svg>
     );
   if (type === "bug")
     return (
       <svg {...common} aria-hidden="true">
-        <circle cx="8" cy="8" r="5.4" fill="none" stroke={c} strokeWidth="2" />
-        <circle cx="8" cy="8" r="1.8" fill={c} />
+        <circle
+          cx="8"
+          cy="8"
+          r="5.4"
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+        />
+        <circle cx="8" cy="8" r="1.8" fill={color} />
       </svg>
     );
   if (type === "improvement")
     return (
       <svg {...common} aria-hidden="true">
-        <path d="M8 2.2 14.2 13.4H1.8Z" fill={c} />
+        <path d="M8 2.2 14.2 13.4H1.8Z" fill={color} />
       </svg>
     );
   if (type === "task")
     return (
       <svg {...common} aria-hidden="true">
-        <rect x="2.3" y="2.3" width="11.4" height="11.4" rx="3.2" fill={c} />
+        <rect
+          x="2.3"
+          y="2.3"
+          width="11.4"
+          height="11.4"
+          rx="3.2"
+          fill={color}
+        />
         <path
           d="M5.2 8 7.2 10 11 5.8"
           fill="none"
@@ -173,7 +187,7 @@ export function TypeIcon({
         height="10.8"
         rx="3"
         fill="none"
-        stroke={c}
+        stroke={color}
         strokeWidth="2"
       />
     </svg>

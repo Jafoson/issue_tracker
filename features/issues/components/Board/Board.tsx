@@ -2,18 +2,19 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BoardColumn } from "@/features/issues/components/BoardColumn/BoardColumn";
-import { useWorkspace } from "@/lib/workspace-context";
-import type { Issue } from "@/types";
+import type { IssueLookups } from "@/features/issues/types";
+import type { Issue, Status } from "@/types";
 import styles from "./board.module.scss";
 import { useBoardDnd } from "./useBoardDnd";
 
 interface BoardProps {
   issues: Issue[];
   projectId: string;
+  statuses: Status[];
+  lookups: IssueLookups;
 }
 
-export function Board({ issues, projectId }: BoardProps) {
-  const { statuses, projects } = useWorkspace();
+export function Board({ issues, projectId, statuses, lookups }: BoardProps) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -23,7 +24,8 @@ export function Board({ issues, projectId }: BoardProps) {
   const board = useBoardDnd(issues);
 
   const openIssue = (issue: Issue) => {
-    const prefix = projects.find((p) => p.id === issue.project)?.prefix ?? "?";
+    const prefix =
+      lookups.projects.find((p) => p.id === issue.project)?.prefix ?? "?";
     const p = new URLSearchParams(searchParams.toString());
     p.set("issue", `${prefix}-${issue.key}`);
     router.push(`${pathname}?${p.toString()}`, { scroll: false });
@@ -40,6 +42,7 @@ export function Board({ issues, projectId }: BoardProps) {
             status={status}
             issues={board.getColumnIssues(status.id)}
             projectId={projectId}
+            lookups={lookups}
             newIssueLabel={t("actions.newIssue")}
             isOver={isOver}
             dragging={board.dragging}

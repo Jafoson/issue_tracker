@@ -7,15 +7,16 @@ import {
   PriorityIcon,
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
+import type { IssueLookups } from "@/features/issues/types";
 import { onActivate } from "@/lib/a11y";
 import { useTimeAgo } from "@/lib/utils/useTimeAgo";
-import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue, Label as LabelType } from "@/types";
 import styles from "./boardCard.module.scss";
 
 interface BoardCardProps {
   issue: Issue;
   projectId: string;
+  lookups: IssueLookups;
   isDragging?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
@@ -26,13 +27,13 @@ interface BoardCardProps {
 export function BoardCard({
   issue,
   projectId,
+  lookups: { members, projects, labels, issueTypes },
   isDragging,
   onDragStart,
   onDragEnd,
   onDragOver,
   onClick,
 }: BoardCardProps) {
-  const { members, projects, labels, issueTypes } = useWorkspace();
   const timeAgo = useTimeAgo();
   const project = projects.find((p) => p.id === issue.project) ??
     projects.find((p) => p.id === projectId) ?? {

@@ -9,16 +9,16 @@ import {
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
-import { useWorkspace } from "@/lib/workspace-context";
-import type { Issue } from "@/types";
+import type { Issue, Project, Status } from "@/types";
 import styles from "./myIssues.module.scss";
 
 interface Props {
   issues: Issue[];
+  projects: Project[];
+  statuses: Status[];
 }
 
-export function MyIssues({ issues }: Props) {
-  const { projects, statuses } = useWorkspace();
+export function MyIssues({ issues, projects, statuses }: Props) {
   const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,6 +31,7 @@ export function MyIssues({ issues }: Props) {
 
   const statusName = (id: string) =>
     statuses.find((s) => s.id === id)?.name ?? id;
+  const statusColor = (id: string) => statuses.find((s) => s.id === id)?.color;
 
   const groups = statuses
     .filter((s) => s.id !== "done" && s.id !== "canceled")
@@ -51,7 +52,7 @@ export function MyIssues({ issues }: Props) {
       {groups.map((group) => (
         <div key={group.id} className={styles.group}>
           <div className={styles.groupHeader}>
-            <StatusIcon status={group.id} size={15} />
+            <StatusIcon status={group.id} size={15} color={group.color} />
             <span>{statusName(group.id)}</span>
             <Badge mono size="sm">
               {group.issues.length}
@@ -70,7 +71,11 @@ export function MyIssues({ issues }: Props) {
                 scroll={false}
               >
                 <PriorityIcon priority={issue.priority} size={14} />
-                <StatusIcon status={issue.status} size={14} />
+                <StatusIcon
+                  status={issue.status}
+                  size={14}
+                  color={statusColor(issue.status)}
+                />
                 <span className="mono faint" style={{ fontSize: 11.5 }}>
                   {identifier}
                 </span>

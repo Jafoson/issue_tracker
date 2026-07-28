@@ -34,7 +34,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
-  const { searchIssues, projects, workspace } = useWorkspace();
+  const { searchIssues, projects, statuses, workspace } = useWorkspace();
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -210,7 +210,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                       })
                     }
                   >
-                    <StatusIcon status={i.status} size={15} />
+                    <StatusIcon
+                      status={i.status}
+                      size={15}
+                      color={statuses.find((s) => s.id === i.status)?.color}
+                    />
                     <span className={styles.issueTitle}>{i.title}</span>
                     <span
                       className="faint mono"

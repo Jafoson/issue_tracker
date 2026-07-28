@@ -11,17 +11,17 @@ import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { removeMember, setMemberRole } from "@/features/issues/actions";
 import { fullName } from "@/lib/utils/string";
-import { useWorkspace } from "@/lib/workspace-context";
-import type { Team, User } from "@/types";
+import type { Role, Team, User } from "@/types";
 import styles from "./members.module.scss";
 
 interface Props {
   members: User[];
   teams: Team[];
+  me: User;
+  roles: Role[];
 }
 
-export function Members({ members, teams }: Props) {
-  const { me, roles } = useWorkspace();
+export function Members({ members, teams, me, roles }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const { workspace } = useParams<{ workspace: string }>();

@@ -58,6 +58,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
     me,
     workspace: workspaceData,
   } = useWorkspace();
+  const statusColor = (id: string) => statuses.find((s) => s.id === id)?.color;
   const [localLabels, setLocalLabels] = useState<Label[]>([]);
   const t = useTranslations();
   const router = useRouter();
@@ -173,7 +174,11 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
           <InlinePicker
             trigger={
               <button type="button" className="iconbtn">
-                <StatusIcon status={issue.status} size={16} />
+                <StatusIcon
+                  status={issue.status}
+                  size={16}
+                  color={statusColor(issue.status)}
+                />
               </button>
             }
             width={200}
@@ -184,7 +189,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                 items={statuses.map((s) => ({
                   value: s.id,
                   label: statusName(s.id),
-                  icon: <StatusIcon status={s.id} size={15} />,
+                  icon: <StatusIcon status={s.id} size={15} color={s.color} />,
                 }))}
                 value={issue.status}
                 onPick={(v) => {
@@ -293,7 +298,11 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
             <InlinePicker
               trigger={
                 <button type="button" className={styles.sideBtn}>
-                  <StatusIcon status={issue.status} size={14} />
+                  <StatusIcon
+                    status={issue.status}
+                    size={14}
+                    color={statusColor(issue.status)}
+                  />
                   {statusName(issue.status)}
                 </button>
               }
@@ -305,7 +314,9 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                   items={statuses.map((s) => ({
                     value: s.id,
                     label: statusName(s.id),
-                    icon: <StatusIcon status={s.id} size={15} />,
+                    icon: (
+                      <StatusIcon status={s.id} size={15} color={s.color} />
+                    ),
                   }))}
                   value={issue.status}
                   onPick={(v) => {

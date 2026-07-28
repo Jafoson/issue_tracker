@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/atoms/Button/Button";
-import { useRouter } from "@/i18n/navigation";
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/atoms/Button/Button";
+import { useRouter } from "@/i18n/navigation";
 import styles from "../SidebarMenu.module.scss";
 
 function BackToWorkspaceClient() {

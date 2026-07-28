@@ -1,7 +1,9 @@
 import { useTranslations } from "next-intl";
 import type { PlatformStats } from "@/features/admin/queries";
+import AdminOverviewCard, {
+  type AdminOverviewCardProps,
+} from "./components/Card";
 import styles from "./platformOverview.module.scss";
-import AdminOverviewCard, { AdminOverviewCardProps } from "./components/Card";
 
 interface Props {
   stats: PlatformStats;

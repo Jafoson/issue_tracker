@@ -7,16 +7,18 @@ import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Link, usePathname } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { fullName } from "@/lib/utils/string";
-import { useWorkspace } from "@/lib/workspace-context";
-import type { Issue } from "@/types";
+import type { Issue, Project, Status, User } from "@/types";
 import styles from "./inbox.module.scss";
 
 interface Props {
   issues: Issue[];
+  me: User;
+  members: User[];
+  projects: Project[];
+  statuses: Status[];
 }
 
-export function Inbox({ issues }: Props) {
-  const { members, me, projects } = useWorkspace();
+export function Inbox({ issues, me, members, projects, statuses }: Props) {
   const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -66,7 +68,11 @@ export function Inbox({ issues }: Props) {
                 <span className="faint" style={{ fontSize: 12 }}>
                   {t("comments.commentedOn")}
                 </span>
-                <StatusIcon status={issue.status} size={13} />
+                <StatusIcon
+                  status={issue.status}
+                  size={13}
+                  color={statuses.find((s) => s.id === issue.status)?.color}
+                />
                 <span className={styles.issueTitle}>{issue.title}</span>
                 <span
                   className="faint mono"

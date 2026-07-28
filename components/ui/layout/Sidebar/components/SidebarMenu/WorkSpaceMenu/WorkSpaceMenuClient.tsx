@@ -3,11 +3,11 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { useRouter } from "@/i18n/navigation";
 import type { Workspace } from "@/types";
-import { Button } from "@/components/ui/atoms/Button/Button";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import styles from "../SidebarMenu.module.scss";
 
 interface WorkspaceMenuProps {

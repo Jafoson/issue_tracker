@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { BoardCard } from "@/features/issues/components/BoardCard/BoardCard";
 import { CreateIssueModal } from "@/features/issues/components/CreateIssueModal/CreateIssueModal";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
+import type { IssueLookups } from "@/features/issues/types";
 import { useModal } from "@/lib/context";
 import type { Issue, Status } from "@/types";
 import styles from "./boardColumn.module.scss";
@@ -14,6 +15,7 @@ interface BoardColumnProps {
   status: Status;
   issues: Issue[];
   projectId: string;
+  lookups: IssueLookups;
   newIssueLabel: string;
   isOver: boolean;
   dragging: string | null;
@@ -32,6 +34,7 @@ export function BoardColumn({
   status,
   issues,
   projectId,
+  lookups,
   newIssueLabel,
   isOver,
   dragging,
@@ -66,7 +69,7 @@ export function BoardColumn({
       onDrop={onColumnDrop}
     >
       <div className={styles.colHeader}>
-        <StatusIcon status={status.id} size={16} />
+        <StatusIcon status={status.id} size={16} color={status.color} />
         <span className={styles.colTitle}>{status.name}</span>
         <Badge mono>{issues.length}</Badge>
         <Button
@@ -90,6 +93,7 @@ export function BoardColumn({
               <BoardCard
                 issue={issue}
                 projectId={projectId}
+                lookups={lookups}
                 isDragging={dragging === issue.id}
                 onDragStart={onCardDragStart(issue)}
                 onDragEnd={onCardDragEnd}

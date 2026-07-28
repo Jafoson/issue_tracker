@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import type { Label, Priority, Project, Status, User } from "@/types";
 import { IssueSearch } from "./components/IssueSearch";
 import { SortPicker } from "./components/SortPicker";
 import { TopbarFilters } from "./components/TopbarFilters";
@@ -12,9 +13,23 @@ import { useTopbar } from "./useTopbar";
 interface TopbarClientProps {
   /** Issues in the current view — already narrowed by the active filters. */
   count: number;
+  workspaceId: string;
+  projects: Project[];
+  statuses: Status[];
+  priorities: Priority[];
+  members: User[];
+  labels: Label[];
 }
 
-export function TopbarClient({ count }: TopbarClientProps) {
+export function TopbarClient({
+  count,
+  workspaceId,
+  projects,
+  statuses,
+  priorities,
+  members,
+  labels,
+}: TopbarClientProps) {
   const t = useTranslations();
   const {
     isPending,
@@ -32,7 +47,7 @@ export function TopbarClient({ count }: TopbarClientProps) {
     search,
     setSort,
     setView,
-  } = useTopbar();
+  } = useTopbar({ workspaceId, projects, priorities, members, labels });
 
   if (!showFilters) return null;
 
@@ -58,6 +73,11 @@ export function TopbarClient({ count }: TopbarClientProps) {
           filterCount={filterCount}
           projectId={project?.id ?? ""}
           projectName={project?.name ?? ""}
+          workspaceId={workspaceId}
+          statuses={statuses}
+          priorities={priorities}
+          members={members}
+          labels={labels}
           onToggle={toggleFilter}
           onClear={clearFilter}
           onClearAll={clearAll}

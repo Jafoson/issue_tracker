@@ -102,10 +102,12 @@ export function CreateIssueModal({
 
   const statusName = (id: string) =>
     statuses.find((s) => s.id === id)?.name ?? id;
+  const statusColor = (id: string) => statuses.find((s) => s.id === id)?.color;
   const priorityName = (id: number) =>
     priorities.find((p) => p.id === id)?.name ?? String(id);
   const typeName = (id: string) =>
     issueTypes.find((x) => x.id === id)?.name ?? id;
+  const typeColor = (id: string) => issueTypes.find((x) => x.id === id)?.color;
 
   const submit = () => {
     if (!title.trim() || !project) return;
@@ -218,7 +220,7 @@ export function CreateIssueModal({
         <FilterChip
           name={t("fields.type")}
           label={typeName(type)}
-          icon={<TypeIcon type={type} size={14} />}
+          icon={<TypeIcon type={type} size={14} color={typeColor(type)} />}
           active={false}
           width={190}
         >
@@ -227,7 +229,7 @@ export function CreateIssueModal({
               items={issueTypes.map((x) => ({
                 value: x.id,
                 label: x.name,
-                icon: <TypeIcon type={x.id} size={15} />,
+                icon: <TypeIcon type={x.id} size={15} color={x.color} />,
               }))}
               value={type}
               onPick={(v) => {
@@ -242,7 +244,9 @@ export function CreateIssueModal({
         <FilterChip
           name={t("fields.status")}
           label={statusName(status)}
-          icon={<StatusIcon status={status} size={14} />}
+          icon={
+            <StatusIcon status={status} size={14} color={statusColor(status)} />
+          }
           active={false}
           width={200}
         >
@@ -251,7 +255,7 @@ export function CreateIssueModal({
               items={statuses.map((s) => ({
                 value: s.id,
                 label: statusName(s.id),
-                icon: <StatusIcon status={s.id} size={15} />,
+                icon: <StatusIcon status={s.id} size={15} color={s.color} />,
               }))}
               value={status}
               onPick={(v) => {

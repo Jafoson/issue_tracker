@@ -7,12 +7,16 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { fullName } from "@/lib/utils/string";
-import { useWorkspace } from "@/lib/workspace-context";
+import type { Project, User } from "@/types";
 import styles from "./settings.module.scss";
 
-export function Settings() {
+interface Props {
+  me: User;
+  projects: Project[];
+}
+
+export function Settings({ me, projects }: Props) {
   const t = useTranslations();
-  const { me, projects } = useWorkspace();
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();

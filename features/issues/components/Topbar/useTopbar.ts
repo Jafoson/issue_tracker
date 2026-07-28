@@ -13,7 +13,7 @@ import {
   statusIdToSlug,
   statusSlugToId,
 } from "@/lib/filter-slugs";
-import { useWorkspace } from "@/lib/workspace-context";
+import type { Label, Priority, Project, User } from "@/types";
 
 export type SortKey =
   | "priority"
@@ -44,7 +44,21 @@ const SEARCH_DEBOUNCE_MS = 200;
  * sorted and which view is shown. The URL is the single source of truth — every
  * setter writes to it and the derived values are read straight back out.
  */
-export function useTopbar() {
+export interface UseTopbarArgs {
+  workspaceId: string;
+  projects: Project[];
+  priorities: Priority[];
+  members: User[];
+  labels: Label[];
+}
+
+export function useTopbar({
+  workspaceId,
+  projects,
+  priorities,
+  members,
+  labels,
+}: UseTopbarArgs) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,8 +66,7 @@ export function useTopbar() {
   // A second transition for the search box: same concurrency, but its pending
   // state is dropped — otherwise the bar would dim on every keystroke.
   const [, startQuietTransition] = useTransition();
-  const { priorities, members, labels, projects, workspace } = useWorkspace();
-  const base = `/${workspace.id}`;
+  const base = `/${workspaceId}`;
 
   const showFilters = pathname.startsWith(`${base}/project/`);
   const view: View = pathname.endsWith("/list") ? "list" : "board";
