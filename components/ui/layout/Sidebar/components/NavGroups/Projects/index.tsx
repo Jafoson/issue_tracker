@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { NewProjectButton } from "@/features/projects/components/NewProjectButton/NewProjectButton";
 import {
   getCurrentWorkspace,
   getWorkspaceProjects,
@@ -6,7 +7,6 @@ import {
 import { PROJECT_NAV, projectPath } from "@/lib/nav";
 import styles from "../../../sidebar.module.scss";
 import TabList, { type TabGroup } from "../components/TabList";
-import { AddProjectButton } from "./AddProjectButton";
 
 export default async function NavGroupProjects() {
   const t = await getTranslations();
@@ -37,7 +37,7 @@ export default async function NavGroupProjects() {
     <>
       <div className={styles.titleWrapper}>
         <span>{t("settings.projects")}</span>
-        <AddProjectButton workspaceId={workspace.id} />
+        <NewProjectButton workspaceId={workspace.id} compact />
       </div>
       <div className={styles.projectTabsWrapper}>
         <TabList tabs={projectTabs} />

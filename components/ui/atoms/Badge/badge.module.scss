@@ -24,6 +24,16 @@
     font-family: var(--font-mono);
   }
 
+  &.interactive {
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+
+    &:hover {
+      background: var(--surface-container-high);
+      border-color: var(--outline);
+    }
+  }
+
   &.sm {
     display: inline-flex;
     align-items: center;

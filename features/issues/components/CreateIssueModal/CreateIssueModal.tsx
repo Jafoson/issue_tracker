@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
+import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import {
   ModalTextarea,
@@ -38,13 +39,14 @@ import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 
 interface CreateIssueModalProps {
+  /** Startprojekt — im Header umschaltbar. */
   projectId: string;
   initialStatus: string;
   close: () => void;
 }
 
 export function CreateIssueModal({
-  projectId,
+  projectId: initialProjectId,
   initialStatus,
   close,
 }: CreateIssueModalProps) {
@@ -62,6 +64,7 @@ export function CreateIssueModal({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const [projectId, setProjectId] = useState(initialProjectId);
   const project = projects.find((p) => p.id === projectId);
 
   const [title, setTitle] = useState("");
@@ -80,6 +83,22 @@ export function CreateIssueModal({
   const assigneeUser = assignee
     ? (members.find((m) => m.id === assignee) ?? null)
     : null;
+
+  /**
+   * Labels können projektgebunden sein (`Label.projectId`). Beim Projektwechsel
+   * fallen die des alten Projekts deshalb raus — workspace-weite Labels
+   * (`projectId: null`) bleiben erhalten. Ohne das Aufräumen würden Label-IDs
+   * abgeschickt, die im neuen Projekt gar nicht auswählbar sind.
+   */
+  const changeProject = (id: string) => {
+    setProjectId(id);
+    setLabels((cur) =>
+      cur.filter((labelId) => {
+        const label = combinedLabels.find((l) => l.id === labelId);
+        return !label?.projectId || label.projectId === id;
+      }),
+    );
+  };
 
   const statusName = (id: string) =>
     statuses.find((s) => s.id === id)?.name ?? id;
@@ -131,15 +150,41 @@ export function CreateIssueModal({
       <LabelDots labels={selectedLabelObjects} />
     );
 
+  const projectPicker = (
+    <InlinePicker
+      width={260}
+      trigger={
+        <Badge as="button" title={project.name}>
+          <span className="dot" style={{ background: project.color }} />
+          {project.prefix}
+          <Icon icon="lucide:chevron-down" width={12} />
+        </Badge>
+      }
+    >
+      {(closeMenu) => (
+        <SelectMenu
+          items={projects.map((p) => ({
+            value: p.id,
+            label: p.name,
+            hint: p.prefix,
+            icon: <span className="dot" style={{ background: p.color }} />,
+          }))}
+          value={project.id}
+          onPick={(v) => {
+            changeProject(v as string);
+            closeMenu();
+          }}
+          onClose={closeMenu}
+          searchable
+        />
+      )}
+    </InlinePicker>
+  );
+
   return (
     <Modal>
       <ModalHeader
-        leading={
-          <Badge>
-            <span className="dot" style={{ background: project.color }} />
-            {project.prefix}
-          </Badge>
-        }
+        leading={projectPicker}
         title={t("actions.newIssue")}
         onClose={close}
         closeLabel={t("actions.close")}

@@ -21,18 +21,28 @@ export function Badge({
   style,
   ...rest
 }: BadgeProps) {
+  // Ein Badge als <button> ist per Definition bedienbar — Cursor und Hover
+  // ergeben sich daraus, dafür braucht es keinen eigenen Prop.
+  const interactive = Tag === "button";
+
   const cls = [
     styles.chip,
     active && styles.active,
     mono && styles.mono,
     size === "sm" && styles.sm,
+    interactive && styles.interactive,
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <Tag className={cls} style={style} {...rest}>
+    <Tag
+      className={cls}
+      style={style}
+      type={interactive ? "button" : undefined}
+      {...rest}
+    >
       {dot && <span className={styles.dot} />}
       {children}
     </Tag>

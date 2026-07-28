@@ -1,0 +1,24 @@
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  border: 2px solid transparent;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  cursor: pointer;
+  transition: outline-color 0.12s, transform 0.1s;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+
+  &.active {
+    outline-color: var(--on-surface);
+  }
+}

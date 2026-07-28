@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
-import { ProjectComposer } from "@/features/projects/components/ProjectComposer/ProjectComposer";
+import { NewProjectButton } from "@/features/projects/components/NewProjectButton/NewProjectButton";
 import type { ProjectWithStats } from "@/features/projects/queries";
 import { Link } from "@/i18n/navigation";
 import type { User } from "@/types";
@@ -19,7 +19,7 @@ export function ProjectList({ projects, members, base, workspaceId }: Props) {
   return (
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
-        <ProjectComposer workspaceId={workspaceId} />
+        <NewProjectButton workspaceId={workspaceId} />
       </div>
 
       <div className={styles.table}>
