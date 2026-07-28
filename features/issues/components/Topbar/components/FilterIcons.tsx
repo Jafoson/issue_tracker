@@ -1,3 +1,4 @@
+import { Icon } from "@iconify/react";
 import type { Label } from "@/types";
 import styles from "../topbar.module.scss";
 
@@ -8,54 +9,23 @@ import styles from "../topbar.module.scss";
 
 export function MultiStatusIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg
+    <Icon
+      icon="lucide:circle-pile"
       width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      className={styles.glyph}
+      className={styles.glyphMuted}
       aria-hidden="true"
-    >
-      <circle
-        cx="8"
-        cy="8"
-        r="6.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        opacity=".6"
-      />
-    </svg>
+    />
   );
 }
 
 export function MultiPriorityIcon({ size = 14 }: { size?: number }) {
-  const bars = [
-    { x: 2.5, y: 9, h: 5 },
-    { x: 6.5, y: 6, h: 8 },
-    { x: 10.5, y: 3, h: 11 },
-  ];
-
   return (
-    <svg
+    <Icon
+      icon="lucide:chart-no-axes-column-increasing"
       width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      className={styles.glyph}
+      className={styles.glyphMuted}
       aria-hidden="true"
-    >
-      {bars.map((b) => (
-        <rect
-          key={b.x}
-          x={b.x}
-          y={b.y}
-          width="3"
-          height={b.h}
-          rx="1"
-          fill="currentColor"
-          opacity=".45"
-        />
-      ))}
-    </svg>
+    />
   );
 }
 

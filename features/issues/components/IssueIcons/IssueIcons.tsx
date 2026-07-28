@@ -1,8 +1,32 @@
 "use client";
 
+import { Icon } from "@iconify/react";
 import { useWorkspace } from "@/lib/workspace-context";
+import styles from "./issueIcons.module.scss";
 
-// ---- Status icon: Linear-style ring that fills with progress ----
+/**
+ * The status ladder stays inside lucide's circle family so the glyphs line up
+ * as a column in the board and list views. Unknown ids fall back to a plain ring.
+ */
+const STATUS_ICONS: Record<string, string> = {
+  backlog: "lucide:circle-dashed",
+  todo: "lucide:circle",
+  in_progress: "lucide:circle-dot",
+  in_review: "lucide:circle-ellipsis",
+  done: "lucide:circle-check",
+  canceled: "lucide:circle-x",
+};
+
+/** Signal bars per level — "urgent" leaves the family on purpose to stand out. */
+const PRIORITY_ICONS: Record<number, string> = {
+  0: "lucide:ellipsis",
+  1: "lucide:signal-low",
+  2: "lucide:signal-medium",
+  3: "lucide:signal-high",
+  4: "lucide:triangle-alert",
+};
+
+// ---- Status icon: tinted with the workspace's colour for that status ----
 export function StatusIcon({
   status,
   size = 15,
@@ -11,91 +35,20 @@ export function StatusIcon({
   size?: number;
 }) {
   const { statuses } = useWorkspace();
-  const s = statuses.find((x) => x.id === status);
-  const c = s?.color ?? "#8a9099";
-  const r = 6.2,
-    cx = 8,
-    cy = 8,
-    C = 2 * Math.PI * r;
-  const prog: Record<string, number> = {
-    backlog: 0,
-    todo: 0,
-    in_progress: 0.45,
-    in_review: 0.7,
-    done: 1,
-    canceled: 1,
-  };
-  const p = prog[status] ?? 0;
+  const color = statuses.find((x) => x.id === status)?.color ?? "#8a9099";
 
   return (
-    <svg
+    <Icon
+      icon={STATUS_ICONS[status] ?? "lucide:circle"}
       width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      style={{ flex: "none", display: "block" }}
+      color={color}
+      className={styles.icon}
       aria-hidden="true"
-    >
-      {status === "backlog" ? (
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke={c}
-          strokeWidth="1.6"
-          strokeDasharray="1.6 2.4"
-          opacity=".8"
-        />
-      ) : (
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke={c}
-          strokeWidth="1.6"
-          opacity={status === "done" || status === "canceled" ? 1 : 0.5}
-        />
-      )}
-      {status === "done" && (
-        <>
-          <circle cx={cx} cy={cy} r={r} fill={c} opacity=".18" />
-          <path
-            d="M5.2 8.2 7 10l3.6-3.8"
-            fill="none"
-            stroke={c}
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </>
-      )}
-      {status === "canceled" && (
-        <path
-          d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8"
-          stroke={c}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      )}
-      {(status === "in_progress" || status === "in_review") && (
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r / 2}
-          fill="none"
-          stroke={c}
-          strokeWidth={r}
-          strokeDasharray={`${(C * p) / 2} ${C}`}
-          transform={`rotate(-90 ${cx} ${cy})`}
-          opacity=".95"
-        />
-      )}
-    </svg>
+    />
   );
 }
 
-// ---- Priority icon: Linear-style bars ----
+// ---- Priority icon: signal bars ----
 export function PriorityIcon({
   priority,
   size = 15,
@@ -104,72 +57,15 @@ export function PriorityIcon({
   size?: number;
 }) {
   const p = typeof priority === "number" ? priority : 0;
+  const tone = p === 0 ? styles.none : p === 4 ? styles.urgent : styles.level;
 
-  if (p === 0) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 16 16"
-        style={{ flex: "none", display: "block" }}
-        aria-hidden="true"
-      >
-        {[3, 7.5, 12].map((x) => (
-          <rect
-            key={x}
-            x={x}
-            y="7"
-            width="3"
-            height="2"
-            rx="1"
-            fill="var(--text-3)"
-          />
-        ))}
-      </svg>
-    );
-  }
-  if (p === 4) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 16 16"
-        style={{ flex: "none", display: "block" }}
-        aria-hidden="true"
-      >
-        <rect x="1.5" y="1.5" width="13" height="13" rx="3.5" fill="#e0992b" />
-        <rect x="7" y="4" width="2" height="5.2" rx="1" fill="#fff" />
-        <rect x="7" y="10.6" width="2" height="2" rx="1" fill="#fff" />
-      </svg>
-    );
-  }
-
-  const bars = [
-    { x: 2.5, h: 5, y: 9 },
-    { x: 6.5, h: 8, y: 6 },
-    { x: 10.5, h: 11, y: 3 },
-  ];
   return (
-    <svg
+    <Icon
+      icon={PRIORITY_ICONS[p] ?? PRIORITY_ICONS[0]}
       width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      style={{ flex: "none", display: "block" }}
+      className={`${styles.icon} ${tone}`}
       aria-hidden="true"
-    >
-      {bars.map((b, i) => (
-        <rect
-          key={b.x}
-          x={b.x}
-          y={b.y}
-          width="3"
-          height={b.h}
-          rx="1"
-          fill={i < p ? "var(--text)" : "var(--text-3)"}
-          opacity={i < p ? 1 : 0.35}
-        />
-      ))}
-    </svg>
+    />
   );
 }
 
@@ -190,7 +86,7 @@ export function TypeIcon({
     width: size,
     height: size,
     viewBox: "0 0 16 16",
-    style: { flex: "none", display: "block" },
+    className: styles.icon,
   };
 
   if (type === "feature")

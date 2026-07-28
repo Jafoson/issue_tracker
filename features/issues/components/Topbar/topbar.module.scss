@@ -34,9 +34,12 @@
 
 /* ── Filter chip icons ── */
 
-.glyph {
+/* Multi-selection stand-in: reads as "several values", so it stays quieter
+   than the concrete per-value icons it replaces. */
+.glyphMuted {
   flex: none;
   display: block;
+  opacity: 0.55;
 }
 
 .labelDot {

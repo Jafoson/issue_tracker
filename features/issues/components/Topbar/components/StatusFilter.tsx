@@ -27,7 +27,6 @@ export function StatusFilter({ value, onToggle, onClear }: StatusFilterProps) {
 
   return (
     <FilterChip
-      
       name={name}
       label={label}
       active={value.length > 0}

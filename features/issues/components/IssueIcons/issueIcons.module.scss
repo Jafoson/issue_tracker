@@ -1,0 +1,20 @@
+.icon {
+  flex: none;
+  display: block;
+}
+
+/* ── Priority tone ──
+   Levels stay monochrome so the signal bars read as one scale rather than a
+   palette; only "urgent" breaks out with its own colour. */
+
+.level {
+  color: var(--text);
+}
+
+.none {
+  color: var(--text-3);
+}
+
+.urgent {
+  color: var(--amber);
+}
