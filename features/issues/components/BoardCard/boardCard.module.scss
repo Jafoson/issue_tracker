@@ -32,13 +32,17 @@
   transform: rotate(1deg);
 }
 
-/* Typ-Badge links, Assignee rechts — die Zeile hält ihre Höhe auch ohne Avatar. */
+/* Typ-Badge links, Assignee rechts — auch ohne Typ-Badge bleibt der Avatar rechts. */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   min-height: 22px;
+
+  > :last-child {
+    margin-left: auto;
+  }
 }
 
 .title {

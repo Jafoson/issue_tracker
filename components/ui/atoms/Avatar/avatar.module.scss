@@ -54,6 +54,20 @@ $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
   box-shadow: 0 0 0 2px var(--shadow);
 }
 
+/* Leerer Zustand: gestrichelter Ring + Personen-Icon signalisiert "niemand zugewiesen".
+   Bewusst ohne Füllfarbe, damit er neben echten Avataren nicht wie eine Person wirkt. */
+.placeholder {
+  --avatar-bg: transparent;
+  --avatar-fg: var(--outline);
+
+  border: 1px dashed var(--outline);
+
+  svg {
+    width: 55%;
+    height: 55%;
+  }
+}
+
 /* "+N"-Chip am Ende eines AvatarStack */
 .more {
   --avatar-bg: var(--elev);

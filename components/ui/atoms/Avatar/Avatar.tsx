@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@iconify/react";
 import type { CSSProperties } from "react";
 import { initials, personInitials } from "@/lib/utils/string";
 import type { User } from "@/types";
@@ -33,6 +34,13 @@ interface AvatarProps {
    */
   shape?: AvatarShape;
   ring?: boolean;
+  /**
+   * Ohne `avatar` statt nichts einen Platzhalter rendern — gestrichelter Ring
+   * mit Personen-Icon, der die leere Zuweisung sichtbar macht.
+   */
+  placeholder?: boolean;
+  /** Barrierefreier Name des Platzhalters, z. B. "Nicht zugewiesen". */
+  placeholderLabel?: string;
   className?: string;
 }
 
@@ -45,10 +53,37 @@ export function Avatar({
   fontSize,
   shape,
   ring,
+  placeholder,
+  placeholderLabel,
   className,
 }: AvatarProps) {
   if (!avatar) {
-    return;
+    if (!placeholder) {
+      return null;
+    }
+
+    return (
+      <span
+        className={[
+          styles.avatar,
+          styles[shape ?? "circle"],
+          styles.placeholder,
+          className ?? "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={{ "--avatar-size": `${size}px` } as CSSProperties}
+        {...(placeholderLabel
+          ? {
+              role: "img",
+              "aria-label": placeholderLabel,
+              title: placeholderLabel,
+            }
+          : { "aria-hidden": true })}
+      >
+        <Icon icon="lucide:user" />
+      </span>
+    );
   }
 
   const isPerson = "firstName" in avatar;

@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import {
@@ -34,6 +35,7 @@ export function BoardCard({
   onDragOver,
   onClick,
 }: BoardCardProps) {
+  const t = useTranslations();
   const timeAgo = useTimeAgo();
   const project = projects.find((p) => p.id === issue.project) ??
     projects.find((p) => p.id === projectId) ?? {
@@ -69,18 +71,21 @@ export function BoardCard({
       onClick={onClick}
       onKeyDown={onActivate(() => onClick?.())}
     >
-      {/* Kopfzeile: Typ-Badge + Assignee — entfällt, wenn beides fehlt */}
-      {(typeLabel || assignee) && (
-        <div className={styles.header}>
-          {typeLabel && typeColor && (
-            <Label color={typeColor} filled hasIcon size="xs">
-              <TypeIcon type={issue.type} size={10} color={typeColor} />
-              {typeLabel}
-            </Label>
-          )}
-          <Avatar avatar={assignee} size={30} />
-        </div>
-      )}
+      {/* Kopfzeile: Typ-Badge + Assignee — der Platzhalter zeigt fehlende Zuweisung an. */}
+      <div className={styles.header}>
+        {typeLabel && typeColor && (
+          <Label color={typeColor} filled hasIcon size="xs">
+            <TypeIcon type={issue.type} size={10} color={typeColor} />
+            {typeLabel}
+          </Label>
+        )}
+        <Avatar
+          avatar={assignee}
+          size={30}
+          placeholder
+          placeholderLabel={t("fields.unassigned")}
+        />
+      </div>
 
       <p className={styles.title}>{issue.title}</p>
 
