@@ -1,13 +1,16 @@
 "use client";
 
-import styles from "./colorPicker.module.scss";
 import { PALETTE } from "@/lib/utils";
+import styles from "./colorPicker.module.scss";
 
 interface ColorPickerProps {
-  value: string;
+  /** Aktuell gewählte Farbe. Entfällt, wenn die Auswahl direkt eine Aktion auslöst. */
+  value?: string;
   onChange: (color: string) => void;
-  /** Abweichende Palette. Default: die gemeinsame Palette aus `styles/colors`. */
+  /** Abweichende Palette. Default: die gemeinsame Palette aus `lib/utils/color`. */
   colors?: readonly string[];
+  /** `sm` für Popover/Menüs, `md` (Default) für Formulare und Modals. */
+  size?: "sm" | "md";
   /** Barrierefreies Label je Feld — bitte lokalisiert übergeben. */
   swatchLabel?: (color: string) => string;
 }
@@ -17,10 +20,11 @@ export function ColorPicker({
   value,
   onChange,
   colors = PALETTE,
+  size = "md",
   swatchLabel,
 }: ColorPickerProps) {
   return (
-    <div className={styles.swatches}>
+    <div className={`${styles.swatches} ${styles[size]}`}>
       {colors.map((color) => {
         const active = color === value;
         return (

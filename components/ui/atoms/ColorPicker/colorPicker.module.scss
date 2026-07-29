@@ -2,11 +2,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+
+  /* Kompaktes Raster für Popover-Breiten (Label-Picker & Co.) */
+  &.sm {
+    justify-content: center;
+    gap: 6px;
+  }
 }
 
 .swatch {
   width: 42px;
   height: 42px;
+  flex-shrink: 0;
   border-radius: 9px;
   border: 2px solid transparent;
   outline: 2px solid transparent;
@@ -14,11 +21,24 @@
   cursor: pointer;
   transition: outline-color 0.12s, transform 0.1s;
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     transform: scale(1.08);
   }
 
   &.active {
     outline-color: var(--on-surface);
+  }
+
+  .sm & {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    outline-offset: 1px;
+
+    &:hover,
+    &:focus-visible {
+      transform: scale(1.2);
+    }
   }
 }

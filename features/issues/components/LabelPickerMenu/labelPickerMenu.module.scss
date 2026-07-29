@@ -27,30 +27,7 @@
   }
 }
 
-.swatches {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
+/* Nur das Padding im Menü — Raster und Swatch-Optik kommen aus dem ColorPicker. */
+.colorGrid {
   padding: 0 4px 4px;
-}
-
-.swatch {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform .1s, border-color .1s;
-
-  &:hover,
-  &:focus-visible {
-    transform: scale(1.2);
-  }
-
-  &:focus-visible {
-    border-color: var(--on-surface);
-    outline: none;
-  }
 }
