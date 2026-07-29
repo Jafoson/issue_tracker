@@ -1,253 +1,162 @@
 "use client";
+
 import { Icon } from "@iconify/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useTransition } from "react";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
-import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
-import { Label } from "@/components/ui/atoms/Label/Label";
-import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import { updateIssue } from "@/features/issues/actions";
+import { useState } from "react";
 import {
-  PriorityIcon,
-  StatusIcon,
-} from "@/features/issues/components/IssueIcons/IssueIcons";
+  Table,
+  type TableColumn,
+  type TableGroup,
+} from "@/components/ui/layout/Table/Table";
+import type { IssueComposerData } from "@/features/issues/types";
 import { Link, usePathname } from "@/i18n/navigation";
-import { timeAgo } from "@/lib/utils/date";
-import { fullName } from "@/lib/utils/string";
-import type {
-  Issue,
-  Label as LabelType,
-  Priority,
-  Project,
-  Status,
-  User,
-} from "@/types";
+import type { Issue } from "@/types";
+import {
+  AssigneeCell,
+  LabelsCell,
+  PriorityCell,
+  StatusCell,
+  TypeCell,
+  UpdatedCell,
+} from "./components/IssueCells";
+import { ListGroupHeader } from "./components/ListGroupHeader";
 import styles from "./listView.module.scss";
 
-/** Nachschlagedaten, mit denen eine Zeile die IDs am Issue auflöst. */
-interface RowLookups {
-  projects: Project[];
-  members: User[];
-  labels: LabelType[];
-  statuses: Status[];
-  priorities: Priority[];
-}
-
-interface Props {
+interface ListViewProps {
   issues: Issue[];
   projectId: string;
-  lookups: RowLookups;
+  /**
+   * Ein Bündel für alles: die Zellen lösen darüber Projekt, Zuständige, Labels,
+   * Typen, Status und Prioritäten auf, die Gruppenköpfe speisen damit ihren
+   * Composer. Dieselbe Prop wie beim Board.
+   */
+  composer: IssueComposerData;
 }
 
-function IssueRow({
-  issue,
-  lookups: { members, projects, labels, statuses, priorities },
-}: {
-  issue: Issue;
-  lookups: RowLookups;
-}) {
+/**
+ * Issues als Tabelle, nach Status gruppiert. Zeile öffnet das Issue, die
+ * Picker in Priorität, Status und Zuständigkeit ändern es direkt in der Liste.
+ */
+export function ListView({ issues, projectId, composer }: ListViewProps) {
+  const { projects, members, labels, statuses, priorities, issueTypes } =
+    composer;
   const t = useTranslations();
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  // Eingeklappte Gruppen sind reine Ansichtssache — nichts, wofür die URL oder
+  // der Server etwas wissen müsste.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
-  const statusName = (id: string) =>
-    statuses.find((s) => s.id === id)?.name ?? id;
-  const statusColor = (id: string) => statuses.find((s) => s.id === id)?.color;
-  const priorityName = (id: number) =>
-    priorities.find((p) => p.id === id)?.name ?? String(id);
-  const project = projects.find((p) => p.id === issue.project) ?? {
-    prefix: "?",
-    name: "?",
-    color: "#686d76",
-  };
-  const assignee = issue.assignee
-    ? (members.find((m) => m.id === issue.assignee) ?? null)
-    : null;
-  const identifier = `${project.prefix}-${issue.key}`;
-
-  const openHref = (() => {
-    const p = new URLSearchParams(searchParams.toString());
-    p.set("issue", identifier);
-    return `${pathname}?${p.toString()}`;
-  })();
-
-  const patch = (p: Parameters<typeof updateIssue>[1]) =>
-    startTransition(async () => {
-      await updateIssue(issue.id, p);
-      router.refresh();
+  const toggleGroup = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
     });
 
-  return (
-    <div className="orbit-row">
-      <Link
-        className={styles.stretchedLink}
-        href={openHref}
-        scroll={false}
-        aria-label={`${identifier} ${issue.title}`}
-      />
-      <div className={styles.rowLeft}>
-        <InlinePicker
-          trigger={
-            <button
-              type="button"
-              className="iconbtn"
-              onClick={(e) => e.stopPropagation()}
-              style={{ position: "relative", zIndex: 2 }}
-            >
-              <PriorityIcon priority={issue.priority} size={15} />
-            </button>
-          }
-          width={190}
-          stop
-        >
-          {(close) => (
-            <SelectMenu
-              items={priorities.map((p) => ({
-                value: p.id,
-                label: priorityName(p.id),
-                icon: <PriorityIcon priority={p.id} size={15} />,
-              }))}
-              value={issue.priority}
-              onPick={(v) => {
-                patch({ priority: v as number });
-                close();
-              }}
-              onClose={close}
-            />
-          )}
-        </InlinePicker>
+  const identifier = (issue: Issue) =>
+    `${projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
-        <InlinePicker
-          trigger={
-            <button
-              type="button"
-              className="iconbtn"
-              onClick={(e) => e.stopPropagation()}
-              style={{ position: "relative", zIndex: 2 }}
-            >
-              <StatusIcon
-                status={issue.status}
-                size={15}
-                color={statusColor(issue.status)}
-              />
-            </button>
-          }
-          width={200}
-          stop
-        >
-          {(close) => (
-            <SelectMenu
-              items={statuses.map((s) => ({
-                value: s.id,
-                label: statusName(s.id),
-                icon: <StatusIcon status={s.id} size={15} color={s.color} />,
-              }))}
-              value={issue.status}
-              onPick={(v) => {
-                patch({ status: v as string });
-                close();
-              }}
-              onClose={close}
-            />
-          )}
-        </InlinePicker>
+  // Das offene Issue steht als Identifier in der URL — dieselbe Quelle nutzt die
+  // Detailansicht, deshalb hebt sich die passende Zeile ohne eigenen State hervor.
+  const openIssue = searchParams.get("issue");
 
-        <span className={`mono ${styles.identifier}`}>{identifier}</span>
-        <span className={styles.rowTitle}>{issue.title}</span>
+  const issueHref = (issue: Issue) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("issue", identifier(issue));
+    return `${pathname}?${params.toString()}`;
+  };
 
-        {issue.labels.slice(0, 2).map((lid) => {
-          const l = labels.find((x) => x.id === lid) ?? null;
-          if (!l) return null;
-          return (
-            <Label key={lid} color={l.color} size="sm">
-              {l.name}
-            </Label>
-          );
-        })}
-      </div>
+  // Workflow-Status bekommen immer eine Gruppe — auch leer, damit das "+" im
+  // Kopf erreichbar bleibt. Alle übrigen nur, wenn Issues darin liegen.
+  const groups: TableGroup<Issue>[] = statuses
+    .map((status) => ({
+      status,
+      rows: issues.filter((issue) => issue.status === status.id),
+    }))
+    .filter(({ status, rows }) => status.isColumn || rows.length > 0)
+    .map(({ status, rows }) => ({
+      id: status.id,
+      label: status.name,
+      collapsed: collapsed.has(status.id),
+      header: (
+        <ListGroupHeader
+          status={status}
+          count={rows.length}
+          projectId={projectId}
+          composer={composer}
+          collapsed={collapsed.has(status.id)}
+          onToggle={() => toggleGroup(status.id)}
+        />
+      ),
+      rows,
+    }));
 
-      <div className={styles.rowRight}>
-        <Label color={project.color} size="sm">
-          {project.prefix}
-        </Label>
-        <span className="faint mono" style={{ fontSize: 11.5 }}>
-          {timeAgo(issue.updated)}
-        </span>
-
-        <InlinePicker
-          trigger={
-            <button
-              type="button"
-              className="iconbtn"
-              onClick={(e) => e.stopPropagation()}
-              style={{ padding: "2px", position: "relative", zIndex: 2 }}
-            >
-              <Avatar avatar={assignee} size={22} />
-            </button>
-          }
-          width={220}
-          align="end"
-          stop
-        >
-          {(close) => (
-            <SelectMenu
-              items={[
-                {
-                  value: null,
-                  label: t("fields.unassigned"),
-                  icon: <Avatar avatar={null} size={18} />,
-                },
-                ...members.map((u) => ({
-                  value: u.id,
-                  label: fullName(u),
-                  icon: <Avatar avatar={u} size={18} />,
-                })),
-              ]}
-              value={issue.assignee}
-              onPick={(v) => {
-                patch({ assignee: v as string | null });
-                close();
-              }}
-              onClose={close}
-              searchable
-            />
-          )}
-        </InlinePicker>
-      </div>
-    </div>
-  );
-}
-
-export function ListView({ issues, lookups }: Props) {
-  const t = useTranslations();
-
-  if (issues.length === 0) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: 1,
-          gap: 8,
-          color: "var(--text-3)",
-        }}
-      >
-        <Icon icon="lucide:list" width={32} />
-        <span style={{ fontSize: 14 }}>{t("empty.noIssues")}</span>
-      </div>
-    );
-  }
+  const columns: TableColumn<Issue>[] = [
+    {
+      id: "priority",
+      cell: (issue) => <PriorityCell issue={issue} priorities={priorities} />,
+    },
+    {
+      id: "identifier",
+      cell: (issue) => (
+        <span className={styles.identifier}>{identifier(issue)}</span>
+      ),
+    },
+    {
+      id: "status",
+      cell: (issue) => <StatusCell issue={issue} statuses={statuses} />,
+    },
+    {
+      id: "type",
+      cell: (issue) => <TypeCell issue={issue} issueTypes={issueTypes} />,
+    },
+    {
+      id: "title",
+      width: "minmax(0, 1fr)",
+      cell: (issue) => <span className={styles.title}>{issue.title}</span>,
+    },
+    {
+      id: "labels",
+      width: "max-content",
+      align: "end",
+      cell: (issue) => <LabelsCell issue={issue} labels={labels} />,
+    },
+    {
+      id: "assignee",
+      align: "end",
+      cell: (issue) => <AssigneeCell issue={issue} members={members} />,
+    },
+    {
+      id: "updated",
+      width: "max-content",
+      align: "end",
+      cell: (issue) => <UpdatedCell issue={issue} />,
+    },
+  ];
 
   return (
-    <div className={styles.list}>
-      {issues.map((issue) => (
-        <IssueRow key={issue.id} issue={issue} lookups={lookups} />
-      ))}
-    </div>
+    <Table
+      fill
+      label={t("nav.issues")}
+      columns={columns}
+      groups={groups}
+      getRowKey={(issue) => issue.id}
+      isRowActive={(issue) => identifier(issue) === openIssue}
+      rowOverlay={(issue) => (
+        <Link
+          href={issueHref(issue)}
+          scroll={false}
+          aria-label={`${identifier(issue)} ${issue.title}`}
+        />
+      )}
+      empty={
+        <>
+          <Icon icon="lucide:list" width={32} />
+          <span>{t("empty.noIssues")}</span>
+        </>
+      }
+    />
   );
 }

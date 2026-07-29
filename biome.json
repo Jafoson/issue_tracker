@@ -30,5 +30,18 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/components/ui/layout/Table/Table.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noRedundantRoles": "off",
+            "useSemanticElements": "off"
+          }
+        }
+      }
+    }
+  ]
 }

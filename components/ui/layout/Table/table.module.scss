@@ -1,0 +1,187 @@
+/* ============================================================
+   Table — ein Raster, viele Zeilen.
+
+   Die <table> spannt das Grid auf, <tr> greift es per `subgrid` wieder ab.
+   Nur so messen inhaltsbasierte Spalten ("auto", "max-content") über alle
+   Gruppen hinweg und stehen trotzdem exakt untereinander.
+   ============================================================ */
+
+.table {
+  /* Abstand der Zeilen zum Rand — ohne ihn liefen die runden Ecken ins Leere. */
+  --table-inset: 16px;
+  --table-pad: 12px;
+  --table-gap: 10px;
+  --table-row-h: var(--row-h);
+  --table-head-h: 32px;
+  --table-radius: var(--radius);
+
+  display: grid;
+  grid-template-columns: var(--table-cols);
+  column-gap: var(--table-gap);
+  align-content: start;
+  width: 100%;
+  /* Seiten und Fuß polstern innen, der Abstand nach oben liegt bewusst
+     außerhalb des Scrollbereichs: Klebepunkte rechnen gegen dessen Innenkante,
+     eine Polsterung oben wäre also ein Fenster, durch das gescrollte Zeilen
+     über dem Gruppenkopf hindurchwandern. */
+  margin-block-start: var(--table-inset);
+  padding: 0 var(--table-inset) var(--table-inset);
+  text-indent: 0;
+  border-spacing: 0;
+}
+
+/* Füllt die verbleibende Höhe einer Flex-Spalte und scrollt selbst — der Rest
+   der Seite (Topbar & Co.) bleibt stehen. */
+.fill {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Steht anstelle der Tabelle, nicht darin — sonst würde die Botschaft in der
+   ersten Spalte des Rasters kleben statt mittig zu stehen. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 16px;
+  color: var(--on-surface-variant);
+  font-size: var(--text-base);
+}
+
+/* <thead>/<tbody> strukturieren nur — ihre Zeilen gehören ins Raster. */
+.group {
+  display: contents;
+}
+
+.headRow,
+.row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding-inline: var(--table-pad);
+}
+
+.headRow {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: var(--table-head-h);
+  background: var(--surface-container);
+  border-radius: var(--table-radius);
+  font-size: var(--text-xs);
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.groupRow {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding-inline: var(--table-pad);
+  /* Deckend, sonst scheinen die Zeilen durch, die darunter durchscrollen. */
+  background: var(--surface-container);
+  border-radius: var(--table-radius);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+/* Der Kopfinhalt wird direkt zum Flex-Kind der Zeile; `font`/`text-align`
+   erben sonst die Vorgaben des <th>. */
+.groupCell {
+  display: contents;
+  font: inherit;
+  text-align: inherit;
+}
+
+/* Gibt es eine Kopfzeile, docken die Gruppenköpfe darunter an statt sie zu
+   überdecken. */
+.table:has(.headRow) .groupRow {
+  top: var(--table-head-h);
+}
+
+.row {
+  position: relative;
+  /* Eigener Stapelkontext: sonst schöben sich die Bedienelemente der Zeile
+     (z-index 2) beim Scrollen über den klebenden Gruppenkopf. */
+  z-index: 0;
+  min-height: var(--table-row-h);
+  border-radius: var(--table-radius);
+  /* Bewusst ohne Trennlinie: die Zeilen trennen sich über Rhythmus und Hover,
+     Linien zwischen jedem Wert machen die Liste nur unruhig. */
+  color: var(--on-surface);
+  transition: background 0.1s;
+
+  /* Eine Stufe heller als das Band der Gruppe — sonst sähe eine überfahrene
+     Zeile aus wie ein Gruppenkopf. */
+  &:hover {
+    background: var(--surface-container-low);
+  }
+
+  /* Tastaturfokus auf dem Zeilen-Link hebt die ganze Zeile hervor. */
+  &:has(.overlay :focus-visible),
+  &[data-active="true"] {
+    background: var(--surface-container-high);
+  }
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-weight: inherit;
+  text-align: start;
+
+  /* Bedienbare Zellinhalte liegen über dem Zeilen-Overlay — sonst würde der
+     Link jeden Klick abfangen. Gilt bewusst nur für direkte Kinder: das
+     Overlay selbst steckt eine Ebene tiefer. */
+  > :is(button, a, input, select, [role="button"]) {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+.center {
+  justify-content: center;
+}
+
+.end {
+  justify-content: flex-end;
+}
+
+/* Der zeilenfüllende Link: liegt über den Textzellen, unter den Bedienelementen. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  > * {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--table-radius);
+  }
+
+  > *:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+[data-density="compact"] .table {
+  --table-row-h: 34px;
+  --table-inset: 6px;
+  --table-pad: 10px;
+}

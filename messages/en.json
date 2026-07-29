@@ -20,6 +20,8 @@
   },
   "actions": {
     "newIssue": "New issue",
+    "collapseGroup": "Collapse group",
+    "expandGroup": "Expand group",
     "createIssue": "Create issue",
     "inviteMember": "Invite member",
     "newTeam": "New team",

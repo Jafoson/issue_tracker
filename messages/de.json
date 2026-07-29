@@ -20,6 +20,8 @@
   },
   "actions": {
     "newIssue": "Neue Aufgabe",
+    "collapseGroup": "Gruppe einklappen",
+    "expandGroup": "Gruppe ausklappen",
     "createIssue": "Aufgabe erstellen",
     "inviteMember": "Mitglied einladen",
     "newTeam": "Neues Team",

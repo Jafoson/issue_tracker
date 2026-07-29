@@ -1,14 +1,9 @@
 import { notFound } from "next/navigation";
 import { ListView } from "@/features/issues/components/ListView/ListView";
 import { Topbar } from "@/features/issues/components/Topbar/Topbar";
+import { getIssueComposerData } from "@/features/issues/editor-data";
 import { getIssuesByProject } from "@/features/issues/queries";
-import {
-  getWorkspaceLabels,
-  getWorkspaceMembers,
-  getWorkspacePriorities,
-  getWorkspaceProjects,
-  getWorkspaceStatuses,
-} from "@/features/workspaces/queries";
+import { getWorkspaceProjects } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
@@ -28,22 +23,16 @@ export default async function ListPage({
   const project = projects.find((p) => p.slug === projectSlug);
   if (!project) notFound();
 
-  const [issues, members, labels, statuses, priorities] = await Promise.all([
+  const [issues, composer] = await Promise.all([
     getIssuesByProject(project.id, filters),
-    getWorkspaceMembers(),
-    getWorkspaceLabels(),
-    getWorkspaceStatuses(),
-    getWorkspacePriorities(),
+    getIssueComposerData(),
   ]);
+  if (!composer) notFound();
 
   return (
     <>
       <Topbar count={issues.length} />
-      <ListView
-        issues={issues}
-        projectId={project.id}
-        lookups={{ projects, members, labels, statuses, priorities }}
-      />
+      <ListView issues={issues} projectId={project.id} composer={composer} />
     </>
   );
 }
