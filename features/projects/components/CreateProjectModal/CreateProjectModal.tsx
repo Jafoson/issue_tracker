@@ -15,8 +15,8 @@ import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
 import { createProject } from "@/features/projects/actions";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
-import { COLORS } from "@/styles/colors";
 import styles from "./createProjectModal.module.scss";
+import { PALETTE } from "@/lib/utils";
 
 /** Der Prefix ist die Issue-Kennung (WEB-123) — max. 4 alphanumerische Zeichen. */
 function suggestPrefix(name: string) {
@@ -42,7 +42,7 @@ export function CreateProjectModal({
   const [name, setName] = useState("");
   const [prefix, setPrefix] = useState("");
   const [prefixTouched, setPrefixTouched] = useState(false);
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(PALETTE[0]);
   const [error, setError] = useState("");
 
   // Solange der Prefix nicht von Hand angefasst wurde, folgt er dem Namen.

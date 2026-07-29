@@ -39,8 +39,9 @@ position: relative;
 }
 
 .active { 
-    color: var(--on-primary-container);
-    background: var(--primary-container);
+    color: var(--on-surface);
+    font-weight: 600;
+    background: rgba(from (var(--on-surface)) r g b / 0.20);
 }
 
 .menuLabel {

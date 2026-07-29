@@ -1,7 +1,7 @@
 "use client";
 
-import { COLORS } from "@/styles/colors";
 import styles from "./colorPicker.module.scss";
+import { PALETTE } from "@/lib/utils";
 
 interface ColorPickerProps {
   value: string;
@@ -16,7 +16,7 @@ interface ColorPickerProps {
 export function ColorPicker({
   value,
   onChange,
-  colors = COLORS,
+  colors = PALETTE,
   swatchLabel,
 }: ColorPickerProps) {
   return (

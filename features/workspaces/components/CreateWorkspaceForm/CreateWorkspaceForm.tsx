@@ -8,10 +8,10 @@ import {
   suggestWorkspaceSlug,
 } from "@/features/workspaces/actions";
 import { useRouter } from "@/i18n/navigation";
-import { COLORS } from "@/styles/colors";
 import { IconColorPicker } from "./components/IconColorPicker";
 import { WorkspaceNameField } from "./components/WorkspaceNameField";
 import styles from "./createWorkspaceForm.module.scss";
+import { PALETTE } from "@/lib/utils";
 
 function toSlug(name: string) {
   return name
@@ -29,7 +29,7 @@ export function CreateWorkspaceForm() {
   const [, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(PALETTE[0]);
   const [slugTouched, setSlugTouched] = useState(false);
   const [error, setError] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);

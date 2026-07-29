@@ -1,14 +1,24 @@
-const PALETTE = [
-  "#6e63e6",
-  "#d5733b",
-  "#3b9d6e",
-  "#c2456b",
-  "#3b7bd5",
-  "#a05fd0",
-  "#cf9a3b",
-  "#5aa0a0",
-  "#e5664a",
-  "#cf6fb0",
+export const PALETTE = [
+ '#e6194B', 
+  '#3cb44b', 
+  '#ffe119', 
+  '#4363d8', 
+  '#f58231', 
+  '#911eb4', 
+  '#42d4f4', 
+  '#f032e6', 
+  '#bfef45', 
+  '#fabed4', 
+  '#469990', 
+  '#dcbeff', 
+  '#9A6324', 
+  '#fffac8', 
+  '#800000', 
+  '#aaffc3', 
+  '#808000', 
+  '#ffd8b1', 
+  '#000075', 
+  '#a9a9a9'
 ];
 
 export function randomColor(): string {
