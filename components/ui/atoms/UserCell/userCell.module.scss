@@ -1,0 +1,41 @@
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Ohne das würde der Text die Grid-Spalte aufziehen statt zu kürzen. */
+  min-width: 0;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: var(--leading-tight);
+  color: var(--on-surface);
+}
+
+/* Nur der Name selbst kürzt — ein Badge dahinter bleibt vollständig sichtbar. */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--on-surface-variant);
+}

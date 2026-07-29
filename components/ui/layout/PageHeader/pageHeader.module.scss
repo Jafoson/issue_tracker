@@ -1,0 +1,54 @@
+/* Kopfzeile einer Verwaltungsseite — steht fix über der scrollenden Liste. */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+  padding: 18px 24px 14px;
+}
+
+.divider {
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  color: var(--on-surface);
+}
+
+/* Tabellenziffern: der Zähler springt beim Aktualisieren sonst in der Breite. */
+.count {
+  color: var(--on-surface-variant);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Schiebt die Aktionen ans Ende, egal wie breit der Titel ausfällt. */
+  margin-inline-start: auto;
+}
+
+.description {
+  margin: 0;
+  /* Lesbare Zeilenlänge — der Satz erklärt, er füllt nicht die Seite. */
+  max-width: 72ch;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+[data-density="compact"] .header {
+  padding: 12px 16px 9px;
+}

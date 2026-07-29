@@ -8,6 +8,8 @@ interface LabelProps {
   style?: React.CSSProperties;
   children: React.ReactNode;
   hasIcon?: boolean;
+  /** Erklärt beim Überfahren, wofür das Label steht. */
+  title?: string;
 }
 
 export function Label({
@@ -18,9 +20,11 @@ export function Label({
   children,
   hasIcon,
   filled,
+  title,
 }: LabelProps) {
   return (
     <span
+      title={title}
       className={[
         styles.label,
         // "md" ist der Basis-Stil und hat bewusst keine Modifier-Klasse.

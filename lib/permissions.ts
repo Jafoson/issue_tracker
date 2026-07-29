@@ -168,6 +168,18 @@ export async function requirePermission(
   return requirePermissionOr([{ permission, ctx }]);
 }
 
+/**
+ * Effektiver Rollen-Key im gegebenen Kontext — die Projekt-Rolle, sonst die
+ * geerbte Workspace-Rolle. Das Pendant zu `workspaceRoleKey` für Prüfungen auf
+ * Projektebene, damit Hierarchie-Regeln dieselbe Rolle sehen wie `can()`.
+ */
+export async function effectiveRoleKey(
+  userId: string,
+  ctx: PermissionContext,
+): Promise<string | null> {
+  return (await effectiveRole(userId, ctx))?.roleKey ?? null;
+}
+
 /** Workspace-Rollen-Key des Users (für Hierarchie-Checks), oder null. */
 export async function workspaceRoleKey(
   workspaceId: string,

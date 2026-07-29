@@ -180,8 +180,80 @@
   }
 }
 
+/* ============================================================
+   Karten-Variante — die Tabelle als abgeschlossener Block.
+
+   Statt schwebender Zeilen eine umrandete Fläche mit Trennlinien: das trägt
+   Spaltenköpfe, die nicht die ganze Seite überschreiben, und macht klar, wo die
+   Liste endet. Der Rahmen beschneidet die erste und letzte Zeile, deshalb
+   verlieren die Zeilen hier ihren eigenen Radius.
+   ============================================================ */
+
+/* Die Hülle gilt für beides — die Tabelle wie den Ersatzinhalt, der an ihrer
+   Stelle steht. Sonst stünde ein leerer Zustand rahmenlos im Nichts. */
+.card {
+  /* Beschneidet die Ecken der ersten und letzten Zeile am Rahmen. */
+  overflow: hidden;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+}
+
+/* Der Rahmen ist jetzt die Kante der Tabelle — die Zeilen brauchen weder
+   Einzug noch eigene Radien. Bewusst nur für die Tabelle: die Polsterung des
+   Ersatzinhalts bleibt davon unberührt. */
+.table.card {
+  --table-inset: 0;
+  --table-pad: 14px;
+  --table-radius: 0;
+  --table-head-h: 38px;
+  --table-row-h: 56px;
+
+  margin-block-start: 0;
+  padding: 0;
+}
+
+/* Soll die Karte die Ansicht füllen, muss sie selbst scrollen — `hidden` würde
+   das verhindern. `auto` beschneidet die Ecken genauso. */
+.card.fill {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.card .headRow {
+  /* Bleibt oben in der Karte stehen — sie scrollt als Ganzes mit der Seite,
+     ein klebender Kopf hätte hier nichts, wovor er sich schieben könnte. */
+  position: static;
+  background: var(--surface-container-low);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.card .groupRow {
+  position: static;
+  background: var(--surface-container-low);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+/* Trennlinie nach oben statt nach unten: so bleibt die letzte Zeile ohne
+   Abschlusslinie, ganz gleich in welcher Gruppe sie steht. */
+.card .row + .row,
+.card tbody + tbody .row:first-child {
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* Ohne Kopfzeile stünde über der ersten Zeile eine Linie direkt am Rahmen. */
+.card:not(:has(.headRow)) tbody:first-of-type .row:first-child {
+  border-top: none;
+}
+
 [data-density="compact"] .table {
   --table-row-h: 34px;
   --table-inset: 6px;
   --table-pad: 10px;
+}
+
+[data-density="compact"] .table.card {
+  --table-row-h: 44px;
+  --table-inset: 0;
+  --table-pad: 12px;
 }

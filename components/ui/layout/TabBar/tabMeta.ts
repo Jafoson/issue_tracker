@@ -34,6 +34,15 @@ function projectFromPath(path: string, projects: Project[]): Project | null {
   return projects.find((p) => p.slug === m[1]) ?? null;
 }
 
+/**
+ * Sub-section of a project path — `""` for the board, `"list"`, `"members"`, …
+ * Read from the path rather than matched against a list of known suffixes, so a
+ * new entry in `PROJECT_NAV` needs no change here.
+ */
+function projectSection(path: string): string {
+  return path.split("/")[4] ?? "";
+}
+
 /** Human title for a tab path (no query string). */
 export function tabTitle(
   path: string,
@@ -69,9 +78,8 @@ export function tabIcon(path: string): string {
   }
 
   if (section === "project") {
-    const projectSection = path.endsWith("/list") ? "list" : "";
     return (
-      findBySection(PROJECT_NAV, projectSection)?.icon ??
+      findBySection(PROJECT_NAV, projectSection(path))?.icon ??
       "lucide:layout-dashboard"
     );
   }
@@ -92,9 +100,9 @@ export interface TabMeta {
  * Derive everything the TabBar renders from a tab's stored href.
  *
  * The href may carry a query string (filters/sort, e.g. `?status=todo`) which
- * is stripped before deriving title/color/icon. The list ("Aufgaben") view of a
- * project gets a `Projektname (Aufgaben)` suffix so it's distinct from its board
- * tab; the icon is omitted when a project color dot is shown instead.
+ * is stripped before deriving title/color/icon. Sub-views of a project get a
+ * `Projektname (Aufgaben)` suffix so they stay distinct from its board tab; the
+ * icon is omitted when a project color dot is shown instead.
  */
 export function tabMeta(
   href: string,
@@ -105,8 +113,12 @@ export function tabMeta(
   const color = tabColor(path, projects);
 
   let title = tabTitle(path, projects, t);
-  if (path.includes("/project/") && path.endsWith("/list"))
-    title = `${title} (${t("nav.issues")})`;
+  // Das Board ist die Hauptansicht und trägt den Projektnamen unverändert —
+  // jede Unterseite sagt im Suffix, welche sie ist.
+  const entry = path.includes("/project/")
+    ? findBySection(PROJECT_NAV, projectSection(path))
+    : undefined;
+  if (entry?.section) title = `${title} (${t(`nav.${entry.labelKey}`)})`;
 
   return {
     title,

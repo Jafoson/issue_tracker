@@ -223,6 +223,22 @@ export function roleRank(key: string): number {
   return DEFAULT_ROLES.find((r) => r.key === key)?.rank ?? -1;
 }
 
+/**
+ * Farbe des Rollen-Punktes in der Oberfläche.
+ *
+ * Leitet sich vom Rang ab statt aus einer Tabelle je Schlüssel: so bekommen
+ * auch die selbst angelegten Rollen eines Workspace eine Farbe, die zu ihrer
+ * Machtfülle passt, ohne dass jemand sie pflegen müsste.
+ */
+export function roleColor(key: string): string {
+  const rank = roleRank(key);
+  if (rank >= 5) return "var(--purple)"; // Owner, Admin — volle Verwaltung
+  if (rank >= 3) return "var(--blue)"; // Manager, Project Lead
+  if (rank === 2) return "var(--green)"; // Member — der Normalfall
+  if (rank === 0) return "var(--amber)"; // Guest — kommt von außen
+  return "var(--outline)"; // Viewer und eigene Rollen ohne festen Rang
+}
+
 // ─── Globale Plattform-Rolle ──────────────────────────────────────────────────
 //
 // Steht ÜBER allen Workspaces (SaaS-Betreiber-Ebene) und ist strikt getrennt von

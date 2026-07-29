@@ -1,0 +1,77 @@
+.headerIcon {
+  color: var(--on-surface-variant);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Feste Höhe: der Dialog soll beim Tippen im Suchfeld nicht springen, während
+   die Trefferliste schrumpft. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.candidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surface-container-high);
+  }
+
+  /* Ausgewählt heißt: bleibt hervorgehoben, auch ohne Zeiger darüber. */
+  &[aria-pressed="true"] {
+    background: var(--surface-container-high);
+  }
+}
+
+.check {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--outline);
+
+  .candidate[aria-pressed="true"] & {
+    color: var(--primary);
+  }
+}
+
+.noResults {
+  padding: 10px 8px;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+}
+
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.roleLabel {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.error {
+  display: flex;
+  margin: 0;
+  color: var(--error);
+  font-size: var(--text-sm);
+}

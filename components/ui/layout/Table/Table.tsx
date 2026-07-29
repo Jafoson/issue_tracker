@@ -54,6 +54,14 @@ interface TableBaseProps<T> {
   empty?: ReactNode;
   /** Füllt den verfügbaren Platz eines Flex-Containers und scrollt selbst. */
   fill?: boolean;
+  /**
+   * `"card"` fasst die Tabelle in eine umrandete Fläche mit Trennlinien
+   * zwischen den Zeilen — für Verwaltungslisten, die als abgeschlossener Block
+   * auf einer Seite stehen. `"plain"` (Vorgabe) lässt die Zeilen frei im Raum
+   * stehen und trennt sie nur über Rhythmus und Hover; das passt, wenn die
+   * Tabelle die ganze Ansicht ist.
+   */
+  variant?: "plain" | "card";
   className?: string;
 }
 
@@ -81,6 +89,7 @@ export function Table<T>({
   label,
   empty,
   fill,
+  variant = "plain",
   className,
   rows,
   groups,
@@ -97,7 +106,12 @@ export function Table<T>({
       .filter(Boolean)
       .join(" ");
 
-  const root = [styles.table, fill && styles.fill, className]
+  const root = [
+    styles.table,
+    fill && styles.fill,
+    variant === "card" && styles.card,
+    className,
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -114,7 +128,12 @@ export function Table<T>({
   if (isEmpty && empty) {
     return (
       <div
-        className={[styles.empty, fill && styles.fill, className]
+        className={[
+          styles.empty,
+          fill && styles.fill,
+          variant === "card" && styles.card,
+          className,
+        ]
           .filter(Boolean)
           .join(" ")}
       >

@@ -80,6 +80,16 @@ describe("tabIcon()", () => {
   it("nutzt das Board-Icon für die Board-Ansicht eines Projekts", () => {
     expect(tabIcon(`${BASE}/project/fuchsly`)).toBe("lucide:layout-dashboard");
   });
+
+  it("nutzt das Mitglieder-Icon für die Mitglieder-Ansicht eines Projekts", () => {
+    expect(tabIcon(`${BASE}/project/fuchsly/members`)).toBe("lucide:users");
+  });
+
+  it("fällt für unbekannte Unterseiten aufs Board-Icon zurück", () => {
+    expect(tabIcon(`${BASE}/project/fuchsly/gibtsnicht`)).toBe(
+      "lucide:layout-dashboard",
+    );
+  });
 });
 
 describe("Admin-Routen", () => {
@@ -127,6 +137,12 @@ describe("tabMeta()", () => {
     expect(
       tabMeta(`${BASE}/project/fuchsly/list?status=done`, projects, t).title,
     ).toBe("Fuchsly (Aufgaben)");
+  });
+
+  it("hängt das (Mitglieder)-Suffix bei der Mitglieder-Ansicht an", () => {
+    expect(tabMeta(`${BASE}/project/fuchsly/members`, projects, t).title).toBe(
+      "Fuchsly (Mitglieder)",
+    );
   });
 
   it("hängt KEIN Suffix bei der Board-Ansicht an", () => {

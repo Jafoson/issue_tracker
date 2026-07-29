@@ -1,0 +1,34 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  text-align: center;
+  color: var(--on-surface-variant);
+}
+
+/* Blasser als der Text: das Icon stimmt ein, es ist nicht die Botschaft. */
+.icon {
+  display: flex;
+  margin-bottom: 2px;
+  color: var(--outline);
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: 550;
+  color: var(--on-surface);
+}
+
+.description {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.action {
+  margin-top: 10px;
+}
