@@ -127,7 +127,7 @@
   /* Eine Stufe heller als das Band der Gruppe — sonst sähe eine überfahrene
      Zeile aus wie ein Gruppenkopf. */
   &:hover {
-    background: var(--surface-container-low);
+    background: rgb(from var(--on-surface) r g b / 0.12);
   }
 
   /* Tastaturfokus auf dem Zeilen-Link hebt die ganze Zeile hervor. */
