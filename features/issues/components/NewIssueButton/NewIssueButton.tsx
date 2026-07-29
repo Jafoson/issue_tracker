@@ -4,16 +4,15 @@ import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { CreateIssueModal } from "@/features/issues/components/CreateIssueModal/CreateIssueModal";
+import type { IssueComposerData } from "@/features/issues/types";
 import { usePathname } from "@/i18n/navigation";
 import { useModal } from "@/lib/context";
-import type { Project, Status } from "@/types";
 
 /** Neue Aufgaben landen im Backlog, sofern der Workspace diesen Status führt. */
 const DEFAULT_STATUS = "backlog";
 
 interface NewIssueButtonProps {
-  projects: Project[];
-  statuses: Status[];
+  data: IssueComposerData;
 }
 
 /**
@@ -21,7 +20,8 @@ interface NewIssueButtonProps {
  * Component darüber — nur die routenabhängige Projektwahl bleibt hier, weil
  * sie `usePathname()` braucht.
  */
-export function NewIssueButton({ projects, statuses }: NewIssueButtonProps) {
+export function NewIssueButton({ data }: NewIssueButtonProps) {
+  const { projects, statuses } = data;
   const t = useTranslations();
   const { openModal } = useModal();
   const pathname = usePathname();
@@ -42,6 +42,7 @@ export function NewIssueButton({ projects, statuses }: NewIssueButtonProps) {
       <CreateIssueModal
         projectId={project.id}
         initialStatus={initialStatus}
+        data={data}
         close={close}
       />
     ));

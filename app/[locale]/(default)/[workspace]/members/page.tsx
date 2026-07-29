@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Members } from "@/features/admin/components/Members/Members";
 import { getMembers, getTeams } from "@/features/issues/queries";
 import { getMe, getWorkspaceRoles } from "@/features/workspaces/queries";
+import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ export default async function MembersPage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace } = await params;
+  setCurrentWorkspaceId(workspace);
+
   const [members, teams, me, roles] = await Promise.all([
     getMembers(workspace),
     getTeams(workspace),

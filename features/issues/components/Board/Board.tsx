@@ -2,7 +2,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BoardColumn } from "@/features/issues/components/BoardColumn/BoardColumn";
-import type { IssueLookups } from "@/features/issues/types";
+import type { IssueComposerData, IssueLookups } from "@/features/issues/types";
 import type { Issue, Status } from "@/types";
 import styles from "./board.module.scss";
 import { useBoardDnd } from "./useBoardDnd";
@@ -11,10 +11,17 @@ interface BoardProps {
   issues: Issue[];
   projectId: string;
   statuses: Status[];
-  lookups: IssueLookups;
+  /** Speist den Composer der Spalten — die Karten-Lookups leiten sich daraus ab. */
+  composer: IssueComposerData;
 }
 
-export function Board({ issues, projectId, statuses, lookups }: BoardProps) {
+export function Board({ issues, projectId, statuses, composer }: BoardProps) {
+  const lookups: IssueLookups = {
+    projects: composer.projects,
+    members: composer.members,
+    labels: composer.labels,
+    issueTypes: composer.issueTypes,
+  };
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -43,6 +50,7 @@ export function Board({ issues, projectId, statuses, lookups }: BoardProps) {
             issues={board.getColumnIssues(status.id)}
             projectId={projectId}
             lookups={lookups}
+            composer={composer}
             newIssueLabel={t("actions.newIssue")}
             isOver={isOver}
             dragging={board.dragging}

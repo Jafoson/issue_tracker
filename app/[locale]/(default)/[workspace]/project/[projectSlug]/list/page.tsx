@@ -9,6 +9,7 @@ import {
   getWorkspaceProjects,
   getWorkspaceStatuses,
 } from "@/features/workspaces/queries";
+import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +17,12 @@ export default async function ListPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ projectSlug: string }>;
+  params: Promise<{ workspace: string; projectSlug: string }>;
   searchParams: Promise<Record<string, string>>;
 }) {
-  const { projectSlug } = await params;
+  const { workspace, projectSlug } = await params;
   const filters = await searchParams;
+  setCurrentWorkspaceId(workspace);
 
   const projects = await getWorkspaceProjects();
   const project = projects.find((p) => p.slug === projectSlug);

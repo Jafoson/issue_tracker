@@ -8,7 +8,7 @@ import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { Translator } from "@/i18n/types";
 import { type NavLabelKey, WORKSPACE_SECTIONS, workspacePath } from "@/lib/nav";
-import { useWorkspace } from "@/lib/workspace-context";
+import type { Project, SearchableIssue, Status } from "@/types";
 import styles from "./commandPalette.module.scss";
 
 interface NavEntry {
@@ -31,14 +31,24 @@ const PALETTE_GOTO: [NavLabelKey, (t: Translator) => string][] = [
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
+  workspaceId: string;
+  projects: Project[];
+  statuses: Status[];
+  searchIssues: SearchableIssue[];
 }
 
-export function CommandPalette({ open, onClose }: CommandPaletteProps) {
-  const { searchIssues, projects, statuses, workspace } = useWorkspace();
+export function CommandPalette({
+  open,
+  onClose,
+  workspaceId,
+  projects,
+  statuses,
+  searchIssues,
+}: CommandPaletteProps) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const base = `/${workspace.id}`;
+  const base = `/${workspaceId}`;
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +57,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     const entry = WORKSPACE_SECTIONS.find((e) => e.labelKey === labelKey);
     if (!entry) throw new Error(`No WORKSPACE_SECTIONS entry for ${labelKey}`);
     return {
-      href: workspacePath(workspace.id, entry.section),
+      href: workspacePath(workspaceId, entry.section),
       icon: entry.icon,
       label,
     };

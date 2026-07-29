@@ -96,7 +96,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 /**
  * Rendert den Modal-Stack. Muss genau einmal unterhalb des `ModalProvider`
  * platziert werden — und zwar an der Stelle im React-Baum, deren Contexts die
- * Modal-Inhalte sehen sollen (z.B. innerhalb des `WorkspaceProvider`).
+ * Modal-Inhalte sehen sollen (z.B. unterhalb des `NextIntlClientProvider`).
  *
  * Grund: `createPortal` verschiebt nur den DOM-Knoten nach `document.body`, die
  * Context-Auflösung folgt weiter dem React-Baum. Würde der Provider den Stack

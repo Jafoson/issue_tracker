@@ -6,6 +6,7 @@ import {
   getTeams,
 } from "@/features/issues/queries";
 import { getMe, getWorkspaceProjects } from "@/features/workspaces/queries";
+import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ export default async function TeamsPage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace } = await params;
+  setCurrentWorkspaceId(workspace);
+
   const [members, teams, projects, me] = await Promise.all([
     getMembers(workspace),
     getTeams(workspace),

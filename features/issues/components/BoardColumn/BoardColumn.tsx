@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { BoardCard } from "@/features/issues/components/BoardCard/BoardCard";
 import { CreateIssueModal } from "@/features/issues/components/CreateIssueModal/CreateIssueModal";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import type { IssueLookups } from "@/features/issues/types";
+import type { IssueComposerData, IssueLookups } from "@/features/issues/types";
 import { useModal } from "@/lib/context";
 import type { Issue, Status } from "@/types";
 import styles from "./boardColumn.module.scss";
@@ -16,6 +16,7 @@ interface BoardColumnProps {
   issues: Issue[];
   projectId: string;
   lookups: IssueLookups;
+  composer: IssueComposerData;
   newIssueLabel: string;
   isOver: boolean;
   dragging: string | null;
@@ -35,6 +36,7 @@ export function BoardColumn({
   issues,
   projectId,
   lookups,
+  composer,
   newIssueLabel,
   isOver,
   dragging,
@@ -55,6 +57,7 @@ export function BoardColumn({
       <CreateIssueModal
         projectId={projectId}
         initialStatus={status.id}
+        data={composer}
         close={close}
       />
     ));

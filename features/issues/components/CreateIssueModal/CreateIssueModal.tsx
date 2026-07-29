@@ -33,33 +33,35 @@ import {
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
+import type { IssueComposerData } from "@/features/issues/types";
 import { fullName } from "@/lib/utils/string";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
-import { useWorkspace } from "@/lib/workspace-context";
 import type { Label } from "@/types";
 
 interface CreateIssueModalProps {
   /** Startprojekt — im Header umschaltbar. */
   projectId: string;
   initialStatus: string;
+  data: IssueComposerData;
   close: () => void;
 }
 
 export function CreateIssueModal({
   projectId: initialProjectId,
   initialStatus,
+  data,
   close,
 }: CreateIssueModalProps) {
   const {
+    workspaceId,
+    me,
     members,
     projects,
     labels: allLabels,
     statuses,
     priorities,
     issueTypes,
-    me,
-    workspace,
-  } = useWorkspace();
+  } = data;
   const t = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -344,7 +346,7 @@ export function CreateIssueModal({
               selected={labels}
               projectId={project.id}
               projectName={project.name}
-              workspaceId={workspace.id}
+              workspaceId={workspaceId}
               onPick={(id) =>
                 setLabels((cur) =>
                   cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],

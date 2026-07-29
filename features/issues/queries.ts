@@ -1,6 +1,5 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
-import type { SearchableIssue, WorkspaceData } from "@/lib/workspace-context";
 import type {
   Issue,
   IssueType,
@@ -8,6 +7,7 @@ import type {
   Priority,
   Project,
   Role,
+  SearchableIssue,
   Status,
   Team,
   User,
@@ -327,59 +327,6 @@ export async function getIssueById(id: string): Promise<Issue | null> {
 // Lädt den kompletten Workspace-Context für die App-Shell. Wird sowohl vom
 // Workspace-Layout als auch vom plattformweiten /admin-Layout genutzt, damit
 // beide dieselbe Shell (Sidebar, Topbar, Tabs, Context) teilen.
-export async function loadWorkspaceData(
-  workspaceId: string,
-  userId: string,
-): Promise<WorkspaceData | null> {
-  const ws = await getWorkspace(workspaceId);
-  if (!ws) return null;
-
-  const [
-    projects,
-    members,
-    labels,
-    searchIssues,
-    statuses,
-    priorities,
-    issueTypes,
-    roles,
-    userWorkspaces,
-    globalRole,
-  ] = await Promise.all([
-    getProjects(workspaceId),
-    getMembers(workspaceId),
-    getLabels(workspaceId),
-    getSearchIssues(workspaceId),
-    getStatuses(workspaceId),
-    getPriorities(workspaceId),
-    getIssueTypes(workspaceId),
-    getRoles(workspaceId),
-    getUserWorkspaces(userId),
-    getGlobalRole(userId),
-  ]);
-
-  const me =
-    members.find((m) => m.id === userId) ??
-    members.find((m) => m.role === "admin") ??
-    members[0];
-  if (!me) return null;
-
-  return {
-    workspace: ws,
-    userWorkspaces,
-    me,
-    members,
-    projects,
-    labels,
-    statuses,
-    priorities,
-    issueTypes,
-    roles,
-    searchIssues,
-    globalRole,
-  };
-}
-
 export async function getIssueByRef(
   workspaceId: string,
   issueRef: string,

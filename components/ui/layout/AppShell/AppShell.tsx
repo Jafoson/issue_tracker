@@ -16,8 +16,9 @@ function Shell({ children, isAdminRoute }: AppShellProps) {
         <TabBar isAdminRoute={isAdminRoute} />
         <div className={styles.content}>{children}</div>
       </div>
-      {/* Rendert Modals hier im Baum — dadurch sehen sie den WorkspaceProvider,
-          der die AppShell umschließt. */}
+      {/* Rendert den Modal-Stack. Workspace-Daten reichen die Öffner als Props
+          herein — Modals brauchen hier nur noch die Provider aus dem
+          Root-Layout (Intl, Modal). */}
       <ModalOutlet />
     </div>
   );

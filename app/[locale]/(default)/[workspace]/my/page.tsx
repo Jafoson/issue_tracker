@@ -5,6 +5,7 @@ import {
   getWorkspaceProjects,
   getWorkspaceStatuses,
 } from "@/features/workspaces/queries";
+import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,8 @@ export default async function MyPage({
   params: Promise<{ locale: string; workspace: string }>;
 }) {
   const { locale, workspace } = await params;
+  setCurrentWorkspaceId(workspace);
+
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 

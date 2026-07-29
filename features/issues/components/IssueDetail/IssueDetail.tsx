@@ -19,10 +19,10 @@ import {
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
+import type { IssueEditorData } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import { fullName } from "@/lib/utils/string";
-import { useWorkspace } from "@/lib/workspace-context";
 import type { Issue, Label } from "@/types";
 import styles from "./issueDetail.module.scss";
 
@@ -31,6 +31,7 @@ interface Props {
   onClose: () => void;
   initialIssue?: Issue;
   inline?: boolean;
+  data: IssueEditorData;
 }
 
 function SideField({
@@ -48,21 +49,26 @@ function SideField({
   );
 }
 
-export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
+export function IssueDetail({
+  id,
+  onClose,
+  initialIssue,
+  inline,
+  data,
+}: Props) {
   const {
+    workspaceId: workspace,
+    me,
     members,
     projects,
     labels,
     statuses,
     priorities,
-    me,
-    workspace: workspaceData,
-  } = useWorkspace();
+  } = data;
   const statusColor = (id: string) => statuses.find((s) => s.id === id)?.color;
   const [localLabels, setLocalLabels] = useState<Label[]>([]);
   const t = useTranslations();
   const router = useRouter();
-  const workspace = workspaceData.id;
   const [, startTransition] = useTransition();
   const [issue, setIssue] = useState<Issue | null>(initialIssue ?? null);
   const [commentBody, setCommentBody] = useState("");
@@ -430,7 +436,7 @@ export function IssueDetail({ id, onClose, initialIssue, inline }: Props) {
                   selected={issue.labels}
                   projectId={issue.project}
                   projectName={project.name}
-                  workspaceId={workspaceData.id}
+                  workspaceId={workspace}
                   onPick={(id) => {
                     const next = issue.labels.includes(id)
                       ? issue.labels.filter((x) => x !== id)
