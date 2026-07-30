@@ -269,5 +269,20 @@
     "hours": "vor {count} Std.",
     "days": "vor {count} T.",
     "weeks": "vor {count} Wo."
+  },
+  "markdown": {
+    "toolbar": "Formatierung",
+    "heading": "Überschrift",
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "strikethrough": "Durchgestrichen",
+    "bulletList": "Aufzählung",
+    "numberedList": "Nummerierte Liste",
+    "quote": "Zitat",
+    "code": "Code",
+    "link": "Link",
+    "image": "Bild",
+    "linkText": "Text",
+    "imageAlt": "Bild"
   }
 }

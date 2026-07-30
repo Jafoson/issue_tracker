@@ -269,5 +269,20 @@
     "hours": "{count}h ago",
     "days": "{count}d ago",
     "weeks": "{count}w ago"
+  },
+  "markdown": {
+    "toolbar": "Formatting",
+    "heading": "Heading",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "bulletList": "Bulleted list",
+    "numberedList": "Numbered list",
+    "quote": "Quote",
+    "code": "Code",
+    "link": "Link",
+    "image": "Image",
+    "linkText": "text",
+    "imageAlt": "image"
   }
 }

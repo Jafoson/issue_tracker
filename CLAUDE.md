@@ -236,6 +236,8 @@ tests/
       session.test.ts             ← createSession / getSession / clearSession
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
+    markdown/
+      markdown.test.tsx           ← Markdown-Renderer (components/ui/atoms/Markdown)
 ```
 
 ### Mocking-Konventionen
@@ -244,20 +246,24 @@ tests/
 - `@/lib/session` mocken wenn getestet wird, was die Session konsumiert
 - `server-only` wird global in `tests/setup.ts` gemockt
 - `next/headers` (`cookies`) und `jose` werden pro Datei gemockt
+- SCSS-Module (`*.module.scss`) fängt ein Bun-Plugin in `tests/setup.ts` ab —
+  Komponenten-Tests brauchen dafür keinen Bundler
 - `vi.clearAllMocks()` in `beforeEach` — kein Zustand zwischen Tests
 
 ### Wichtig: Immer `bun run test` statt `bun test`
 
 Bun 1.3 teilt den Modul-Cache zwischen Test-Dateien innerhalb eines Prozesses. Da
 andere Test-Dateien `@/lib/session` mocken, würde dieser Mock in `session.test.ts`
-durchlecken wenn alle Tests in einem einzigen `bun test`-Aufruf laufen. Das `test`-Script
-in `package.json` splittet den Aufruf automatisch in zwei separate Prozesse:
+durchlecken wenn alle Tests in einem einzigen `bun test`-Aufruf laufen. Dasselbe gilt
+für die Markdown-Tests: `issues/getLabels.test.ts` ersetzt `react` durch einen Stub mit
+nur `cache`, und `react-dom/server` verweigert dann den Dienst. Das `test`-Script
+in `package.json` splittet den Aufruf deshalb in drei separate Prozesse:
 
 ```
 # Korrekt:
 bun run test
 
-# NICHT direkt verwenden (Session-Tests schlagen fehl):
+# NICHT direkt verwenden (Session- und Markdown-Tests schlagen fehl):
 bun test
 ```
 

@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
+import { EditableMarkdown } from "@/components/ui/atoms/EditableMarkdown/EditableMarkdown";
 import { EditableText } from "@/components/ui/atoms/EditableText/EditableText";
 import type { IssuePatch } from "@/features/issues/types";
 import styles from "../issueDetail.module.scss";
@@ -42,7 +43,7 @@ export function IssueSummary({
           <Icon icon="lucide:align-left" width={15} aria-hidden="true" />
           <h3 className={styles.sectionTitle}>{t("fields.description")}</h3>
         </header>
-        <EditableText
+        <EditableMarkdown
           className={styles.description}
           value={description}
           label={t("fields.description")}

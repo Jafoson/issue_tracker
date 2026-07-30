@@ -84,57 +84,8 @@ input, textarea, select { font-family: inherit; }
 
 
 
-/* ---------- Markdown ---------- */
-.md {
-  font-size: var(--text-base);
-  line-height: var(--leading-loose);
-  color: var(--text);
-
-  & > *:first-child { margin-top: 0; }
-  & > *:last-child  { margin-bottom: 0; }
-
-  h1, h2, h3 { font-weight: 650; line-height: var(--leading-tight); margin: 1.1em 0 .5em; }
-  h1 { font-size: 19px; }
-  h2 { font-size: 16.5px; }
-  h3 { font-size: 14.5px; }
-  p  { margin: .6em 0; }
-  ul, ol { margin: .5em 0; padding-left: 1.4em; }
-  li { margin: .25em 0; }
-
-  code {
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    padding: 1px 5px;
-    border-radius: 5px;
-  }
-
-  pre {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    padding: 12px 14px;
-    border-radius: var(--radius-sm);
-    overflow-x: auto;
-    margin: .7em 0;
-
-    code { background: none; border: none; padding: 0; }
-  }
-
-  blockquote {
-    margin: .7em 0;
-    padding: 4px 14px;
-    border-left: 3px solid var(--accent);
-    color: var(--text-2);
-    background: var(--accent-soft);
-    border-radius: 0 6px 6px 0;
-  }
-
-  a { color: var(--accent); text-decoration: none; &:hover { text-decoration: underline; } }
-  strong { font-weight: 650; color: var(--text); }
-
-  hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
-}
+/* Gerendertes Markdown hat seine eigene Komponente:
+   components/ui/atoms/Markdown — dort stehen auch die Styles. */
 
 /* ============================================================
    Orbit Component Classes
