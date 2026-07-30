@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import {
   Table,
   type TableColumn,
@@ -137,26 +138,29 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
   ];
 
   return (
-    <Table
-      fill
-      label={t("nav.issues")}
-      columns={columns}
-      groups={groups}
-      getRowKey={(issue) => issue.id}
-      isRowActive={(issue) => identifier(issue) === openIssue}
-      rowOverlay={(issue) => (
-        <Link
-          href={issueHref(issue)}
-          scroll={false}
-          aria-label={`${identifier(issue)} ${issue.title}`}
-        />
-      )}
-      empty={
-        <>
-          <Icon icon="lucide:list" width={32} />
-          <span>{t("empty.noIssues")}</span>
-        </>
-      }
-    />
+    <div className={styles.content}>
+      <Table
+        fill
+        variant="card"
+        label={t("nav.issues")}
+        columns={columns}
+        groups={groups}
+        getRowKey={(issue) => issue.id}
+        isRowActive={(issue) => identifier(issue) === openIssue}
+        rowOverlay={(issue) => (
+          <Link
+            href={issueHref(issue)}
+            scroll={false}
+            aria-label={`${identifier(issue)} ${issue.title}`}
+          />
+        )}
+        empty={
+          <EmptyState
+            icon={<Icon icon="lucide:list" width={32} />}
+            title={t("empty.noIssues")}
+          />
+        }
+      />
+    </div>
   );
 }

@@ -80,6 +80,22 @@ const DEFAULT_WIDTH = "auto";
  * exakt untereinander, auch wenn ihre Breite aus dem Inhalt kommt — und die
  * Zeile bleibt ein echter Kasten, der Sticky-Gruppenköpfe, Hover und einen
  * zeilenfüllenden Link trägt, woran das native Tabellenlayout scheitert.
+ *
+ * Das Aussehen sitzt in `table.module.scss`. Drei Werte darf der Aufrufer
+ * verstellen — als vererbte Custom Properties auf seinem Wrapper, nicht als
+ * Prop, weil sie reine Optik sind:
+ *
+ * ```scss
+ * .wrapper {
+ *   --table-row-height: 52px;              // Höhe der Zeilen
+ *   --table-surface: var(--surface);       // Grundfläche der Karte
+ *   --table-divider: var(--outline-variant); // Linie zwischen den Zeilen
+ * }
+ * ```
+ *
+ * Vorgabe ist die einzeilige Liste: Zeilenhöhe `--row-h`, Seitengrund, keine
+ * Trennlinien. Wer sie ändert, muss die Dichte nachziehen
+ * (`[data-density="compact"] .wrapper`) — der eigene Wert sticht sie aus.
  */
 export function Table<T>({
   columns,

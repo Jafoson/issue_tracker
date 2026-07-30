@@ -1,6 +1,16 @@
 /* Zellen und Gruppenköpfe der Issue-Liste. Raster, Zeilenhöhe, Hover und
    Sticky-Verhalten kommen aus der Table-Komponente. */
 
+/* Die Karte hat keinen eigenen Außenabstand — der Rand ringsum gehört hierher,
+   damit die Tabelle darin ihre volle Höhe behält und selbst scrollt. */
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 12px 16px 16px;
+}
+
 /* ---------- Zellen ---------- */
 
 .identifier {

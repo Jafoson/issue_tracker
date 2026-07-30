@@ -1,10 +1,22 @@
 /* Die Karte darunter hat ihre eigene Höhe — gescrollt wird die Seite, nicht
    die Tabelle. Sonst klebte der Rahmen am unteren Bildrand fest. */
 .content {
+  /* Eine Mitgliederzeile trägt zwei Textzeilen neben dem Avatar. Sie bekommt
+     deutlich mehr Luft als die einzeilige Vorgabe der Tabelle — die Liste ist
+     kurz und wird gelesen, nicht überflogen. Gilt nur hier: die Issue-Liste
+     bleibt bei ihren dichten Zeilen. */
+  --table-row-height: 64px;
+
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 4px 24px 24px;
+  padding: 12px 24px 24px;
+}
+
+/* In der dichten Ansicht rückt auch diese Liste zusammen — der eigene Wert
+   sticht die Vorgabe der Dichte aus, also muss er sie selbst nachziehen. */
+[data-density="compact"] .content {
+  --table-row-height: 52px;
 }
 
 /* Auslöser des Rollen-Menüs: der Pfeil steht neben der Rolle, nicht in ihr —

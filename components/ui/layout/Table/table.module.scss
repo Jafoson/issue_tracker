@@ -52,9 +52,25 @@
   font-size: var(--text-base);
 }
 
-/* <thead>/<tbody> strukturieren nur — ihre Zeilen gehören ins Raster. */
+/* <thead> strukturiert nur — seine Zeile gehört unmittelbar ins Raster der
+   Tabelle. Genau deshalb kann sie über die ganze Tabelle hinweg oben kleben:
+   ihr Bezugsrahmen ist die Tabelle selbst. */
 .group {
   display: contents;
+}
+
+/* Eine Gruppe ist dagegen ein eigener Kasten, der die Spalten der Tabelle per
+   `subgrid` weiterreicht — die Spalten messen dadurch weiterhin über alle
+   Gruppen hinweg. Der Kasten ist der Bezugsrahmen ihres klebenden Kopfes: ohne
+   ihn (`display: contents`) wäre es die ganze Tabelle, jeder Kopf bliebe bis
+   zum Ende oben kleben und die Bänder stapelten sich sichtbar übereinander. So
+   endet ein Kopf dort, wo seine Gruppe endet, und der nächste schiebt ihn
+   hinaus — es steht immer genau ein Band oben. */
+tbody.group {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-content: start;
 }
 
 .headRow,
@@ -117,7 +133,13 @@
   /* Eigener Stapelkontext: sonst schöben sich die Bedienelemente der Zeile
      (z-index 2) beim Scrollen über den klebenden Gruppenkopf. */
   z-index: 0;
-  min-height: var(--table-row-h);
+  /* Die Vorgabe kommt aus Variante und Dichte; `--table-row-height` ist der
+     Griff für den Aufrufer, wenn eine Liste es enger oder luftiger braucht. */
+  min-height: var(--table-row-height, var(--table-row-h));
+  /* Die Mindesthöhe gilt für einzeilige Zellen. Bringt eine Zelle zwei Zeilen
+     mit (Name über E-Mail), wächst die Zeile — und das Polster hält den Inhalt
+     von der Trennlinie der Nachbarzeile weg. */
+  padding-block: 4px;
   border-radius: var(--table-radius);
   /* Bewusst ohne Trennlinie: die Zeilen trennen sich über Rhythmus und Hover,
      Linien zwischen jedem Wert machen die Liste nur unruhig. */
@@ -183,18 +205,27 @@
 /* ============================================================
    Karten-Variante — die Tabelle als abgeschlossener Block.
 
-   Statt schwebender Zeilen eine umrandete Fläche mit Trennlinien: das trägt
-   Spaltenköpfe, die nicht die ganze Seite überschreiben, und macht klar, wo die
-   Liste endet. Der Rahmen beschneidet die erste und letzte Zeile, deshalb
-   verlieren die Zeilen hier ihren eigenen Radius.
+   Statt schwebender Zeilen eine umrandete Fläche: das trägt Spaltenköpfe, die
+   nicht die ganze Seite überschreiben, und macht klar, wo die Liste endet. Der
+   Rahmen beschneidet die erste und letzte Zeile, deshalb verlieren die Zeilen
+   hier ihren eigenen Radius.
+
+   Die Zeilen liegen auf dem Grund der Seite und kommen ohne Trennlinien aus —
+   gegliedert wird über Rhythmus, Hover und die Bänder der Gruppen. Jede Liste
+   der App sieht damit gleich aus, ganz gleich was in den Zeilen steht.
    ============================================================ */
 
 /* Die Hülle gilt für beides — die Tabelle wie den Ersatzinhalt, der an ihrer
-   Stelle steht. Sonst stünde ein leerer Zustand rahmenlos im Nichts. */
+   Stelle steht. Sonst stünde ein leerer Zustand rahmenlos im Nichts.
+
+   Drei Stellschrauben stehen dem Aufrufer offen, falls eine Liste doch abweichen
+   muss: `--table-surface` (Grundfläche), `--table-divider` (Trenner zwischen den
+   Zeilen) und `--table-row-height` (Zeilenhöhe). Alle drei erben, gesetzt werden
+   sie also auf dem Wrapper. */
 .card {
   /* Beschneidet die Ecken der ersten und letzten Zeile am Rahmen. */
   overflow: hidden;
-  background: var(--surface-container-lowest);
+  background: var(--table-surface, var(--background));
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-lg);
 }
@@ -207,7 +238,7 @@
   --table-pad: 14px;
   --table-radius: 0;
   --table-head-h: 38px;
-  --table-row-h: 56px;
+  --table-row-h: var(--row-h);
 
   margin-block-start: 0;
   padding: 0;
@@ -234,11 +265,30 @@
   border-bottom: 1px solid var(--outline-variant);
 }
 
-/* Trennlinie nach oben statt nach unten: so bleibt die letzte Zeile ohne
-   Abschlusslinie, ganz gleich in welcher Gruppe sie steht. */
+/* Ein Band ist oben wie unten begrenzt. Die obere Linie bekommt es aber nur,
+   wenn davor Zeilen standen — folgt es direkt auf ein anderes Band, ist dessen
+   untere Linie schon da und eine zweite ergäbe einen doppelten Strich. Beim
+   ersten Band übernimmt der Kartenrahmen bzw. die Kopfzeile diese Rolle.
+   Die Linien der Bänder sind bewusst fest: sie gliedern die Liste auch dann,
+   wenn der Aufrufer die Trenner zwischen den Zeilen abgeschaltet hat. */
+.card tbody:has(.row) + tbody .groupRow {
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* Scrollt die Karte selbst, gibt es wieder etwas, wovor sich die Köpfe schieben
+   können — dann kleben sie auch hier. Bei einer Karte, die mit der Seite
+   mitscrollt, bleibt es beim ruhigen `static` von oben. */
+.card.fill :is(.headRow, .groupRow) {
+  position: sticky;
+}
+
+/* Ohne Linie dazwischen bleibt eine lange Liste ruhig — wer sie doch braucht,
+   setzt `--table-divider`. Die Linie sitzt oben statt unten: so bleibt die
+   letzte Zeile ohne Abschlussstrich, ganz gleich in welcher Gruppe sie steht.
+   Die transparente Vorgabe hält die Zeilenhöhe in beiden Fällen gleich. */
 .card .row + .row,
 .card tbody + tbody .row:first-child {
-  border-top: 1px solid var(--outline-variant);
+  border-top: 1px solid var(--table-divider, transparent);
 }
 
 /* Ohne Kopfzeile stünde über der ersten Zeile eine Linie direkt am Rahmen. */
@@ -253,7 +303,7 @@
 }
 
 [data-density="compact"] .table.card {
-  --table-row-h: 44px;
+  --table-row-h: 34px;
   --table-inset: 0;
   --table-pad: 12px;
 }
