@@ -177,30 +177,8 @@ input, textarea, select { font-family: inherit; }
   cursor: default;
 }
 
-.orbit-panel {
-  position: relative;
-  z-index: 1;
-  width: min(760px, 92vw);
-  height: 100%;
-  background: var(--surface-2);
-  border-left: 1px solid var(--border);
-  box-shadow: var(--shadow-panel);
-  display: flex;
-  flex-direction: column;
-  animation: slideIn .22s cubic-bezier(.22, .61, .36, 1);
-}
-
-/* ---------- Composer ---------- */
-.orbit-comp {
-  position: relative;
-  z-index: 1;
-  width: min(620px, 94vw);
-  background: var(--panel);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-pop);
-  animation: pop .16s ease;
-}
+/* Detail-Panel und Composer haben keine globalen Klassen mehr: beide laufen
+   über den Modal-Stack (`lib/context/ModalContext` + `components/ui/layout/Modal`). */
 
 /* ---------- Command Palette ---------- */
 .orbit-cmd {
@@ -238,6 +216,5 @@ input, textarea, select { font-family: inherit; }
 
 /* ---------- Animations ---------- */
 @keyframes fadeIn  { from { opacity: .35; } }
-@keyframes slideIn { from { transform: translateX(26px); } }
 @keyframes pop     { from { opacity: .2; transform: translateY(-4px) scale(.985); } }
 @keyframes toastIn { from { opacity: .2; transform: translate(-50%, 12px); } }

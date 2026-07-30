@@ -1,5 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Inbox } from "@/features/issues/components/Inbox/Inbox";
+import { IssuePeek } from "@/features/issues/components/IssuePeek/IssuePeek";
+import { getIssueComposerData } from "@/features/issues/editor-data";
 import { getInboxIssues } from "@/features/issues/queries";
 import {
   getMe,
@@ -23,22 +25,29 @@ export default async function InboxPage({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const [issues, me, members, projects, statuses] = await Promise.all([
-    getInboxIssues(session.userId, workspace),
-    getMe(),
-    getWorkspaceMembers(),
-    getWorkspaceProjects(),
-    getWorkspaceStatuses(),
-  ]);
-  if (!me) notFound();
+  const [issues, me, members, projects, statuses, composer] = await Promise.all(
+    [
+      getInboxIssues(session.userId, workspace),
+      getMe(),
+      getWorkspaceMembers(),
+      getWorkspaceProjects(),
+      getWorkspaceStatuses(),
+      getIssueComposerData(),
+    ],
+  );
+  if (!me || !composer) notFound();
 
   return (
-    <Inbox
-      issues={issues}
-      me={me}
-      members={members}
-      projects={projects}
-      statuses={statuses}
-    />
+    <>
+      <Inbox
+        issues={issues}
+        me={me}
+        members={members}
+        projects={projects}
+        statuses={statuses}
+      />
+      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      <IssuePeek data={composer} />
+    </>
   );
 }

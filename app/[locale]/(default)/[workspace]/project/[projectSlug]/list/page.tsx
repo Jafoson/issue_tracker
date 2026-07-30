@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { IssuePeek } from "@/features/issues/components/IssuePeek/IssuePeek";
 import { ListView } from "@/features/issues/components/ListView/ListView";
 import { Topbar } from "@/features/issues/components/Topbar/Topbar";
 import { getIssueComposerData } from "@/features/issues/editor-data";
@@ -33,6 +34,8 @@ export default async function ListPage({
     <>
       <Topbar count={issues.length} />
       <ListView issues={issues} projectId={project.id} composer={composer} />
+      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      <IssuePeek data={composer} />
     </>
   );
 }

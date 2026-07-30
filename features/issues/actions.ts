@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { IssuePatch } from "@/features/issues/types";
 import { db } from "@/lib/db";
 import {
   PermissionError,
@@ -75,17 +76,7 @@ export async function reorderIssue(id: string, status: string, rank: number) {
   await revalidate();
 }
 
-export async function updateIssue(
-  id: string,
-  patch: {
-    status?: string;
-    priority?: number;
-    assignee?: string | null;
-    labels?: string[];
-    title?: string;
-    description?: string;
-  },
-) {
+export async function updateIssue(id: string, patch: IssuePatch) {
   const issue = await issueContext(id);
   const ctx = { projectId: issue.projectId };
   await requirePermissionOr([
@@ -106,6 +97,7 @@ export async function updateIssue(
     data: {
       ...(patch.status !== undefined && { status: patch.status }),
       ...(patch.priority !== undefined && { priority: patch.priority }),
+      ...(patch.type !== undefined && { type: patch.type }),
       ...(patch.assignee !== undefined && { assigneeId: patch.assignee }),
       ...(patch.labels !== undefined && { labels: patch.labels }),
       ...(patch.title !== undefined && { title: patch.title }),

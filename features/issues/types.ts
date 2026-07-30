@@ -43,3 +43,18 @@ export interface IssueEditorData {
 export interface IssueComposerData extends IssueEditorData {
   issueTypes: IssueType[];
 }
+
+/**
+ * Teiländerung an einem Issue — genau die Felder, die `updateIssue` schreibt.
+ * Jede Oberfläche, die einen Picker anbietet (Liste, Board, Detailansicht),
+ * reicht darüber ihre Änderung durch.
+ */
+export interface IssuePatch {
+  status?: string;
+  priority?: number;
+  type?: string;
+  assignee?: string | null;
+  labels?: string[];
+  title?: string;
+  description?: string;
+}

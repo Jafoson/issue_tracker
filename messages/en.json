@@ -41,7 +41,12 @@
     "cancel": "Cancel",
     "close": "Close",
     "newTab": "New tab",
-    "closeTab": "Close tab"
+    "closeTab": "Close tab",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "moreActions": "More actions",
+    "addLabel": "Add label",
+    "save": "Save"
   },
   "placeholders": {
     "search": "Search…",
@@ -52,7 +57,8 @@
     "addComment": "Add a comment…",
     "email": "Email address",
     "password": "Password",
-    "projectName": "Project name"
+    "projectName": "Project name",
+    "editDescription": "Edit description"
   },
   "statuses": {
     "backlog": "Backlog",
@@ -87,7 +93,9 @@
     "password": "Password",
     "role": "Role",
     "prefix": "Prefix",
-    "color": "Color"
+    "color": "Color",
+    "title": "Title",
+    "description": "Description"
   },
   "sort": {
     "label": "Sort",
@@ -176,13 +184,17 @@
   },
   "comments": {
     "title": "Comments",
-    "commentedOn": "commented on"
+    "commentedOn": "commented on",
+    "empty": "No comments yet. Start the discussion.",
+    "toSend": "to send"
   },
   "empty": {
     "noIssues": "No issues",
     "noAssignedIssues": "You have no assigned issues",
     "allCaughtUp": "All caught up!",
-    "noResults": "No results for \"{q}\""
+    "noResults": "No results for \"{q}\"",
+    "issueNotFound": "Issue not found",
+    "issueNotFoundHint": "It may have been deleted or moved to another workspace."
   },
   "palette": {
     "navigation": "Navigation",

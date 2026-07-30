@@ -1,8 +1,17 @@
 import styles from "./modal.module.scss";
 
+/**
+ * `dialog` schwebt mittig über der Seite, `panel` steht als Seitenpanel an der
+ * Kante: volle Höhe, kein Radius, breiter. Gehört zu
+ * `openModal(…, { placement: "right" })`.
+ */
+type ModalVariant = "dialog" | "panel";
+
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Panel-Breite. Zahl = px, sonst beliebiger CSS-Wert. Default: 560px. */
+  /** Panel-Breite. Zahl = px, sonst beliebiger CSS-Wert. Default: 620px. */
   width?: number | string;
+  /** Default: "dialog". */
+  variant?: ModalVariant;
 }
 
 /**
@@ -17,6 +26,7 @@ interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export function Modal({
   width,
+  variant = "dialog",
   className,
   style,
   children,
@@ -24,7 +34,9 @@ export function Modal({
 }: ModalProps) {
   return (
     <div
-      className={[styles.modal, className].filter(Boolean).join(" ")}
+      className={[styles.modal, variant === "panel" && styles.panel, className]
+        .filter(Boolean)
+        .join(" ")}
       style={
         width === undefined
           ? style

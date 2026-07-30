@@ -15,11 +15,36 @@ export interface ModalRenderProps {
   close: () => void;
 }
 
+/**
+ * Wo das Modal sitzt: `center` als Dialog über der Seite, `right` als
+ * Seitenpanel, das an der rechten Kante klebt und über die volle Höhe geht.
+ */
+export type ModalPlacement = "center" | "right";
+
 export interface ModalOptions {
-  /** Panel-Breite, z.B. 600 oder "80vw". Default: Basisbreite von `.orbit-comp`. */
+  /** Panel-Breite, z.B. 600 oder "80vw". Default: Basisbreite des Inhalts. */
   width?: number | string;
   /** Schließen per Backdrop-Klick / Escape erlauben. Default: true. */
   dismissible?: boolean;
+  /** Default: "center". */
+  placement?: ModalPlacement;
+  /**
+   * Barrierefreier Name des Dialogs. Ohne ihn kündigt der Screenreader nur
+   * „Dialog“ an — bitte lokalisiert übergeben.
+   */
+  label?: string;
+  /**
+   * Läuft, sobald das Modal geschlossen wird — egal ob per Escape, Backdrop
+   * oder `close()`. Gedacht für Öffner, die neben dem Modal einen eigenen
+   * Zustand führen (z.B. einen URL-Parameter), der mitverschwinden muss.
+   * `closeModal(id, { silent: true })` überspringt den Aufruf.
+   */
+  onClose?: () => void;
+}
+
+/** Aufräumen ohne Rückmeldung an den Öffner — siehe `ModalOptions.onClose`. */
+interface CloseOptions {
+  silent?: boolean;
 }
 
 type ModalContent =
@@ -37,7 +62,7 @@ interface ModalValue {
   /** Rendert `content` als Modal. `content` kann eine Render-Function sein, die `close` erhält. */
   openModal: (content: ModalContent, options?: ModalOptions) => string;
   /** Schließt das Modal mit `id`, ohne `id` das oberste. */
-  closeModal: (id?: string) => void;
+  closeModal: (id?: string, options?: CloseOptions) => void;
   closeAllModals: () => void;
 }
 
@@ -52,24 +77,45 @@ export function useModal() {
 
 export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [stack, setStack] = useState<ModalEntry[]>([]);
+  // Spiegel des Stacks: `onClose`-Handler dürfen synchron weiterschließen, und
+  // dafür muss der aktuelle Stand schon vor dem nächsten Render feststehen.
+  const stackRef = useRef<ModalEntry[]>(stack);
   const counter = useRef(0);
 
-  const closeModal = useCallback((id?: string) => {
-    setStack((s) => (id ? s.filter((m) => m.id !== id) : s.slice(0, -1)));
+  const commit = useCallback((next: ModalEntry[]) => {
+    stackRef.current = next;
+    setStack(next);
   }, []);
 
-  const closeAllModals = useCallback(() => setStack([]), []);
+  const closeModal = useCallback(
+    (id?: string, options?: CloseOptions) => {
+      const current = stackRef.current;
+      const entry = id ? current.find((m) => m.id === id) : current.at(-1);
+      if (!entry) return;
+      // Erst den Stack fortschreiben, dann melden: ein `onClose`, das seinerseits
+      // schließt (URL-Sync), findet den Eintrag dann nicht mehr vor.
+      commit(current.filter((m) => m.id !== entry.id));
+      if (!options?.silent) entry.options.onClose?.();
+    },
+    [commit],
+  );
+
+  const closeAllModals = useCallback(() => {
+    const current = stackRef.current;
+    commit([]);
+    for (const entry of current) entry.options.onClose?.();
+  }, [commit]);
 
   const openModal = useCallback(
     (content: ModalContent, options: ModalOptions = {}) => {
       const id = `modal-${++counter.current}`;
-      setStack((s) => [
-        ...s,
+      commit([
+        ...stackRef.current,
         { id, content, options, trigger: document.activeElement },
       ]);
       return id;
     },
-    [],
+    [commit],
   );
 
   // Escape schließt nur das oberste (nicht explizit undismissible) Modal im Stack.
@@ -134,6 +180,8 @@ function ModalFrame({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const dismissible = modal.options.dismissible !== false;
+  const placement = modal.options.placement ?? "center";
+  const cx = (...names: (string | false)[]) => names.filter(Boolean).join(" ");
 
   useEffect(() => {
     // Nur einspringen, wenn der Inhalt nicht selbst schon fokussiert hat (z.B.
@@ -150,7 +198,7 @@ function ModalFrame({
 
   return (
     <div
-      className={styles.overlay}
+      className={cx(styles.overlay, placement === "right" && styles.right)}
       style={{ zIndex: `calc(var(--z-overlay) + ${index})` }}
     >
       <button
@@ -161,9 +209,10 @@ function ModalFrame({
       />
       <div
         ref={panelRef}
-        className={styles.comp}
+        className={cx(styles.comp, placement === "right" && styles.right)}
         role="dialog"
         aria-modal="true"
+        aria-label={modal.options.label}
         tabIndex={-1}
         style={modal.options.width ? { width: modal.options.width } : undefined}
       >

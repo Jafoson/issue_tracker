@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Board } from "@/features/issues/components/Board/Board";
+import { IssuePeek } from "@/features/issues/components/IssuePeek/IssuePeek";
 import { Topbar } from "@/features/issues/components/Topbar/Topbar";
 import { getIssueComposerData } from "@/features/issues/editor-data";
 import { getIssuesByProject } from "@/features/issues/queries";
@@ -42,6 +43,8 @@ export default async function BoardPage({
         statuses={statuses}
         composer={composer}
       />
+      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      <IssuePeek data={composer} />
     </>
   );
 }

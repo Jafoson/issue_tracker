@@ -41,7 +41,12 @@
     "cancel": "Abbrechen",
     "close": "Schließen",
     "newTab": "Neuer Tab",
-    "closeTab": "Tab schließen"
+    "closeTab": "Tab schließen",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
+    "moreActions": "Weitere Aktionen",
+    "addLabel": "Label hinzufügen",
+    "save": "Speichern"
   },
   "placeholders": {
     "search": "Suchen…",
@@ -52,7 +57,8 @@
     "addComment": "Kommentar schreiben…",
     "email": "E-Mail-Adresse",
     "password": "Passwort",
-    "projectName": "Projektname"
+    "projectName": "Projektname",
+    "editDescription": "Beschreibung bearbeiten"
   },
   "statuses": {
     "backlog": "Rückstand",
@@ -87,7 +93,9 @@
     "password": "Passwort",
     "role": "Rolle",
     "prefix": "Kürzel",
-    "color": "Farbe"
+    "color": "Farbe",
+    "title": "Titel",
+    "description": "Beschreibung"
   },
   "sort": {
     "label": "Sortieren",
@@ -176,13 +184,17 @@
   },
   "comments": {
     "title": "Kommentare",
-    "commentedOn": "hat kommentiert auf"
+    "commentedOn": "hat kommentiert auf",
+    "empty": "Noch keine Kommentare. Starte die Diskussion.",
+    "toSend": "zum Senden"
   },
   "empty": {
     "noIssues": "Keine Aufgaben",
     "noAssignedIssues": "Dir sind keine Aufgaben zugewiesen",
     "allCaughtUp": "Alles erledigt!",
-    "noResults": "Keine Ergebnisse für „{q}“"
+    "noResults": "Keine Ergebnisse für „{q}“",
+    "issueNotFound": "Aufgabe nicht gefunden",
+    "issueNotFoundHint": "Sie wurde gelöscht oder liegt in einem anderen Workspace."
   },
   "palette": {
     "navigation": "Navigation",

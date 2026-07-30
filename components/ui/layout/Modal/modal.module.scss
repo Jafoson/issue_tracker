@@ -9,16 +9,37 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: 620px;
+  /* `--modal-w` / `--modal-max-h` setzt die Komponente (Prop `width`) oder eine
+     Variante — als Custom Property, damit die Reihenfolge der Stylesheets
+     keine Rolle spielt. */
+  width: var(--modal-w, 620px);
   max-width: calc(100vw - 32px);
   /* Der Overlay schiebt das Panel um 12vh nach unten — der Rest bleibt nutzbar,
      überlanger Inhalt scrollt im Body statt aus dem Viewport zu laufen. */
-  max-height: calc(100dvh - 12vh - 32px);
+  max-height: var(--modal-max-h, calc(100dvh - 12vh - 32px));
   background: var(--surface-container-high);
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--modal-shadow, var(--shadow-pop));
   overflow: hidden;
+}
+
+/* ---------- Variante: Seitenpanel ---------- */
+
+/* Sitzt bündig an der rechten Kante (Placement kommt vom ModalFrame): volle
+   Höhe, nur die Innenkante bleibt sichtbar. */
+.modal.panel {
+  --modal-w: min(880px, 100vw);
+  --modal-max-h: 100dvh;
+  --modal-pad-x: 18px;
+
+  height: 100dvh;
+  max-width: 100vw;
+  background: var(--surface-container-low);
+  border: none;
+  border-left: 1px solid var(--outline-variant);
+  border-radius: 0;
+  box-shadow: var(--shadow-panel);
 }
 
 /* ---------- Header ---------- */

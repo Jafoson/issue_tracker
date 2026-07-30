@@ -21,3 +21,28 @@
   z-index: 1;
   animation: pop .16s ease;
 }
+
+/* ---------- Placement: rechtes Seitenpanel ---------- */
+
+/* Klebt an der rechten Kante über die volle Höhe — der Inhalt bestimmt nur noch
+   seine Breite, Höhe und Kante kommen von hier. */
+.overlay.right {
+  justify-content: flex-end;
+  align-items: stretch;
+  padding-top: 0;
+}
+
+.comp.right {
+  display: flex;
+  animation: slideIn .2s cubic-bezier(.22, .61, .36, 1);
+}
+
+/* fadeIn/pop spiegeln die globalen Keyframes — in einem Modul werden
+   Animationsnamen mitgehasht, ein Verweis nach draußen ginge ins Leere. */
+@keyframes fadeIn  { from { opacity: .35; } }
+@keyframes pop     { from { opacity: .2; transform: translateY(-4px) scale(.985); } }
+@keyframes slideIn { from { opacity: .4; transform: translateX(24px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .comp { animation-duration: .01ms; }
+}

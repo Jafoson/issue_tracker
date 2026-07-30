@@ -1,0 +1,57 @@
+/* Typografie kommt von außen (`className`) auf den Rahmen und wird von Feld und
+   Zwilling geerbt — nur so decken sich beide Zeile für Zeile. */
+
+/* Die Knöpfe stehen unter dem Feld statt darin: über dem Text schwebend würden
+   sie genau die letzte Zeile verdecken, die man gerade schreibt. */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.field {
+  display: grid;
+  border-radius: var(--radius-sm);
+  transition: background .12s;
+
+  /* Die Fläche zeigt erst beim Überfahren, dass hier etwas anzufassen ist. */
+  &:hover,
+  &:focus-within {
+    background: var(--surface-container);
+  }
+
+  &::after,
+  .input {
+    grid-area: 1 / 1;
+    padding: 5px 8px;
+    font: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* Unsichtbarer Zwilling: er gibt dem Feld die Höhe des Inhalts. Das
+     angehängte Leerzeichen hält die letzte (leere) Zeile offen. */
+  &::after {
+    content: attr(data-value) " ";
+    visibility: hidden;
+  }
+}
+
+.input {
+  min-width: 0;
+  /* Der Fokusring folgt dem Radius des Elements, das ihn trägt — ohne den
+     erbenden Radius säße er als scharfe Kante um die runde Fläche. */
+  border-radius: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+  resize: none;
+  overflow: hidden;
+
+  &::placeholder {
+    color: var(--outline);
+  }
+}

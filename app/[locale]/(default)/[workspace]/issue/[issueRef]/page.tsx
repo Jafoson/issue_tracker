@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { IssueDetailPage } from "@/features/issues/components/IssueDetail/IssueDetailPage";
-import { getIssueEditorData } from "@/features/issues/editor-data";
+import { getIssueComposerData } from "@/features/issues/editor-data";
 import { getIssueByRef } from "@/features/issues/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
@@ -16,7 +16,7 @@ export default async function IssuePage({
 
   const [issue, data] = await Promise.all([
     getIssueByRef(workspace, issueRef),
-    getIssueEditorData(),
+    getIssueComposerData(),
   ]);
   if (!issue || !data) notFound();
 

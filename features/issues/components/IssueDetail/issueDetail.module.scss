@@ -1,77 +1,117 @@
-.inlineWrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  max-width: 960px;
-  margin: 24px auto;
-  width: 100%;
+/* Detailansicht eines Issues. Fläche, Rahmen und Kopfzeile kommen vom Modal —
+   hier liegt die Zweiteilung: Inhalt links, Attribute rechts. Gilt für beide
+   Varianten, das Panel im Modal-Stack und die eingebettete Vollseite. */
+
+.detail {
+  --detail-sidebar-w: 300px;
+  --detail-pad-x: 28px;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px 12px;
-  border-bottom: 1px solid var(--border);
-  flex: none;
+/* Vollseite: mittig eingebettet statt an der Kante, mit Luft zum Rand. Sie
+   steht in der Seite statt über ihr, deshalb der leichtere Schatten. */
+.page {
+  --modal-w: min(1080px, 100%);
+  --modal-max-h: none;
+  --modal-shadow: var(--shadow-card);
+
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 20px auto;
 }
 
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* ---------- Kopfzeile ---------- */
+
+.ref {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: .04em;
+  color: var(--outline);
 }
 
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+.copied {
+  color: var(--secondary);
 }
 
-.body {
+/* ---------- Aufteilung ---------- */
+
+.split {
   display: flex;
-  flex: 1;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px 28px;
+  flex: 1 1 auto;
   min-width: 0;
+  padding: 26px var(--detail-pad-x) 36px;
+  overflow-y: auto;
 }
 
+/* Titel und Beschreibung sind Eingabefelder (`EditableText`). Der negative
+   Rand zieht ihr Innenpolster wieder heraus, damit der Text trotz Hover-Fläche
+   auf derselben Kante steht wie alles darunter. */
 .title {
-  font-size: 20px;
+  margin: 0 -8px 6px;
+  font-size: var(--text-xl);
   font-weight: 600;
-  line-height: 1.3;
-  margin: 0 0 16px;
+  line-height: var(--leading-tight);
+  color: var(--on-surface);
 }
 
-.desc {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-2);
-  margin-bottom: 24px;
+.description {
+  margin: 0 -8px;
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
 }
 
-.comments {
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.descriptionBlock {
+  margin-top: 22px;
 }
 
-.commentsHeader {
+/* Beschreibung und Kommentare kündigen sich gleich an. */
+.sectionHead {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 4px;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--on-surface-variant);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+/* ---------- Kommentare ---------- */
+
+.comments {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.commentsCount {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.commentsEmpty {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--outline);
+}
+
+.commentList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .comment {
@@ -80,70 +120,243 @@
   align-items: flex-start;
 }
 
-.commentInput {
+.commentBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.commentMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.commentAuthor {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface);
+}
+
+.commentTime {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.commentText {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Kommentar schreiben ---------- */
+
+.composer {
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  margin-top: 24px;
 }
 
-.commentBox {
+.composerBox {
   flex: 1;
+  min-width: 0;
 }
 
-.sidebar {
-  width: 228px;
-  flex: none;
-  border-left: 1px solid var(--border);
-  padding: 18px 14px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 9px 12px;
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  color: var(--on-surface);
+  font-family: inherit;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  resize: vertical;
+
+  &::placeholder { color: var(--outline); }
+  &:focus-visible { outline-offset: 0; }
 }
 
-.sideField {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-
-  &:last-of-type {
-    border-bottom: none;
-  }
-}
-
-.sideLabel {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.sideValue {
-  display: flex;
-}
-
-.sideBtn {
+.composerFoot {
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 13px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-
-  &:hover {
-    background: var(--surface-2);
-  }
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-.sideActions {
-  margin-top: 12px;
+/* ---------- Attributspalte ---------- */
+
+.sidebar {
+  flex: none;
+  width: var(--detail-sidebar-w);
+  padding: 18px 18px 28px;
+  border-left: 1px solid var(--outline-variant);
+  overflow-y: auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.rowLabel {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
+.rowValue {
+  display: flex;
+  min-width: 0;
+}
+
+/* Anzeigender Wert und Picker-Trigger sitzen auf derselben Grundlinie — der
+   Trigger gibt sich erst beim Überfahren als Schaltfläche zu erkennen. */
+.value,
+.valueBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  color: var(--on-surface);
+  text-align: left;
+}
+
+/* Namen können länger sein als die Spalte breit ist — im Flex-Container greift
+   `text-overflow` nur auf einem echten Element, deshalb der eigene Span. */
+.valueText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.valueMuted {
+  color: var(--on-surface-variant);
+}
+
+.valueBtn {
+  transition: background .12s;
+
+  &:hover { background: var(--surface-container-high); }
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover { background: var(--surface-container-high); color: var(--on-surface); }
+}
+
+.divider {
+  height: 1px;
+  margin: 10px 0;
+  background: var(--outline-variant);
+}
+
+.labels {
+  padding: 4px 0;
+}
+
+.labelsHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+
+.labelsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0 6px;
+}
+
+.labelsEmpty {
+  display: block;
+  margin-top: 4px;
+  padding: 0 6px;
+  font-size: var(--text-base);
+  color: var(--outline);
+}
+
+/* ---------- Lade- und Leerzustand ---------- */
+
+.missing {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.shimmer {
+  height: 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-container-high);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.shimmerTitle {
+  height: 22px;
+  width: 60%;
+  margin-bottom: 20px;
+}
+
+.shimmerShort {
+  width: 40%;
+}
+
+@keyframes pulse {
+  50% { opacity: .45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer { animation: none; }
+}
+
+/* Unter ~720px steht kein Platz für zwei Spalten — die Attribute rutschen
+   unter den Inhalt, und gescrollt wird dann als Ganzes. */
+@media (max-width: 720px) {
+  .split {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .main,
+  .sidebar {
+    overflow: visible;
+  }
+
+  .main {
+    padding: 20px 18px 24px;
+  }
+
+  .sidebar {
+    width: auto;
+    border-left: none;
+    border-top: 1px solid var(--outline-variant);
+  }
 }
