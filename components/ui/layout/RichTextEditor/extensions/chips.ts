@@ -9,8 +9,8 @@ import { faviconStyle, hostOf } from "@/lib/richtext/link";
 //
 // Nur die Klassen, nicht die Komponente — `renderHTML` baut reines DOM, React
 // gibt es hier nicht.
-import atom from "../../Chip/chip.module.scss";
-import chip from "../../RichText/richText.module.scss";
+import atom from "../../../atoms/Chip/chip.module.scss";
+import chip from "../../../atoms/RichText/richText.module.scss";
 import type { SuggestionItem } from "../components/SuggestionMenu/SuggestionMenu";
 
 /** Was `<Chip as="span" size="inline" variant="elevated">` erzeugt. */

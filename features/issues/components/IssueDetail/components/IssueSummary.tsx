@@ -2,7 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
-import { EditableText } from "@/components/ui/atoms/EditableText/EditableText";
+import { EditableText } from "@/components/ui/layout/EditableText/EditableText";
 import { IssueRichText } from "@/features/issues/components/IssueRichText/IssueRichText";
 import type { IssueEditorData, IssuePatch } from "@/features/issues/types";
 import type { PMDoc } from "@/lib/richtext/types";

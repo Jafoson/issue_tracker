@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { SuggestionItem } from "@/components/ui/atoms/RichTextEditor/components/SuggestionMenu/SuggestionMenu";
-import { createSuggestion } from "@/components/ui/atoms/RichTextEditor/extensions/suggestion";
+import type { SuggestionItem } from "@/components/ui/layout/RichTextEditor/components/SuggestionMenu/SuggestionMenu";
+import { createSuggestion } from "@/components/ui/layout/RichTextEditor/extensions/suggestion";
 
 /**
  * Der Editor selbst lässt sich hier nicht bauen — ProseMirror braucht ein echtes

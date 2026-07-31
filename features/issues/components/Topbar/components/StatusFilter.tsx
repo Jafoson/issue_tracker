@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
+import { FilterChip } from "@/components/ui/layout/FilterChip/FilterChip";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { Status } from "@/types";
 import { MultiStatusIcon } from "./FilterIcons";

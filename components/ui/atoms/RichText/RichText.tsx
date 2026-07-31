@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
-import { CopyButton } from "@/components/ui/atoms/CopyButton/CopyButton";
+import { CopyButton } from "@/components/ui/layout/CopyButton/CopyButton";
 import { languageLabel } from "@/lib/richtext/code";
 import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";

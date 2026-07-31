@@ -3,7 +3,7 @@ import {
   filterSlashItems,
   normalize,
   type SlashCommandItem,
-} from "@/components/ui/atoms/RichTextEditor/extensions/SlashCommand";
+} from "@/components/ui/layout/RichTextEditor/extensions/SlashCommand";
 import { modKey } from "@/lib/a11y";
 
 /**

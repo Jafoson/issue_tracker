@@ -20,7 +20,7 @@ import { modKey } from "@/lib/a11y";
 import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
-import richText from "../RichText/richText.module.scss";
+import richText from "../../atoms/RichText/richText.module.scss";
 import { CodeBlockView } from "./components/CodeBlockView/CodeBlockView";
 import { EditorToolbar } from "./components/EditorToolbar/EditorToolbar";
 import { LinkForm } from "./components/LinkForm/LinkForm";

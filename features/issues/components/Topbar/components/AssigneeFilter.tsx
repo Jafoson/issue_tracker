@@ -3,8 +3,8 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
-import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
+import { FilterChip } from "@/components/ui/layout/FilterChip/FilterChip";
 import { fullName } from "@/lib/utils/string";
 import type { User } from "@/types";
 

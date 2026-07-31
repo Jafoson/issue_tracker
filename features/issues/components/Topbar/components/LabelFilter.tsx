@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
+import { FilterChip } from "@/components/ui/layout/FilterChip/FilterChip";
 import {
   LabelDots,
   LabelIcon,

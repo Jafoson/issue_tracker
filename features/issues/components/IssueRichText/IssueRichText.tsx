@@ -3,11 +3,11 @@
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
-import { EditableRichText } from "@/components/ui/atoms/RichTextEditor/EditableRichText";
+import { EditableRichText } from "@/components/ui/layout/RichTextEditor/EditableRichText";
 import type {
   IssueSource,
   MentionSource,
-} from "@/components/ui/atoms/RichTextEditor/RichTextEditor";
+} from "@/components/ui/layout/RichTextEditor/RichTextEditor";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { IssueEditorData } from "@/features/issues/types";
 import type { PMDoc } from "@/lib/richtext/types";

@@ -2,14 +2,19 @@
 
 import { Icon } from "@iconify/react";
 import { useEffect, useState } from "react";
-import styles from "./copyButton.module.scss";
+import { Button } from "@/components/ui/atoms/Button/Button";
 
 /**
- * Kopiert einen Text in die Zwischenablage und bestätigt es kurz.
+ * Ein `Button`, der Text in die Zwischenablage legt und es kurz bestätigt.
  *
- * Bewusst klein und eigenständig: der Codeblock, in dem er sitzt, wird
- * serverseitig gerendert. Nur dieser Knopf braucht den Browser — so bleibt der
- * Rest davon frei.
+ * Kein eigenes Aussehen — das kommt vollständig vom `Button`. Diese Hülle
+ * trägt nur das Verhalten: den Zugriff auf die Zwischenablage und die
+ * Bestätigung danach. Deshalb steht sie hier und nicht unter `atoms/`: die
+ * sind unteilbar, das hier ist eine Zusammensetzung.
+ *
+ * Eine eigene Komponente bleibt sie trotzdem, weil sie auch im Codeblock der
+ * **Anzeige** steht — und die rendert serverseitig. So ist genau dieser Knopf
+ * die einzige Stelle darin, die den Browser braucht.
  */
 
 interface CopyButtonProps {
@@ -48,17 +53,16 @@ export function CopyButton({
   };
 
   return (
-    <button
-      type="button"
-      className={[styles.copy, className].filter(Boolean).join(" ")}
-      data-copied={copied || undefined}
+    <Button
+      variant="ghost"
+      size="sm"
+      className={className}
+      icon={<Icon icon={copied ? "lucide:check" : "lucide:copy"} width={14} />}
       aria-label={copied ? copiedLabel : label}
       title={copied ? copiedLabel : label}
       // Im Editor darf der Fokus den Text nicht verlassen.
       onMouseDown={(e) => e.preventDefault()}
       onClick={copy}
-    >
-      <Icon icon={copied ? "lucide:check" : "lucide:copy"} width={14} />
-    </button>
+    />
   );
 }

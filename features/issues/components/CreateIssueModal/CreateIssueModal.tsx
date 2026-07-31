@@ -7,9 +7,9 @@ import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
+import { FilterChip } from "@/components/ui/layout/FilterChip/FilterChip";
 import { ModalTitleInput } from "@/components/ui/layout/Modal/components/ModalFields";
 import {
   ModalFooter,

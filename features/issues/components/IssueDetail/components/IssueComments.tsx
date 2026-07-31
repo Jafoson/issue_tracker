@@ -27,7 +27,7 @@ import styles from "../issueDetail.module.scss";
 
 const RichTextEditor = dynamic(
   () =>
-    import("@/components/ui/atoms/RichTextEditor/RichTextEditor").then(
+    import("@/components/ui/layout/RichTextEditor/RichTextEditor").then(
       (m) => m.RichTextEditor,
     ),
   { ssr: false, loading: () => <div className={styles.composerLoading} /> },

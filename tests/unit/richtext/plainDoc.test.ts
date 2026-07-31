@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { getSchema } from "@tiptap/core";
 import { Node as PMNode } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
-import { MentionChip } from "@/components/ui/atoms/RichTextEditor/extensions/chips";
+import { MentionChip } from "@/components/ui/layout/RichTextEditor/extensions/chips";
 import { toPlainDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 

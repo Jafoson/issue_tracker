@@ -1,5 +1,5 @@
 import { mergeAttributes, Node } from "@tiptap/core";
-import panel from "../../RichText/richText.module.scss";
+import panel from "../../../atoms/RichText/richText.module.scss";
 
 /**
  * Der farbige Hinweisblock, den Jira „Panel" nennt — Info oder Warnung.

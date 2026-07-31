@@ -4,9 +4,9 @@ import { Icon } from "@iconify/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { useTranslations } from "next-intl";
-import { CopyButton } from "@/components/ui/atoms/CopyButton/CopyButton";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
+import { CopyButton } from "@/components/ui/layout/CopyButton/CopyButton";
 import {
   CODE_LANGUAGES,
   countLines,

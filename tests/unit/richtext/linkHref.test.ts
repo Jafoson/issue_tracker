@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { toHref } from "@/components/ui/atoms/RichTextEditor/components/LinkForm/LinkForm";
+import { toHref } from "@/components/ui/layout/RichTextEditor/components/LinkForm/LinkForm";
 import { faviconOf, faviconStyle, hostOf } from "@/lib/richtext/link";
 
 /**
