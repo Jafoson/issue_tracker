@@ -155,9 +155,12 @@ export function EditableRichText({
           role="button"
           tabIndex={0}
           aria-label={label}
-          // Ein Klick auf einen Link im Text soll dorthin führen, nicht ins Feld.
+          // Was im Text selbst bedienbar ist, behält seinen Klick: ein Link
+          // führt dorthin, der Kopierknopf am Codeblock kopiert. Nur ein Klick
+          // auf den Text dazwischen öffnet den Editor.
           onClick={(e) => {
-            if (!(e.target as HTMLElement).closest("a")) setIsEditing(true);
+            if ((e.target as HTMLElement).closest("a, button")) return;
+            setIsEditing(true);
           }}
           onKeyDown={onActivate(() => setIsEditing(true))}
         >

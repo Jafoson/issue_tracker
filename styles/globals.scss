@@ -52,24 +52,6 @@ input, textarea, select { font-family: inherit; }
 .divider { height: 1px; background: var(--outline-variant); }
 .dot     { width: 7px; height: 7px; border-radius: 50%; flex: none; }
 .cursor-normal { cursor: default; }
-
-
-.iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: transparent;
-  color: var(--text-2);
-  transition: background .12s, color .12s;
-
-  &:hover  { background: var(--card-hover); color: var(--text); }
-  &.active { background: var(--surface-2); color: var(--text); }
-}
-
 /* ---------- Keyboard chip ---------- */
 .kbd {
   font-family: var(--font-mono);
@@ -84,41 +66,69 @@ input, textarea, select { font-family: inherit; }
 
 
 
-/* Gerendertes Markdown hat seine eigene Komponente:
-   components/ui/atoms/Markdown — dort stehen auch die Styles. */
 
-/* ============================================================
-   Orbit Component Classes
-   ============================================================ */
+/* ---------- Syntax-Hervorhebung ----------
+   Die Klassennamen erzeugt `highlight.js` und sind damit global — deshalb
+   stehen sie hier und nicht in einem CSS-Modul. Dieselbe Zuordnung gilt für
+   die Anzeige (`RichText`) und den Editor, die Farben selbst stehen in
+   styles/colors.css.
 
-/* ---------- List View ---------- */
-.orbit-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 18px;
-  height: var(--row-h);
-  border-bottom: 1px solid var(--border-faint);
-  cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-  transition: background .1s;
+   Zusammengefasst statt einzeln: `highlight.js` kennt gut vierzig Rollen, von
+   denen viele dieselbe Bedeutung tragen. Zehn Farben reichen, um Code lesbar
+   zu machen — mehr wird zum Flickenteppich. */
 
-  &:hover, &.active { background: var(--card-hover); }
-}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-doctag,
+.hljs-name,
+.hljs-strong { color: var(--code-keyword); }
 
-/* ---------- Detail overlay ---------- */
-.orbit-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay);
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  z-index: var(--z-overlay);
-  animation: fadeIn .16s ease both;
-}
+.hljs-string,
+.hljs-regexp,
+.hljs-char.escape_,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-quote { color: var(--code-string); }
+
+.hljs-comment { color: var(--code-comment); font-style: italic; }
+
+.hljs-number,
+.hljs-link { color: var(--code-number); }
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_,
+.hljs-selector-id,
+.hljs-selector-class { color: var(--code-function); }
+
+.hljs-type,
+.hljs-built_in,
+.hljs-class,
+.hljs-tag { color: var(--code-type); }
+
+.hljs-variable,
+.hljs-variable.language_,
+.hljs-template-variable,
+.hljs-attr,
+.hljs-attribute,
+.hljs-property,
+.hljs-params { color: var(--code-variable); }
+
+.hljs-meta,
+.hljs-meta.keyword_,
+.hljs-punctuation,
+.hljs-operator,
+.hljs-subst { color: var(--code-meta); }
+
+.hljs-addition { color: var(--code-added); }
+.hljs-deletion { color: var(--code-removed); }
+
+.hljs-emphasis { font-style: italic; }
+
+/* Gerenderter Rich Text hat seine eigene Komponente:
+   components/ui/atoms/RichText — dort stehen auch die Styles. */
 
 /* Full-bleed click/keyboard target that closes the overlay (sits behind the panel). */
 .orbit-backdrop {

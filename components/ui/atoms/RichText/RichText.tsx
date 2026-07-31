@@ -4,6 +4,7 @@ import { CopyButton } from "@/components/ui/layout/CopyButton/CopyButton";
 import { languageLabel } from "@/lib/richtext/code";
 import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";
+import { highlightLines } from "@/lib/richtext/highlight";
 import { faviconOf, hostOf } from "@/lib/richtext/link";
 import type { PMDoc, PMMark, PMNode } from "@/lib/richtext/types";
 import styles from "./richText.module.scss";
@@ -151,8 +152,9 @@ function renderNode(
       // statt über `children()`: die Zeilen brauchen je ein eigenes Element,
       // damit die Nummern daneben stehen können.
       const code = (node.content ?? []).map((n) => n.text ?? "").join("");
-      const lines = code.replace(/\n$/, "").split("\n");
       const language = attr(node, "language");
+      // Hervorgehoben wird zeilenweise, weil die Nummern daneben stehen.
+      const lines = highlightLines(code, language);
 
       return (
         <div key={key} className={styles.codeBlock}>
@@ -175,7 +177,19 @@ function renderNode(
                   key={index}
                   className={styles.codeLine}
                 >
-                  {line}
+                  {line.map((token, at) =>
+                    token.className ? (
+                      <span
+                        // biome-ignore lint/suspicious/noArrayIndexKey: Stücke einer Zeile haben keine Kennung
+                        key={at}
+                        className={token.className}
+                      >
+                        {token.text}
+                      </span>
+                    ) : (
+                      token.text
+                    ),
+                  )}
                 </span>
               ))}
             </code>

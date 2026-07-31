@@ -66,6 +66,15 @@ export function findLanguage(value: unknown): CodeLanguage | null {
 export const PLAIN_LANGUAGE = "Plain";
 
 /**
+ * Ausdrücklich keine Sprache.
+ *
+ * Zu unterscheiden von `null`, das „noch nicht entschieden" heißt: nur dort
+ * darf die Erkennung raten. Wer im Menü „Plain" wählt, meint es so — und soll
+ * es nicht beim nächsten Tastendruck wieder überschrieben bekommen.
+ */
+export const PLAIN_VALUE = "plain";
+
+/**
  * Was am Block steht.
  *
  * Eine unbekannte Angabe wird nicht verworfen, sondern durchgereicht: sie kam

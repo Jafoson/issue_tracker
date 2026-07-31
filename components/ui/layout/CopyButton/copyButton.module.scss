@@ -1,0 +1,22 @@
+/* Nur der Übergang zur Bestätigung — Fläche, Größe und Zustände kommen vom
+   `Button`. */
+
+.copy {
+  /* Der Knopf wächst um das Wort. Ohne Übergang springt die Kopfzeile des
+     Codeblocks in der Breite. */
+  transition: color .14s ease;
+  white-space: nowrap;
+
+  &[data-copied] {
+    color: var(--tertiary);
+  }
+
+  /* Das Wort blendet sich ein, statt aufzuploppen. */
+  > span:last-child {
+    animation: copyConfirm .16s ease;
+  }
+}
+
+@keyframes copyConfirm {
+  from { opacity: 0; transform: translateX(-4px); }
+}

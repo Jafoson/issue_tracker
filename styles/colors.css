@@ -68,6 +68,20 @@
   --surface-container-high: rgb(42 42 34);
   --surface-container-highest: rgb(53 53 44);
 
+  /* Syntax-Hervorhebung. Eigene Tokens, weil die Rollen im Code — Schlüsselwort,
+     Zeichenkette, Kommentar — mit den Rollen der Oberfläche nichts zu tun haben.
+     Zugeordnet werden sie in styles/globals.scss. */
+  --code-keyword: rgb(198 160 246);
+  --code-string: rgb(158 206 142);
+  --code-comment: rgb(120 124 110);
+  --code-number: rgb(240 176 118);
+  --code-function: rgb(130 190 240);
+  --code-type: rgb(130 213 201);
+  --code-variable: rgb(232 178 150);
+  --code-meta: rgb(160 164 148);
+  --code-added: rgb(126 200 150);
+  --code-removed: rgb(232 140 132);
+
   color-scheme: dark;
 }
 
@@ -125,6 +139,19 @@
   --surface-container: rgb(234 239 234);
   --surface-container-high: rgb(228 234 228);
   --surface-container-highest: rgb(222 228 222);
+
+  /* Siehe dunkles Thema — hier durchweg dunkler, damit sie auf hellem Grund
+     tragen. */
+  --code-keyword: rgb(126 60 178);
+  --code-string: rgb(28 116 62);
+  --code-comment: rgb(122 126 112);
+  --code-number: rgb(166 86 18);
+  --code-function: rgb(24 92 168);
+  --code-type: rgb(20 104 92);
+  --code-variable: rgb(150 76 40);
+  --code-meta: rgb(96 100 88);
+  --code-added: rgb(26 116 64);
+  --code-removed: rgb(176 42 42);
 
   color-scheme: light;
 }

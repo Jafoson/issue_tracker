@@ -122,7 +122,9 @@ describe("RichText", () => {
       }),
     );
     expect(code).toContain('data-language="ts"');
-    expect(code).toContain("const a = 1");
+    // Der Code steht jetzt in Token zerlegt da — geprüft wird der Text ohne
+    // Auszeichnung, damit die Hervorhebung nichts verschluckt.
+    expect(textOf(code)).toContain("const a = 1");
 
     expect(render(doc({ type: "horizontalRule" }))).toContain("<hr/>");
   });
@@ -316,6 +318,16 @@ describe("RichText — Adresse beim Überfahren", () => {
   });
 });
 
+/** Der sichtbare Text ohne Auszeichnung — Entities zurückübersetzt. */
+const textOf = (html: string) =>
+  html
+    .replace(/<[^>]*>/g, "")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&#x27;", "'");
+
 describe("RichText — Codeblock", () => {
   const codeBlock = (text: string, language?: string) =>
     renderToStaticMarkup(
@@ -364,8 +376,19 @@ describe("RichText — Codeblock", () => {
 
   test("hält die Zeilennummern aus dem Text heraus", () => {
     // Sie stehen im CSS (`::before`) — sonst wanderten sie beim Kopieren mit.
-    const html = codeBlock("const a = 1");
-    expect(html).not.toContain(">1<");
-    expect(html).toContain("const a = 1");
+    // Geprüft am reinen Text: dort darf nichts stehen als der Code selbst.
+    const html = codeBlock("eins\nzwei\ndrei", "ts");
+    expect(textOf(html)).toContain("einszweidrei");
+    expect(textOf(html)).not.toMatch(/1.*2.*3/);
+  });
+
+  test("färbt ein, ohne den Code zu verändern", () => {
+    const quelle = 'const a = "hallo" // hi';
+    const html = codeBlock(quelle, "ts");
+    expect(html).toContain("hljs-keyword");
+    expect(html).toContain("hljs-string");
+    expect(html).toContain("hljs-comment");
+    // Entscheidend: der Text bleibt Zeichen für Zeichen derselbe.
+    expect(textOf(html)).toContain(quelle);
   });
 });

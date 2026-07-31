@@ -3,7 +3,7 @@
 import { Icon } from "@iconify/react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
-import CodeBlock from "@tiptap/extension-code-block";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -19,6 +19,7 @@ import { Calendar } from "@/components/ui/atoms/Calendar/Calendar";
 import { modKey } from "@/lib/a11y";
 import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
+import { lowlight } from "@/lib/richtext/highlight";
 import type { PMDoc } from "@/lib/richtext/types";
 import richText from "../../atoms/RichText/richText.module.scss";
 import { CodeBlockView } from "./components/CodeBlockView/CodeBlockView";
@@ -407,12 +408,14 @@ export function RichTextEditor({
         codeBlock: false,
       }),
       // Der Codeblock bekommt eine React-Ansicht: Sprachwahl und Kopierknopf
-      // brauchen ein Menü, das `renderHTML` nicht liefern kann.
-      CodeBlock.extend({
+      // brauchen ein Menü, das `renderHTML` nicht liefern kann. Die
+      // Hervorhebung selbst läuft über ProseMirror-Dekorationen — deshalb die
+      // Lowlight-Variante statt des schlichten `CodeBlock`.
+      CodeBlockLowlight.extend({
         addNodeView() {
           return ReactNodeViewRenderer(CodeBlockView);
         },
-      }),
+      }).configure({ lowlight }),
       // Tiptaps `Link` baut den Anker selbst — der Titel muss deshalb hier
       // hinein, damit auch beim Schreiben zu sehen ist, wohin ein Wort führt.
       Link.extend({
