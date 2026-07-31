@@ -11,6 +11,9 @@
   background: var(--surface-container-low);
   /* Der Rundung wegen: die Werkzeugleiste sitzt sonst mit eckigen Ecken auf. */
   overflow: hidden;
+  /* Platz für den Ziehgriff, damit er nicht in die untere Rundung läuft und
+     dort angeschnitten wird. */
+  padding-bottom: 5px;
   transition: border-color .14s ease, box-shadow .14s ease;
 
   /* Beim Schreiben hebt sich das Feld ab — ein weicher Ring statt eines
@@ -22,10 +25,27 @@
 }
 
 .content {
-  max-height: 60vh;
+  /* In der Höhe ziehbar — so war es beim abgelösten `textarea` auch.
+     `resize` verlangt ein `overflow` ungleich `visible`; das liefert die
+     Bildlaufleiste schon. Die Höhe kommt anfangs von `.surface` darin, ab dem
+     ersten Ziehen vom Browser. */
+  resize: vertical;
+  /* Nach oben großzügig: wer zieht, will vergrößern. Ganz ohne Grenze könnte
+     das Feld aus dem Bild wachsen. */
+  min-height: 96px;
+  max-height: 85vh;
   overflow-y: auto;
-  /* Etwas Luft zum gerundeten unteren Rand. */
-  padding-bottom: 2px;
+}
+
+/* Der Griff des Browsers ist auf dunklem Grund kaum zu sehen — ein Andeuten
+   der Kante genügt, damit man ihn findet. */
+.content::-webkit-resizer {
+  background: linear-gradient(
+    -45deg,
+    transparent 0 45%,
+    var(--outline) 45% 55%,
+    transparent 55%
+  );
 }
 
 /* Liegt auf dem `contenteditable` selbst (siehe `editorProps.attributes`). */
@@ -127,4 +147,22 @@
   :global(.ProseMirror-gapcursor)::after {
     border-top-color: var(--on-surface);
   }
+}
+
+/* ─── Kalenderblatt ────────────────────────────────────────────────────────── */
+
+/* Hängt am `body`, muss also selbst über dem Modal liegen — dieselbe Ebene wie
+   die Vorschlagsliste, aus demselben Grund. */
+.calendarLayer {
+  position: fixed;
+  z-index: var(--z-popover);
+}
+
+/* Fängt den Klick daneben ab. Unsichtbar und ohne eigene Fläche im Layout. */
+.calendarBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-popover);
+  background: transparent;
+  cursor: default;
 }

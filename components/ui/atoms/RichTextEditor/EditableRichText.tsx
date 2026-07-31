@@ -78,6 +78,15 @@ export function EditableRichText({
   // gleich, wenn ihr JSON gleich ist, und `onUpdate` liefert bei jedem
   // Tastendruck ein neues Objekt.
   const committed = useRef(JSON.stringify(toDoc(value)));
+  /**
+   * Ob die Maustaste gerade im Editor gedrückt ist.
+   *
+   * Der Ziehgriff zum Vergrößern ist kein fokussierbares Element: Ziehen nimmt
+   * dem Text den Fokus und gibt ihn an niemanden weiter — `relatedTarget` ist
+   * `null`. Für `onBlur` unten sieht das aus wie ein Klick nach draußen, und
+   * das Feld würde mitten im Ziehen zuklappen. Der Merker hält es offen.
+   */
+  const pressedInside = useRef(false);
 
   // Ein neuer Wert von außen gewinnt; während des Bearbeitens bleibt er außen
   // vor, sonst überschriebe eine eintreffende Antwort das Getippte. Angleich
@@ -112,6 +121,15 @@ export function EditableRichText({
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [isEditing, value]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const release = () => {
+      pressedInside.current = false;
+    };
+    window.addEventListener("mouseup", release);
+    return () => window.removeEventListener("mouseup", release);
+  }, [isEditing]);
 
   const commit = () => {
     setIsEditing(false);
@@ -154,8 +172,14 @@ export function EditableRichText({
           Editor ganz verlässt, wird übernommen. */}
       <fieldset
         className={styles.shell}
+        onMouseDown={() => {
+          pressedInside.current = true;
+        }}
         onBlur={(e) => {
           if (e.currentTarget.contains(e.relatedTarget)) return;
+          // Am Ziehgriff gedrückt: der Fokus ist zwar weg, der Editor aber
+          // nicht verlassen. Übernommen wird erst beim nächsten echten Blur.
+          if (pressedInside.current) return;
           // Die Vorschlagsliste hängt per Portal am `body`, liegt also außerhalb
           // dieses Baums. Ohne die Ausnahme spränge das Feld beim Klick auf
           // einen Vorschlag zu.

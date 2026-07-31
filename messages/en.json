@@ -273,11 +273,12 @@
   "editor": {
     "bold": "Bold",
     "bulletList": "Bulleted list",
+    "close": "Close",
     "code": "Code",
     "codeBlock": "Code block",
     "date": "Date",
-    "dateNextWeek": "Date — next week",
-    "dateTomorrow": "Date — tomorrow",
+    "dateOpenCalendar": "Pick from calendar…",
+    "dateTyped": "use this date",
     "divider": "Divider",
     "groupBlocks": "Blocks",
     "groupInsert": "Insert",
@@ -294,6 +295,7 @@
     "link": "Link",
     "mention": "Mention someone",
     "noCommands": "No commands found",
+    "noDates": "No date recognised",
     "noEmoji": "No emoji found",
     "noIssues": "No issues found",
     "noMembers": "No members found",
@@ -305,6 +307,7 @@
     "table": "Table",
     "taskList": "Checklist",
     "today": "today",
+    "tomorrow": "tomorrow",
     "toolbar": "Formatting",
     "warningPanel": "Warning panel"
   }

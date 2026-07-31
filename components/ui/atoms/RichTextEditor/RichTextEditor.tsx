@@ -11,7 +11,10 @@ import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Calendar } from "@/components/ui/atoms/Calendar/Calendar";
+import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 import richText from "../RichText/richText.module.scss";
@@ -76,13 +79,6 @@ export interface RichTextEditorProps {
   className?: string;
 }
 
-/** Ein Datum ohne Zeitzonen-Überraschung: der Kalendertag vor Ort. */
-function isoDate(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 export function RichTextEditor({
   value,
   onChange,
@@ -95,6 +91,39 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const t = useTranslations("editor");
+  // Wo das Kalenderblatt steht, solange es offen ist. `null` heißt: zu.
+  const [calendar, setCalendar] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const editorRef = useRef<Editor | null>(null);
+
+  /**
+   * Hängt das Blatt an die Stelle, an der der Cursor gerade steht.
+   *
+   * Stabil gehalten, weil die Extensions davon abhängen: eine bei jedem Render
+   * neue Funktion würde `useMemo` unten entwerten, den Editor neu aufbauen und
+   * den Cursor springen lassen. Ref und Setter sind selbst stabil, die leere
+   * Liste stimmt also.
+   */
+  const openCalendar = useCallback(() => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const at = view.coordsAtPos(view.state.selection.from);
+    setCalendar({ x: at.left, y: at.bottom + 6 });
+  }, []);
+
+  const insertDate = (iso: string) => {
+    setCalendar(null);
+    editorRef.current
+      ?.chain()
+      .focus()
+      .insertContent([
+        { type: "dateChip", attrs: { date: iso } },
+        // Ohne das Leerzeichen klebt das nächste Wort am Chip.
+        { type: "text", text: " " },
+      ])
+      .run();
+  };
 
   // Die Extensions hängen an den Vorschlagsdaten. Sie werden einmal pro
   // Datenstand gebaut — `useEditor` baut den Editor sonst bei jedem Tastendruck
@@ -206,6 +235,78 @@ export function RichTextEditor({
       }),
     });
 
+    // `//` ist der Auslöser für Datumsangaben. Er kollidiert nicht mit dem
+    // `/`-Menü: sobald der zweite Schrägstrich steht, scheitert dort die
+    // Präfix-Prüfung von `@tiptap/suggestion` und die Liste schließt sich.
+    const date = DateChip.configure({
+      suggestion: createSuggestion<SuggestionItem>({
+        name: "dateSuggestion",
+        char: "//",
+        emptyLabel: () => t("noDates"),
+        items: (query) => {
+          const q = query.trim().toLowerCase();
+
+          // Etwas Getipptes wie `//1.2.2002` gewinnt und steht allein da.
+          const typed = parseDateInput(query);
+          if (typed) {
+            return [
+              {
+                id: typed,
+                label: formatChipDate(typed),
+                hint: t("dateTyped"),
+                icon: <Icon icon="lucide:calendar-check" width={16} />,
+              },
+            ];
+          }
+
+          // Genau zwei Kürzel: `//now` und `//tomorrow`. Alles Weitere wird
+          // getippt (`//1.2.2002`) oder im Blatt gewählt.
+          const presets: { id: string; label: string; key: string }[] = [
+            { id: isoDate(), label: t("today"), key: "now" },
+            { id: isoDate(1), label: t("tomorrow"), key: "tomorrow" },
+          ];
+
+          return [
+            ...presets
+              // Auch die übersetzte Beschriftung trifft — wer `//heu` tippt,
+              // findet „heute", ohne dass es ein zweites Kürzel dafür gäbe.
+              .filter(
+                (p) =>
+                  !q ||
+                  p.key.startsWith(q) ||
+                  p.label.toLowerCase().startsWith(q),
+              )
+              .map((p) => ({
+                id: p.id,
+                label: p.label,
+                hint: formatChipDate(p.id),
+                icon: <Icon icon="lucide:calendar" width={16} />,
+              })),
+            {
+              id: "calendar",
+              label: t("dateOpenCalendar"),
+              icon: <Icon icon="lucide:calendar-days" width={16} />,
+            },
+          ];
+        },
+        onSelect: ({ editor, range, item }) => {
+          if (item.id === "calendar") {
+            editor.chain().focus().deleteRange(range).run();
+            openCalendar();
+            return;
+          }
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(range, [
+              { type: "dateChip", attrs: { date: item.id } },
+              { type: "text", text: " " },
+            ])
+            .run();
+        },
+      }),
+    });
+
     const slash = SlashCommand.configure({
       suggestion: createSuggestion<SlashCommandItem>({
         name: "slashCommand",
@@ -270,13 +371,10 @@ export function RichTextEditor({
       mention,
       issueLink,
       emoji,
-      // Ohne eigenen Trigger — Datums-Chips kommen aus dem `/`-Menü. Die
-      // Erweiterung muss trotzdem geladen sein, sonst kennt das Schema den
-      // Knoten nicht und `insertContent` verwirft ihn stillschweigend.
-      DateChip,
+      date,
       slash,
     ];
-  }, [members, issues, placeholder, t]);
+  }, [members, issues, placeholder, t, openCalendar]);
 
   const editor = useEditor({
     extensions,
@@ -309,10 +407,54 @@ export function RichTextEditor({
     onUpdate: ({ editor }) => onChange(toPlainDoc(editor.getJSON() as PMDoc)),
   });
 
+  editorRef.current = editor;
+
   return (
     <div className={[styles.editor, className].filter(Boolean).join(" ")}>
       <EditorToolbar editor={editor} />
-      <EditorContent editor={editor} className={styles.content} />
+      {/* Der Ziehgriff ist kein fokussierbares Element: Ziehen nimmt dem Text
+          den Fokus und gibt ihn an niemanden weiter. Danach zurückgeben, sonst
+          steht der Cursor nach dem Vergrößern nicht mehr im Text.
+
+          Die Abfrage auf `isFocused` ist wichtig — beim Markieren mit der Maus
+          ist der Editor bereits fokussiert, und ein `focus()` würde die
+          gerade gezogene Auswahl wieder einklappen. */}
+      <EditorContent
+        editor={editor}
+        className={styles.content}
+        onMouseUp={() => {
+          if (editorRef.current && !editorRef.current.isFocused) {
+            editorRef.current.commands.focus();
+          }
+        }}
+      />
+
+      {/* Am `body` statt im Editor: der scrollt, und ein Blatt darin würde
+          mitgeschnitten. Die Koordinaten stammen vom Cursor. */}
+      {calendar &&
+        createPortal(
+          <>
+            {/* Ein Klick daneben schließt — ohne den Fokus aus dem Text zu ziehen. */}
+            <button
+              type="button"
+              className={styles.calendarBackdrop}
+              aria-label={t("close")}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setCalendar(null)}
+            />
+            <div
+              className={styles.calendarLayer}
+              style={{ left: calendar.x, top: calendar.y }}
+            >
+              <Calendar
+                onPick={insertDate}
+                todayLabel={t("today")}
+                tomorrowLabel={t("tomorrow")}
+              />
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -332,6 +474,10 @@ export function RichTextEditor({
  *   Fehler, auch wenn Ebene 2 öfter gebraucht wird.
  * - **Blöcke, Codeblock voran.** Logs und Stapelspuren sind in einem
  *   Fehlerbericht Alltag; Zitat, Panels, Tabelle und Trennlinie folgen.
+ * Wo es eine Markdown-Eingaberegel gibt, steht sie als Hinweis rechts —
+ * abgelesen aus den Erweiterungen, nicht geraten. Wer sie kennt, tippt
+ * schneller als er das Menü öffnen kann; wer sie nicht kennt, lernt sie hier.
+ *
  * - **Einfügen zuletzt.** Erwähnung und Issue haben mit `@` und `#` eigene
  *   Auslöser — hier stehen sie nur, damit man sie findet. Die drei
  *   Datumsangaben ganz ans Ende: sie belegen sonst drei Zeilen im Sichtfeld
@@ -347,6 +493,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "bulletList",
       label: t("bulletList"),
+      hint: "-",
       group: t("groupLists"),
       icon: <Icon icon="lucide:list" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleBulletList().run(),
@@ -354,6 +501,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "taskList",
       label: t("taskList"),
+      hint: "[]",
       group: t("groupLists"),
       icon: <Icon icon="lucide:list-checks" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleTaskList().run(),
@@ -361,6 +509,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "orderedList",
       label: t("numberedList"),
+      hint: "1.",
       group: t("groupLists"),
       icon: <Icon icon="lucide:list-ordered" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleOrderedList().run(),
@@ -370,6 +519,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "heading1",
       label: t("heading1"),
+      hint: "#",
       group: t("groupText"),
       icon: <Icon icon="lucide:heading-1" width={16} />,
       run: ({ editor, range }) =>
@@ -378,6 +528,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "heading2",
       label: t("heading2"),
+      hint: "##",
       group: t("groupText"),
       icon: <Icon icon="lucide:heading-2" width={16} />,
       run: ({ editor, range }) =>
@@ -386,6 +537,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "heading3",
       label: t("heading3"),
+      hint: "###",
       group: t("groupText"),
       icon: <Icon icon="lucide:heading-3" width={16} />,
       run: ({ editor, range }) =>
@@ -396,6 +548,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "codeBlock",
       label: t("codeBlock"),
+      hint: "```",
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:code" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleCodeBlock().run(),
@@ -403,6 +556,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "blockquote",
       label: t("quote"),
+      hint: ">",
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:quote" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleBlockquote().run(),
@@ -435,6 +589,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "horizontalRule",
       label: t("divider"),
+      hint: "---",
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:minus" width={16} />,
       run: ({ editor, range }) => at(editor, range).setHorizontalRule().run(),
@@ -461,42 +616,11 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "date",
       label: t("date"),
-      hint: t("today"),
+      hint: "//",
       group: t("groupInsert"),
       icon: <Icon icon="lucide:calendar" width={16} />,
-      run: ({ editor, range }) =>
-        at(editor, range)
-          .insertContent([
-            { type: "dateChip", attrs: { date: isoDate() } },
-            { type: "text", text: " " },
-          ])
-          .run(),
-    },
-    {
-      id: "dateTomorrow",
-      label: t("dateTomorrow"),
-      group: t("groupInsert"),
-      icon: <Icon icon="lucide:calendar-plus" width={16} />,
-      run: ({ editor, range }) =>
-        at(editor, range)
-          .insertContent([
-            { type: "dateChip", attrs: { date: isoDate(1) } },
-            { type: "text", text: " " },
-          ])
-          .run(),
-    },
-    {
-      id: "dateNextWeek",
-      label: t("dateNextWeek"),
-      group: t("groupInsert"),
-      icon: <Icon icon="lucide:calendar-clock" width={16} />,
-      run: ({ editor, range }) =>
-        at(editor, range)
-          .insertContent([
-            { type: "dateChip", attrs: { date: isoDate(7) } },
-            { type: "text", text: " " },
-          ])
-          .run(),
+      // Wie bei Erwähnung und Issue: den Auslöser schreiben und übergeben.
+      run: ({ editor, range }) => at(editor, range).insertContent("//").run(),
     },
   ];
 }

@@ -273,11 +273,12 @@
   "editor": {
     "bold": "Fett",
     "bulletList": "Aufzählung",
+    "close": "Schließen",
     "code": "Code",
     "codeBlock": "Codeblock",
     "date": "Datum",
-    "dateNextWeek": "Datum — nächste Woche",
-    "dateTomorrow": "Datum — morgen",
+    "dateOpenCalendar": "Aus dem Kalender wählen…",
+    "dateTyped": "Datum übernehmen",
     "divider": "Trennlinie",
     "groupBlocks": "Blöcke",
     "groupInsert": "Einfügen",
@@ -294,6 +295,7 @@
     "link": "Link",
     "mention": "Jemanden erwähnen",
     "noCommands": "Kein Befehl gefunden",
+    "noDates": "Kein Datum erkannt",
     "noEmoji": "Kein Emoji gefunden",
     "noIssues": "Keine Issues gefunden",
     "noMembers": "Keine Mitglieder gefunden",
@@ -305,6 +307,7 @@
     "table": "Tabelle",
     "taskList": "Checkliste",
     "today": "heute",
+    "tomorrow": "morgen",
     "toolbar": "Formatierung",
     "warningPanel": "Warnblock"
   }
