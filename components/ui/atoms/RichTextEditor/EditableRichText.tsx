@@ -4,7 +4,10 @@ import { Icon } from "@iconify/react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { RichText } from "@/components/ui/atoms/RichText/RichText";
+import {
+  RichText,
+  type RichTextLabels,
+} from "@/components/ui/atoms/RichText/RichText";
 import { onActivate } from "@/lib/a11y";
 import { isEmptyDoc, toDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
@@ -55,6 +58,8 @@ interface EditableRichTextProps {
   actions?: boolean;
   members?: MentionSource[];
   issues?: IssueSource[];
+  /** Beschriftungen der Anzeige — bislang nur der Codeblock. */
+  labels?: Partial<RichTextLabels>;
   className?: string;
 }
 
@@ -69,6 +74,7 @@ export function EditableRichText({
   actions = true,
   members,
   issues,
+  labels,
   className,
 }: EditableRichTextProps) {
   const [draft, setDraft] = useState<PMDoc>(() => toDoc(value));
@@ -158,7 +164,7 @@ export function EditableRichText({
           {isEmptyDoc(draft) ? (
             <span className={styles.placeholder}>{placeholder}</span>
           ) : (
-            <RichText value={draft} />
+            <RichText value={draft} labels={labels} />
           )}
         </div>
       </div>

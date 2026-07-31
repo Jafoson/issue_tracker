@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
+import { CopyButton } from "@/components/ui/atoms/CopyButton/CopyButton";
+import { languageLabel } from "@/lib/richtext/code";
 import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";
 import { faviconOf, hostOf } from "@/lib/richtext/link";
@@ -79,14 +81,19 @@ function applyMarks(
 function renderAll(
   nodes: PMNode[] | undefined,
   keyPrefix: string,
+  labels: RichTextLabels,
 ): ReactNode[] {
   return (nodes ?? []).map((node, index) =>
-    renderNode(node, `${keyPrefix}.${index}`),
+    renderNode(node, `${keyPrefix}.${index}`, labels),
   );
 }
 
-function renderNode(node: PMNode, key: string): ReactNode {
-  const children = () => renderAll(node.content, key);
+function renderNode(
+  node: PMNode,
+  key: string,
+  labels: RichTextLabels,
+): ReactNode {
+  const children = () => renderAll(node.content, key, labels);
 
   switch (node.type) {
     case "text":
@@ -138,14 +145,44 @@ function renderNode(node: PMNode, key: string): ReactNode {
     case "blockquote":
       return <blockquote key={key}>{children()}</blockquote>;
 
-    case "codeBlock":
+    case "codeBlock": {
+      // Der Inhalt eines Codeblocks ist reiner Text — keine Auszeichnungen,
+      // keine Kindknoten außer Textknoten. Deshalb hier direkt zusammengelegt
+      // statt über `children()`: die Zeilen brauchen je ein eigenes Element,
+      // damit die Nummern daneben stehen können.
+      const code = (node.content ?? []).map((n) => n.text ?? "").join("");
+      const lines = code.replace(/\n$/, "").split("\n");
+      const language = attr(node, "language");
+
       return (
-        <pre key={key}>
-          <code data-language={attr(node, "language") || undefined}>
-            {children()}
-          </code>
-        </pre>
+        <div key={key} className={styles.codeBlock}>
+          <div className={styles.codeHead}>
+            <span className={styles.codeLang}>{languageLabel(language)}</span>
+            <CopyButton
+              value={code}
+              label={labels.copy}
+              copiedLabel={labels.copied}
+            />
+          </div>
+
+          <pre>
+            <code data-language={language || undefined}>
+              {lines.map((line, index) => (
+                // Die Nummer steht im CSS (`::before`), nicht im Text: so
+                // wandert sie beim Markieren und Kopieren nicht mit.
+                <span
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Zeilen haben keine Kennung, ihre Position ist die Kennung
+                  key={index}
+                  className={styles.codeLine}
+                >
+                  {line}
+                </span>
+              ))}
+            </code>
+          </pre>
+        </div>
       );
+    }
 
     case "horizontalRule":
       return <hr key={key} />;
@@ -310,17 +347,36 @@ function renderNode(node: PMNode, key: string): ReactNode {
   }
 }
 
+/**
+ * Die wenigen Beschriftungen, die die Anzeige selbst braucht — bislang nur der
+ * Codeblock.
+ *
+ * Als Prop und nicht über `next-intl`: die Komponente rendert in Server
+ * Components und in Tests ohne Provider. Die Vorgaben sind englisch, damit sie
+ * ohne Zutun etwas Sinnvolles zeigen; die Anwendung reicht übersetzte herein.
+ */
+export interface RichTextLabels {
+  copy: string;
+  copied: string;
+}
+
+const DEFAULT_LABELS: RichTextLabels = {
+  copy: "Copy",
+  copied: "Copied",
+};
+
 interface RichTextProps {
   /** Das gespeicherte Dokument — ungeprüftes JSON aus der Datenbank ist erlaubt. */
   value: PMDoc | unknown;
+  labels?: Partial<RichTextLabels>;
   className?: string;
 }
 
-export function RichText({ value, className }: RichTextProps) {
+export function RichText({ value, labels, className }: RichTextProps) {
   const doc = toDoc(value);
   return (
     <div className={[styles.richText, className].filter(Boolean).join(" ")}>
-      {renderAll(doc.content, "n")}
+      {renderAll(doc.content, "n", { ...DEFAULT_LABELS, ...labels })}
     </div>
   );
 }

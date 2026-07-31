@@ -3,13 +3,14 @@
 import { Icon } from "@iconify/react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
+import CodeBlock from "@tiptap/extension-code-block";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, ReactNodeViewRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 import richText from "../RichText/richText.module.scss";
+import { CodeBlockView } from "./components/CodeBlockView/CodeBlockView";
 import { EditorToolbar } from "./components/EditorToolbar/EditorToolbar";
 import { LinkForm } from "./components/LinkForm/LinkForm";
 import type { SuggestionItem } from "./components/SuggestionMenu/SuggestionMenu";
@@ -402,7 +404,14 @@ export function RichTextEditor({
         // Eigene Erweiterungen — die Voreinstellungen des Kits würden sie sonst
         // doppelt registrieren.
         link: false,
-        // `codeBlock` und der Rest bleiben, wie das Kit sie mitbringt.
+        codeBlock: false,
+      }),
+      // Der Codeblock bekommt eine React-Ansicht: Sprachwahl und Kopierknopf
+      // brauchen ein Menü, das `renderHTML` nicht liefern kann.
+      CodeBlock.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(CodeBlockView);
+        },
       }),
       // Tiptaps `Link` baut den Anker selbst — der Titel muss deshalb hier
       // hinein, damit auch beim Schreiben zu sehen ist, wohin ein Wort führt.

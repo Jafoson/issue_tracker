@@ -46,11 +46,8 @@
   }
 
   pre {
-    margin: .7em 0;
-    padding: 12px 14px;
-    background: var(--surface-container-high);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--radius-sm);
+    margin: 0;
+    padding: 10px 0;
     /* Langer Code scrollt in seinem Block, statt das Panel breit zu ziehen. */
     overflow-x: auto;
 
@@ -283,3 +280,62 @@
 }
 
 .issueLinkLabel { font-family: var(--font-mono); font-size: .92em; }
+
+/* ─── Codeblock ────────────────────────────────────────────────────────────── */
+
+.codeBlock {
+  margin: .7em 0;
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  /* Damit die Kopfzeile nicht mit eckigen Ecken aufsitzt. */
+  overflow: hidden;
+}
+
+.codeHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px 3px 12px;
+  background: color-mix(in oklab, var(--on-surface) 4%, transparent);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.codeLang {
+  flex: 1;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: var(--on-surface-variant);
+}
+
+/* Jede Zeile ein eigenes Element — nur so lässt sich die Nummer danebenstellen.
+   `counter-increment` statt einer Zahl im Text: Inhalte von `::before` wandern
+   beim Markieren und Kopieren nicht mit, der Code bleibt also sauber. */
+.codeLine {
+  display: block;
+  counter-increment: codeline;
+  /* Platz links für die Spalte mit den Nummern. */
+  padding-left: 52px;
+  /* Leere Zeilen behalten ihre Höhe. */
+  min-height: 1.5em;
+
+  &::before {
+    content: counter(codeline);
+    position: absolute;
+    left: 0;
+    width: 40px;
+    padding-right: 12px;
+    text-align: right;
+    color: var(--outline);
+    /* Ziffern gleicher Breite: sonst wackelt die Spalte ab der zehnten Zeile. */
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+}
+
+/* Bezugspunkt für die absolut gesetzten Nummern und Ursprung des Zählers. */
+.codeBlock pre {
+  position: relative;
+  counter-reset: codeline;
+}

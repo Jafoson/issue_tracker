@@ -114,15 +114,15 @@ describe("RichText", () => {
       render(doc({ type: "blockquote", content: [p("zitiert")] })),
     ).toContain("<blockquote><p>zitiert</p></blockquote>");
 
-    expect(
-      render(
-        doc({
-          type: "codeBlock",
-          attrs: { language: "ts" },
-          content: [{ type: "text", text: "const a = 1" }],
-        }),
-      ),
-    ).toContain('<code data-language="ts">const a = 1</code>');
+    const code = render(
+      doc({
+        type: "codeBlock",
+        attrs: { language: "ts" },
+        content: [{ type: "text", text: "const a = 1" }],
+      }),
+    );
+    expect(code).toContain('data-language="ts"');
+    expect(code).toContain("const a = 1");
 
     expect(render(doc({ type: "horizontalRule" }))).toContain("<hr/>");
   });
@@ -313,5 +313,59 @@ describe("RichText — Adresse beim Überfahren", () => {
     expect(
       render({ type: "linkChip", attrs: { href: "javascript:alert(1)" } }),
     ).not.toContain("javascript:");
+  });
+});
+
+describe("RichText — Codeblock", () => {
+  const codeBlock = (text: string, language?: string) =>
+    renderToStaticMarkup(
+      <RichText
+        value={{
+          type: "doc",
+          content: [
+            {
+              type: "codeBlock",
+              ...(language ? { attrs: { language } } : {}),
+              content: [{ type: "text", text }],
+            },
+          ],
+        }}
+      />,
+    );
+
+  test("nennt die Programmiersprache im Kopf", () => {
+    expect(codeBlock("x", "ts")).toContain("TypeScript");
+    expect(codeBlock("x", "py")).toContain("Python");
+    // Über eine andere Schreibweise gefunden.
+    expect(codeBlock("x", "golang")).toContain("Go");
+  });
+
+  test("reicht eine unbekannte Angabe durch, statt sie zu verwerfen", () => {
+    // Sie kam vielleicht aus eingefügtem Markdown — die Information ist mehr
+    // wert als eine saubere Liste.
+    expect(codeBlock("x", "brainfuck")).toContain("brainfuck");
+  });
+
+  test("nennt ihn ohne Angabe schlicht Plain", () => {
+    expect(codeBlock("x")).toContain("Plain");
+  });
+
+  test("gibt jeder Zeile ein eigenes Element für die Nummer", () => {
+    const html = codeBlock("eins\nzwei\ndrei");
+    expect(html.match(/class="codeLine"/g)).toHaveLength(3);
+  });
+
+  test("zählt einen abschließenden Umbruch nicht als weitere Zeile", () => {
+    // Sonst stünde unter dem letzten Zeichen eine leere Nummer.
+    expect(codeBlock("eins\nzwei\n").match(/class="codeLine"/g)).toHaveLength(
+      2,
+    );
+  });
+
+  test("hält die Zeilennummern aus dem Text heraus", () => {
+    // Sie stehen im CSS (`::before`) — sonst wanderten sie beim Kopieren mit.
+    const html = codeBlock("const a = 1");
+    expect(html).not.toContain(">1<");
+    expect(html).toContain("const a = 1");
   });
 });

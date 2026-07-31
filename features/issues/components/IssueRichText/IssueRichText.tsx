@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { EditableRichText } from "@/components/ui/atoms/RichTextEditor/EditableRichText";
@@ -83,9 +84,14 @@ export function IssueRichText({
   className,
 }: IssueRichTextProps) {
   const { members, issues } = useEditorSources(data);
+  const t = useTranslations("editor");
 
   return (
     <EditableRichText
+      labels={{
+        copy: t("copy"),
+        copied: t("copied"),
+      }}
       value={value}
       onCommit={onCommit}
       onChange={onChange}

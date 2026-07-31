@@ -1,0 +1,76 @@
+/* Codeblock im Editor. Aussehen bewusst wie in der Anzeige
+   (`richText.module.scss`) — beim Speichern soll nichts springen. */
+
+.block {
+  margin: .7em 0;
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px 3px 8px;
+  background: color-mix(in oklab, var(--on-surface) 4%, transparent);
+  border-bottom: 1px solid var(--outline-variant);
+  user-select: none;
+}
+
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover { background: var(--surface-container-highest); color: var(--on-surface); }
+}
+
+.body {
+  display: flex;
+  /* Der Code scrollt, die Nummern bleiben stehen. */
+  align-items: stretch;
+}
+
+/* Eigene Spalte statt Elemente im bearbeitbaren Bereich: dessen Inhalt gehört
+   ProseMirror, dort eingeschobene Knoten kämen ihm in die Quere.
+   Die Zeilenhöhe muss deshalb mit der des Codes übereinstimmen. */
+.gutter {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  padding: 10px 12px 10px 0;
+  width: 52px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--outline);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.code {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 10px 0;
+  overflow-x: auto;
+  /* Der Rahmen des Inline-Codes gilt hier nicht. */
+  code { padding: 0; background: none; border: none; font: inherit; }
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  /* Umbrechen würde die Nummern gegenüber dem Code verschieben — eine lange
+     Zeile scrollt lieber. */
+  white-space: pre;
+}

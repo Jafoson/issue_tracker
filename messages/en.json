@@ -276,6 +276,8 @@
     "close": "Close",
     "code": "Code",
     "codeBlock": "Code block",
+    "copied": "Copied",
+    "copy": "Copy",
     "date": "Date",
     "dateOpenCalendar": "Pick from calendar…",
     "dateTyped": "use this date",
