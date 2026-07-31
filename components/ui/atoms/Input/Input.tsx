@@ -7,9 +7,22 @@ import styles from "./input.module.scss";
 type InputVariant = "text" | "password" | "search" | "date";
 type InputSize = "sm" | "md";
 
+/**
+ * Wie das Feld aussieht — unabhängig davon, *was* es aufnimmt (`variant`).
+ *
+ * `boxed` ist der Regelfall: gerahmt, feste Höhe, ein erkennbares Formularfeld.
+ *
+ * `title` steht am Kopf eines Anlege-Dialogs und sieht aus wie die Überschrift
+ * des entstehenden Datensatzes, nicht wie ein Feld: ohne Rahmen, in der Größe
+ * der Überschrift, mit einer Fläche erst beim Überfahren. Dieselbe Fläche wie
+ * bei Titel und Beschreibung der Detailansicht, damit beide Wege gleich wirken.
+ */
+type InputAppearance = "boxed" | "title";
+
 interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "size"> {
   variant?: InputVariant;
+  appearance?: InputAppearance;
   label?: string;
   hint?: string;
   error?: string;
@@ -21,6 +34,7 @@ interface InputProps
 
 export function Input({
   variant = "text",
+  appearance = "boxed",
   label,
   hint,
   error,
@@ -75,6 +89,7 @@ export function Input({
           type={inputType}
           className={[
             styles.input,
+            styles[appearance],
             error && styles.hasError,
             hasLeft && styles.hasIconLeft,
             hasRight && styles.hasIconRight,

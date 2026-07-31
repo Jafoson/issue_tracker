@@ -3,14 +3,14 @@
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
+import { Input } from "@/components/ui/atoms/Input/Input";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { FilterChip } from "@/components/ui/layout/FilterChip/FilterChip";
-import { ModalTitleInput } from "@/components/ui/layout/Modal/components/ModalFields";
 import {
   ModalFooter,
   ModalShortcut,
@@ -64,6 +64,19 @@ export function CreateIssueModal({
   } = data;
   const t = useTranslations();
   const router = useRouter();
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Der Fokus gehört beim Öffnen ins Titelfeld.
+   *
+   * `autoFocus` allein reicht nicht verlässlich: der `ModalFrame` greift selbst
+   * nach dem Fokus und tritt nur zurück, wenn der Inhalt ihn zu seinem
+   * Effekt-Zeitpunkt schon hat. Kind-Effekte laufen vor denen des Elternteils
+   * — von hier aus ist die Reihenfolge also sicher.
+   */
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
   const [isPending, startTransition] = useTransition();
 
   const [projectId, setProjectId] = useState(initialProjectId);
@@ -195,10 +208,10 @@ export function CreateIssueModal({
       />
 
       <ModalBody>
-        {/* Der Fokus gehört beim Öffnen ins Titelfeld — der ModalFrame
-            respektiert das und greift dann nicht mehr auf das Panel zu. */}
-        <ModalTitleInput
-          autoFocus
+        <Input
+          appearance="title"
+          ref={titleRef}
+          aria-label={t("fields.title")}
           placeholder={t("placeholders.issueTitle")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}

@@ -17,7 +17,7 @@
   /* Der Overlay schiebt das Panel um 12vh nach unten — der Rest bleibt nutzbar,
      überlanger Inhalt scrollt im Body statt aus dem Viewport zu laufen. */
   max-height: var(--modal-max-h, calc(100dvh - 12vh - 32px));
-  background: var(--surface-container-high);
+  background: var(--surface-container);
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-lg);
   box-shadow: var(--modal-shadow, var(--shadow-pop));
@@ -50,7 +50,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px var(--modal-pad-x) 10px;
-  background-color: var(--surface-container);
+  background-color: var(--surface-container-high);
 }
 
 .headerMain {
@@ -107,7 +107,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px var(--modal-pad-x);
-  background-color: var(--surface-container);
+  background-color: var(--surface-container-high);
 }
 
 .footerActions {
@@ -153,36 +153,4 @@
 
 /* ---------- Composer-Felder ---------- */
 
-.titleInput {
-  width: 100%;
-  background: none;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-size: var(--text-xl);
-  font-weight: 600;
-  line-height: var(--leading-tight);
-  color: var(--on-surface);
 
-  &::placeholder {
-    color: var(--outline);
-    font-weight: 400;
-  }
-}
-
-.textarea {
-  width: 100%;
-  min-height: 60px;
-  background: none;
-  border: none;
-  outline: none;
-  resize: vertical;
-  font-family: inherit;
-  font-size: var(--text-base);
-  line-height: var(--leading-loose);
-  color: var(--on-surface-variant);
-
-  &::placeholder {
-    color: var(--outline);
-  }
-}

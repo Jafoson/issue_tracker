@@ -22,22 +22,28 @@
 /* ── Base input ── */
 .input {
   width: 100%;
-  height: var(--control-h);
-  background: var(--surface-container-lowest);
   color: var(--on-surface);
-  border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
-  padding: 0 11px;
-  font-size: var(--text-base);
   font-family: inherit;
   outline: none;
+}
+
+/* ── Ausprägung: gerahmtes Feld (Regelfall) ── */
+.boxed {
+  height: var(--control-h);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  padding: 0 11px;
+  font-size: var(--text-base);
   transition: border-color 0.12s, box-shadow 0.12s;
 
   &::placeholder { color: var(--on-surface-variant); }
 
+  /* `color-mix` statt eines Tokens: `--accent-soft` stand hier, ist aber
+     nirgends definiert — die Zeile wurde verworfen und der Ring blieb aus.
+     Der Fehlerzustand darunter macht es seit jeher so. */
   &:focus {
     border-color: var(--tertiary);
-    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   /* Error state */
@@ -60,6 +66,42 @@
   &::-ms-reveal,
   &::-ms-clear { display: none; }
 }
+
+/* ── Ausprägung: Titelfeld eines Anlege-Dialogs ── */
+.title {
+  /* Durchsichtig statt gar keiner: der Fokusrahmen unten braucht etwas zum
+     Einfärben, und ohne Rahmen sprünge das Feld beim Fokussieren um zwei
+     Pixel. */
+  border: 1px solid transparent;
+  background: none;
+  /* Wie die Überschrift des Datensatzes, der gerade entsteht. */
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  /* Dasselbe Polster wie die Beschreibung darunter — sonst stünden die beiden
+     im Dialog um acht Pixel versetzt. */
+  padding: 5px 8px;
+  transition: background .12s, border-color .12s, box-shadow .12s;
+
+  &::placeholder {
+    color: var(--outline);
+    font-weight: 400;
+  }
+
+  /* Beim Überfahren dieselbe Zustandsfläche wie bei Titel und Beschreibung der
+     Detailansicht. Dort entsteht sie als Ebene im `::before`; ein `<input>`
+     trägt aber keine Pseudo-Elemente, deshalb hier direkt als Farbe —
+     `color-mix` ergibt denselben Ton wie eine Ebene mit acht Prozent. */
+  &:hover {
+    background: color-mix(in oklab, var(--on-surface) 8%, transparent);
+  }
+
+  /* Beim Fokus derselbe Ring wie bei jedem anderen `Input` — dort ist er die
+     vertraute Rückmeldung, und ein eigener wäre hier nur verwirrend. */
+  &:focus {
+    background: var(--surface-container-low);
+    border-color: var(--tertiary);
+}}
 
 /* ── Size: sm ── */
 .sm {
