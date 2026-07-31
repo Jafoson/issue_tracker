@@ -1,0 +1,207 @@
+/* Gerenderter Rich Text. Größe und Farbe erbt der Block von seinem Umfeld —
+   hier steht nur, was die einzelnen Auszeichnungen daraus machen.
+
+   Dieselbe Datei versorgt die Anzeige und den Editor: `richTextEditor.module.scss`
+   komponiert `.richText` in die ProseMirror-Fläche, damit Geschriebenes und
+   Gelesenes nicht auseinanderlaufen. */
+
+.richText {
+  line-height: var(--leading-loose);
+
+  > *:first-child { margin-top: 0; }
+  > *:last-child  { margin-bottom: 0; }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 1.1em 0 .5em;
+    font-weight: 650;
+    line-height: var(--leading-tight);
+    color: var(--on-surface);
+  }
+
+  h1 { font-size: var(--text-lg); }
+  h2 { font-size: var(--text-md); }
+  h3, h4, h5, h6 { font-size: var(--text-base); }
+
+  p { margin: .6em 0; }
+
+  ul, ol { margin: .5em 0; padding-left: 1.4em; }
+  li { margin: .25em 0; }
+
+  strong { font-weight: 650; color: var(--on-surface); }
+
+  a {
+    color: var(--tertiary);
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
+
+  code {
+    padding: 1px 5px;
+    background: var(--surface-container-high);
+    border: 1px solid var(--outline-variant);
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+
+  pre {
+    margin: .7em 0;
+    padding: 12px 14px;
+    background: var(--surface-container-high);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-sm);
+    /* Langer Code scrollt in seinem Block, statt das Panel breit zu ziehen. */
+    overflow-x: auto;
+
+    code { padding: 0; background: none; border: none; }
+  }
+
+  blockquote {
+    margin: .7em 0;
+    padding: 4px 14px;
+    border-left: 3px solid var(--outline-variant);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: var(--surface-container);
+    color: var(--on-surface-variant);
+  }
+
+  hr {
+    margin: 1em 0;
+    border: none;
+    border-top: 1px solid var(--outline-variant);
+  }
+
+  img {
+    max-width: 100%;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ─── Checklisten ──────────────────────────────────────────────────────────── */
+
+.taskList {
+  padding-left: 0;
+  list-style: none;
+}
+
+.taskItem {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+
+  > input {
+    /* Auf die Höhe der ersten Textzeile schieben — `line-height` ist lose. */
+    margin-top: .35em;
+    flex: none;
+    accent-color: var(--primary);
+  }
+
+  /* Der Absatz im Listenpunkt soll die Zeile nicht auseinanderziehen. */
+  > div > p { margin: 0; }
+
+  &[data-checked="true"] > div {
+    color: var(--on-surface-variant);
+    text-decoration: line-through;
+  }
+}
+
+/* ─── Tabellen ─────────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  margin: .7em 0;
+  overflow-x: auto;
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    padding: 6px 10px;
+    border: 1px solid var(--outline-variant);
+    text-align: left;
+    vertical-align: top;
+
+    > p { margin: 0; }
+  }
+
+  th {
+    background: var(--surface-container-high);
+    font-weight: 650;
+    color: var(--on-surface);
+  }
+}
+
+/* ─── Panels ───────────────────────────────────────────────────────────────── */
+
+.panel {
+  display: flex;
+  gap: 10px;
+  margin: .7em 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--kind-border);
+  background: var(--kind-bg);
+
+  > * { margin: 0; }
+  > * + * { margin-top: .4em; }
+
+  /* Das Zeichen steht im CSS, nicht im Dokument — so bleibt es übersetzbar
+     und der gespeicherte Knoten trägt nur seine Art. */
+  &::before {
+    flex: none;
+    font-size: var(--text-md);
+    line-height: var(--leading-loose);
+    content: var(--kind-mark);
+  }
+
+  &[data-kind="info"] {
+    --kind-bg: color-mix(in oklab, var(--tertiary) 10%, transparent);
+    --kind-border: color-mix(in oklab, var(--tertiary) 35%, transparent);
+    --kind-mark: "ℹ";
+  }
+
+  &[data-kind="warning"] {
+    --kind-bg: color-mix(in oklab, var(--amber) 12%, transparent);
+    --kind-border: color-mix(in oklab, var(--amber) 40%, transparent);
+    --kind-mark: "⚠";
+  }
+}
+
+/* ─── Chips ────────────────────────────────────────────────────────────────── */
+
+/* Gemeinsame Grundform für Erwähnung, Issue und Datum: eine Silbe im Textfluss,
+   die sich abhebt, ohne die Zeilenhöhe zu sprengen. */
+.mention, .issueLink, .dateChip {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: .94em;
+  font-weight: 550;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.mention {
+  background: color-mix(in oklab, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+
+.issueLink {
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface);
+  font-family: var(--font-mono);
+  font-size: .88em;
+
+  &:hover {
+    background: var(--surface-container-highest);
+    text-decoration: none;
+  }
+}
+
+.dateChip {
+  background: color-mix(in oklab, var(--tertiary) 14%, transparent);
+  color: var(--tertiary);
+}

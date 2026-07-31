@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Link, usePathname } from "@/i18n/navigation";
+import { toPreview } from "@/lib/richtext/text";
 import { timeAgo } from "@/lib/utils/date";
 import { fullName } from "@/lib/utils/string";
 import type { Issue, Project, Status, User } from "@/types";
@@ -81,7 +82,7 @@ export function Inbox({ issues, me, members, projects, statuses }: Props) {
                   {timeAgo(comment.time)}
                 </span>
               </div>
-              <p className={styles.body}>{comment.body}</p>
+              <p className={styles.body}>{toPreview(comment.body)}</p>
             </div>
           </Link>
         );

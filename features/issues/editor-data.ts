@@ -12,6 +12,7 @@ import {
   getWorkspaceMembers,
   getWorkspacePriorities,
   getWorkspaceProjects,
+  getWorkspaceSearchIssues,
   getWorkspaceStatuses,
 } from "@/features/workspaces/queries";
 
@@ -24,16 +25,27 @@ import {
 /** Workspace-Daten für eine Issue-Bearbeitungsoberfläche (z.B. `IssueDetail`). */
 export const getIssueEditorData = cache(
   async (): Promise<IssueEditorData | null> => {
-    const [workspace, me, projects, members, labels, statuses, priorities] =
-      await Promise.all([
-        getCurrentWorkspace(),
-        getMe(),
-        getWorkspaceProjects(),
-        getWorkspaceMembers(),
-        getWorkspaceLabels(),
-        getWorkspaceStatuses(),
-        getWorkspacePriorities(),
-      ]);
+    const [
+      workspace,
+      me,
+      projects,
+      members,
+      labels,
+      statuses,
+      priorities,
+      searchIssues,
+    ] = await Promise.all([
+      getCurrentWorkspace(),
+      getMe(),
+      getWorkspaceProjects(),
+      getWorkspaceMembers(),
+      getWorkspaceLabels(),
+      getWorkspaceStatuses(),
+      getWorkspacePriorities(),
+      // Für den `#`-Trigger. Dieselbe Abfrage nutzt die CommandPalette, und
+      // beide teilen sie sich über `cache()` im selben Request.
+      getWorkspaceSearchIssues(),
+    ]);
 
     if (!workspace || !me) return null;
     return {
@@ -44,6 +56,7 @@ export const getIssueEditorData = cache(
       labels,
       statuses,
       priorities,
+      searchIssues,
     };
   },
 );

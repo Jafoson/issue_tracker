@@ -14,9 +14,9 @@ import {
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
 import { createProject } from "@/features/projects/actions";
+import { PALETTE } from "@/lib/utils";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import styles from "./createProjectModal.module.scss";
-import { PALETTE } from "@/lib/utils";
 
 /** Der Prefix ist die Issue-Kennung (WEB-123) — max. 4 alphanumerische Zeichen. */
 function suggestPrefix(name: string) {

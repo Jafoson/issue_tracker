@@ -1,8 +1,10 @@
+import type { PMDoc } from "@/lib/richtext/types";
 import type {
   IssueType,
   Label,
   Priority,
   Project,
+  SearchableIssue,
   Status,
   User,
 } from "@/types";
@@ -37,6 +39,8 @@ export interface IssueEditorData {
   labels: Label[];
   statuses: Status[];
   priorities: Priority[];
+  /** Für den `#`-Trigger im Editor — Issues des Workspace zum Verlinken. */
+  searchIssues: SearchableIssue[];
 }
 
 /** Der Composer braucht zusätzlich die Issue-Typen für seinen Typ-Picker. */
@@ -56,5 +60,5 @@ export interface IssuePatch {
   assignee?: string | null;
   labels?: string[];
   title?: string;
-  description?: string;
+  description?: PMDoc;
 }

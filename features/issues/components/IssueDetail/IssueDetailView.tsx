@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal } from "@/components/ui/layout/Modal/Modal";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
+import type { PMDoc } from "@/lib/richtext/types";
 import type { Issue } from "@/types";
 import { IssueComments } from "./components/IssueComments";
 import {
@@ -29,7 +30,7 @@ interface IssueDetailViewProps {
   variant: IssueDetailVariant;
   onClose: () => void;
   onPatch: (patch: IssuePatch) => void;
-  onComment: (body: string) => Promise<void>;
+  onComment: (body: PMDoc) => Promise<void>;
   onDelete: () => void;
 }
 
@@ -80,12 +81,14 @@ export function IssueDetailView({
           <IssueSummary
             title={issue.title}
             description={issue.description}
+            data={data}
             onPatch={onPatch}
           />
           <IssueComments
             comments={issue.comments}
             members={data.members}
             me={data.me}
+            data={data}
             onSubmit={onComment}
           />
         </div>

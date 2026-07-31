@@ -64,6 +64,32 @@ components/
 - State so nah wie möglich an der Verwendungsstelle halten, nicht global liften wenn vermeidbar
 - Formulare per `<form action={serverAction}>` statt `onSubmit` + fetch
 
+## Rich Text (Beschreibungen und Kommentare)
+
+`Issue.description` und `Comment.body` sind **ProseMirror-Dokumente** (`Json`),
+keine Strings. Lesen und Schreiben sind getrennt:
+
+| | Komponente | Umgebung |
+|---|---|---|
+| Anzeigen | `components/ui/atoms/RichText` | Server Component, **keine** Abhängigkeit |
+| Bearbeiten | `components/ui/atoms/RichTextEditor` | `"use client"`, Tiptap, per `next/dynamic` |
+
+- Die Anzeige übersetzt das JSON von Hand nach React — kein `generateHTML`, kein
+  `dangerouslySetInnerHTML`. Wer dort einen Knotentyp ergänzt, muss die passende
+  Extension im Editor mitliefern (und umgekehrt).
+- Der Editor wird nie direkt importiert, sondern über `next/dynamic` mit
+  `ssr: false` — sonst landet das Bündel auch im Lesepfad.
+- Fachliche Vorschlagsdaten (`@` Mitglieder, `#` Issues) kommen als Props herein.
+  `components/ui` kennt weder Workspace noch Prisma; die Brücke ist
+  `features/issues/components/IssueRichText`.
+- Neben jeder Dokumentspalte liegt eine abgeleitete Textspalte
+  (`descriptionText`, `bodyText`) für die Suche — `contains` arbeitet nicht auf
+  `Json`. Sie wird in `features/issues/actions.ts` bei **jedem** Schreibvorgang
+  aus `toPlainText(doc)` neu gesetzt.
+- `lib/richtext/` ist abhängigkeitsfrei und läuft überall (Tests, Seed, Skripte):
+  `toDoc`/`isEmptyDoc` (Eingang aus der DB), `toPlainText`/`toPreview`
+  (Suche, Vorschauen), `fromMarkdown` (Seed und einmalige Migration).
+
 ## Prisma
 
 - Schema: `prisma/schema.prisma`
@@ -236,8 +262,10 @@ tests/
       session.test.ts             ← createSession / getSession / clearSession
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
-    markdown/
-      markdown.test.tsx           ← Markdown-Renderer (components/ui/atoms/Markdown)
+    richtext/
+      richText.test.tsx           ← PM-JSON-Renderer (components/ui/atoms/RichText)
+      fromMarkdown.test.ts        ← Markdown → PM-JSON (Migration + Seed)
+      text.test.ts                ← toPlainText / toPreview / isEmptyDoc
 ```
 
 ### Mocking-Konventionen
@@ -255,7 +283,7 @@ tests/
 Bun 1.3 teilt den Modul-Cache zwischen Test-Dateien innerhalb eines Prozesses. Da
 andere Test-Dateien `@/lib/session` mocken, würde dieser Mock in `session.test.ts`
 durchlecken wenn alle Tests in einem einzigen `bun test`-Aufruf laufen. Dasselbe gilt
-für die Markdown-Tests: `issues/getLabels.test.ts` ersetzt `react` durch einen Stub mit
+für die Richtext-Tests: `issues/getLabels.test.ts` ersetzt `react` durch einen Stub mit
 nur `cache`, und `react-dom/server` verweigert dann den Dienst. Das `test`-Script
 in `package.json` splittet den Aufruf deshalb in drei separate Prozesse:
 

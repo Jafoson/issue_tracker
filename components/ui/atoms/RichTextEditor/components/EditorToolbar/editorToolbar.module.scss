@@ -1,0 +1,44 @@
+/* Werkzeugleiste über dem Schreibfeld. Sitzt in derselben Umrandung wie der
+   Text — deshalb kein eigener Rahmen, nur eine leichte Tönung und ein Haarstrich
+   nach unten. Der Hinweis auf das `/`-Menü steht nicht mehr hier, sondern im
+   Platzhalter des leeren Feldes. */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--surface-container);
+  /* Halbtransparent: die Kante soll das Feld gliedern, nicht zerschneiden. */
+  border-bottom: 1px solid color-mix(in oklab, var(--outline-variant) 60%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  color: var(--on-surface-variant);
+  transition: background .12s ease, color .12s ease;
+
+  &:hover {
+    background: var(--surface-container-highest);
+    color: var(--on-surface);
+  }
+
+  /* Gesetzte Auszeichnung an der Cursorposition. */
+  &[data-active] {
+    background: color-mix(in oklab, var(--tertiary) 20%, transparent);
+    color: var(--tertiary);
+  }
+}
+
+.divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 5px;
+  background: color-mix(in oklab, var(--outline-variant) 70%, transparent);
+}

@@ -8,10 +8,10 @@ import {
   suggestWorkspaceSlug,
 } from "@/features/workspaces/actions";
 import { useRouter } from "@/i18n/navigation";
+import { PALETTE } from "@/lib/utils";
 import { IconColorPicker } from "./components/IconColorPicker";
 import { WorkspaceNameField } from "./components/WorkspaceNameField";
 import styles from "./createWorkspaceForm.module.scss";
-import { PALETTE } from "@/lib/utils";
 
 function toSlug(name: string) {
   return name

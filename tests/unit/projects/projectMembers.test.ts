@@ -130,7 +130,9 @@ describe("addProjectMembers() — Rollen", () => {
       userIds: ["u-1"],
       role: "admin", // Rang 5
     });
-    expect(result).toEqual({ error: "You cannot assign a role above your own." });
+    expect(result).toEqual({
+      error: "You cannot assign a role above your own.",
+    });
     expect(mockProjectMemberCreateMany).not.toHaveBeenCalled();
   });
 

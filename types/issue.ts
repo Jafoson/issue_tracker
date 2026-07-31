@@ -1,3 +1,5 @@
+import type { PMDoc } from "@/lib/richtext/types";
+
 export interface Status {
   id: string;
   name: string;
@@ -31,7 +33,8 @@ export interface Comment {
   id: string;
   author: string;
   time: number;
-  body: string;
+  /** ProseMirror-Dokument — angezeigt von `components/ui/atoms/RichText`. */
+  body: PMDoc;
 }
 
 export interface Issue {
@@ -46,7 +49,8 @@ export interface Issue {
   rank: number;
   created: number;
   updated: number;
-  description: string;
+  /** ProseMirror-Dokument — angezeigt von `components/ui/atoms/RichText`. */
+  description: PMDoc;
   comments: Comment[];
   project: string;
   type: string;

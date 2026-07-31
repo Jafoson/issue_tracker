@@ -10,10 +10,7 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { FilterChip } from "@/components/ui/atoms/FilterChip/FilterChip";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import {
-  ModalTextarea,
-  ModalTitleInput,
-} from "@/components/ui/layout/Modal/components/ModalFields";
+import { ModalTitleInput } from "@/components/ui/layout/Modal/components/ModalFields";
 import {
   ModalFooter,
   ModalShortcut,
@@ -32,8 +29,11 @@ import {
   StatusIcon,
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
+import { IssueRichText } from "@/features/issues/components/IssueRichText/IssueRichText";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import type { IssueComposerData } from "@/features/issues/types";
+import { emptyDoc } from "@/lib/richtext/doc";
+import type { PMDoc } from "@/lib/richtext/types";
 import { fullName } from "@/lib/utils/string";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import type { Label } from "@/types";
@@ -70,7 +70,7 @@ export function CreateIssueModal({
   const project = projects.find((p) => p.id === projectId);
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState<PMDoc>(emptyDoc);
   const [status, setStatus] = useState(initialStatus);
   const [priority, setPriority] = useState(0);
   const [type, setType] = useState(issueTypes[0]?.id ?? "feature");
@@ -206,11 +206,21 @@ export function CreateIssueModal({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
         />
-        <ModalTextarea
-          placeholder={t("placeholders.addDescription")}
+        {/* Ruhezustand ist der gesetzte Text (bzw. der Platzhalter) — der
+            Editor mit seiner Leiste erscheint erst beim Hineinklicken. Ohne
+            Haken und Kreuz: dieses Fenster hat unten schon seine eigenen. */}
+        {/* `onChange` zusätzlich zu `onCommit`: ⌘/Strg + Enter hängt am
+            `document` und schickt ab, bevor das Feld sein Verlassen bemerkt.
+            Ohne den laufenden Abgleich entstünde das Issue ohne den zuletzt
+            getippten Satz. */}
+        <IssueRichText
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
+          onChange={setDescription}
+          onCommit={setDescription}
+          data={data}
+          actions={false}
+          label={t("fields.description")}
+          placeholder={t("placeholders.addDescription")}
         />
       </ModalBody>
 

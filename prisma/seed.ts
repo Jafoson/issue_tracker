@@ -1,8 +1,10 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
-import { PrismaClient } from "../lib/generated/prisma/client";
+import { type Prisma, PrismaClient } from "../lib/generated/prisma/client";
 import { provisionWorkspaceRbac } from "../lib/rbac-provision";
+import { fromMarkdown } from "../lib/richtext/fromMarkdown";
+import { toPlainText } from "../lib/richtext/text";
 import { uid } from "../lib/utils/id";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -951,7 +953,12 @@ async function main() {
         title: issue.title,
         status: issue.status,
         priority: issue.priority,
-        description: issue.desc,
+        // Der Seed bleibt in Markdown geschrieben — das liest sich beim Pflegen
+        // deutlich besser als ProseMirror-JSON. Umgewandelt wird beim Einspielen.
+        description: fromMarkdown(
+          issue.desc,
+        ) as unknown as Prisma.InputJsonValue,
+        descriptionText: toPlainText(fromMarkdown(issue.desc)),
         type: typeOf[issue.id] ?? "feature",
         labels: issue.labels.map((l) => ref(realLabelId, l, "issue label")),
         created: issue.created,
@@ -969,7 +976,8 @@ async function main() {
         update: {},
         create: {
           id: ref(realCommentId, c.id, "comment"),
-          body: c.body,
+          body: fromMarkdown(c.body) as unknown as Prisma.InputJsonValue,
+          bodyText: toPlainText(fromMarkdown(c.body)),
           created: c.time,
           issueId,
           authorId: ref(realUserId, c.author, "comment author"),

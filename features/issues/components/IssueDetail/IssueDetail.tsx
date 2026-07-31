@@ -8,6 +8,7 @@ import {
   updateIssue,
 } from "@/features/issues/actions";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
+import type { PMDoc } from "@/lib/richtext/types";
 import type { Issue } from "@/types";
 import {
   IssueDetailMissing,
@@ -99,7 +100,7 @@ export function IssueDetail({
       await reload();
     });
 
-  const handleComment = async (body: string) => {
+  const handleComment = async (body: PMDoc) => {
     await addComment(issue.id, body, data.me.id);
     await reload();
   };

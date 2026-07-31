@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import { toDoc } from "@/lib/richtext/doc";
 import type {
   Issue,
   IssueType,
@@ -21,7 +22,10 @@ function mapIssue(i: {
   title: string;
   status: string;
   priority: number;
-  description: string;
+  // `JsonValue` aus der Datenbank: was in der Spalte steht, ist erst einmal
+  // beliebiges JSON. `toDoc` macht daraus ein gültiges Dokument — oder ein
+  // leeres, falls die Zeile beschädigt ist.
+  description: unknown;
   type: string;
   labels: string[];
   rank: number;
@@ -30,7 +34,7 @@ function mapIssue(i: {
   projectId: string;
   created: Date;
   updated: Date;
-  comments: { id: string; body: string; authorId: string; created: Date }[];
+  comments: { id: string; body: unknown; authorId: string; created: Date }[];
 }): Issue {
   return {
     id: i.id,
@@ -38,7 +42,7 @@ function mapIssue(i: {
     title: i.title,
     status: i.status,
     priority: i.priority,
-    description: i.description,
+    description: toDoc(i.description),
     type: i.type,
     labels: i.labels,
     rank: i.rank,
@@ -49,7 +53,7 @@ function mapIssue(i: {
     updated: i.updated.getTime(),
     comments: i.comments.map((c) => ({
       id: c.id,
-      body: c.body,
+      body: toDoc(c.body),
       author: c.authorId,
       time: c.created.getTime(),
     })),
@@ -271,7 +275,7 @@ export async function getIssuesByProject(
       ...(q && {
         OR: [
           { title: { contains: q, mode: "insensitive" as const } },
-          { description: { contains: q, mode: "insensitive" as const } },
+          { descriptionText: { contains: q, mode: "insensitive" as const } },
           ...(key !== undefined ? [{ key }] : []),
         ],
       }),

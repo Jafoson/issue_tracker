@@ -8,3 +8,11 @@
     padding: 5px;
     animation: pop .12s ease;
 }
+
+/* Lokal, obwohl `pop` auch global in styles/globals.scss steht: CSS-Module
+   benennen Keyframe-Namen um, auch wenn sie hier gar nicht definiert sind.
+   Die Referenz zeigte deshalb auf einen Namen, den es nirgends gibt — die
+   Animation lief still ins Leere. Werte identisch mit dem globalen `pop`. */
+@keyframes pop {
+  from { opacity: .2; transform: translateY(-4px) scale(.985); }
+}

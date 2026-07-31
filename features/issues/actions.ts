@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { IssuePatch } from "@/features/issues/types";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import {
   PermissionError,
   requirePermission,
@@ -10,6 +11,8 @@ import {
   workspaceRoleKey,
 } from "@/lib/permissions";
 import { roleRank } from "@/lib/rbac";
+import { toPlainText } from "@/lib/richtext/text";
+import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/utils/id";
 
@@ -101,8 +104,11 @@ export async function updateIssue(id: string, patch: IssuePatch) {
       ...(patch.assignee !== undefined && { assigneeId: patch.assignee }),
       ...(patch.labels !== undefined && { labels: patch.labels }),
       ...(patch.title !== undefined && { title: patch.title }),
+      // Dokument und abgeleiteter Fließtext gehören zusammen — die Suche
+      // liefe sonst gegen einen veralteten Stand.
       ...(patch.description !== undefined && {
-        description: patch.description,
+        description: patch.description as unknown as Prisma.InputJsonValue,
+        descriptionText: toPlainText(patch.description),
       }),
     },
   });
@@ -111,7 +117,7 @@ export async function updateIssue(id: string, patch: IssuePatch) {
 
 export async function createIssue(data: {
   title: string;
-  description: string;
+  description: PMDoc;
   status: string;
   priority: number;
   assignee: string | null;
@@ -137,7 +143,8 @@ export async function createIssue(data: {
       id: uid("i"),
       key: lastIssueKey,
       title: data.title,
-      description: data.description,
+      description: data.description as unknown as Prisma.InputJsonValue,
+      descriptionText: toPlainText(data.description),
       status: data.status,
       priority: data.priority,
       assigneeId: data.assignee,
@@ -210,7 +217,7 @@ export async function deleteIssue(id: string) {
 
 export async function addComment(
   issueId: string,
-  body: string,
+  body: PMDoc,
   _authorId: string,
 ) {
   const issue = await db.issue.findUnique({
@@ -224,7 +231,13 @@ export async function addComment(
   });
 
   await db.comment.create({
-    data: { id: uid("c"), body, issueId, authorId: userId },
+    data: {
+      id: uid("c"),
+      body: body as unknown as Prisma.InputJsonValue,
+      bodyText: toPlainText(body),
+      issueId,
+      authorId: userId,
+    },
   });
   await revalidate();
 }

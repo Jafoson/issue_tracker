@@ -273,13 +273,21 @@ model Label {
 // ─── Issues ──────────────────────────────────────────────────────────────────
 
 model Issue {
-  id          String   @id
-  key         Int
-  title       String
-  status      String   @default("backlog")
-  priority    Int      @default(0)
-  description String   @default("")
-  type        String   @default("feature")
+  id       String @id
+  key      Int
+  title    String
+  status   String @default("backlog")
+  priority Int    @default(0)
+
+  // ProseMirror-Dokument. Angezeigt wird es von `components/ui/atoms/RichText`,
+  // geschrieben von `RichTextEditor`.
+  description Json @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}")
+  // Aus `description` abgeleiteter Fließtext — `contains` arbeitet nicht auf
+  // einer Json-Spalte, die Volltextsuche in `getProjectIssues` braucht ihn.
+  // Wird in `features/issues/actions.ts` bei jedem Schreibvorgang neu gesetzt.
+  descriptionText String @default("")
+
+  type String @default("feature")
   labels      String[]
   rank        Float    @default(0)
   created     DateTime @default(now())
@@ -302,9 +310,12 @@ model Issue {
 // ─── Comments ────────────────────────────────────────────────────────────────
 
 model Comment {
-  id      String   @id
-  body    String
-  created DateTime @default(now())
+  id String @id
+  // Wie `Issue.description`: ProseMirror-Dokument plus abgeleiteter Fließtext
+  // für Vorschauen (Inbox) und spätere Suche.
+  body     Json
+  bodyText String   @default("")
+  created  DateTime @default(now())
 
   issueId  String
   authorId String

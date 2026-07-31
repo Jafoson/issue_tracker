@@ -1,0 +1,130 @@
+/* Das Schreibfeld.
+
+   Wie der Text darin aussieht, steht nicht hier, sondern in
+   `RichText/richText.module.scss` — dieselbe Klasse liegt über der
+   ProseMirror-Fläche. So kann Geschriebenes und Gelesenes gar nicht
+   auseinanderlaufen. Hier steht nur die Hülle: Rahmen, Abstände, Cursor. */
+
+.editor {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--surface-container-low);
+  /* Der Rundung wegen: die Werkzeugleiste sitzt sonst mit eckigen Ecken auf. */
+  overflow: hidden;
+  transition: border-color .14s ease, box-shadow .14s ease;
+
+  /* Beim Schreiben hebt sich das Feld ab — ein weicher Ring statt eines
+     harten Rahmenwechsels, damit der Sprung nicht ins Auge springt. */
+  &:focus-within {
+    border-color: var(--tertiary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--tertiary) 18%, transparent);
+  }
+}
+
+.content {
+  max-height: 60vh;
+  overflow-y: auto;
+  /* Etwas Luft zum gerundeten unteren Rand. */
+  padding-bottom: 2px;
+}
+
+/* Liegt auf dem `contenteditable` selbst (siehe `editorProps.attributes`). */
+.surface {
+  padding: 12px 14px;
+  outline: none;
+  min-height: 96px;
+
+  /* ProseMirror setzt das beim Ziehen einer Auswahl über ganze Knoten. */
+  :global(.ProseMirror-selectednode) {
+    outline: 2px solid var(--tertiary);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Platzhalter: nur im ersten, leeren Absatz. Kommt von der
+     Placeholder-Extension, die `data-placeholder` setzt. Er trägt seit dem
+     Umbau auch den Hinweis auf das `/`-Menü. */
+  p:global(.is-editor-empty):first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--outline);
+  }
+
+  /* Checklisten sind hier anklickbar — anders als in der Anzeige. Aufbau laut
+     TaskItem: li > label > input[checkbox] + span, daneben div mit dem Text. */
+  ul[data-type="taskList"] {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  li[data-type="taskItem"] {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+
+    > label {
+      flex: none;
+      margin-top: .35em;
+
+      input { accent-color: var(--primary); cursor: pointer; }
+    }
+
+    > div { flex: 1; }
+    > div > p { margin: 0; }
+
+    &[data-checked="true"] > div {
+      color: var(--on-surface-variant);
+      text-decoration: line-through;
+    }
+  }
+
+  /* Tabellen: im Editor mit sichtbarem Raster und Ziehgriffen. */
+  table {
+    width: 100%;
+    margin: .7em 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+    overflow: hidden;
+
+    td, th {
+      position: relative;
+      padding: 6px 10px;
+      border: 1px solid var(--outline);
+      vertical-align: top;
+
+      > p { margin: 0; }
+    }
+
+    th {
+      background: var(--surface-container-high);
+      font-weight: 650;
+      text-align: left;
+    }
+
+    /* Die markierte Zelle beim Ziehen über mehrere. */
+    :global(.selectedCell)::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: color-mix(in oklab, var(--tertiary) 20%, transparent);
+      pointer-events: none;
+    }
+  }
+
+  /* Der Griff zum Verbreitern einer Spalte. */
+  :global(.column-resize-handle) {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: 0;
+    width: 4px;
+    background: var(--tertiary);
+    pointer-events: none;
+  }
+
+  /* Cursor-Markierung beim Ziehen von Blöcken. */
+  :global(.ProseMirror-gapcursor)::after {
+    border-top-color: var(--on-surface);
+  }
+}

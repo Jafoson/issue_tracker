@@ -2,14 +2,17 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
-import { EditableMarkdown } from "@/components/ui/atoms/EditableMarkdown/EditableMarkdown";
 import { EditableText } from "@/components/ui/atoms/EditableText/EditableText";
-import type { IssuePatch } from "@/features/issues/types";
+import { IssueRichText } from "@/features/issues/components/IssueRichText/IssueRichText";
+import type { IssueEditorData, IssuePatch } from "@/features/issues/types";
+import type { PMDoc } from "@/lib/richtext/types";
 import styles from "../issueDetail.module.scss";
 
 interface IssueSummaryProps {
   title: string;
-  description: string;
+  description: PMDoc;
+  /** Für die Vorschläge hinter `@` und `#` im Beschreibungstext. */
+  data: IssueEditorData;
   onPatch: (patch: IssuePatch) => void;
 }
 
@@ -21,6 +24,7 @@ interface IssueSummaryProps {
 export function IssueSummary({
   title,
   description,
+  data,
   onPatch,
 }: IssueSummaryProps) {
   const t = useTranslations();
@@ -43,9 +47,10 @@ export function IssueSummary({
           <Icon icon="lucide:align-left" width={15} aria-hidden="true" />
           <h3 className={styles.sectionTitle}>{t("fields.description")}</h3>
         </header>
-        <EditableMarkdown
+        <IssueRichText
           className={styles.description}
           value={description}
+          data={data}
           label={t("fields.description")}
           placeholder={t("placeholders.editDescription")}
           saveLabel={t("actions.save")}
