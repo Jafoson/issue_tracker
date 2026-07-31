@@ -238,3 +238,43 @@ describe("RichText", () => {
     expect(html).toContain("bleibt lesbar");
   });
 });
+
+describe("RichText — Chips", () => {
+  const mention = (attrs: Record<string, unknown>) =>
+    renderToStaticMarkup(
+      <RichText
+        value={{
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "mention", attrs }] },
+          ],
+        }}
+      />,
+    );
+
+  test("zeigt beim Mitglied ein @ vor dem Namen", () => {
+    const html = mention({ id: "u1", label: "Anna Weber" });
+    expect(html).toContain("@");
+    expect(html).toContain("Anna Weber");
+  });
+
+  test("zeigt das Datum lesbar und behält den ISO-Wert im Attribut", () => {
+    const html = renderToStaticMarkup(
+      <RichText
+        value={{
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "dateChip", attrs: { date: "2026-08-14" } }],
+            },
+          ],
+        }}
+      />,
+    );
+    expect(html).toContain('dateTime="2026-08-14"');
+    // Nicht mehr die Rohform im Text — dieselbe Schreibweise wie im Editor.
+    expect(html).not.toMatch(/>2026-08-14</);
+    expect(html).toMatch(/2026/);
+  });
+});

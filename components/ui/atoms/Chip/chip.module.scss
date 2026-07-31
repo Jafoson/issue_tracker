@@ -30,6 +30,62 @@
   &.hasTrailing { padding-right: 8px; }
 }
 
+/* ── Größen ── */
+
+.md { /* Regelfall — Maße stehen oben in `.chip`. */ }
+
+/* Im Fließtext: keine feste Höhe, alles in `em`, damit der Chip mit dem Text
+   ringsum wächst und die Zeile nicht auseinanderdrückt. Wird von den
+   Erwähnungs-, Issue- und Datums-Chips im Rich Text benutzt. */
+.inline {
+  /* Der entscheidende Unterschied zum `md`-Chip: **kein** `inline-flex`.
+     Ein Flex-Kasten bildet eine eigene Box, deren Höhe die Zeile aufspreizt —
+     der Chip stand dadurch immer höher da als der Text daneben, egal wie klein
+     man Polster und Zeilenhöhe drehte. Ein `inline`-Element hat keine eigene
+     Höhe: sein senkrechtes Polster legt sich über die Zeile, ohne sie zu
+     verschieben, und die Grundlinie ist von selbst die des Fließtexts. */
+  display: inline;
+  height: auto;
+  padding: .1em .55em;
+  border-radius: var(--radius-pill);
+  font-size: .95em;
+  /* Normalgewicht, anders als beim `md`-Chip (500): der steht für sich, dieser
+     hier steht mitten im Satz. Die Betonung leisten Fläche und Rundung — kommt
+     Fettung dazu, springt die Erwähnung aus der Zeile heraus. */
+  font-weight: 400;
+  /* Anders als ein Bedienelement ist das hier Text: wer den Absatz markiert,
+     muss die Erwähnung mitkopieren können. */
+  user-select: text;
+
+  &.hasIcon { padding-left: .4em; }
+  &.hasTrailing { padding-right: .4em; }
+
+  /* Die Slots geben ihr Flex-Verhalten mit auf — sie sitzen jetzt im Textfluss. */
+  .icon {
+    display: inline;
+    margin-right: .3em;
+  }
+
+  .label {
+    display: inline;
+    overflow: visible;
+  }
+}
+
+/* Die Fläche des Fließtext-Chips kommt nicht von der Variante, sondern von
+   hier — und zwar zwei Stufen über dem Panel statt einer.
+   `--surface-container` (die Variante `elevated`) liegt nur vier RGB-Werte
+   über `--surface-container-low`, auf dem Beschreibung und Kommentare stehen;
+   im laufenden Text war davon nichts zu sehen.
+
+   Zwei Klassen schlagen die eine der Variante — die Reihenfolge im Stylesheet
+   entscheidet hier also nicht mit. */
+.chip.inline {
+  background: var(--surface-container-highest);
+  border-color: color-mix(in oklab, var(--outline) 45%, transparent);
+  color: var(--on-surface);
+}
+
 /* ── Interaction states ── */
 
 .clickable {

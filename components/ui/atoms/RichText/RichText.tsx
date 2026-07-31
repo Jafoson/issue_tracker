@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { Chip } from "@/components/ui/atoms/Chip/Chip";
+import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";
 import type { PMDoc, PMMark, PMNode } from "@/lib/richtext/types";
 import styles from "./richText.module.scss";
@@ -193,38 +195,61 @@ function renderNode(node: PMNode, key: string): ReactNode {
       );
 
     case "mention":
+      // Das `@` gehört in den Text, nicht in einen eigenen Slot: so sitzt es
+      // von selbst auf der Grundlinie und wird beim Markieren mitkopiert.
       return (
-        <span key={key} className={styles.mention} data-mention>
+        <Chip key={key} as="span" size="inline" variant="elevated" data-mention>
           @{attr(node, "label")}
-        </span>
+        </Chip>
       );
 
     case "issueLink": {
       const identifier = attr(node, "identifier");
       if (!identifier) return null;
       // Dieselbe Adresse, über die Board, Inbox und Palette ein Issue öffnen:
-      // ein `issue`-Parameter an der aktuellen Route.
+      // ein `issue`-Parameter an der aktuellen Route. Der Chip liegt im Link
+      // statt selbst einer zu sein — `Chip` kennt nur `div` und `span`.
       return (
         <a
           key={key}
-          className={styles.issueLink}
+          className={styles.issueLinkWrap}
           href={`?issue=${encodeURIComponent(identifier)}`}
         >
-          {identifier}
+          <Chip
+            as="span"
+            size="inline"
+            variant="elevated"
+            className={styles.chipHover}
+            icon={<span className={styles.issueIcon} aria-hidden="true" />}
+          >
+            <span className={styles.issueLinkLabel}>{identifier}</span>
+          </Chip>
         </a>
       );
     }
 
-    case "dateChip":
+    case "dateChip": {
+      const iso = attr(node, "date");
       return (
-        <time
+        <Chip
           key={key}
-          className={styles.dateChip}
-          dateTime={attr(node, "date")}
+          as="span"
+          size="inline"
+          variant="elevated"
+          icon={<span className={styles.dateIcon} aria-hidden="true" />}
+          // Der maschinenlesbare Wert gehört an ein `<time>`; der Chip ist
+          // nur die Hülle darum.
+          title={iso}
+          // Die Schreibweise richtet sich nach der Umgebung, und die ist auf
+          // dem Server eine andere als im Browser. Der maschinenlesbare Wert
+          // steht unverändert im `datetime`-Attribut.
         >
-          {attr(node, "date")}
-        </time>
+          <time dateTime={iso} suppressHydrationWarning>
+            {formatChipDate(iso)}
+          </time>
+        </Chip>
       );
+    }
 
     case "emoji":
       return (

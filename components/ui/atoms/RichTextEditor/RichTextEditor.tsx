@@ -50,7 +50,7 @@ export type EditorTranslator = ReturnType<typeof useTranslations<"editor">>;
 export interface MentionSource {
   id: string;
   name: string;
-  /** Optionales Bild — als fertiges Element, damit `ui` nichts über Avatare weiß. */
+  /** Bild für die Vorschlagsliste, als fertiges Element. */
   avatar?: React.ReactNode;
 }
 
@@ -110,17 +110,25 @@ export function RichTextEditor({
         emptyLabel: () => t("noMembers"),
         items: (query) => {
           const q = query.trim().toLowerCase();
-          return members
-            .filter((m) => !q || m.name.toLowerCase().includes(q))
-            .slice(0, 8)
-            .map((m) => ({ id: m.id, label: m.name, icon: m.avatar }));
+          return (
+            members
+              .filter((m) => !q || m.name.toLowerCase().includes(q))
+              .slice(0, 8)
+              // Kein `hint`: den zeigt die Liste rechts an, und ein Hex-Code
+              // neben jedem Namen wäre Unsinn. Die Farbe holt `onSelect` sich
+              // beim Einfügen aus `members`.
+              .map((m) => ({ id: m.id, label: m.name, icon: m.avatar }))
+          );
         },
         onSelect: ({ editor, range, item }) => {
           editor
             .chain()
             .focus()
             .insertContentAt(range, [
-              { type: "mention", attrs: { id: item.id, label: item.label } },
+              {
+                type: "mention",
+                attrs: { id: item.id, label: item.label },
+              },
               // Ohne das Leerzeichen klebt das nächste Wort am Chip.
               { type: "text", text: " " },
             ])

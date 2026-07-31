@@ -4,9 +4,24 @@ import styles from "./chip.module.scss";
 type ChipVariant = "text" | "elevated" | "outline";
 type ChipType = "assist" | "filter" | "input";
 
-interface ChipProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "onClick"> {
+/**
+ * `md` ist der Regelfall: ein eigenständiges Bedienelement mit fester Höhe.
+ *
+ * `inline` steht mitten im Fließtext — eine Erwähnung, ein verlinktes Issue,
+ * ein Datum. Der Chip gibt dort seine feste Höhe auf und bemisst sich in `em`,
+ * damit er die Zeile nicht auseinanderdrückt und mit dem Text ringsum
+ * mitwächst.
+ */
+type ChipSize = "md" | "inline";
+
+interface ChipProps extends Omit<React.HTMLAttributes<HTMLElement>, "onClick"> {
+  /**
+   * Das Wurzelelement. `span`, wo der Chip in einem Absatz steht — ein `div`
+   * wäre dort ungültiges HTML und der Browser bräche den Absatz auf.
+   */
+  as?: "div" | "span";
   variant?: ChipVariant;
+  size?: ChipSize;
   type?: ChipType;
   icon?: React.ReactNode;
   trailing?: React.ReactNode;
@@ -19,7 +34,9 @@ interface ChipProps
 
 export function Chip({
   children,
+  as: Root = "div",
   variant = "outline",
+  size = "md",
   type = "assist",
   icon,
   trailing,
@@ -45,6 +62,7 @@ export function Chip({
   const cls = [
     styles.chip,
     styles[variant],
+    styles[size],
     selected && styles.selected,
     clickable && styles.clickable,
     disabled && styles.disabled,
@@ -83,7 +101,7 @@ export function Chip({
   if (clickable) {
     return (
       // biome-ignore lint/a11y/useSemanticElements: chip may contain a nested remove <button>; a <button> root would be invalid HTML
-      <div
+      <Root
         className={cls}
         role="button"
         tabIndex={0}
@@ -98,13 +116,13 @@ export function Chip({
         {...rest}
       >
         {content}
-      </div>
+      </Root>
     );
   }
 
   return (
-    <div className={cls} aria-disabled={disabled || undefined} {...rest}>
+    <Root className={cls} aria-disabled={disabled || undefined} {...rest}>
       {content}
-    </div>
+    </Root>
   );
 }

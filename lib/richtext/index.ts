@@ -1,3 +1,4 @@
+export { formatChipDate } from "./date";
 export {
   EMPTY_DOC,
   emptyDoc,

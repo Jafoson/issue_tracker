@@ -1,9 +1,22 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import type { DOMOutputSpec } from "@tiptap/pm/model";
 import { Suggestion, type SuggestionOptions } from "@tiptap/suggestion";
-// Bewusst die Styles der Anzeige: ein Chip muss beim Schreiben genauso
+import { formatChipDate } from "@/lib/richtext/date";
+// Dieselben Klassen wie in der Anzeige: der `Chip`-Atom gibt die Form, die
+// Rich-Text-Styles das Zeichen davor. Ein Chip muss beim Schreiben genauso
 // aussehen wie danach beim Lesen, sonst springt der Text beim Speichern.
+//
+// Nur die Klassen, nicht die Komponente — `renderHTML` baut reines DOM, React
+// gibt es hier nicht.
+import atom from "../../Chip/chip.module.scss";
 import chip from "../../RichText/richText.module.scss";
 import type { SuggestionItem } from "../components/SuggestionMenu/SuggestionMenu";
+
+/** Was `<Chip as="span" size="inline" variant="elevated">` erzeugt. */
+const CHIP_CLASS = [atom.chip, atom.elevated, atom.inline].join(" ");
+
+/** Dasselbe mit einem Zeichen im Icon-Slot davor. */
+const CHIP_CLASS_ICON = `${CHIP_CLASS} ${atom.hasIcon}`;
 
 /**
  * Die vier Einsprengsel im Fließtext: Erwähnung, Issue, Datum und Emoji.
@@ -30,8 +43,22 @@ interface ChipConfig {
   /** Attributnamen samt Vorgabewert. */
   attrs: Record<string, string | null>;
   className?: string;
-  /** Was im Editor sichtbar ist. */
+  /** Was im Chip steht. */
   label: (attrs: Record<string, unknown>) => string;
+  /**
+   * Ein Baustein vor dem Text — der Avatar der Erwähnung. Raute und Kalender
+   * brauchen ihn nicht: die stehen als Maske im CSS und gelten damit für
+   * Editor und Anzeige gleichermaßen.
+   */
+  lead?: (attrs: Record<string, unknown>) => DOMOutputSpec | null;
+  /** Zusätzliche Klasse auf der Beschriftung — beim Issue die Festbreitenschrift. */
+  labelClass?: string;
+  /**
+   * Die reine Textform — beim Kopieren und für `editor.getText()`. Ohne Angabe
+   * dieselbe wie `label`; die Erwähnung stellt hier ihr `@` voran, das im Chip
+   * selbst überflüssig wäre.
+   */
+  text?: (attrs: Record<string, unknown>) => string;
 }
 
 /** `identifier` → `data-identifier`, `checkedAt` → `data-checked-at` */
@@ -39,7 +66,15 @@ function dataName(key: string): string {
   return `data-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
 }
 
-function createChip({ name, attrs, className, label }: ChipConfig) {
+function createChip({
+  name,
+  attrs,
+  className,
+  label,
+  lead,
+  labelClass,
+  text,
+}: ChipConfig) {
   return Node.create<ChipOptions>({
     name,
     group: "inline",
@@ -71,19 +106,32 @@ function createChip({ name, attrs, className, label }: ChipConfig) {
     },
 
     renderHTML({ node, HTMLAttributes }) {
+      const attributes = mergeAttributes(HTMLAttributes, {
+        "data-chip": name,
+        ...(className ? { class: className } : {}),
+      });
+
+      // Ohne Chip-Hülle (das Emoji) bleibt es beim nackten Zeichen — die Slots
+      // des Atoms hätten dort nichts zu halten.
+      if (!className) return ["span", attributes, label(node.attrs)];
+
+      const before = lead?.(node.attrs);
       return [
         "span",
-        mergeAttributes(HTMLAttributes, {
-          "data-chip": name,
-          ...(className ? { class: className } : {}),
-        }),
-        label(node.attrs),
-      ];
+        attributes,
+        // Dieselben Slots wie im Atom: Zeichen davor, dann die Beschriftung.
+        ...(before ? [["span", { class: atom.icon }, before]] : []),
+        [
+          "span",
+          { class: [atom.label, labelClass].filter(Boolean).join(" ") },
+          label(node.attrs),
+        ],
+      ] as DOMOutputSpec;
     },
 
     /** Für Kopieren als reiner Text und für `editor.getText()`. */
     renderText({ node }) {
-      return label(node.attrs);
+      return (text ?? label)(node.attrs);
     },
 
     addProseMirrorPlugins() {
@@ -94,11 +142,16 @@ function createChip({ name, attrs, className, label }: ChipConfig) {
   });
 }
 
-/** `@Anna Weber` — verweist über die Benutzer-ID, zeigt den Namen. */
+/**
+ * Ein erwähntes Mitglied: `@` und der Name.
+ *
+ * Das `@` steht im Text und nicht in einem eigenen Slot — so trägt es die
+ * Grundlinie des Fließtexts von selbst und wird beim Markieren mitkopiert.
+ */
 export const MentionChip = createChip({
   name: "mention",
   attrs: { id: null, label: "" },
-  className: chip.mention,
+  className: CHIP_CLASS,
   label: (a) => `@${a.label ?? ""}`,
 });
 
@@ -106,8 +159,10 @@ export const MentionChip = createChip({
 export const IssueLinkChip = createChip({
   name: "issueLink",
   attrs: { id: null, identifier: "" },
-  className: chip.issueLink,
+  className: CHIP_CLASS_ICON,
   label: (a) => String(a.identifier ?? ""),
+  labelClass: chip.issueLinkLabel,
+  lead: () => ["span", { class: chip.issueIcon, "aria-hidden": "true" }],
 });
 
 /**
@@ -117,17 +172,9 @@ export const IssueLinkChip = createChip({
 export const DateChip = createChip({
   name: "dateChip",
   attrs: { date: "" },
-  className: chip.dateChip,
-  label: (a) => {
-    const iso = String(a.date ?? "");
-    const parsed = new Date(`${iso}T00:00:00`);
-    if (Number.isNaN(parsed.getTime())) return iso;
-    return parsed.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  },
+  className: CHIP_CLASS_ICON,
+  label: (a) => formatChipDate(String(a.date ?? "")),
+  lead: () => ["span", { class: chip.dateIcon, "aria-hidden": "true" }],
 });
 
 /**
