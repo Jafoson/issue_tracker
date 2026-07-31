@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/core";
 import { useEditorState } from "@tiptap/react";
 import { useTranslations } from "next-intl";
 import { Fragment } from "react";
+import { modKey } from "@/lib/a11y";
 import styles from "./editorToolbar.module.scss";
 
 /**
@@ -35,7 +36,10 @@ type ToolId =
 interface ToolButton {
   id: ToolId;
   icon: string;
-  run: (editor: Editor) => void;
+  /** Tastenkürzel, das im Tooltip hinter dem Namen steht. */
+  shortcut?: string;
+  /** `onLink` öffnet die Adresszeile des Editors. */
+  run: (editor: Editor, onLink: () => void) => void;
   /** Wann der Knopf als aktiv gilt. */
   active?: (editor: Editor) => boolean;
 }
@@ -103,15 +107,10 @@ const GROUPS: ToolButton[][] = [
     {
       id: "link",
       icon: "lucide:link",
-      run: (e) => {
-        // Ein gesetzter Link wird beim zweiten Druck wieder entfernt.
-        if (e.isActive("link")) {
-          e.chain().focus().unsetLink().run();
-          return;
-        }
-        const href = window.prompt("https://");
-        if (href) e.chain().focus().setLink({ href }).run();
-      },
+      shortcut: "K",
+      // Setzen, ändern und entfernen macht die Adresszeile — sie kennt den
+      // bestehenden Link und bietet dann auch das Lösen an.
+      run: (_editor, onLink) => onLink(),
       active: (e) => e.isActive("link"),
     },
     {
@@ -127,9 +126,11 @@ const GROUPS: ToolButton[][] = [
 
 interface EditorToolbarProps {
   editor: Editor | null;
+  /** Öffnet die Adresszeile für Links. */
+  onLink: () => void;
 }
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, onLink }: EditorToolbarProps) {
   const t = useTranslations("editor");
 
   const active = useEditorState({
@@ -159,11 +160,15 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
               data-active={active?.[button.id] ? "" : undefined}
               aria-pressed={button.active ? !!active?.[button.id] : undefined}
               aria-label={t(button.id)}
-              title={t(button.id)}
+              title={
+                button.shortcut
+                  ? `${t(button.id)} (${modKey()} + ${button.shortcut})`
+                  : t(button.id)
+              }
               // Der Fokus muss im Text bleiben — sonst verliert der Befehl die
               // Auswahl, auf die er sich bezieht.
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => button.run(editor)}
+              onClick={() => button.run(editor, onLink)}
             >
               <Icon icon={button.icon} width={15} />
             </button>

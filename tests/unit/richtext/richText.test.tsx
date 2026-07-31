@@ -278,3 +278,40 @@ describe("RichText — Chips", () => {
     expect(html).toMatch(/2026/);
   });
 });
+
+describe("RichText — Adresse beim Überfahren", () => {
+  const render = (node: PMNode) =>
+    renderToStaticMarkup(
+      <RichText
+        value={{
+          type: "doc",
+          content: [{ type: "paragraph", content: [node] }],
+        }}
+      />,
+    );
+
+  test("der Link im Fließtext trägt seine Adresse als Titel", () => {
+    // Dem Wort sieht man sonst nicht an, wohin es führt.
+    const html = render({
+      type: "text",
+      text: "hier",
+      marks: [{ type: "link", attrs: { href: "https://example.com/tief" } }],
+    });
+    expect(html).toContain('title="https://example.com/tief"');
+  });
+
+  test("der Link-Chip ebenso — er zeigt ja nur den Namen", () => {
+    const html = render({
+      type: "linkChip",
+      attrs: { href: "https://example.com/a", label: "Mein Link" },
+    });
+    expect(html).toContain('title="https://example.com/a"');
+    expect(html).toContain("Mein Link");
+  });
+
+  test("ohne gültige Adresse entsteht auch kein Titel", () => {
+    expect(
+      render({ type: "linkChip", attrs: { href: "javascript:alert(1)" } }),
+    ).not.toContain("javascript:");
+  });
+});

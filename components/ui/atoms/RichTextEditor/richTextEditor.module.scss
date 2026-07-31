@@ -9,8 +9,10 @@
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-lg);
   background: var(--surface-container-low);
-  /* Der Rundung wegen: die Werkzeugleiste sitzt sonst mit eckigen Ecken auf. */
-  overflow: hidden;
+  /* Bewusst **kein** `overflow: hidden`: das machte den Kasten zu einem
+     Scroll-Container, und eine `sticky`-Werkzeugleiste darin könnte sich nur
+     an ihm festhalten — nicht am scrollenden Modal-Körper darüber. Die Rundung
+     ihrer oberen Ecken trägt die Leiste deshalb selbst. */
   /* Platz für den Ziehgriff, damit er nicht in die untere Rundung läuft und
      dort angeschnitten wird. */
   padding-bottom: 5px;
@@ -30,11 +32,15 @@
      Bildlaufleiste schon. Die Höhe kommt anfangs von `.surface` darin, ab dem
      ersten Ziehen vom Browser. */
   resize: vertical;
-  /* Nach oben großzügig: wer zieht, will vergrößern. Ganz ohne Grenze könnte
-     das Feld aus dem Bild wachsen. */
   min-height: 96px;
-  max-height: 85vh;
+  /* Deutlich unter der Höhe eines Modals (rund 88vh): bei 85vh füllte der
+     Editor es fast allein, der Modal-Körper musste scrollen und nahm Titelfeld
+     und Werkzeugleiste mit aus dem Bild. Wer mehr Platz will, zieht am Griff. */
+  max-height: 55vh;
   overflow-y: auto;
+  /* Am Ende des Texts nicht gleich das Modal darunter weiterschieben — das
+     war das Sprunghafte beim Scrollen. */
+  overscroll-behavior: contain;
 }
 
 /* Der Griff des Browsers ist auf dunklem Grund kaum zu sehen — ein Andeuten
@@ -149,17 +155,17 @@
   }
 }
 
-/* ─── Kalenderblatt ────────────────────────────────────────────────────────── */
+/* ─── Schwebende Einblendungen (Kalender, Adresszeile) ─────────────────────── */
 
-/* Hängt am `body`, muss also selbst über dem Modal liegen — dieselbe Ebene wie
-   die Vorschlagsliste, aus demselben Grund. */
-.calendarLayer {
+/* Hängen am `body`, müssen also selbst über dem Modal liegen — dieselbe Ebene
+   wie die Vorschlagsliste, aus demselben Grund. */
+.floatingLayer {
   position: fixed;
   z-index: var(--z-popover);
 }
 
 /* Fängt den Klick daneben ab. Unsichtbar und ohne eigene Fläche im Layout. */
-.calendarBackdrop {
+.floatingBackdrop {
   position: fixed;
   inset: 0;
   z-index: var(--z-popover);

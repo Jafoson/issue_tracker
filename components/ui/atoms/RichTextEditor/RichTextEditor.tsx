@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import type { Editor, JSONContent } from "@tiptap/core";
+import { mergeAttributes } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -14,21 +15,28 @@ import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Calendar } from "@/components/ui/atoms/Calendar/Calendar";
+import { modKey } from "@/lib/a11y";
 import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 import richText from "../RichText/richText.module.scss";
 import { EditorToolbar } from "./components/EditorToolbar/EditorToolbar";
+import { LinkForm } from "./components/LinkForm/LinkForm";
 import type { SuggestionItem } from "./components/SuggestionMenu/SuggestionMenu";
 import {
   DateChip,
   EmojiChip,
   IssueLinkChip,
+  LinkChip,
   MentionChip,
 } from "./extensions/chips";
 import { searchEmoji } from "./extensions/emojiData";
 import { Panel } from "./extensions/Panel";
-import { SlashCommand, type SlashCommandItem } from "./extensions/SlashCommand";
+import {
+  filterSlashItems,
+  SlashCommand,
+  type SlashCommandItem,
+} from "./extensions/SlashCommand";
 import { createSuggestion } from "./extensions/suggestion";
 import styles from "./richTextEditor.module.scss";
 
@@ -111,6 +119,78 @@ export function RichTextEditor({
     const at = view.coordsAtPos(view.state.selection.from);
     setCalendar({ x: at.left, y: at.bottom + 6 });
   }, []);
+
+  /** Wo die Adresszeile steht und womit sie startet. `null` heißt: zu. */
+  const [linkAt, setLinkAt] = useState<{
+    x: number;
+    y: number;
+    initial: string;
+    withName: boolean;
+  } | null>(null);
+
+  /**
+   * Öffnet die Adresszeile am Cursor. Steht der Cursor schon in einem Link,
+   * ist dessen Adresse vorbelegt — dann wird sie geändert statt neu gesetzt.
+   */
+  const openLink = useCallback(() => {
+    const editor = editorRef.current;
+    const view = editor?.view;
+    if (!editor || !view) return;
+    const at = view.coordsAtPos(view.state.selection.from);
+    const current = editor.getAttributes("link").href;
+    setLinkAt({
+      x: at.left,
+      y: at.bottom + 6,
+      initial: typeof current === "string" ? current : "",
+      // Ohne Markierung entsteht ein Chip — der braucht einen Namen.
+      withName: view.state.selection.empty,
+    });
+  }, []);
+
+  /**
+   * Zwei Wege, je nachdem, ob etwas markiert ist:
+   *
+   * - **Text markiert** → er bekommt die Link-Auszeichnung. Der markierte Text
+   *   *ist* der Name; ein Chip würde ihn ersetzen und wäre das Gegenteil des
+   *   Erwarteten.
+   * - **Nichts markiert** → ein Chip mit Namen und Website-Icon. Eine nackte
+   *   Adresse mitten im Satz liest sich schlecht.
+   */
+  const applyLink = (href: string, name: string) => {
+    setLinkAt(null);
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    if (editor.state.selection.empty) {
+      editor
+        .chain()
+        .focus()
+        .insertContent([
+          { type: "linkChip", attrs: { href, label: name } },
+          // Ohne das Leerzeichen klebt das nächste Wort am Chip.
+          { type: "text", text: " " },
+        ])
+        .run();
+      return;
+    }
+    editor.chain().focus().setLink({ href }).run();
+  };
+
+  const removeLink = () => {
+    setLinkAt(null);
+    editorRef.current?.chain().focus().unsetLink().run();
+  };
+
+  /**
+   * Schließt eine Einblendung und gibt den Cursor zurück.
+   *
+   * Ohne das bliebe der Editor zwar offen, aber ohne Fokus: die Adresszeile hat
+   * ihn genommen und beim Schließen an niemanden weitergereicht.
+   */
+  const dismiss = (close: () => void) => () => {
+    close();
+    editorRef.current?.commands.focus();
+  };
 
   const insertDate = (iso: string) => {
     setCalendar(null);
@@ -312,37 +392,7 @@ export function RichTextEditor({
         name: "slashCommand",
         char: "/",
         emptyLabel: () => t("noCommands"),
-        items: (query) => {
-          const q = query.trim().toLowerCase();
-          const all = slashItems(t);
-          if (!q) return all;
-
-          const hits = all.filter(
-            (item) =>
-              item.label.toLowerCase().includes(q) ||
-              item.id.toLowerCase().includes(q),
-          );
-
-          // Wer `/ta` tippt, meint „Tabelle", nicht „Nummerierte Liste" (die
-          // das `ta` in der Mitte trägt). Treffer am Wortanfang deshalb nach
-          // vorn; innerhalb der beiden Ränge bleibt die Reihenfolge oben
-          // erhalten, weil `sort` stabil ist.
-          const startsWith = (item: SlashCommandItem) =>
-            item.label.toLowerCase().startsWith(q) ||
-            item.id.toLowerCase().startsWith(q)
-              ? 0
-              : 1;
-
-          return (
-            hits
-              .sort((a, b) => startsWith(a) - startsWith(b))
-              // Beim Suchen ohne Gruppenköpfe: die Rangfolge zieht Einträge aus
-              // verschiedenen Gruppen durcheinander, und dieselbe Überschrift
-              // stünde dann mehrfach in der Liste. Gegliedert wird die
-              // vollständige Liste, gesucht wird eine flache Rangfolge.
-              .map((item) => ({ ...item, group: undefined }))
-          );
-        },
+        items: (query) => filterSlashItems(slashItems(t, openLink), query),
         onSelect: ({ editor, range, item }) => item.run({ editor, range }),
       }),
     });
@@ -354,7 +404,20 @@ export function RichTextEditor({
         link: false,
         // `codeBlock` und der Rest bleiben, wie das Kit sie mitbringt.
       }),
-      Link.configure({ openOnClick: false, autolink: true }),
+      // Tiptaps `Link` baut den Anker selbst — der Titel muss deshalb hier
+      // hinein, damit auch beim Schreiben zu sehen ist, wohin ein Wort führt.
+      Link.extend({
+        renderHTML({ HTMLAttributes }) {
+          const href = HTMLAttributes.href;
+          return [
+            "a",
+            mergeAttributes(HTMLAttributes, {
+              ...(typeof href === "string" ? { title: href } : {}),
+            }),
+            0,
+          ];
+        },
+      }).configure({ openOnClick: false, autolink: true }),
       Image,
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -371,10 +434,11 @@ export function RichTextEditor({
       mention,
       issueLink,
       emoji,
+      LinkChip,
       date,
       slash,
     ];
-  }, [members, issues, placeholder, t, openCalendar]);
+  }, [members, issues, placeholder, t, openCalendar, openLink]);
 
   const editor = useEditor({
     extensions,
@@ -394,11 +458,25 @@ export function RichTextEditor({
         "aria-multiline": "true",
       },
       handleKeyDown: (_view, event) => {
-        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+        const mod = event.metaKey || event.ctrlKey;
+
+        if (event.key === "Enter" && mod) {
           event.preventDefault();
           onSubmit?.();
           return true;
         }
+
+        // ⌘/Strg + K öffnet die Adresszeile — die verbreitete Belegung für
+        // „Link". `stopPropagation`, damit die Tastenfolge nicht zusätzlich
+        // bei einem übergeordneten Handler landet, solange hier geschrieben
+        // wird.
+        if ((event.key === "k" || event.key === "K") && mod) {
+          event.preventDefault();
+          event.stopPropagation();
+          openLink();
+          return true;
+        }
+
         return false;
       },
     },
@@ -411,7 +489,7 @@ export function RichTextEditor({
 
   return (
     <div className={[styles.editor, className].filter(Boolean).join(" ")}>
-      <EditorToolbar editor={editor} />
+      <EditorToolbar editor={editor} onLink={openLink} />
       {/* Der Ziehgriff ist kein fokussierbares Element: Ziehen nimmt dem Text
           den Fokus und gibt ihn an niemanden weiter. Danach zurückgeben, sonst
           steht der Cursor nach dem Vergrößern nicht mehr im Text.
@@ -437,19 +515,55 @@ export function RichTextEditor({
             {/* Ein Klick daneben schließt — ohne den Fokus aus dem Text zu ziehen. */}
             <button
               type="button"
-              className={styles.calendarBackdrop}
+              className={styles.floatingBackdrop}
+              data-editor-floating
               aria-label={t("close")}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setCalendar(null)}
+              onClick={dismiss(() => setCalendar(null))}
             />
             <div
-              className={styles.calendarLayer}
+              className={styles.floatingLayer}
+              data-editor-floating
               style={{ left: calendar.x, top: calendar.y }}
             >
               <Calendar
                 onPick={insertDate}
                 todayLabel={t("today")}
                 tomorrowLabel={t("tomorrow")}
+              />
+            </div>
+          </>,
+          document.body,
+        )}
+
+      {linkAt &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              className={styles.floatingBackdrop}
+              data-editor-floating
+              aria-label={t("close")}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={dismiss(() => setLinkAt(null))}
+            />
+            <div
+              className={styles.floatingLayer}
+              data-editor-floating
+              style={{ left: linkAt.x, top: linkAt.y }}
+            >
+              <LinkForm
+                initial={linkAt.initial}
+                withName={linkAt.withName}
+                onSubmit={applyLink}
+                onRemove={linkAt.initial ? removeLink : undefined}
+                onCancel={dismiss(() => setLinkAt(null))}
+                label={t("link")}
+                placeholder={t("linkPlaceholder")}
+                nameLabel={t("linkName")}
+                namePlaceholder={t("linkNamePlaceholder")}
+                applyLabel={t("linkApply")}
+                removeLabel={t("linkRemove")}
               />
             </div>
           </>,
@@ -483,7 +597,10 @@ export function RichTextEditor({
  *   Datumsangaben ganz ans Ende: sie belegen sonst drei Zeilen im Sichtfeld
  *   für etwas, das selten gebraucht wird.
  */
-function slashItems(t: EditorTranslator): SlashCommandItem[] {
+function slashItems(
+  t: EditorTranslator,
+  openLink: () => void,
+): SlashCommandItem[] {
   /** Erst den `/…`-Text wegnehmen, dann den Befehl ausführen. */
   const at = (editor: Editor, range: { from: number; to: number }) =>
     editor.chain().focus().deleteRange(range);
@@ -494,6 +611,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "bulletList",
       label: t("bulletList"),
       hint: "-",
+      keywords: ["bullet list", "aufzählung", "liste", "list", "punkte", "ul"],
       group: t("groupLists"),
       icon: <Icon icon="lucide:list" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleBulletList().run(),
@@ -502,6 +620,14 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "taskList",
       label: t("taskList"),
       hint: "[]",
+      keywords: [
+        "task list",
+        "checkliste",
+        "checklist",
+        "todo",
+        "aufgaben",
+        "haken",
+      ],
       group: t("groupLists"),
       icon: <Icon icon="lucide:list-checks" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleTaskList().run(),
@@ -510,6 +636,13 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "orderedList",
       label: t("numberedList"),
       hint: "1.",
+      keywords: [
+        "numbered list",
+        "nummerierte liste",
+        "ordered list",
+        "zahlen",
+        "ol",
+      ],
       group: t("groupLists"),
       icon: <Icon icon="lucide:list-ordered" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleOrderedList().run(),
@@ -520,6 +653,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "heading1",
       label: t("heading1"),
       hint: "#",
+      keywords: ["heading 1", "überschrift 1", "titel", "title", "h1"],
       group: t("groupText"),
       icon: <Icon icon="lucide:heading-1" width={16} />,
       run: ({ editor, range }) =>
@@ -529,6 +663,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "heading2",
       label: t("heading2"),
       hint: "##",
+      keywords: ["heading 2", "überschrift 2", "h2"],
       group: t("groupText"),
       icon: <Icon icon="lucide:heading-2" width={16} />,
       run: ({ editor, range }) =>
@@ -538,6 +673,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "heading3",
       label: t("heading3"),
       hint: "###",
+      keywords: ["heading 3", "überschrift 3", "h3"],
       group: t("groupText"),
       icon: <Icon icon="lucide:heading-3" width={16} />,
       run: ({ editor, range }) =>
@@ -549,6 +685,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "codeBlock",
       label: t("codeBlock"),
       hint: "```",
+      keywords: ["code block", "codeblock", "quelltext", "snippet", "code"],
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:code" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleCodeBlock().run(),
@@ -557,6 +694,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "blockquote",
       label: t("quote"),
       hint: ">",
+      keywords: ["quote", "zitat", "blockquote"],
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:quote" width={16} />,
       run: ({ editor, range }) => at(editor, range).toggleBlockquote().run(),
@@ -564,6 +702,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "infoPanel",
       label: t("infoPanel"),
+      keywords: ["info panel", "infoblock", "hinweis", "info", "panel"],
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:info" width={16} />,
       run: ({ editor, range }) => at(editor, range).togglePanel("info").run(),
@@ -571,6 +710,14 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "warningPanel",
       label: t("warningPanel"),
+      keywords: [
+        "warning panel",
+        "warnblock",
+        "warnung",
+        "achtung",
+        "warning",
+        "panel",
+      ],
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:triangle-alert" width={16} />,
       run: ({ editor, range }) =>
@@ -579,6 +726,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
     {
       id: "table",
       label: t("table"),
+      keywords: ["table", "tabelle", "raster"],
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:table" width={16} />,
       run: ({ editor, range }) =>
@@ -590,6 +738,15 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "horizontalRule",
       label: t("divider"),
       hint: "---",
+      keywords: [
+        "divider",
+        "trennlinie",
+        "linie",
+        "strich",
+        "separator",
+        "rule",
+        "hr",
+      ],
       group: t("groupBlocks"),
       icon: <Icon icon="lucide:minus" width={16} />,
       run: ({ editor, range }) => at(editor, range).setHorizontalRule().run(),
@@ -597,9 +754,38 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
 
     // ── Einfügen ─────────────────────────────────────────────────────────────
     {
+      id: "link",
+      label: t("link"),
+      hint: `${modKey()} K`,
+      keywords: [
+        "link",
+        "url",
+        "website",
+        "verlinkung",
+        "adresse",
+        "hyperlink",
+      ],
+      group: t("groupInsert"),
+      icon: <Icon icon="lucide:link" width={16} />,
+      // Erst den `/…`-Text wegnehmen, dann die Adresszeile öffnen — sie hängt
+      // sich an die Stelle, an der der Cursor danach steht.
+      run: ({ editor, range }) => {
+        at(editor, range).run();
+        openLink();
+      },
+    },
+    {
       id: "mention",
       label: t("mention"),
       hint: "@",
+      keywords: [
+        "mention",
+        "erwähnung",
+        "erwähnen",
+        "mitglied",
+        "person",
+        "user",
+      ],
       group: t("groupInsert"),
       icon: <Icon icon="lucide:at-sign" width={16} />,
       // Den Trigger einfach schreiben — daraufhin geht dessen eigene Liste auf.
@@ -609,6 +795,14 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "issue",
       label: t("issueLink"),
       hint: "#",
+      keywords: [
+        "issue",
+        "issue verlinken",
+        "issue link",
+        "ticket",
+        "aufgabe",
+        "link",
+      ],
       group: t("groupInsert"),
       icon: <Icon icon="lucide:hash" width={16} />,
       run: ({ editor, range }) => at(editor, range).insertContent("#").run(),
@@ -617,6 +811,7 @@ function slashItems(t: EditorTranslator): SlashCommandItem[] {
       id: "date",
       label: t("date"),
       hint: "//",
+      keywords: ["date", "datum", "kalender", "calendar", "termin", "frist"],
       group: t("groupInsert"),
       icon: <Icon icon="lucide:calendar" width={16} />,
       // Wie bei Erwähnung und Issue: den Auslöser schreiben und übergeben.

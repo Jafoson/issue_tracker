@@ -4,12 +4,22 @@
    Platzhalter des leeren Feldes. */
 
 .toolbar {
+  /* Bleibt oben stehen, auch wenn der Modal-Körper darunter wegscrollt.
+     Möglich nur, weil `.editor` kein eigener Scroll-Container mehr ist. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 2px;
   padding: 6px 8px;
+  /* Deckend, sonst schiene der Text beim Scrollen durch. Die oberen Ecken
+     rundet die Leiste selbst — `.editor` beschneidet nicht mehr. Ein Pixel
+     weniger als außen, sonst blitzt der Rahmen durch. */
   background: var(--surface-container);
+  border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
   /* Halbtransparent: die Kante soll das Feld gliedern, nicht zerschneiden. */
   border-bottom: 1px solid color-mix(in oklab, var(--outline-variant) 60%, transparent);
 }

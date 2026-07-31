@@ -2,6 +2,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import type { DOMOutputSpec } from "@tiptap/pm/model";
 import { Suggestion, type SuggestionOptions } from "@tiptap/suggestion";
 import { formatChipDate } from "@/lib/richtext/date";
+import { faviconStyle, hostOf } from "@/lib/richtext/link";
 // Dieselben Klassen wie in der Anzeige: der `Chip`-Atom gibt die Form, die
 // Rich-Text-Styles das Zeichen davor. Ein Chip muss beim Schreiben genauso
 // aussehen wie danach beim Lesen, sonst springt der Text beim Speichern.
@@ -53,6 +54,8 @@ interface ChipConfig {
   lead?: (attrs: Record<string, unknown>) => DOMOutputSpec | null;
   /** Zusätzliche Klasse auf der Beschriftung — beim Issue die Festbreitenschrift. */
   labelClass?: string;
+  /** Was beim Überfahren erscheint — beim Link seine Adresse. */
+  titleOf?: (attrs: Record<string, unknown>) => string | undefined;
   /**
    * Die reine Textform — beim Kopieren und für `editor.getText()`. Ohne Angabe
    * dieselbe wie `label`; die Erwähnung stellt hier ihr `@` voran, das im Chip
@@ -73,6 +76,7 @@ function createChip({
   label,
   lead,
   labelClass,
+  titleOf,
   text,
 }: ChipConfig) {
   return Node.create<ChipOptions>({
@@ -106,9 +110,11 @@ function createChip({
     },
 
     renderHTML({ node, HTMLAttributes }) {
+      const title = titleOf?.(node.attrs);
       const attributes = mergeAttributes(HTMLAttributes, {
         "data-chip": name,
         ...(className ? { class: className } : {}),
+        ...(title ? { title } : {}),
       });
 
       // Ohne Chip-Hülle (das Emoji) bleibt es beim nackten Zeichen — die Slots
@@ -163,6 +169,31 @@ export const IssueLinkChip = createChip({
   label: (a) => String(a.identifier ?? ""),
   labelClass: chip.issueLinkLabel,
   lead: () => ["span", { class: chip.issueIcon, "aria-hidden": "true" }],
+});
+
+/**
+ * Ein Link auf eine fremde Seite.
+ *
+ * Neben Adresse und Name kein weiteres Attribut: das Icon leitet sich aus der
+ * Adresse ab, und ein mitgespeicherter Pfad veraltete nur.
+ */
+export const LinkChip = createChip({
+  name: "linkChip",
+  attrs: { href: "", label: "" },
+  className: CHIP_CLASS_ICON,
+  // Ohne Namen steht der Hostname da — besser als eine nackte lange Adresse.
+  label: (a) => String(a.label || hostOf(String(a.href ?? ""))),
+  text: (a) => String(a.href ?? ""),
+  // Der Chip zeigt den Namen — die Adresse dahinter erscheint beim Überfahren.
+  titleOf: (a) => String(a.href ?? "") || undefined,
+  lead: (a) => [
+    "span",
+    {
+      class: chip.linkIcon,
+      style: faviconStyle(String(a.href ?? "")) ?? "",
+      "aria-hidden": "true",
+    },
+  ],
 });
 
 /**

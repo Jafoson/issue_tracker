@@ -26,6 +26,11 @@
   --on-tertiary: rgb(0 55 50);
   --tertiary-container: rgb(0 80 73);
   --on-tertiary-container: rgb(158 242 229);
+  /* Hinweis und Warnung — die beiden Panel-Arten im Rich Text. Als eigene
+     Tokens statt aus `--tertiary`/`--amber` gemischt: „Hinweis" ist eine
+     Bedeutung, keine Farbe, und darf sich unabhängig vom Akzent entwickeln. */
+  --info: rgb(130 213 201);
+  --warning: rgb(226 160 60);
   --error: rgb(255 180 171);
   --on-error: rgb(105 0 5);
   --error-container: rgb(147 0 10);
@@ -80,6 +85,10 @@
   --on-tertiary: rgb(255 255 255);
   --tertiary-container: rgb(168 242 206);
   --on-tertiary-container: rgb(0 81 57);
+  /* Siehe dunkles Thema. Beide hier kräftiger, damit sie auf hellem Grund
+     als Rahmen und als Schriftton noch tragen. */
+  --info: rgb(20 104 92);
+  --warning: rgb(158 100 0);
   --error: rgb(186 26 26);
   --on-error: rgb(255 255 255);
   --error-container: rgb(255 218 214);

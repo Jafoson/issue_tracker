@@ -1,0 +1,75 @@
+/* Adresszeile für einen Link. Fläche und Rundung wie beim `Popover` und beim
+   Kalenderblatt — sie schwebt aus demselben Grund über der Seite. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 320px;
+  padding: 5px 6px;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  animation: pop .12s ease;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Die zweite Zeile — der Name — steht abgesetzt unter der Adresse. */
+.row + .row {
+  padding-top: 4px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.icon {
+  flex: none;
+  margin-left: 3px;
+  color: var(--on-surface-variant);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 4px;
+  background: none;
+  border: none;
+  color: var(--on-surface);
+  font-size: var(--text-sm);
+
+  &::placeholder { color: var(--outline); }
+  &:focus-visible { outline: none; }
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+  }
+
+  &:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/* Lokal, obwohl `pop` auch global steht: CSS-Module benennen Keyframe-Namen
+   um, auch wenn sie hier nicht definiert sind — die Referenz zeigte sonst auf
+   einen Namen, den es nirgends gibt. */
+@keyframes pop {
+  from { opacity: .2; transform: translateY(-4px) scale(.985); }
+}

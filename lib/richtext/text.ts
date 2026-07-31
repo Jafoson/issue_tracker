@@ -30,6 +30,8 @@ function nodeText(node: PMNode): string {
   // aus der Suche heraus, obwohl sie sichtbar im Text steht.
   if (node.type === "mention") return `@${attr(node, "label")}`;
   if (node.type === "issueLink") return attr(node, "identifier");
+  if (node.type === "linkChip")
+    return attr(node, "label") || attr(node, "href");
   if (node.type === "dateChip") return attr(node, "date");
   if (node.type === "emoji") return attr(node, "emoji");
   if (node.type === "image") return attr(node, "alt");

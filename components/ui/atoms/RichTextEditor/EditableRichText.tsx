@@ -180,11 +180,15 @@ export function EditableRichText({
           // Am Ziehgriff gedrückt: der Fokus ist zwar weg, der Editor aber
           // nicht verlassen. Übernommen wird erst beim nächsten echten Blur.
           if (pressedInside.current) return;
-          // Die Vorschlagsliste hängt per Portal am `body`, liegt also außerhalb
-          // dieses Baums. Ohne die Ausnahme spränge das Feld beim Klick auf
-          // einen Vorschlag zu.
+          // Vorschlagsliste, Kalenderblatt und Adresszeile hängen per Portal
+          // am `body` und liegen damit außerhalb dieses Baums. Der Fokus ist
+          // zwar aus dem Text heraus, der Editor aber nicht verlassen — ohne
+          // die Ausnahme klappte er beim Öffnen sofort wieder zu und nähme das
+          // Portal gleich mit. Alle drei tragen dafür `data-editor-floating`.
           if (
-            (e.relatedTarget as HTMLElement | null)?.closest("[role=listbox]")
+            (e.relatedTarget as HTMLElement | null)?.closest(
+              "[data-editor-floating]",
+            )
           )
             return;
           commit();

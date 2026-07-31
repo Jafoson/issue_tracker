@@ -17,3 +17,16 @@ export function onActivate<T extends Element = Element>(fn: () => void) {
     }
   };
 }
+
+/**
+ * Die Modifikatortaste, wie sie auf diesem System heißt.
+ *
+ * Nur im Browser aufrufbar — auf dem Server gäbe es kein `navigator`, und ein
+ * geratener Wert führte beim ersten Abgleich zu einer Abweichung. Alle
+ * Aufrufer sind Client-Komponenten.
+ */
+export function modKey(): string {
+  if (typeof navigator === "undefined") return "Ctrl";
+  const platform = navigator.platform || navigator.userAgent;
+  return /Mac|iPhone|iPad|iPod/.test(platform) ? "⌘" : "Strg";
+}

@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";
+import { faviconOf, hostOf } from "@/lib/richtext/link";
 import type { PMDoc, PMMark, PMNode } from "@/lib/richtext/types";
 import styles from "./richText.module.scss";
 
@@ -59,6 +60,9 @@ function applyMarks(
           <a
             key={markKey}
             href={href}
+            // Beim Überfahren steht die Adresse da — im Fließtext sieht man
+            // dem Wort sonst nicht an, wohin es führt.
+            title={href}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -212,7 +216,7 @@ function renderNode(node: PMNode, key: string): ReactNode {
       return (
         <a
           key={key}
-          className={styles.issueLinkWrap}
+          className={styles.chipLink}
           href={`?issue=${encodeURIComponent(identifier)}`}
         >
           <Chip
@@ -223,6 +227,47 @@ function renderNode(node: PMNode, key: string): ReactNode {
             icon={<span className={styles.issueIcon} aria-hidden="true" />}
           >
             <span className={styles.issueLinkLabel}>{identifier}</span>
+          </Chip>
+        </a>
+      );
+    }
+
+    case "linkChip": {
+      const href = safeUrl(node.attrs?.href);
+      if (!href) return null;
+      const label = attr(node, "label") || hostOf(href);
+      const favicon = faviconOf(href);
+      // Wie beim Issue: der Chip liegt im Link, statt selbst einer zu sein —
+      // `Chip` kennt nur `div` und `span`.
+      return (
+        <a
+          key={key}
+          className={styles.chipLink}
+          href={href}
+          title={href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Chip
+            as="span"
+            size="inline"
+            variant="elevated"
+            className={styles.chipHover}
+            icon={
+              <span
+                className={styles.linkIcon}
+                // Das Favicon liegt als Hintergrund darüber; lädt es nicht,
+                // bleibt das Kettenglied darunter stehen.
+                style={
+                  favicon
+                    ? ({ "--favicon": `url("${favicon}")` } as CSSProperties)
+                    : undefined
+                }
+                aria-hidden="true"
+              />
+            }
+          >
+            {label}
           </Chip>
         </a>
       );

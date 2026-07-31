@@ -85,6 +85,9 @@ export function createSuggestion<I extends SuggestionItem>({
               command: (item: SuggestionItem) => props.command(item as I),
             },
           });
+          // Markiert die Hülle als Teil des Editors: `EditableRichText` darf
+          // den Fokuswechsel hierher nicht als Verlassen werten.
+          renderer.updateAttributes({ "data-editor-floating": "" });
           unmount = props.mount(renderer.element as HTMLElement);
         },
 
