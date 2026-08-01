@@ -1,14 +1,26 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useCallback } from "react";
 import { createPortal } from "react-dom";
 import { IssueDetail } from "@/features/issues/components/IssueDetail/IssueDetail";
 import type { IssueComposerData } from "@/features/issues/types";
 import { DockPanel, useDock } from "@/lib/context";
+import { useSessionFlag } from "@/lib/utils/useSessionFlag";
 
 /** Der URL-Parameter, an dem das Panel hängt: `?issue=PREFIX-123`. */
 export const ISSUE_PARAM = "issue";
+
+/**
+ * Ob die Detailansicht zuletzt als großer Dialog stand statt als Seitenpanel.
+ *
+ * Wer einmal umschaltet, meint in aller Regel nicht nur dieses eine Issue —
+ * also gilt die Wahl bis zum Ende der Sitzung, auch über den Wechsel zwischen
+ * Liste, Board und Posteingang hinweg (dabei wird diese Komponente jedes Mal
+ * neu montiert). Beim nächsten Besuch fängt es wieder am Rand an.
+ */
+const EXPANDED_KEY = "issue-detail-expanded";
 
 interface IssuePeekProps {
   data: IssueComposerData;
@@ -30,8 +42,10 @@ interface IssuePeekProps {
  * weiter dieser Stelle im React-Baum.
  */
 export function IssuePeek({ data }: IssuePeekProps) {
+  const t = useTranslations();
   const searchParams = useSearchParams();
-  const { node, setOverlay } = useDock();
+  const { node } = useDock();
+  const [isExpanded, setExpanded] = useSessionFlag(EXPANDED_KEY);
   const issueRef = searchParams.get(ISSUE_PARAM);
 
   /**
@@ -39,8 +53,6 @@ export function IssuePeek({ data }: IssuePeekProps) {
    * hängen nicht daran, und ein Round-Trip nur fürs Schließen wäre spürbar.
    */
   const close = useCallback(() => {
-    // Das nächste Panel fängt wieder an der Kante an, nicht ausgeklappt.
-    setOverlay(false);
     const params = new URLSearchParams(window.location.search);
     params.delete(ISSUE_PARAM);
     const query = params.toString();
@@ -49,21 +61,26 @@ export function IssuePeek({ data }: IssuePeekProps) {
       "",
       `${window.location.pathname}${query ? `?${query}` : ""}`,
     );
-  }, [setOverlay]);
-
-  // Beim Verlassen der Seite (z.B. „In Vollbild öffnen“) darf kein
-  // ausgeklappter Zustand über der nächsten Route hängen bleiben.
-  useEffect(() => () => setOverlay(false), [setOverlay]);
+  }, []);
 
   if (!issueRef || !node) return null;
 
   return createPortal(
-    <DockPanel label={issueRef} onClose={close}>
+    // Ausgeklappt hebt sich das Panel selbst über die Seite — Hülle und Inhalt
+    // lesen denselben Wert, es gibt also keinen Moment, in dem das eine schon
+    // umgestellt ist und das andere noch nicht.
+    <DockPanel
+      label={issueRef}
+      overlay={isExpanded}
+      closeLabel={t("actions.close")}
+      onClose={close}
+    >
       <IssueDetail
         issueRef={issueRef}
         data={data}
         onClose={close}
-        onSetExpanded={setOverlay}
+        isExpanded={isExpanded}
+        onToggleExpanded={() => setExpanded(!isExpanded)}
       />
     </DockPanel>,
     node,

@@ -41,6 +41,21 @@ const PANEL_MIN_W = 480;
 const PANEL_MAX_W = 1200;
 const PANEL_DEFAULT_W = 720;
 
+/**
+ * Die Klassen der Hülle. Ausgeklappt und Vollseite bringen je eigene Breiten
+ * und Schatten mit — und weil Ladezustand, Fehlzustand und fertige Ansicht
+ * dieselbe Hülle tragen müssen, steht die Liste hier einmal statt dreimal.
+ */
+function shellClass(variant: IssueDetailVariant, isExpanded: boolean) {
+  return [
+    styles.detail,
+    isExpanded && styles.expanded,
+    variant === "page" && styles.page,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 interface IssueDetailViewProps {
   issue: Issue;
   data: IssueComposerData;
@@ -83,13 +98,7 @@ export function IssueDetailView({
     <Modal
       variant={isPanel ? "panel" : "dialog"}
       width={isPanel ? panelWidth : undefined}
-      className={[
-        styles.detail,
-        isExpanded && styles.expanded,
-        variant === "page" && styles.page,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={shellClass(variant, isExpanded)}
     >
       <ModalHeader
         title={<span className={styles.ref}>{identifier}</span>}
@@ -212,21 +221,21 @@ export function IssueDetailView({
  */
 export function IssueDetailSkeleton({
   variant,
+  isExpanded = false,
   onClose,
 }: {
   variant: IssueDetailVariant;
+  isExpanded?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations();
-  const isPanel = variant === "panel";
+  const isPanel = variant === "panel" && !isExpanded;
 
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
       width={isPanel ? PANEL_DEFAULT_W : undefined}
-      className={[styles.detail, !isPanel && styles.page]
-        .filter(Boolean)
-        .join(" ")}
+      className={shellClass(variant, isExpanded)}
       aria-busy="true"
     >
       <ModalHeader
@@ -266,21 +275,21 @@ export function IssueDetailSkeleton({
  */
 export function IssueDetailMissing({
   variant,
+  isExpanded = false,
   onClose,
 }: {
   variant: IssueDetailVariant;
+  isExpanded?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations();
-  const isPanel = variant === "panel";
+  const isPanel = variant === "panel" && !isExpanded;
 
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
       width={isPanel ? PANEL_DEFAULT_W : undefined}
-      className={[styles.detail, !isPanel && styles.page]
-        .filter(Boolean)
-        .join(" ")}
+      className={shellClass(variant, isExpanded)}
     >
       <ModalHeader
         title={<span className={styles.ref}>—</span>}

@@ -23,13 +23,6 @@ import styles from "./dockContext.module.scss";
 interface DockValue {
   /** Ziel für `createPortal`. Bis der Outlet montiert ist: `null`. */
   node: HTMLElement | null;
-  /**
-   * Hebt das Panel von der Kante in die Mitte, als Overlay über der ganzen
-   * Seite. Der ausgeklappte Zustand der Detailansicht — dort ist die Breite
-   * wichtiger als der Blick auf die Liste daneben.
-   */
-  isOverlay: boolean;
-  setOverlay: (overlay: boolean) => void;
 }
 
 const Ctx = createContext<DockValue | null>(null);
@@ -47,10 +40,9 @@ export function useDock() {
 
 export function DockProvider({ children }: { children: React.ReactNode }) {
   const [node, setNode] = useState<HTMLElement | null>(null);
-  const [isOverlay, setOverlay] = useState(false);
 
   return (
-    <Ctx.Provider value={{ node, isOverlay, setOverlay }}>
+    <Ctx.Provider value={{ node }}>
       <SetNodeCtx.Provider value={setNode}>{children}</SetNodeCtx.Provider>
     </Ctx.Provider>
   );
@@ -63,36 +55,50 @@ export function DockProvider({ children }: { children: React.ReactNode }) {
  */
 export function DockOutlet() {
   const setNode = useContext(SetNodeCtx);
-  const { isOverlay } = useDock();
-
-  return (
-    <div
-      ref={setNode ?? undefined}
-      className={[styles.dock, isOverlay && styles.overlay]
-        .filter(Boolean)
-        .join(" ")}
-    />
-  );
+  return <div ref={setNode ?? undefined} className={styles.dock} />;
 }
 
 interface DockPanelProps {
   /** Barrierefreier Name des Bereichs — bitte lokalisiert übergeben. */
   label: string;
-  /** Escape schließt; ein Klick daneben nicht. */
+  /**
+   * Hebt das Panel von der Kante in die Mitte, über die ganze Seite. Es ist
+   * dann `position: fixed` und beansprucht im Dock keinen Platz mehr — der
+   * Inhalt daneben bekommt seine Breite zurück, ohne dass jemand sie ihm
+   * zurückgeben müsste.
+   */
+  overlay?: boolean;
+  /** Beschriftung des Backdrops. Nur im Overlay-Zustand von Belang. */
+  closeLabel?: string;
   onClose: () => void;
   children: React.ReactNode;
 }
 
 /**
- * Die Hülle eines Panels im Dock. Kein `role="dialog"`, kein `aria-modal`:
- * das hier sperrt nichts aus, es steht daneben. Deshalb nur ein benannter
- * Bereich, den man verlassen kann, ohne ihn zu schließen.
+ * Die Hülle eines Panels im Dock — in zwei Ausprägungen, je nachdem, wo es
+ * steht.
  *
- * Beim Öffnen wandert der Fokus hinein und beim Schließen dorthin zurück, wo
- * er herkam — sonst stünde man nach dem Schließen am Anfang der Seite.
+ * An der Kante ist es kein Dialog: es sperrt nichts aus, deshalb nur ein
+ * benannter Bereich (`role="region"`), den man verlassen kann, ohne ihn zu
+ * schließen. Ein Klick in die Seite daneben ist ein Klick in die Seite.
+ *
+ * In der Mitte ist es einer, und dann gelten dessen Regeln vollständig:
+ * `role="dialog"` mit `aria-modal`, ein Backdrop, der zudeckt, und ein Klick
+ * darauf schließt. Wer ausklappt, erwartet ein Modal — und ein Modal, das man
+ * nicht wegklicken kann, fühlt sich kaputt an.
+ *
+ * In beiden Fällen wandert der Fokus beim Öffnen hinein und beim Schließen
+ * dorthin zurück, wo er herkam — sonst stünde man nach dem Schließen am Anfang
+ * der Seite. Und Escape schließt.
  */
-export function DockPanel({ label, onClose, children }: DockPanelProps) {
-  const ref = useRef<HTMLElement>(null);
+export function DockPanel({
+  label,
+  overlay = false,
+  closeLabel,
+  onClose,
+  children,
+}: DockPanelProps) {
+  const ref = useRef<HTMLDivElement>(null);
   const hasOpenModal = useHasOpenModal();
 
   useEffect(() => {
@@ -122,16 +128,38 @@ export function DockPanel({ label, onClose, children }: DockPanelProps) {
     return () => document.removeEventListener("keydown", onKey, true);
   }, [hasOpenModal, onClose]);
 
+  /**
+   * Was der Bereich für die Vorlesesoftware ist, hängt am Zustand. Rolle und
+   * Name stehen zusammen in einem Objekt, weil sie nur gemeinsam gelten:
+   * `aria-modal` gehört zur Dialogrolle, und ein `region` ohne Namen wäre
+   * gar keine.
+   */
+  const semantics = overlay
+    ? ({ role: "dialog", "aria-modal": true, "aria-label": label } as const)
+    : ({ role: "region", "aria-label": label } as const);
+
+  // Die Hülle steht in beiden Zuständen, nur ihre Rolle im Layout wechselt.
+  // Ohne sie wanderte das Panel beim Ausklappen an eine andere Stelle im Baum
+  // — React baute es dann neu auf, und die Ansicht lüde von vorn.
   return (
-    // `tabindex="-1"` macht den Bereich nicht bedienbar, sondern nur
-    // programmatisch fokussierbar — der Fokus muss beim Öffnen irgendwo landen.
-    <section
-      ref={ref}
-      className={styles.panel}
-      aria-label={label}
-      tabIndex={-1}
-    >
-      {children}
-    </section>
+    <div className={overlay ? styles.overlay : styles.layer}>
+      {/* Der Backdrop ist ein Knopf und keine Fläche mit `onClick`: so ist das
+          Schließen auch ohne Maus erreichbar, und es ist derselbe Aufbau wie
+          im Modal-Stack (`ModalFrame`). */}
+      {overlay && (
+        <button
+          type="button"
+          className={styles.backdrop}
+          aria-label={closeLabel}
+          onClick={onClose}
+        />
+      )}
+      {/* `tabindex="-1"` macht den Bereich nicht bedienbar, sondern nur
+          programmatisch fokussierbar — der Fokus muss beim Öffnen irgendwo
+          landen. */}
+      <div ref={ref} className={styles.panel} tabIndex={-1} {...semantics}>
+        {children}
+      </div>
+    </div>
   );
 }

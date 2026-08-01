@@ -29,11 +29,19 @@ interface IssueDetailProps {
   variant?: IssueDetailVariant;
   onClose: () => void;
   /**
-   * Meldet dem Dock, dass die Ansicht sich ausklappt: es hebt das Panel dann
-   * von der Kante in die Mitte. Nur gesetzt, wenn die Ansicht angedockt ist —
-   * die Vollseite hat nichts umzuklappen.
+   * Ob die Ansicht als großer Dialog steht statt als Seitenpanel.
+   *
+   * Gesteuert von außen, nicht hier: die Entscheidung überdauert das einzelne
+   * Issue (`IssuePeek` merkt sie sich für die Sitzung), und das Panel drumherum
+   * muss sich mit ihr zugleich umstellen — beides ginge nicht, wenn sie hier
+   * drin läge.
    */
-  onSetExpanded?: (expanded: boolean) => void;
+  isExpanded?: boolean;
+  /**
+   * Klappt um. Fehlt, wo es nichts umzuklappen gibt: die Vollseite steht
+   * ohnehin schon für sich, und ohne Handler zeigt die Kopfzeile keinen Knopf.
+   */
+  onToggleExpanded?: () => void;
 }
 
 /**
@@ -50,16 +58,10 @@ export function IssueDetail({
   initialIssue,
   variant = "panel",
   onClose,
-  onSetExpanded,
+  isExpanded = false,
+  onToggleExpanded,
 }: IssueDetailProps) {
   const router = useRouter();
-  /**
-   * Ob die Ansicht als großer Dialog steht statt als Seitenpanel.
-   *
-   * Die Vollseite (`variant="page"`) kennt den Wechsel nicht — sie steht
-   * ohnehin schon für sich und hat kein Dock, das sie anheben könnte.
-   */
-  const [isExpanded, setIsExpanded] = useState(false);
   const [fetched, setFetched] = useState<Issue | null>(null);
   const [isMissing, setIsMissing] = useState(false);
   const [, startTransition] = useTransition();
@@ -96,9 +98,17 @@ export function IssueDetail({
 
   if (!issue) {
     return isMissing ? (
-      <IssueDetailMissing variant={variant} onClose={onClose} />
+      <IssueDetailMissing
+        variant={variant}
+        isExpanded={isExpanded}
+        onClose={onClose}
+      />
     ) : (
-      <IssueDetailSkeleton variant={variant} onClose={onClose} />
+      <IssueDetailSkeleton
+        variant={variant}
+        isExpanded={isExpanded}
+        onClose={onClose}
+      />
     );
   }
 
@@ -113,19 +123,6 @@ export function IssueDetail({
       await updateIssue(issue.id, patch);
       await reload();
     });
-
-  /**
-   * Klappt zwischen angedocktem Seitenpanel und großem Dialog um.
-   *
-   * Wo das Panel steht, gehört dem Dock, Kopfzeile und Zuschnitt dem Inhalt —
-   * deshalb wandert beides zusammen. Die Breite bleibt außen vor: sie steht
-   * als `--modal-w` am Panel selbst (`.expanded` in `issueDetail.module.scss`).
-   */
-  const toggleExpanded = () => {
-    const next = !isExpanded;
-    setIsExpanded(next);
-    onSetExpanded?.(next);
-  };
 
   const handleComment = async (body: PMDoc) => {
     await addComment(issue.id, body, data.me.id);
@@ -145,7 +142,7 @@ export function IssueDetail({
       data={data}
       onClose={onClose}
       variant={variant}
-      onToggleExpanded={onSetExpanded ? toggleExpanded : undefined}
+      onToggleExpanded={onToggleExpanded}
       isExpanded={isExpanded}
       onPatch={handlePatch}
       onComment={handleComment}

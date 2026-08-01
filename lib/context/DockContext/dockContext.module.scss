@@ -11,40 +11,60 @@
   max-width: 72vw;
 }
 
-/* Die Animation sitzt hier und nicht am Dock: das steht immer, nur leer. Erst
-   das Panel kommt und geht. */
+/* Ohne Panel darin gibt es nichts zu zeigen. */
+.dock:empty {
+  display: none;
+}
+
+/* Die Schicht zwischen Dock und Panel. An der Kante reicht sie die Maße nur
+   durch — sie steht dort, damit das Panel beim Ausklappen an derselben Stelle
+   im Baum bleibt und nicht neu aufgebaut wird. */
+.layer {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .panel {
   display: flex;
   min-width: 0;
   max-width: 100%;
-  animation: dockIn .18s ease both;
   /* Der Fokus landet beim Öffnen auf dem Bereich selbst; ein Ring um das
      ganze Panel wäre dabei nur Lärm. Sichtbar wird er erst an dem Element
      darin, das man tatsächlich ansteuert. */
   outline: none;
+  animation: dockIn .18s ease both;
 }
 
 /* ---------- Ausgeklappt: doch über der Seite ---------- */
 
-/* Der große Dialog. Hier wird aus dem Nachbarn doch ein Overlay — die Seite
-   daneben bekommt ihre Breite zurück, weil ein fixiertes Element keinen Platz
-   mehr im Fluss beansprucht. Ein Backdrop zum Wegklicken gibt es trotzdem
-   nicht: geschlossen wird über das Kreuz oder Escape. */
-.dock.overlay {
+/* Der große Dialog. Aus dem Nachbarn wird ein Overlay — und weil ein fixiertes
+   Element keinen Platz mehr im Fluss beansprucht, fällt das Dock daneben von
+   selbst auf null zurück und der Inhalt bekommt seine Breite wieder. */
+.overlay {
   position: fixed;
   inset: 0;
   z-index: var(--z-overlay);
+  display: flex;
   align-items: center;
   justify-content: center;
-  max-width: none;
   background: rgb(0 0 0 / .32);
-  animation: fadeIn .16s ease both;
+  animation: dockIn .16s ease both;
 }
 
-/* Zuletzt und damit stärker als alles darüber: ohne Panel darin gibt es nichts
-   zu zeigen — auch dann nicht, wenn der Overlay-Zustand noch gesetzt ist. */
-.dock:empty {
-  display: none;
+/* Deckt die Seite zu und schließt beim Klick — hier gelten die Regeln des
+   Modals vollständig, anders als an der Kante. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  cursor: default;
+}
+
+/* Über dem Backdrop statt darunter. */
+.overlay .panel {
+  position: relative;
+  z-index: 1;
 }
 
 /* Die Breite steht sofort, das Panel blendet sich hinein — ein Hereinschieben
@@ -53,10 +73,6 @@
   from { opacity: 0; }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dock, .panel { animation-duration: .01ms; }
+  .panel, .overlay { animation-duration: .01ms; }
 }
