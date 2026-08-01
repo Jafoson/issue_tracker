@@ -45,6 +45,7 @@ export default async function InboxPage({
         members={members}
         projects={projects}
         statuses={statuses}
+        workspaceId={workspace}
       />
       {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
       <IssuePeek data={composer} />

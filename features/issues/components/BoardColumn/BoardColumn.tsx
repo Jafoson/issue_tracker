@@ -28,7 +28,9 @@ interface BoardColumnProps {
   onCardDragStart: (issue: Issue) => (e: React.DragEvent) => void;
   onCardDragEnd: () => void;
   onCardDragOver: (cardId: string) => (e: React.DragEvent) => void;
-  onCardClick: (issue: Issue) => void;
+  onCardOpen: (issue: Issue) => void;
+  /** Strg/Cmd- und Mittelklick auf eine Karte: Vollseite im neuen Tab. */
+  onCardOpenInNewTab: (issue: Issue) => void;
 }
 
 export function BoardColumn({
@@ -48,7 +50,8 @@ export function BoardColumn({
   onCardDragStart,
   onCardDragEnd,
   onCardDragOver,
-  onCardClick,
+  onCardOpen,
+  onCardOpenInNewTab,
 }: BoardColumnProps) {
   const { openModal } = useModal();
 
@@ -101,7 +104,8 @@ export function BoardColumn({
                 onDragStart={onCardDragStart(issue)}
                 onDragEnd={onCardDragEnd}
                 onDragOver={onCardDragOver(issue.id)}
-                onClick={() => onCardClick(issue)}
+                onOpen={() => onCardOpen(issue)}
+                onOpenInNewTab={() => onCardOpenInNewTab(issue)}
               />
               {isCardOver && !insertAbove && (
                 <div className={styles.dropIndicator} />

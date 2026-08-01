@@ -8,6 +8,7 @@ import {
   PriorityIcon,
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
+import { isBrowserClick } from "@/features/issues/issue-links";
 import type { IssueLookups } from "@/features/issues/types";
 import { onActivate } from "@/lib/a11y";
 import { useTimeAgo } from "@/lib/utils/useTimeAgo";
@@ -22,7 +23,16 @@ interface BoardCardProps {
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
-  onClick?: () => void;
+  /** Der gewöhnliche Klick: Panel über dem Board. */
+  onOpen?: () => void;
+  /**
+   * Strg/Cmd- und Mittelklick: die Vollseite in einem neuen Tab.
+   *
+   * Die Karte ist kein Link — sie ist ziehbar, und ein Anker darüber würde
+   * beim Ziehen den Link mitnehmen statt die Karte. Also fragt sie die Taste
+   * selbst ab, statt es dem Browser zu überlassen.
+   */
+  onOpenInNewTab?: () => void;
 }
 
 export function BoardCard({
@@ -33,7 +43,8 @@ export function BoardCard({
   onDragStart,
   onDragEnd,
   onDragOver,
-  onClick,
+  onOpen,
+  onOpenInNewTab,
 }: BoardCardProps) {
   const t = useTranslations();
   const timeAgo = useTimeAgo();
@@ -68,8 +79,15 @@ export function BoardCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
-      onClick={onClick}
-      onKeyDown={onActivate(() => onClick?.())}
+      onClick={(e) => (isBrowserClick(e) ? onOpenInNewTab?.() : onOpen?.())}
+      // Die mittlere Maustaste meldet sich nicht über `onClick`. Ohne
+      // `preventDefault` schaltet sie außerdem den Auto-Scroll ein.
+      onAuxClick={(e) => {
+        if (e.button !== 1) return;
+        e.preventDefault();
+        onOpenInNewTab?.();
+      }}
+      onKeyDown={onActivate(() => onOpen?.())}
     >
       {/* Kopfzeile: Typ-Badge + Assignee — der Platzhalter zeigt fehlende Zuweisung an. */}
       <div className={styles.header}>

@@ -1,10 +1,10 @@
 "use client";
 import { Icon } from "@iconify/react";
-import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { Link, usePathname } from "@/i18n/navigation";
+import { useIssueOpen } from "@/features/issues/issue-links";
+import { Link } from "@/i18n/navigation";
 import { toPreview } from "@/lib/richtext/text";
 import { timeAgo } from "@/lib/utils/date";
 import { fullName } from "@/lib/utils/string";
@@ -17,19 +17,23 @@ interface Props {
   members: User[];
   projects: Project[];
   statuses: Status[];
+  /** Für den Pfad der Vollseite hinter Strg- und Mittelklick. */
+  workspaceId: string;
 }
 
-export function Inbox({ issues, me, members, projects, statuses }: Props) {
+export function Inbox({
+  issues,
+  me,
+  members,
+  projects,
+  statuses,
+  workspaceId,
+}: Props) {
   const t = useTranslations();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const issueOpen = useIssueOpen(workspaceId);
 
-  const issueHref = (issue: Issue) => {
-    const prefix = projects.find((p) => p.id === issue.project)?.prefix ?? "?";
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("issue", `${prefix}-${issue.key}`);
-    return `${pathname}?${params.toString()}`;
-  };
+  const identifier = (issue: Issue) =>
+    `${projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
   const notifications = issues
     .flatMap((issue) =>
@@ -57,7 +61,7 @@ export function Inbox({ issues, me, members, projects, statuses }: Props) {
           <Link
             key={comment.id}
             className={styles.item}
-            href={issueHref(issue)}
+            {...issueOpen.linkProps(identifier(issue))}
             scroll={false}
           >
             <Avatar avatar={author} size={30} />

@@ -16,6 +16,7 @@ import { IssueDescription } from "./components/IssueDescription";
 import {
   CopyLinkButton,
   IssueActionsMenu,
+  OpenPageButton,
 } from "./components/IssueDetailActions";
 import { IssueLabels } from "./components/IssueLabels";
 import { IssueMeta } from "./components/IssueMeta";
@@ -112,16 +113,17 @@ export function IssueDetailView({
                 onClick={onToggleExpanded}
               />
             )}
+            {/* Panel und Dialog liegen beide über etwas anderem — von hier
+                führt der Knopf auf die Seite, die für sich steht. */}
+            <OpenPageButton
+              workspaceId={data.workspaceId}
+              identifier={identifier}
+            />
             <CopyLinkButton
               workspaceId={data.workspaceId}
               identifier={identifier}
             />
-            <IssueActionsMenu
-              workspaceId={data.workspaceId}
-              identifier={identifier}
-              showFullscreen={isPanel}
-              onDelete={onDelete}
-            />
+            <IssueActionsMenu onDelete={onDelete} />
           </>
         }
         onClose={onClose}

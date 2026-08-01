@@ -84,13 +84,8 @@ export function IssueDetailPageView({
             workspaceId={data.workspaceId}
             identifier={identifier}
           />
-          {/* Der Eintrag „In Vollbild öffnen“ entfällt — hier ist das Vollbild. */}
-          <IssueActionsMenu
-            workspaceId={data.workspaceId}
-            identifier={identifier}
-            showFullscreen={false}
-            onDelete={onDelete}
-          />
+          {/* Ohne `OpenPageButton` daneben — hier ist die Seite schon. */}
+          <IssueActionsMenu onDelete={onDelete} />
         </div>
       </header>
 

@@ -1,7 +1,7 @@
 "use client";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BoardColumn } from "@/features/issues/components/BoardColumn/BoardColumn";
+import { useIssueOpen } from "@/features/issues/issue-links";
 import type { IssueComposerData, IssueLookups } from "@/features/issues/types";
 import type { Issue, Status } from "@/types";
 import styles from "./board.module.scss";
@@ -23,20 +23,13 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
     issueTypes: composer.issueTypes,
   };
   const t = useTranslations();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const columnStatuses = statuses.filter((s) => s.isColumn);
+  const issueOpen = useIssueOpen(composer.workspaceId);
 
   const board = useBoardDnd(issues);
 
-  const openIssue = (issue: Issue) => {
-    const prefix =
-      lookups.projects.find((p) => p.id === issue.project)?.prefix ?? "?";
-    const p = new URLSearchParams(searchParams.toString());
-    p.set("issue", `${prefix}-${issue.key}`);
-    router.push(`${pathname}?${p.toString()}`, { scroll: false });
-  };
+  const identifier = (issue: Issue) =>
+    `${lookups.projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
   return (
     <div className={styles.board}>
@@ -62,7 +55,10 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
             onCardDragStart={board.onDragStart}
             onCardDragEnd={board.onDragEnd}
             onCardDragOver={board.onCardDragOver}
-            onCardClick={openIssue}
+            onCardOpen={(issue) => issueOpen.openPanel(identifier(issue))}
+            onCardOpenInNewTab={(issue) =>
+              issueOpen.openPageInNewTab(identifier(issue))
+            }
           />
         );
       })}

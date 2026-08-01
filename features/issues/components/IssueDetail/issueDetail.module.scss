@@ -201,6 +201,36 @@
   color: var(--secondary);
 }
 
+/* Der Weg auf die Vollseite. Ein `<a>`, damit Cmd-Klick einen neuen Tab
+   öffnet — aussehen soll er trotzdem wie seine Nachbarn, also Maße eines
+   Ghost-Buttons in `sm` und dieselbe Überlagerung beim Überfahren statt einer
+   eigenen Hover-Farbe. */
+.headerLink {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--on-background);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--on-background);
+    opacity: 0;
+    transition: opacity .12s;
+  }
+
+  &:hover::after { opacity: var(--opacity-hover); }
+  &:focus-visible::after { opacity: var(--opacity-focus); }
+  &:active::after { opacity: var(--opacity-active); }
+}
+
 /* ---------- Einspaltig: Seitenpanel ---------- */
 
 /* Der einzige Scroll-Container der Ansicht. Das seitliche Polster wächst mit

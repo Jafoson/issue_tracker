@@ -6,13 +6,41 @@ import { useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import { getPathname, useRouter } from "@/i18n/navigation";
+import { issuePath } from "@/features/issues/issue-links";
+import { getPathname, Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import styles from "../issueDetail.module.scss";
 
-/** Kanonischer Pfad der Vollseite eines Issues, ohne Locale-Präfix. */
-export const issuePath = (workspaceId: string, identifier: string) =>
-  `/${workspaceId}/issue/${identifier}`;
+interface OpenPageButtonProps {
+  workspaceId: string;
+  identifier: string;
+}
+
+/**
+ * Führt aus Panel und Dialog auf die Vollseite des Issues.
+ *
+ * Ein Link, kein Knopf mit `router.push`: die Seite ist ein Ort, und den soll
+ * man auch mit Cmd-Klick in einem neuen Tab öffnen können. Aussehen und Maße
+ * kommen aus `.headerLink` — dieselben wie bei den Ghost-Buttons daneben.
+ */
+export function OpenPageButton({
+  workspaceId,
+  identifier,
+}: OpenPageButtonProps) {
+  const t = useTranslations();
+  const label = t("actions.openPage");
+
+  return (
+    <Link
+      href={issuePath(workspaceId, identifier)}
+      className={styles.headerLink}
+      aria-label={label}
+      title={label}
+    >
+      <Icon icon="lucide:external-link" width={15} aria-hidden="true" />
+    </Link>
+  );
+}
 
 interface CopyLinkButtonProps {
   workspaceId: string;
@@ -63,33 +91,20 @@ export function CopyLinkButton({
 }
 
 interface IssueActionsMenuProps {
-  workspaceId: string;
-  identifier: string;
-  /** Im Panel führt der Eintrag auf die Vollseite; dort selbst entfällt er. */
-  showFullscreen: boolean;
   onDelete: () => void;
 }
 
-/** „…“-Menü der Kopfzeile: Vollseite öffnen und Issue löschen. */
-export function IssueActionsMenu({
-  workspaceId,
-  identifier,
-  showFullscreen,
-  onDelete,
-}: IssueActionsMenuProps) {
+/**
+ * „…“-Menü der Kopfzeile.
+ *
+ * Der Weg auf die Vollseite stand hier einmal als Eintrag — er ist jetzt ein
+ * eigener Knopf daneben (`OpenPageButton`), und zweimal dieselbe Aktion in
+ * derselben Zeile wäre nur Rauschen.
+ */
+export function IssueActionsMenu({ onDelete }: IssueActionsMenuProps) {
   const t = useTranslations();
-  const router = useRouter();
 
   const items = [
-    ...(showFullscreen
-      ? [
-          {
-            value: "fullscreen",
-            label: t("actions.openFullscreen"),
-            icon: <Icon icon="lucide:maximize-2" width={15} />,
-          },
-        ]
-      : []),
     {
       value: "delete",
       label: t("actions.deleteIssue"),
@@ -117,8 +132,6 @@ export function IssueActionsMenu({
           value={null}
           onPick={(value) => {
             close();
-            if (value === "fullscreen")
-              router.push(issuePath(workspaceId, identifier));
             if (value === "delete") onDelete();
           }}
           onClose={close}

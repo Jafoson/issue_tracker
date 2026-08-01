@@ -10,8 +10,9 @@ import {
   type TableColumn,
   type TableGroup,
 } from "@/components/ui/layout/Table/Table";
+import { ISSUE_PARAM, useIssueOpen } from "@/features/issues/issue-links";
 import type { IssueComposerData } from "@/features/issues/types";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import type { Issue } from "@/types";
 import {
   AssigneeCell,
@@ -43,8 +44,8 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
   const { projects, members, labels, statuses, priorities, issueTypes } =
     composer;
   const t = useTranslations();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const issueOpen = useIssueOpen(composer.workspaceId);
   // Eingeklappte Gruppen sind reine Ansichtssache — nichts, wofür die URL oder
   // der Server etwas wissen müsste.
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
@@ -61,13 +62,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
 
   // Das offene Issue steht als Identifier in der URL — dieselbe Quelle nutzt die
   // Detailansicht, deshalb hebt sich die passende Zeile ohne eigenen State hervor.
-  const openIssue = searchParams.get("issue");
-
-  const issueHref = (issue: Issue) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("issue", identifier(issue));
-    return `${pathname}?${params.toString()}`;
-  };
+  const openIssue = searchParams.get(ISSUE_PARAM);
 
   // Workflow-Status bekommen immer eine Gruppe — auch leer, damit das "+" im
   // Kopf erreichbar bleibt. Alle übrigen nur, wenn Issues darin liegen.
@@ -149,7 +144,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
         isRowActive={(issue) => identifier(issue) === openIssue}
         rowOverlay={(issue) => (
           <Link
-            href={issueHref(issue)}
+            {...issueOpen.linkProps(identifier(issue))}
             scroll={false}
             aria-label={`${identifier(issue)} ${issue.title}`}
           />

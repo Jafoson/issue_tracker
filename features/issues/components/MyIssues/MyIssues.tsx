@@ -1,13 +1,13 @@
 "use client";
 import { Icon } from "@iconify/react";
-import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import {
   PriorityIcon,
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { Link, usePathname } from "@/i18n/navigation";
+import { useIssueOpen } from "@/features/issues/issue-links";
+import { Link } from "@/i18n/navigation";
 import { timeAgo } from "@/lib/utils/date";
 import type { Issue, Project, Status } from "@/types";
 import styles from "./myIssues.module.scss";
@@ -16,18 +16,13 @@ interface Props {
   issues: Issue[];
   projects: Project[];
   statuses: Status[];
+  /** Für den Pfad der Vollseite hinter Strg- und Mittelklick. */
+  workspaceId: string;
 }
 
-export function MyIssues({ issues, projects, statuses }: Props) {
+export function MyIssues({ issues, projects, statuses, workspaceId }: Props) {
   const t = useTranslations();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const issueHref = (id: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("issue", id);
-    return `${pathname}?${params.toString()}`;
-  };
+  const issueOpen = useIssueOpen(workspaceId);
 
   const statusName = (id: string) =>
     statuses.find((s) => s.id === id)?.name ?? id;
@@ -67,7 +62,7 @@ export function MyIssues({ issues, projects, statuses }: Props) {
               <Link
                 key={issue.id}
                 className="orbit-row"
-                href={issueHref(identifier)}
+                {...issueOpen.linkProps(identifier)}
                 scroll={false}
               >
                 <PriorityIcon priority={issue.priority} size={14} />

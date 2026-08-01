@@ -33,7 +33,12 @@ export default async function MyPage({
 
   return (
     <>
-      <MyIssues issues={issues} projects={projects} statuses={statuses} />
+      <MyIssues
+        issues={issues}
+        projects={projects}
+        statuses={statuses}
+        workspaceId={workspace}
+      />
       {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
       <IssuePeek data={composer} />
     </>

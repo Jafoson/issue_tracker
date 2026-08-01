@@ -5,12 +5,10 @@ import { useTranslations } from "next-intl";
 import { useCallback } from "react";
 import { createPortal } from "react-dom";
 import { IssueDetail } from "@/features/issues/components/IssueDetail/IssueDetail";
+import { ISSUE_PARAM } from "@/features/issues/issue-links";
 import type { IssueComposerData } from "@/features/issues/types";
 import { DockPanel, useDock } from "@/lib/context";
 import { useSessionFlag } from "@/lib/utils/useSessionFlag";
-
-/** Der URL-Parameter, an dem das Panel hängt: `?issue=PREFIX-123`. */
-export const ISSUE_PARAM = "issue";
 
 /**
  * Ob die Detailansicht zuletzt als großer Dialog stand statt als Seitenpanel.
