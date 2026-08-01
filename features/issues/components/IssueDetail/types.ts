@@ -1,11 +1,4 @@
 /**
- * `panel` liegt als Seitenpanel im Modal-Stack über der Liste, `page` ist die
- * eingebettete Vollseite unter `/[workspace]/issue/[ref]`. Beide zeigen
- * dasselbe — nur Hülle und Kopfzeilen-Aktionen unterscheiden sich.
- */
-export type IssueDetailVariant = "panel" | "page";
-
-/**
  * Wie die Attribute stehen.
  *
  * `column` heißt: alles untereinander in einer Spalte, die Attribute als

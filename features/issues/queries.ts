@@ -328,29 +328,31 @@ export async function getIssueById(id: string): Promise<Issue | null> {
   return i ? mapIssue(i) : null;
 }
 
-// Lädt den kompletten Workspace-Context für die App-Shell. Wird sowohl vom
-// Workspace-Layout als auch vom plattformweiten /admin-Layout genutzt, damit
-// beide dieselbe Shell (Sidebar, Topbar, Tabs, Context) teilen.
-export async function getIssueByRef(
-  workspaceId: string,
-  issueRef: string,
-): Promise<Issue | null> {
-  const match = issueRef.match(/^([A-Z0-9]+)-(\d+)$/i);
-  if (!match) return null;
-  const prefix = match[1].toUpperCase();
-  const key = parseInt(match[2], 10);
+/**
+ * Löst eine Referenz der Form „PREFIX-123“ innerhalb eines Workspace auf.
+ *
+ * Über `cache()`, weil die Detailseite sie zweimal im selben Request braucht:
+ * einmal für `generateMetadata` (Tab-Titel) und einmal für die Seite selbst.
+ */
+export const getIssueByRef = cache(
+  async (workspaceId: string, issueRef: string): Promise<Issue | null> => {
+    const match = issueRef.match(/^([A-Z0-9]+)-(\d+)$/i);
+    if (!match) return null;
+    const prefix = match[1].toUpperCase();
+    const key = parseInt(match[2], 10);
 
-  const project = await db.project.findFirst({
-    where: { workspaceId, prefix },
-  });
-  if (!project) return null;
+    const project = await db.project.findFirst({
+      where: { workspaceId, prefix },
+    });
+    if (!project) return null;
 
-  const i = await db.issue.findUnique({
-    where: { projectId_key: { projectId: project.id, key } },
-    include: { comments: { orderBy: { created: "asc" } } },
-  });
-  return i ? mapIssue(i) : null;
-}
+    const i = await db.issue.findUnique({
+      where: { projectId_key: { projectId: project.id, key } },
+      include: { comments: { orderBy: { created: "asc" } } },
+    });
+    return i ? mapIssue(i) : null;
+  },
+);
 
 export const getSearchIssues = cache(
   async (workspaceId: string): Promise<SearchableIssue[]> => {

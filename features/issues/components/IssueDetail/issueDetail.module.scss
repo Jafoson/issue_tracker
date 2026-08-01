@@ -15,7 +15,7 @@
   --detail-pad-x: 28px;
   /* Ausgangsbreite der Attributspalte. Ziehen überschreibt sie inline —
      `DEFAULT_W` in `components/IssueSidebar.tsx` hält denselben Wert. */
-  --detail-sidebar-w: 250px;
+  --detail-sidebar-w: 300px;
   /* Deckel für die Textbreite in der einspaltigen Ansicht. Das Panel ist bis
      880px breit — ohne Deckel liefen Beschreibung und Kommentare über die ganze
      Strecke, und das Auge verlöre beim Zeilenwechsel den Anschluss. */
@@ -36,16 +36,145 @@
   --modal-max-h: min(920px, calc(100dvh - 64px));
 }
 
-/* Vollseite: mittig eingebettet statt an der Kante, mit Luft zum Rand. Sie
-   steht in der Seite statt über ihr, deshalb der leichtere Schatten. */
-.page {
-  --modal-w: min(1080px, 100%);
-  --modal-max-h: none;
-  --modal-shadow: var(--shadow-card);
+/* ---------- Vollseite ---------- */
 
+/* Kein Modal, sondern die Seite selbst: sie füllt den Inhaltsbereich der
+   App-Hülle bis an die Kanten, statt als Karte darin zu schweben. Rahmen und
+   Schatten gäben vor, etwas läge über der Seite — hier liegt nichts über ihr.
+
+   Die Variablen wiederholen `.detail`, weil die beiden Hüllen einander nicht
+   enthalten: das Panel trägt `.detail`, die Seite `.page`, und die Blöcke
+   darunter lesen dieselben Werte. */
+.page {
+  --detail-pad-x: 32px;
+  --detail-sidebar-w: 380px;
+  /* Weiter als im Panel (780px): hier steht nicht nur Fließtext in der Spalte.
+     Codeblöcke, Tabellen und Hinweisfelder bringen ihre eigene Breite mit und
+     würden darunter scrollen oder umbrechen, obwohl daneben Platz frei ist.
+
+     So hoch angesetzt, dass die Spalte auf üblichen Schirmen ganz ausgefüllt
+     wird und nur das Polster (`--detail-pad-x`) stehen bleibt. Der Deckel
+     greift erst darüber — irgendwo endet die Zeile, der das Auge beim Umbruch
+     noch folgt. */
+  --detail-content-w: 1400px;
+
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
-  margin: 20px auto;
+}
+
+/* Steht fix über den scrollenden Spalten — wie die Topbar über Liste und
+   Board. Die Kanten oben und unten sind dieselben, damit die Seite sich an
+   derselben Stelle einreiht wie ihre Nachbarn. */
+.pageHeader {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 45px;
+  padding: 0 12px 0 8px;
+  border-top: 1px solid var(--outline-variant);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+/* Der Zurück-Pfeil. Ein Link, kein Knopf: er führt an einen Ort, und den soll
+   man auch in einem neuen Tab öffnen können. */
+.back {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+  }
+}
+
+/* ---------- Pfad ---------- */
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+  }
+}
+
+/* Projektnamen können lang sein — der Pfad soll deshalb nicht die Aktionen
+   rechts verdrängen. */
+.crumbText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crumbSep {
+  flex: none;
+  color: var(--outline-variant);
+}
+
+/* Die letzte Stufe ist kein Link — sie ist die Seite, auf der man steht. */
+.crumbCurrent {
+  flex: none;
+  padding: 0 3px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: .04em;
+  color: var(--on-surface);
+}
+
+.pageActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+/* Auf der Seite gibt es keine Modalbreite, die den Text kurz hielte: das
+   Polster wächst mit, bis der Inhalt bei `--detail-content-w` stehen bleibt
+   und mittig sitzt — dieselbe Rechnung wie im Panel (`.body`). */
+.page .main {
+  gap: 26px;
+  padding:
+    32px
+    max(var(--detail-pad-x), calc((100% - var(--detail-content-w)) / 2))
+    64px;
+}
+
+/* Hier trägt der Titel die Hierarchie der ganzen Seite — anders als im
+   Dialog, wo die Kopfzeile darüber schon einen Titel mitbringt. */
+.page .main .title {
+  font-size: var(--text-2xl);
+}
+
+/* Die breitere Spalte bekommt auch mehr Polster — sonst wächst nur der leere
+   Rand hinter den Werten, statt dass der Block Luft bekommt. */
+.page .sidebar {
+  padding: 22px 22px 32px;
 }
 
 /* Der Griff an der linken Panelkante. Absolut statt im Fluss: das Panel ist
@@ -509,13 +638,25 @@
 /* Auf schmalen Geräten zählt jede Kante — das Polster schrumpft, die
    Attributleiste stapelt sich von selbst (`auto-fit`). */
 @media (max-width: 720px) {
-  .detail {
+  .detail,
+  .page {
     --detail-pad-x: 18px;
   }
 
   .body {
     gap: 22px;
     padding-top: 20px;
+  }
+
+  .page .main {
+    gap: 22px;
+    padding: 20px var(--detail-pad-x) 32px;
+  }
+
+  /* Der Pfad tritt hinter die Aktionen zurück: die Kennung bleibt, der
+     Projektname weicht, wenn der Platz knapp wird. */
+  .crumbText {
+    max-width: 22vw;
   }
 
   /* Für zwei Spalten steht hier kein Platz — die Attribute rutschen unter den

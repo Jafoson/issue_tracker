@@ -23,9 +23,6 @@ import { IssueProperties } from "./components/IssueProperties";
 import { IssueSidebar } from "./components/IssueSidebar";
 import { IssueTitle } from "./components/IssueTitle";
 import styles from "./issueDetail.module.scss";
-import type { IssueDetailVariant } from "./types";
-
-export type { IssueDetailVariant };
 
 /**
  * Grenzen des Seitenpanels. Es steht an der rechten Kante und lässt sich am
@@ -42,16 +39,12 @@ const PANEL_MAX_W = 1200;
 const PANEL_DEFAULT_W = 720;
 
 /**
- * Die Klassen der Hülle. Ausgeklappt und Vollseite bringen je eigene Breiten
- * und Schatten mit — und weil Ladezustand, Fehlzustand und fertige Ansicht
- * dieselbe Hülle tragen müssen, steht die Liste hier einmal statt dreimal.
+ * Die Klassen der Hülle. Ausgeklappt bringt eigene Breite und einen Schatten
+ * mit — und weil Ladezustand, Fehlzustand und fertige Ansicht dieselbe Hülle
+ * tragen müssen, steht die Liste hier einmal statt dreimal.
  */
-function shellClass(variant: IssueDetailVariant, isExpanded: boolean) {
-  return [
-    styles.detail,
-    isExpanded && styles.expanded,
-    variant === "page" && styles.page,
-  ]
+function shellClass(isExpanded: boolean) {
+  return [styles.detail, isExpanded && styles.expanded]
     .filter(Boolean)
     .join(" ");
 }
@@ -59,7 +52,6 @@ function shellClass(variant: IssueDetailVariant, isExpanded: boolean) {
 interface IssueDetailViewProps {
   issue: Issue;
   data: IssueComposerData;
-  variant: IssueDetailVariant;
   onClose: () => void;
   /**
    * Klappt zwischen Seitenpanel und großem Dialog um. Fehlt, wo es nichts
@@ -76,7 +68,6 @@ interface IssueDetailViewProps {
 export function IssueDetailView({
   issue,
   data,
-  variant,
   onClose,
   onToggleExpanded,
   isExpanded = false,
@@ -85,11 +76,9 @@ export function IssueDetailView({
   onDelete,
 }: IssueDetailViewProps) {
   const t = useTranslations();
-  // Ausgeklappt ist es kein Seitenpanel mehr, aber auch nicht die Vollseite —
-  // deshalb ein eigener Zustand statt der geliehenen Variante.
-  const isPanel = variant === "panel" && !isExpanded;
-  // Nur das Panel ist ziehbar. Der ausgeklappte Dialog bemisst sich an der
-  // Bildschirmbreite, die Vollseite an der Seite darum.
+  const isPanel = !isExpanded;
+  // Nur das Panel ist ziehbar — der ausgeklappte Dialog bemisst sich an der
+  // Bildschirmbreite.
   const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT_W);
   const prefix = data.projects.find((p) => p.id === issue.project)?.prefix;
   const identifier = `${prefix ?? "?"}-${issue.key}`;
@@ -98,7 +87,7 @@ export function IssueDetailView({
     <Modal
       variant={isPanel ? "panel" : "dialog"}
       width={isPanel ? panelWidth : undefined}
-      className={shellClass(variant, isExpanded)}
+      className={shellClass(isExpanded)}
     >
       <ModalHeader
         title={<span className={styles.ref}>{identifier}</span>}
@@ -144,8 +133,8 @@ export function IssueDetailView({
           dazu zu sagen war. Eine zweite Spalte hätte dort nur einen Stapel mit
           Trennlinie ergeben.
 
-          Der große Dialog und die Vollseite haben die Breite für zwei Spalten —
-          dort bleibt es beim Inhalt links, Attribute rechts. */}
+          Der große Dialog hat die Breite für zwei Spalten — dort bleibt es wie
+          auf der Vollseite beim Inhalt links, Attribute rechts. */}
       {isPanel ? (
         <div className={styles.body}>
           <IssueTitle title={issue.title} onPatch={onPatch} />
@@ -220,22 +209,20 @@ export function IssueDetailView({
  * damit das Panel beim Eintreffen der Daten nicht die Größe wechselt.
  */
 export function IssueDetailSkeleton({
-  variant,
   isExpanded = false,
   onClose,
 }: {
-  variant: IssueDetailVariant;
   isExpanded?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations();
-  const isPanel = variant === "panel" && !isExpanded;
+  const isPanel = !isExpanded;
 
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
       width={isPanel ? PANEL_DEFAULT_W : undefined}
-      className={shellClass(variant, isExpanded)}
+      className={shellClass(isExpanded)}
       aria-busy="true"
     >
       <ModalHeader
@@ -274,22 +261,20 @@ export function IssueDetailSkeleton({
  * eines ewigen Ladezustands.
  */
 export function IssueDetailMissing({
-  variant,
   isExpanded = false,
   onClose,
 }: {
-  variant: IssueDetailVariant;
   isExpanded?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations();
-  const isPanel = variant === "panel" && !isExpanded;
+  const isPanel = !isExpanded;
 
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
       width={isPanel ? PANEL_DEFAULT_W : undefined}
-      className={shellClass(variant, isExpanded)}
+      className={shellClass(isExpanded)}
     >
       <ModalHeader
         title={<span className={styles.ref}>—</span>}
