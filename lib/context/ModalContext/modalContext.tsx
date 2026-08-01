@@ -18,8 +18,8 @@ export interface ModalRenderProps {
    * Breite.
    *
    * Gedacht für Inhalte, die zwischen zwei Darstellungen wechseln können, ohne
-   * neu geöffnet zu werden: die Issue-Ansicht klappt so zwischen Seitenpanel
-   * und großem Dialog um.
+   * neu geöffnet zu werden. Die Issue-Ansicht macht das nicht mehr über diesen
+   * Weg: sie hängt im Dock (`DockContext`) und hebt sich dort selbst an.
    */
   setOptions: (patch: Partial<ModalOptions>) => void;
 }
@@ -92,6 +92,17 @@ export function useModal() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useModal must be used within ModalProvider");
   return ctx;
+}
+
+/**
+ * Ob gerade ein Modal offen ist.
+ *
+ * Für alles, was ebenfalls auf Escape hört und dabei zurücktreten muss: ein
+ * Modal liegt immer oben, also gehört die Taste ihm. Das Dock-Panel nutzt das
+ * — sonst schlösse Escape das Panel unter dem Dialog statt des Dialogs.
+ */
+export function useHasOpenModal() {
+  return (useContext(StackCtx)?.length ?? 0) > 0;
 }
 
 export function ModalProvider({ children }: { children: React.ReactNode }) {

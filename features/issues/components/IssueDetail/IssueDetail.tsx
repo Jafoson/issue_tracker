@@ -13,9 +13,9 @@ import type { Issue } from "@/types";
 import {
   IssueDetailMissing,
   IssueDetailSkeleton,
-  type IssueDetailVariant,
   IssueDetailView,
 } from "./IssueDetailView";
+import type { IssueDetailVariant } from "./types";
 
 interface IssueDetailProps {
   /** Interne Id oder Referenz der Form „PREFIX-123“. */
@@ -29,14 +29,11 @@ interface IssueDetailProps {
   variant?: IssueDetailVariant;
   onClose: () => void;
   /**
-   * Schreibt die Optionen des umgebenden Modals fort. Nur gesetzt, wenn die
-   * Ansicht in einem Modal steckt — die Vollseite hat keines.
+   * Meldet dem Dock, dass die Ansicht sich ausklappt: es hebt das Panel dann
+   * von der Kante in die Mitte. Nur gesetzt, wenn die Ansicht angedockt ist —
+   * die Vollseite hat nichts umzuklappen.
    */
-  onSetModalOptions?: (patch: {
-    placement?: "center" | "right";
-    centered?: boolean;
-    width?: number | string;
-  }) => void;
+  onSetExpanded?: (expanded: boolean) => void;
 }
 
 /**
@@ -53,14 +50,14 @@ export function IssueDetail({
   initialIssue,
   variant = "panel",
   onClose,
-  onSetModalOptions,
+  onSetExpanded,
 }: IssueDetailProps) {
   const router = useRouter();
   /**
    * Ob die Ansicht als großer Dialog steht statt als Seitenpanel.
    *
-   * Die Vollseite (`variant="page"`) kennt den Wechsel nicht — sie ist keine
-   * Einblendung und hat kein Modal, dessen Platzierung sich ändern ließe.
+   * Die Vollseite (`variant="page"`) kennt den Wechsel nicht — sie steht
+   * ohnehin schon für sich und hat kein Dock, das sie anheben könnte.
    */
   const [isExpanded, setIsExpanded] = useState(false);
   const [fetched, setFetched] = useState<Issue | null>(null);
@@ -118,23 +115,16 @@ export function IssueDetail({
     });
 
   /**
-   * Klappt zwischen Seitenpanel und großem Dialog um.
+   * Klappt zwischen angedocktem Seitenpanel und großem Dialog um.
    *
-   * Platzierung und Breite gehören dem Modal, die Kopfzeile und der Zuschnitt
-   * dem Inhalt — deshalb wandert beides zusammen.
+   * Wo das Panel steht, gehört dem Dock, Kopfzeile und Zuschnitt dem Inhalt —
+   * deshalb wandert beides zusammen. Die Breite bleibt außen vor: sie steht
+   * als `--modal-w` am Panel selbst (`.expanded` in `issueDetail.module.scss`).
    */
   const toggleExpanded = () => {
     const next = !isExpanded;
     setIsExpanded(next);
-    onSetModalOptions?.(
-      next
-        ? // Ohne `width`: die Breite steht als `--modal-w` am Modal selbst
-          // (`.expanded` in `issueDetail.module.scss`). Die Option bemisst nur
-          // die Hülle darum — stand dort ein anderer Wert, saß das schmalere
-          // Modal an deren linker Kante und wirkte aus der Mitte gerückt.
-          { placement: "center", centered: true, width: undefined }
-        : { placement: "right", centered: false, width: undefined },
-    );
+    onSetExpanded?.(next);
   };
 
   const handleComment = async (body: PMDoc) => {
@@ -155,7 +145,7 @@ export function IssueDetail({
       data={data}
       onClose={onClose}
       variant={variant}
-      onToggleExpanded={onSetModalOptions ? toggleExpanded : undefined}
+      onToggleExpanded={onSetExpanded ? toggleExpanded : undefined}
       isExpanded={isExpanded}
       onPatch={handlePatch}
       onComment={handleComment}

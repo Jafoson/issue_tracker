@@ -1,23 +1,14 @@
 "use client";
 
-import { Icon } from "@iconify/react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
-import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
-import { Label as LabelChip } from "@/components/ui/atoms/Label/Label";
-import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import {
-  PriorityIcon,
-  StatusIcon,
-  TypeIcon,
-} from "@/features/issues/components/IssueIcons/IssueIcons";
-import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
+import { Resizer } from "@/components/ui/layout/Resizer/Resizer";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
-import { fullName } from "@/lib/utils/string";
-import { useTimeAgo } from "@/lib/utils/useTimeAgo";
-import type { Issue, Label } from "@/types";
+import type { Issue } from "@/types";
 import styles from "../issueDetail.module.scss";
+import { IssueLabels } from "./IssueLabels";
+import { IssueMeta } from "./IssueMeta";
+import { IssueProperties } from "./IssueProperties";
 
 interface IssueSidebarProps {
   issue: Issue;
@@ -25,297 +16,72 @@ interface IssueSidebarProps {
   onPatch: (patch: IssuePatch) => void;
 }
 
-/** Beschriftete Zeile der Attributspalte: Name links, Wert rechts. */
-function Row({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={styles.row}>
-      <span className={styles.rowLabel}>{label}</span>
-      <div className={styles.rowValue}>{children}</div>
-    </div>
-  );
-}
+/**
+ * Grenzen der Attributspalte. Darunter passen die Werte neben ihre
+ * Beschriftung nicht mehr, darüber nimmt sie dem Text zu viel weg. Zusätzlich
+ * deckelt `.sidebar` sie in CSS auf die halbe Breite — auf einem schmalen
+ * Dialog wären selbst 460px zu viel.
+ */
+const MIN_W = 220;
+const MAX_W = 460;
+/** Ausgangsbreite. Entspricht `--detail-sidebar-w` in der Stylesheet-Datei. */
+const DEFAULT_W = 300;
 
 /**
- * Attributspalte der Detailansicht. Typ, Status, Priorität, Zuständigkeit und
- * Labels sind direkt hier änderbar — Projekt, Ersteller und die Zeitstempel
- * zeigen nur an, weil sie feststehen oder woanders gepflegt werden.
+ * Die Attributspalte der zweispaltigen Ansicht — dieselben drei Blöcke, die im
+ * Seitenpanel untereinander in der Spalte stehen, hier nur neben dem Inhalt
+ * und in ihrer schmalen Form (`layout="aside"`).
+ *
+ * Oben, was man ändert (Typ, Status, Priorität, Zuständigkeit, Labels), unten,
+ * was feststeht. Wie breit sie dabei ist, entscheidet der Griff an ihrer
+ * linken Kante. Die gezogene Breite gilt für die geöffnete Ansicht und fängt
+ * beim nächsten Öffnen wieder bei `DEFAULT_W` an.
  */
 export function IssueSidebar({ issue, data, onPatch }: IssueSidebarProps) {
-  const { members, projects, labels, statuses, priorities, issueTypes } = data;
   const t = useTranslations();
-  const format = useFormatter();
-  const timeAgo = useTimeAgo();
-
-  // Im Label-Picker neu angelegte Labels kennt die Server-Prop noch nicht —
-  // bis zum nächsten Refresh kommen sie von hier.
-  const [createdLabels, setCreatedLabels] = useState<Label[]>([]);
-  const knownLabels = [
-    ...labels,
-    ...createdLabels.filter((l) => !labels.some((known) => known.id === l.id)),
-  ];
-
-  const type = issueTypes.find((x) => x.id === issue.type);
-  const status = statuses.find((s) => s.id === issue.status);
-  const priority = priorities.find((p) => p.id === issue.priority);
-  const project = projects.find((p) => p.id === issue.project);
-  const assignee = issue.assignee
-    ? (members.find((m) => m.id === issue.assignee) ?? null)
-    : null;
-  const reporter = members.find((m) => m.id === issue.reporter) ?? null;
-  const issueLabels = issue.labels
-    .map((id) => knownLabels.find((l) => l.id === id))
-    .filter((l): l is Label => Boolean(l));
-
-  const toggleLabel = (id: string) =>
-    onPatch({
-      labels: issue.labels.includes(id)
-        ? issue.labels.filter((x) => x !== id)
-        : [...issue.labels, id],
-    });
+  const [width, setWidth] = useState(DEFAULT_W);
 
   return (
-    <aside className={styles.sidebar}>
-      <Row label={t("fields.type")}>
-        <InlinePicker
-          width={190}
-          stop
-          trigger={
-            <button type="button" className={styles.valueBtn}>
-              <TypeIcon type={issue.type} size={14} color={type?.color} />
-              <span className={styles.valueText}>
-                {type?.name ?? issue.type}
-              </span>
-            </button>
-          }
-        >
-          {(close) => (
-            <SelectMenu
-              items={issueTypes.map((x) => ({
-                value: x.id,
-                label: x.name,
-                icon: <TypeIcon type={x.id} size={15} color={x.color} />,
-              }))}
-              value={issue.type}
-              onPick={(value) => {
-                onPatch({ type: value as string });
-                close();
-              }}
-              onClose={close}
-            />
-          )}
-        </InlinePicker>
-      </Row>
+    <>
+      {/* Ein eigenes Element zwischen den Spalten statt eines Rands an der
+          Spalte selbst: nur so reicht die Trefferfläche über die volle Höhe
+          und scrollt nicht mit dem Inhalt weg. */}
+      <Resizer
+        className={styles.sidebarResizer}
+        width={width}
+        onChange={setWidth}
+        min={MIN_W}
+        max={MAX_W}
+        reset={DEFAULT_W}
+        label={t("actions.resizeSidebar")}
+      />
 
-      <Row label={t("fields.status")}>
-        <InlinePicker
-          width={200}
-          stop
-          trigger={
-            <button type="button" className={styles.valueBtn}>
-              <StatusIcon
-                status={issue.status}
-                size={14}
-                color={status?.color}
-              />
-              <span className={styles.valueText}>
-                {status?.name ?? issue.status}
-              </span>
-            </button>
-          }
-        >
-          {(close) => (
-            <SelectMenu
-              items={statuses.map((s) => ({
-                value: s.id,
-                label: s.name,
-                icon: <StatusIcon status={s.id} size={15} color={s.color} />,
-              }))}
-              value={issue.status}
-              onPick={(value) => {
-                onPatch({ status: value as string });
-                close();
-              }}
-              onClose={close}
-            />
-          )}
-        </InlinePicker>
-      </Row>
+      <aside
+        className={styles.sidebar}
+        // Gezogener Wert — er kann nur hier stehen. Die Ausgangsbreite kommt
+        // weiterhin aus der Stylesheet-Datei.
+        style={{ "--detail-sidebar-w": `${width}px` } as React.CSSProperties}
+      >
+        <IssueProperties
+          issue={issue}
+          data={data}
+          layout="aside"
+          onPatch={onPatch}
+        />
 
-      <Row label={t("fields.priority")}>
-        <InlinePicker
-          width={190}
-          stop
-          trigger={
-            <button type="button" className={styles.valueBtn}>
-              <PriorityIcon priority={issue.priority} size={14} />
-              <span className={styles.valueText}>
-                {priority?.name ?? String(issue.priority)}
-              </span>
-            </button>
-          }
-        >
-          {(close) => (
-            <SelectMenu
-              items={priorities.map((p) => ({
-                value: p.id,
-                label: p.name,
-                icon: <PriorityIcon priority={p.id} size={15} />,
-              }))}
-              value={issue.priority}
-              onPick={(value) => {
-                onPatch({ priority: value as number });
-                close();
-              }}
-              onClose={close}
-            />
-          )}
-        </InlinePicker>
-      </Row>
+        <div className={styles.divider} />
 
-      <Row label={t("fields.assignee")}>
-        <InlinePicker
-          width={220}
-          stop
-          trigger={
-            <button type="button" className={styles.valueBtn}>
-              <Avatar avatar={assignee} size={20} placeholder />
-              <span className={styles.valueText}>
-                {assignee ? fullName(assignee) : t("fields.unassigned")}
-              </span>
-            </button>
-          }
-        >
-          {(close) => (
-            <SelectMenu
-              items={[
-                {
-                  value: null,
-                  label: t("fields.unassigned"),
-                  icon: <Avatar avatar={null} size={18} placeholder />,
-                },
-                ...members.map((user) => ({
-                  value: user.id,
-                  label: fullName(user),
-                  icon: <Avatar avatar={user} size={18} />,
-                })),
-              ]}
-              value={issue.assignee}
-              onPick={(value) => {
-                onPatch({ assignee: value as string | null });
-                close();
-              }}
-              onClose={close}
-              searchable
-            />
-          )}
-        </InlinePicker>
-      </Row>
+        <IssueLabels
+          issue={issue}
+          data={data}
+          layout="aside"
+          onPatch={onPatch}
+        />
 
-      <div className={styles.divider} />
+        <div className={styles.divider} />
 
-      {/* Labels stehen unter ihrer Beschriftung statt daneben: mehrere Chips
-          brauchen die volle Breite, sonst bricht schon das zweite um. */}
-      <div className={styles.labels}>
-        <div className={styles.labelsHead}>
-          <span className={styles.rowLabel}>{t("fields.labels")}</span>
-          <InlinePicker
-            width={240}
-            align="end"
-            stop
-            trigger={
-              <button
-                type="button"
-                className={styles.iconBtn}
-                aria-label={t("actions.addLabel")}
-                title={t("actions.addLabel")}
-              >
-                <Icon icon="lucide:plus" width={14} />
-              </button>
-            }
-          >
-            {(close) => (
-              <LabelPickerMenu
-                allLabels={knownLabels}
-                selected={issue.labels}
-                projectId={issue.project}
-                projectName={project?.name ?? ""}
-                workspaceId={data.workspaceId}
-                onPick={toggleLabel}
-                onCreated={(label) =>
-                  setCreatedLabels((cur) => [...cur, label])
-                }
-                onClose={close}
-                keepOpen
-              />
-            )}
-          </InlinePicker>
-        </div>
-        {issueLabels.length > 0 ? (
-          <div className={styles.labelsList}>
-            {issueLabels.map((label) => (
-              <LabelChip
-                key={label.id}
-                color={label.color}
-                size="sm"
-                // Derselbe Weg wie über das Menü — `toggleLabel` nimmt es
-                // heraus, wenn es schon gesetzt ist.
-                onRemove={() => toggleLabel(label.id)}
-                removeLabel={t("actions.removeLabel", { name: label.name })}
-              >
-                {label.name}
-              </LabelChip>
-            ))}
-          </div>
-        ) : (
-          <span className={styles.labelsEmpty}>{t("fields.none")}</span>
-        )}
-      </div>
-
-      <div className={styles.divider} />
-
-      <Row label={t("fields.project")}>
-        <span className={styles.value}>
-          <span className="dot" style={{ background: project?.color }} />
-          <span className={styles.valueText}>{project?.name ?? "—"}</span>
-        </span>
-      </Row>
-
-      <Row label={t("fields.creator")}>
-        <span className={styles.value}>
-          <Avatar avatar={reporter} size={20} placeholder />
-          <span className={styles.valueText}>
-            {reporter ? fullName(reporter) : "—"}
-          </span>
-        </span>
-      </Row>
-
-      <Row label={t("fields.created")}>
-        <span className={`${styles.value} ${styles.valueMuted}`}>
-          {format.dateTime(issue.created, {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-        </span>
-      </Row>
-
-      <Row label={t("fields.updated")}>
-        <span
-          className={`${styles.value} ${styles.valueMuted}`}
-          title={format.dateTime(issue.updated, {
-            dateStyle: "long",
-            timeStyle: "short",
-          })}
-        >
-          {timeAgo(issue.updated)}
-        </span>
-      </Row>
-    </aside>
+        <IssueMeta issue={issue} data={data} layout="aside" />
+      </aside>
+    </>
   );
 }

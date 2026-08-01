@@ -48,6 +48,8 @@
     "removeLabel": "{name} entfernen",
     "rename": "Umbenennen",
     "requestAccess": "Zugang anfragen",
+    "resizePanel": "Breite des Panels ändern",
+    "resizeSidebar": "Breite der Attributspalte ändern",
     "save": "Speichern",
     "signIn": "Anmelden"
   },
@@ -98,7 +100,8 @@
     "prefix": "Kürzel",
     "color": "Farbe",
     "title": "Titel",
-    "description": "Beschreibung"
+    "description": "Beschreibung",
+    "details": "Details"
   },
   "sort": {
     "label": "Sortieren",

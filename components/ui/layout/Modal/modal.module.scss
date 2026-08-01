@@ -26,20 +26,25 @@
 
 /* ---------- Variante: Seitenpanel ---------- */
 
-/* Sitzt bündig an der rechten Kante (Placement kommt vom ModalFrame): volle
-   Höhe, nur die Innenkante bleibt sichtbar. */
+/* Sitzt bündig an der rechten Kante: volle Höhe, nur die Innenkante bleibt
+   sichtbar. Ob es dabei über der Seite liegt (Modal-Stack) oder neben ihr
+   (Dock), sieht man am Schatten — deshalb kommt der über `--modal-shadow`
+   von außen und ist hier nur voreingestellt.
+
+   `max-width: 100%` statt `100vw`: im Dock ist der Platz daneben begrenzt,
+   und das Panel soll ihn nicht überlaufen. Über der Seite ist beides gleich. */
 .modal.panel {
   --modal-w: min(880px, 100vw);
   --modal-max-h: 100dvh;
   --modal-pad-x: 18px;
 
   height: 100dvh;
-  max-width: 100vw;
+  max-width: 100%;
   background: var(--surface-container-low);
   border: none;
   border-left: 1px solid var(--outline-variant);
   border-radius: 0;
-  box-shadow: var(--shadow-panel);
+  box-shadow: var(--modal-shadow, var(--shadow-panel));
 }
 
 /* ---------- Header ---------- */

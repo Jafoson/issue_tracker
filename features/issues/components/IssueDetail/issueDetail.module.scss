@@ -1,10 +1,25 @@
 /* Detailansicht eines Issues. Fläche, Rahmen und Kopfzeile kommen vom Modal —
-   hier liegt die Zweiteilung: Inhalt links, Attribute rechts. Gilt für beide
-   Varianten, das Panel im Modal-Stack und die eingebettete Vollseite. */
+   hier liegt der Aufbau, und der hängt an der Breite:
+
+   `.body`  — das schmale Seitenpanel. Alles untereinander in einer Spalte:
+              Titel, Attributleiste, Beschreibung, Labels, Herkunft, Kommentare.
+   `.split` — der ausgeklappte Dialog und die eingebettete Vollseite. Inhalt
+              links, Attribute in einer eigenen Spalte rechts. */
 
 .detail {
-  --detail-sidebar-w: 300px;
+  /* Angedockt steht das Panel neben der Seite, nicht über ihr — ein Schatten
+     nach links würde einen Abstand behaupten, den es nicht gibt. Die Kante
+     trägt eine Linie, das genügt. Die beiden Zustände darunter, die doch über
+     der Seite liegen, holen sich ihren Schatten zurück. */
+  --modal-shadow: none;
   --detail-pad-x: 28px;
+  /* Ausgangsbreite der Attributspalte. Ziehen überschreibt sie inline —
+     `DEFAULT_W` in `components/IssueSidebar.tsx` hält denselben Wert. */
+  --detail-sidebar-w: 250px;
+  /* Deckel für die Textbreite in der einspaltigen Ansicht. Das Panel ist bis
+     880px breit — ohne Deckel liefen Beschreibung und Kommentare über die ganze
+     Strecke, und das Auge verlöre beim Zeilenwechsel den Anschluss. */
+  --detail-content-w: 780px;
 }
 
 /* Ausgeklappt: großer Dialog statt Seitenpanel.
@@ -15,6 +30,7 @@
    erbte damit deren Deckel von 1080px. */
 .expanded {
   --modal-w: min(1440px, 70vw);
+  --modal-shadow: var(--shadow-pop);
   /* Ohne Versatz von oben (`centered`) — je 32px Luft an beiden Kanten. Der
      absolute Deckel hält den Dialog auf sehr hohen Bildschirmen überblickbar. */
   --modal-max-h: min(920px, calc(100dvh - 64px));
@@ -32,6 +48,17 @@
   margin: 20px auto;
 }
 
+/* Der Griff an der linken Panelkante. Absolut statt im Fluss: das Panel ist
+   eine Spalte aus Kopfzeile und Inhalt, und über beide zusammen reicht nur,
+   was aus dem Fluss heraus ist. Die Kopfzeile bringt eine eigene Fläche mit,
+   deshalb muss er darüber liegen. */
+.panelResizer {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  z-index: 2;
+}
+
 /* ---------- Kopfzeile ---------- */
 
 .ref {
@@ -45,7 +72,25 @@
   color: var(--secondary);
 }
 
-/* ---------- Aufteilung ---------- */
+/* ---------- Einspaltig: Seitenpanel ---------- */
+
+/* Der einzige Scroll-Container der Ansicht. Das seitliche Polster wächst mit
+   der Breite mit, bis der Inhalt bei `--detail-content-w` stehen bleibt und
+   mittig sitzt — ohne zusätzliche Hülle im Markup. */
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 26px;
+  min-height: 0;
+  padding:
+    26px
+    max(var(--detail-pad-x), calc((100% - var(--detail-content-w)) / 2))
+    44px;
+  overflow-y: auto;
+}
+
+/* ---------- Zweispaltig: Dialog und Vollseite ---------- */
 
 .split {
   display: flex;
@@ -54,35 +99,73 @@
 }
 
 .main {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  gap: 22px;
   min-width: 0;
   padding: 26px var(--detail-pad-x) 36px;
   overflow-y: auto;
+}
+
+/* In beiden Spalten gilt: die Blöcke geben ihre Höhe vom Inhalt vor. Ohne das
+   drückte der Scroll-Container sie zusammen, statt scrollen zu lassen. */
+.body > *,
+.main > * {
+  flex: none;
+}
+
+/* Die Breite ist ziehbar (`IssueSidebar` schreibt sie als Inline-Variable).
+   Der Deckel bei der halben Aufteilung ist die letzte Instanz: er greift, wo
+   der Dialog schmaler ist als die 460px, die der Griff zulässt. */
+.sidebar {
+  flex: none;
+  width: var(--detail-sidebar-w);
+  max-width: 50%;
+  padding: 18px 18px 28px;
+  border-left: 1px solid var(--outline-variant);
+  overflow-y: auto;
+}
+
+/* Der Griff dazwischen (`ui/layout/Resizer`) liegt auf der Trennlinie statt
+   daneben — die negativen Ränder ziehen ihn über sie, damit er Trefferfläche
+   hat, ohne eine Lücke aufzureißen. */
+.sidebarResizer {
+  position: relative;
+  z-index: 1;
+  margin: 0 -4px 0 -5px;
+}
+
+.divider {
+  height: 1px;
+  margin: 10px 0;
+  background: var(--outline-variant);
 }
 
 /* Titel und Beschreibung sind Eingabefelder (`EditableText`). Der negative
    Rand zieht ihr Innenpolster wieder heraus, damit der Text trotz Hover-Fläche
    auf derselben Kante steht wie alles darunter. */
 .title {
-  margin: 0 -8px 6px;
-  font-size: var(--text-xl);
+  margin: 0 -8px;
+  font-size: var(--text-2xl);
   font-weight: 600;
   line-height: var(--leading-tight);
   color: var(--on-surface);
 }
 
-.description {
-  margin: 0 -8px;
-  font-size: var(--text-base);
-  line-height: var(--leading-loose);
-  color: var(--on-surface-variant);
+/* Neben der Attributspalte trägt der Titel die Hierarchie nicht allein —
+   dort darf er kleiner sein. */
+.split .title {
+  font-size: var(--text-xl);
 }
 
-.descriptionBlock {
-  margin-top: 22px;
+/* ---------- Abschnitte ---------- */
+
+.section {
+  min-width: 0;
 }
 
-/* Beschreibung und Kommentare kündigen sich gleich an. */
+/* Beschreibung, Labels, Details und Kommentare kündigen sich gleich an. */
 .sectionHead {
   display: flex;
   align-items: center;
@@ -98,11 +181,196 @@
   color: var(--on-surface);
 }
 
+/* ---------- Attributleiste ---------- */
+
+/* Typ, Status, Priorität und Zuständigkeit nebeneinander statt untereinander:
+   so bleibt der Block flach und die Beschreibung beginnt gleich darunter.
+   `auto-fit` stapelt sie erst, wenn die Spalte zu schmal für vier wird. */
+.properties {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 4px;
+  padding: 12px 10px;
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* Kleiner und in Versalien — die Beschriftung soll den Wert darunter nicht um
+   Aufmerksamkeit bitten, sondern ihn nur benennen. */
+.fieldLabel {
+  padding: 0 6px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+
+/* ---------- Werte ---------- */
+
+/* Anzeigender Wert und Picker-Trigger sitzen auf derselben Grundlinie — der
+   Trigger gibt sich erst beim Überfahren als Schaltfläche zu erkennen. */
+.value,
+.valueBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  color: var(--on-surface);
+  text-align: left;
+}
+
+/* Namen können länger sein als die Spalte breit ist — im Flex-Container greift
+   `text-overflow` nur auf einem echten Element, deshalb der eigene Span. */
+.valueText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.valueMuted {
+  color: var(--on-surface-variant);
+}
+
+/* Eine Stufe über der Leiste, nicht über der Ansicht — sonst wäre der
+   Überfahr-Zustand innerhalb des Kastens unsichtbar. */
+.valueBtn {
+  transition: background .12s;
+
+  &:hover { background: var(--surface-container-highest); }
+}
+
+/* ---------- Beschreibung ---------- */
+
+.description {
+  margin: 0 -8px;
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
+}
+
+/* ---------- Labels ---------- */
+
+.labelsList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* In der Attributspalte sitzt die Reihe unter ihrer Kopfzeile und rückt auf
+   die Kante der Werte daneben ein. */
+.labels {
+  padding: 4px 0;
+}
+
+.labelsHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+}
+
+.labelsListAside {
+  margin-top: 8px;
+  padding: 0 6px;
+}
+
+.labelsEmpty {
+  display: block;
+  margin-top: 4px;
+  padding: 0 6px;
+  font-size: var(--text-base);
+  color: var(--outline);
+}
+
+/* Das Plus in der Kopfzeile — es hält sich zurück, bis man in die Nähe kommt. */
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+  }
+}
+
+/* Schließt die Chip-Reihe ab. Gestrichelt und ungefüllt, damit er als Angebot
+   lesbar bleibt und nicht als gesetztes Label. Maße wie `Label` in `sm`. */
+.addLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px dashed var(--outline-variant);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--leading-tight);
+  color: var(--outline);
+  transition: color .12s, border-color .12s, background .12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+    border-color: var(--outline);
+    color: var(--on-surface);
+  }
+}
+
+/* ---------- Details ---------- */
+
+/* Zwei Paare nebeneinander, solange die Spalte es hergibt — vier einzelne
+   Zeilen wären für vier kurze Werte zu viel Höhe. */
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2px 20px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.rowLabel {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
+.rowValue {
+  display: flex;
+  min-width: 0;
+}
+
 /* ---------- Kommentare ---------- */
 
+/* Der einzige Abschnitt mit Trennlinie: hier endet das Issue und beginnt, was
+   andere dazu gesagt haben. */
 .comments {
-  margin-top: 30px;
-  padding-top: 20px;
+  padding-top: 24px;
   border-top: 1px solid var(--outline-variant);
 }
 
@@ -180,21 +448,13 @@
   min-width: 0;
 }
 
-.textarea {
-  width: 100%;
-  min-height: 76px;
-  padding: 9px 12px;
-  background: var(--surface-container);
+/* Steht, solange der Editor nachlädt. Gleiche Hülle wie er, damit beim
+   Eintreffen nichts springt. */
+.composerLoading {
+  min-height: 140px;
+  background: var(--surface-container-low);
   border: 1px solid var(--outline-variant);
-  border-radius: var(--radius);
-  color: var(--on-surface);
-  font-family: inherit;
-  font-size: var(--text-base);
-  line-height: var(--leading-normal);
-  resize: vertical;
-
-  &::placeholder { color: var(--outline); }
-  &:focus-visible { outline-offset: 0; }
+  border-radius: var(--radius-lg);
 }
 
 .composerFoot {
@@ -203,115 +463,6 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 8px;
-}
-
-/* ---------- Attributspalte ---------- */
-
-.sidebar {
-  flex: none;
-  width: var(--detail-sidebar-w);
-  padding: 18px 18px 28px;
-  border-left: 1px solid var(--outline-variant);
-  overflow-y: auto;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-}
-
-.rowLabel {
-  font-size: var(--text-sm);
-  color: var(--outline);
-}
-
-.rowValue {
-  display: flex;
-  min-width: 0;
-}
-
-/* Anzeigender Wert und Picker-Trigger sitzen auf derselben Grundlinie — der
-   Trigger gibt sich erst beim Überfahren als Schaltfläche zu erkennen. */
-.value,
-.valueBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-base);
-  color: var(--on-surface);
-  text-align: left;
-}
-
-/* Namen können länger sein als die Spalte breit ist — im Flex-Container greift
-   `text-overflow` nur auf einem echten Element, deshalb der eigene Span. */
-.valueText {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.valueMuted {
-  color: var(--on-surface-variant);
-}
-
-.valueBtn {
-  transition: background .12s;
-
-  &:hover { background: var(--surface-container-high); }
-}
-
-.iconBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin-left: auto;
-  border-radius: var(--radius-sm);
-  color: var(--on-surface-variant);
-  transition: background .12s, color .12s;
-
-  &:hover { background: var(--surface-container-high); color: var(--on-surface); }
-}
-
-.divider {
-  height: 1px;
-  margin: 10px 0;
-  background: var(--outline-variant);
-}
-
-.labels {
-  padding: 4px 0;
-}
-
-.labelsHead {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 26px;
-}
-
-.labelsList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 0 6px;
-}
-
-.labelsEmpty {
-  display: block;
-  margin-top: 4px;
-  padding: 0 6px;
-  font-size: var(--text-base);
-  color: var(--outline);
 }
 
 /* ---------- Lade- und Leerzustand ---------- */
@@ -325,17 +476,22 @@
 }
 
 .shimmer {
+  flex: none;
   height: 14px;
-  margin-bottom: 12px;
   border-radius: var(--radius-sm);
   background: var(--surface-container-high);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
 .shimmerTitle {
-  height: 22px;
+  height: 26px;
   width: 60%;
-  margin-bottom: 20px;
+}
+
+/* Steht für die Attributleiste — sie ist das Erste, was nach dem Titel kommt. */
+.shimmerBox {
+  height: 62px;
+  border-radius: var(--radius-lg);
 }
 
 .shimmerShort {
@@ -350,9 +506,20 @@
   .shimmer { animation: none; }
 }
 
-/* Unter ~720px steht kein Platz für zwei Spalten — die Attribute rutschen
-   unter den Inhalt, und gescrollt wird dann als Ganzes. */
+/* Auf schmalen Geräten zählt jede Kante — das Polster schrumpft, die
+   Attributleiste stapelt sich von selbst (`auto-fit`). */
 @media (max-width: 720px) {
+  .detail {
+    --detail-pad-x: 18px;
+  }
+
+  .body {
+    gap: 22px;
+    padding-top: 20px;
+  }
+
+  /* Für zwei Spalten steht hier kein Platz — die Attribute rutschen unter den
+     Inhalt, und gescrollt wird dann als Ganzes. */
   .split {
     flex-direction: column;
     overflow-y: auto;
@@ -369,7 +536,15 @@
 
   .sidebar {
     width: auto;
+    max-width: none;
     border-left: none;
     border-top: 1px solid var(--outline-variant);
+  }
+
+  /* Untereinander gibt es keine Breite zu ziehen — und ein Panel, das ohnehin
+     den ganzen Bildschirm einnimmt, auch nicht. */
+  .sidebarResizer,
+  .panelResizer {
+    display: none;
   }
 }

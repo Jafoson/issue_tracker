@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { ModalProvider } from "@/lib/context";
+import { DockProvider, ModalProvider } from "@/lib/context";
 
 // Design tokens — imported first so they're available everywhere
 import "@/styles/colors.css";
@@ -56,7 +56,11 @@ export default async function LocaleLayout({
       <body>
         {/* Messages/Locale werden automatisch aus der Server-Konfiguration übernommen. */}
         <NextIntlClientProvider>
-          <ModalProvider>{children}</ModalProvider>
+          {/* Das Dock liegt innerhalb des Modal-Providers: sein Panel muss
+              wissen, ob ein Modal darüber steht, um Escape abzugeben. */}
+          <ModalProvider>
+            <DockProvider>{children}</DockProvider>
+          </ModalProvider>
         </NextIntlClientProvider>
       </body>
     </html>

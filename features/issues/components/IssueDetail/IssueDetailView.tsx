@@ -2,28 +2,44 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal } from "@/components/ui/layout/Modal/Modal";
+import { Resizer } from "@/components/ui/layout/Resizer/Resizer";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
 import type { PMDoc } from "@/lib/richtext/types";
 import type { Issue } from "@/types";
 import { IssueComments } from "./components/IssueComments";
+import { IssueDescription } from "./components/IssueDescription";
 import {
   CopyLinkButton,
   IssueActionsMenu,
 } from "./components/IssueDetailActions";
+import { IssueLabels } from "./components/IssueLabels";
+import { IssueMeta } from "./components/IssueMeta";
+import { IssueProperties } from "./components/IssueProperties";
 import { IssueSidebar } from "./components/IssueSidebar";
-import { IssueSummary } from "./components/IssueSummary";
+import { IssueTitle } from "./components/IssueTitle";
 import styles from "./issueDetail.module.scss";
+import type { IssueDetailVariant } from "./types";
+
+export type { IssueDetailVariant };
 
 /**
- * `panel` liegt als Seitenpanel im Modal-Stack über der Liste, `page` ist die
- * eingebettete Vollseite unter `/[workspace]/issue/[ref]`. Beide zeigen
- * dasselbe — nur Hülle und Kopfzeilen-Aktionen unterscheiden sich.
+ * Grenzen des Seitenpanels. Es steht an der rechten Kante und lässt sich am
+ * linken Rand breiter ziehen — bis zur Obergrenze, denn ein Panel, das den
+ * Bildschirm füllt, ist kein Panel mehr; dafür gibt es das Ausklappen.
+ *
+ * Die Ausgangsbreite steht hier und nicht im Stylesheet: `.modal.panel` setzt
+ * `--modal-w` mit zwei Klassen und schlüge jede Regel, die `.detail` dagegen
+ * hält. Inline gewinnt sie ohne Wettrüsten — und der Ladeplatzhalter zeigt
+ * denselben Wert, damit das Panel beim Eintreffen der Daten nicht springt.
  */
-export type IssueDetailVariant = "panel" | "page";
+const PANEL_MIN_W = 480;
+const PANEL_MAX_W = 1200;
+const PANEL_DEFAULT_W = 720;
 
 interface IssueDetailViewProps {
   issue: Issue;
@@ -57,12 +73,16 @@ export function IssueDetailView({
   // Ausgeklappt ist es kein Seitenpanel mehr, aber auch nicht die Vollseite —
   // deshalb ein eigener Zustand statt der geliehenen Variante.
   const isPanel = variant === "panel" && !isExpanded;
+  // Nur das Panel ist ziehbar. Der ausgeklappte Dialog bemisst sich an der
+  // Bildschirmbreite, die Vollseite an der Seite darum.
+  const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT_W);
   const prefix = data.projects.find((p) => p.id === issue.project)?.prefix;
   const identifier = `${prefix ?? "?"}-${issue.key}`;
 
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
+      width={isPanel ? panelWidth : undefined}
       className={[
         styles.detail,
         isExpanded && styles.expanded,
@@ -110,14 +130,34 @@ export function IssueDetailView({
         closeLabel={t("actions.close")}
       />
 
-      <div className={styles.split}>
-        <div className={styles.main}>
-          <IssueSummary
-            title={issue.title}
+      {/* Das schmale Seitenpanel zeigt alles untereinander, in der Reihenfolge,
+          in der man das Issue liest: worum es geht, wie es eingeordnet ist, was
+          dazu zu sagen war. Eine zweite Spalte hätte dort nur einen Stapel mit
+          Trennlinie ergeben.
+
+          Der große Dialog und die Vollseite haben die Breite für zwei Spalten —
+          dort bleibt es beim Inhalt links, Attribute rechts. */}
+      {isPanel ? (
+        <div className={styles.body}>
+          <IssueTitle title={issue.title} onPatch={onPatch} />
+          <IssueProperties
+            issue={issue}
+            data={data}
+            layout="column"
+            onPatch={onPatch}
+          />
+          <IssueDescription
             description={issue.description}
             data={data}
             onPatch={onPatch}
           />
+          <IssueLabels
+            issue={issue}
+            data={data}
+            layout="column"
+            onPatch={onPatch}
+          />
+          <IssueMeta issue={issue} data={data} layout="column" />
           <IssueComments
             comments={issue.comments}
             members={data.members}
@@ -126,9 +166,42 @@ export function IssueDetailView({
             onSubmit={onComment}
           />
         </div>
+      ) : (
+        <div className={styles.split}>
+          <div className={styles.main}>
+            <IssueTitle title={issue.title} onPatch={onPatch} />
+            <IssueDescription
+              description={issue.description}
+              data={data}
+              onPatch={onPatch}
+            />
+            <IssueComments
+              comments={issue.comments}
+              members={data.members}
+              me={data.me}
+              data={data}
+              onSubmit={onComment}
+            />
+          </div>
 
-        <IssueSidebar issue={issue} data={data} onPatch={onPatch} />
-      </div>
+          <IssueSidebar issue={issue} data={data} onPatch={onPatch} />
+        </div>
+      )}
+
+      {/* Am linken Rand des Panels, absolut über allem. Steht zuletzt im
+          Markup, damit er sich beim Tabben nicht vor die Kopfzeile drängt —
+          gesehen wird er ohnehin an seiner Kante, nicht an seiner Stelle. */}
+      {isPanel && (
+        <Resizer
+          className={styles.panelResizer}
+          width={panelWidth}
+          onChange={setPanelWidth}
+          min={PANEL_MIN_W}
+          max={PANEL_MAX_W}
+          reset={PANEL_DEFAULT_W}
+          label={t("actions.resizePanel")}
+        />
+      )}
     </Modal>
   );
 }
@@ -150,6 +223,7 @@ export function IssueDetailSkeleton({
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
+      width={isPanel ? PANEL_DEFAULT_W : undefined}
       className={[styles.detail, !isPanel && styles.page]
         .filter(Boolean)
         .join(" ")}
@@ -160,18 +234,28 @@ export function IssueDetailSkeleton({
         onClose={onClose}
         closeLabel={t("actions.close")}
       />
-      <div className={styles.split}>
-        <div className={styles.main}>
+      {isPanel ? (
+        <div className={styles.body}>
           <div className={`${styles.shimmer} ${styles.shimmerTitle}`} />
+          <div className={`${styles.shimmer} ${styles.shimmerBox}`} />
+          <div className={styles.shimmer} />
           <div className={styles.shimmer} />
           <div className={`${styles.shimmer} ${styles.shimmerShort}`} />
         </div>
-        <aside className={styles.sidebar}>
-          <div className={styles.shimmer} />
-          <div className={styles.shimmer} />
-          <div className={styles.shimmer} />
-        </aside>
-      </div>
+      ) : (
+        <div className={styles.split}>
+          <div className={styles.main}>
+            <div className={`${styles.shimmer} ${styles.shimmerTitle}`} />
+            <div className={styles.shimmer} />
+            <div className={`${styles.shimmer} ${styles.shimmerShort}`} />
+          </div>
+          <aside className={styles.sidebar}>
+            <div className={styles.shimmer} />
+            <div className={styles.shimmer} />
+            <div className={styles.shimmer} />
+          </aside>
+        </div>
+      )}
     </Modal>
   );
 }
@@ -193,6 +277,7 @@ export function IssueDetailMissing({
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
+      width={isPanel ? PANEL_DEFAULT_W : undefined}
       className={[styles.detail, !isPanel && styles.page]
         .filter(Boolean)
         .join(" ")}

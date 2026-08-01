@@ -1,0 +1,35 @@
+/* Der Griff zum Ziehen einer Breite. Nur Trefferfläche, Linie und Zeiger —
+   wo er sitzt, bestimmt die Umgebung über eine eigene Klasse. */
+
+.resizer {
+  flex: none;
+  width: 9px;
+  cursor: col-resize;
+  /* Sonst scrollt der Browser bei Berührung, statt ziehen zu lassen. */
+  touch-action: none;
+
+  /* Zu sehen ist er erst, wenn man ihn braucht: eine kräftige Linie, die sich
+     über die Kante darunter legt. */
+  &::after {
+    content: "";
+    display: block;
+    width: 1px;
+    height: 100%;
+    margin: 0 auto;
+    background: var(--tertiary);
+    opacity: 0;
+    transition: opacity .12s;
+  }
+
+  &:hover::after,
+  &:focus-visible::after,
+  &[data-resizing]::after {
+    opacity: 1;
+  }
+
+  /* Der Fokusring säße als schmaler Strich mitten im Inhalt — die Linie zeigt
+     den Fokus deutlicher und ohne fremde Kante. */
+  &:focus-visible {
+    outline: none;
+  }
+}

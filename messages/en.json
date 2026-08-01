@@ -48,6 +48,8 @@
     "removeLabel": "Remove {name}",
     "rename": "Rename",
     "requestAccess": "Request access",
+    "resizePanel": "Resize panel",
+    "resizeSidebar": "Resize attribute column",
     "save": "Save",
     "signIn": "Sign in"
   },
@@ -98,7 +100,8 @@
     "prefix": "Prefix",
     "color": "Color",
     "title": "Title",
-    "description": "Description"
+    "description": "Description",
+    "details": "Details"
   },
   "sort": {
     "label": "Sort",

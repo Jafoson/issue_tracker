@@ -1,5 +1,5 @@
 import { Sidebar } from "@/components/ui/layout/Sidebar/Sidebar";
-import { ModalOutlet } from "@/lib/context";
+import { DockOutlet, ModalOutlet } from "@/lib/context";
 import { TabBar } from "../TabBar/TabBar";
 import styles from "./appShell.module.scss";
 
@@ -16,6 +16,10 @@ function Shell({ children, isAdminRoute }: AppShellProps) {
         <TabBar isAdminRoute={isAdminRoute} />
         <div className={styles.content}>{children}</div>
       </div>
+      {/* Platz für ein angedocktes Panel (die Issue-Detailansicht). Als
+          Geschwister des Inhalts, nicht darüber: steht eines darin, wird der
+          Bereich links davon entsprechend schmaler. */}
+      <DockOutlet />
       {/* Rendert den Modal-Stack. Workspace-Daten reichen die Öffner als Props
           herein — Modals brauchen hier nur noch die Provider aus dem
           Root-Layout (Intl, Modal). */}
