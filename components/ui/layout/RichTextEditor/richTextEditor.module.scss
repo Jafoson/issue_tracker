@@ -21,9 +21,7 @@
   /* Beim Schreiben hebt sich das Feld ab — ein weicher Ring statt eines
      harten Rahmenwechsels, damit der Sprung nicht ins Auge springt. */
   &:focus-within {
-    border-color: var(--tertiary);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--tertiary) 18%, transparent);
-  }
+    border-color: var(--tertiary);  }
 }
 
 .content {
