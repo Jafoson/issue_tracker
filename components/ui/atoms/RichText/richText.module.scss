@@ -59,7 +59,10 @@
     padding: 4px 14px;
     border-left: 3px solid var(--outline-variant);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    background: var(--surface-container);
+    /* Eine Stufe höher als das Panel darunter — dieselbe wie Codeblock,
+       Inline-Code und Tabellenkopf. Das Zitat stand als einziger eingelassener
+       Block eine Stufe tiefer und hob sich kaum ab. */
+    background: var(--surface-container-high);
     color: var(--on-surface-variant);
   }
 

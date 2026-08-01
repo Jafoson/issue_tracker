@@ -62,8 +62,13 @@ export function IssuePeek({ data }: IssuePeekProps) {
     if (!issueRef) return;
 
     const id = openModal(
-      ({ close }) => (
-        <IssueDetail issueRef={issueRef} data={data} onClose={close} />
+      ({ close, setOptions }) => (
+        <IssueDetail
+          issueRef={issueRef}
+          data={data}
+          onClose={close}
+          onSetModalOptions={setOptions}
+        />
       ),
       {
         placement: "right",

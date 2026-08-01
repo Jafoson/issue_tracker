@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal } from "@/components/ui/layout/Modal/Modal";
@@ -29,6 +30,12 @@ interface IssueDetailViewProps {
   data: IssueComposerData;
   variant: IssueDetailVariant;
   onClose: () => void;
+  /**
+   * Klappt zwischen Seitenpanel und großem Dialog um. Fehlt, wo es nichts
+   * umzuklappen gibt — auf der Vollseite.
+   */
+  onToggleExpanded?: () => void;
+  isExpanded?: boolean;
   onPatch: (patch: IssuePatch) => void;
   onComment: (body: PMDoc) => Promise<void>;
   onDelete: () => void;
@@ -40,19 +47,27 @@ export function IssueDetailView({
   data,
   variant,
   onClose,
+  onToggleExpanded,
+  isExpanded = false,
   onPatch,
   onComment,
   onDelete,
 }: IssueDetailViewProps) {
   const t = useTranslations();
-  const isPanel = variant === "panel";
+  // Ausgeklappt ist es kein Seitenpanel mehr, aber auch nicht die Vollseite —
+  // deshalb ein eigener Zustand statt der geliehenen Variante.
+  const isPanel = variant === "panel" && !isExpanded;
   const prefix = data.projects.find((p) => p.id === issue.project)?.prefix;
   const identifier = `${prefix ?? "?"}-${issue.key}`;
 
   return (
     <Modal
       variant={isPanel ? "panel" : "dialog"}
-      className={[styles.detail, !isPanel && styles.page]
+      className={[
+        styles.detail,
+        isExpanded && styles.expanded,
+        variant === "page" && styles.page,
+      ]
         .filter(Boolean)
         .join(" ")}
     >
@@ -60,6 +75,25 @@ export function IssueDetailView({
         title={<span className={styles.ref}>{identifier}</span>}
         actions={
           <>
+            {onToggleExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={
+                  <Icon
+                    icon={
+                      isExpanded ? "lucide:minimize-2" : "lucide:maximize-2"
+                    }
+                    width={15}
+                  />
+                }
+                aria-label={t(
+                  isExpanded ? "actions.collapse" : "actions.expand",
+                )}
+                title={t(isExpanded ? "actions.collapse" : "actions.expand")}
+                onClick={onToggleExpanded}
+              />
+            )}
             <CopyLinkButton
               workspaceId={data.workspaceId}
               identifier={identifier}

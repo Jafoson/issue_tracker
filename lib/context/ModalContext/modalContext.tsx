@@ -13,6 +13,15 @@ import styles from "./modalContext.module.scss";
 
 export interface ModalRenderProps {
   close: () => void;
+  /**
+   * Ändert die Optionen dieses Modals im laufenden Betrieb — Platzierung und
+   * Breite.
+   *
+   * Gedacht für Inhalte, die zwischen zwei Darstellungen wechseln können, ohne
+   * neu geöffnet zu werden: die Issue-Ansicht klappt so zwischen Seitenpanel
+   * und großem Dialog um.
+   */
+  setOptions: (patch: Partial<ModalOptions>) => void;
 }
 
 /**
@@ -28,6 +37,14 @@ export interface ModalOptions {
   dismissible?: boolean;
   /** Default: "center". */
   placement?: ModalPlacement;
+  /**
+   * Hebt den Versatz von oben auf — das Modal steht dann genau in der Mitte.
+   *
+   * Nur bei `placement: "center"` von Belang. Kleine Dialoge wirken mittig zu
+   * tief und sitzen deshalb standardmäßig etwas höher; große nutzen die Höhe
+   * besser aus, wenn der Versatz wegfällt.
+   */
+  centered?: boolean;
   /**
    * Barrierefreier Name des Dialogs. Ohne ihn kündigt der Screenreader nur
    * „Dialog“ an — bitte lokalisiert übergeben.
@@ -64,6 +81,8 @@ interface ModalValue {
   /** Schließt das Modal mit `id`, ohne `id` das oberste. */
   closeModal: (id?: string, options?: CloseOptions) => void;
   closeAllModals: () => void;
+  /** Schreibt die Optionen eines offenen Modals fort — siehe `ModalRenderProps.setOptions`. */
+  setModalOptions: (id: string, patch: Partial<ModalOptions>) => void;
 }
 
 const Ctx = createContext<ModalValue | null>(null);
@@ -106,6 +125,19 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     for (const entry of current) entry.options.onClose?.();
   }, [commit]);
 
+  const setModalOptions = useCallback(
+    (id: string, patch: Partial<ModalOptions>) => {
+      commit(
+        stackRef.current.map((entry) =>
+          entry.id === id
+            ? { ...entry, options: { ...entry.options, ...patch } }
+            : entry,
+        ),
+      );
+    },
+    [commit],
+  );
+
   const openModal = useCallback(
     (content: ModalContent, options: ModalOptions = {}) => {
       const id = `modal-${++counter.current}`;
@@ -133,7 +165,9 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   }, [stack, closeModal]);
 
   return (
-    <Ctx.Provider value={{ openModal, closeModal, closeAllModals }}>
+    <Ctx.Provider
+      value={{ openModal, closeModal, closeAllModals, setModalOptions }}
+    >
       <StackCtx.Provider value={stack}>{children}</StackCtx.Provider>
     </Ctx.Provider>
   );
@@ -151,7 +185,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
  */
 export function ModalOutlet() {
   const stack = useContext(StackCtx);
-  const { closeModal } = useModal();
+  const { closeModal, setModalOptions } = useModal();
 
   // Auch der SSR-Guard für createPortal: serverseitig ist der Stack immer leer.
   if (!stack || stack.length === 0) return null;
@@ -163,6 +197,7 @@ export function ModalOutlet() {
         modal={modal}
         index={index}
         onClose={() => closeModal(modal.id)}
+        onSetOptions={(patch) => setModalOptions(modal.id, patch)}
       />
     )),
     document.body,
@@ -173,14 +208,17 @@ function ModalFrame({
   modal,
   index,
   onClose,
+  onSetOptions,
 }: {
   modal: ModalEntry;
   index: number;
   onClose: () => void;
+  onSetOptions: (patch: Partial<ModalOptions>) => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const dismissible = modal.options.dismissible !== false;
   const placement = modal.options.placement ?? "center";
+  const centered = modal.options.centered === true;
   const cx = (...names: (string | false)[]) => names.filter(Boolean).join(" ");
 
   useEffect(() => {
@@ -198,7 +236,11 @@ function ModalFrame({
 
   return (
     <div
-      className={cx(styles.overlay, placement === "right" && styles.right)}
+      className={cx(
+        styles.overlay,
+        placement === "right" && styles.right,
+        centered && styles.centered,
+      )}
       style={{ zIndex: `calc(var(--z-overlay) + ${index})` }}
     >
       <button
@@ -217,7 +259,7 @@ function ModalFrame({
         style={modal.options.width ? { width: modal.options.width } : undefined}
       >
         {typeof modal.content === "function"
-          ? modal.content({ close: onClose })
+          ? modal.content({ close: onClose, setOptions: onSetOptions })
           : modal.content}
       </div>
     </div>

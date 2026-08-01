@@ -22,6 +22,15 @@
   animation: pop .16s ease;
 }
 
+/* ---------- Genau mittig ---------- */
+
+/* Ohne den Versatz von oben. Die Grundeinstellung setzt ihn bewusst, weil ein
+   kleiner Dialog exakt in der Mitte optisch zu tief wirkt — ein großer nutzt
+   die Höhe dagegen besser aus, wenn er mittig steht. */
+.overlay.centered {
+  padding-top: 0;
+}
+
 /* ---------- Placement: rechtes Seitenpanel ---------- */
 
 /* Klebt an der rechten Kante über die volle Höhe — der Inhalt bestimmt nur noch

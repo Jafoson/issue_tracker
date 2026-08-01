@@ -28,6 +28,15 @@ interface IssueDetailProps {
   initialIssue?: Issue;
   variant?: IssueDetailVariant;
   onClose: () => void;
+  /**
+   * Schreibt die Optionen des umgebenden Modals fort. Nur gesetzt, wenn die
+   * Ansicht in einem Modal steckt — die Vollseite hat keines.
+   */
+  onSetModalOptions?: (patch: {
+    placement?: "center" | "right";
+    centered?: boolean;
+    width?: number | string;
+  }) => void;
 }
 
 /**
@@ -44,8 +53,16 @@ export function IssueDetail({
   initialIssue,
   variant = "panel",
   onClose,
+  onSetModalOptions,
 }: IssueDetailProps) {
   const router = useRouter();
+  /**
+   * Ob die Ansicht als großer Dialog steht statt als Seitenpanel.
+   *
+   * Die Vollseite (`variant="page"`) kennt den Wechsel nicht — sie ist keine
+   * Einblendung und hat kein Modal, dessen Platzierung sich ändern ließe.
+   */
+  const [isExpanded, setIsExpanded] = useState(false);
   const [fetched, setFetched] = useState<Issue | null>(null);
   const [isMissing, setIsMissing] = useState(false);
   const [, startTransition] = useTransition();
@@ -100,6 +117,26 @@ export function IssueDetail({
       await reload();
     });
 
+  /**
+   * Klappt zwischen Seitenpanel und großem Dialog um.
+   *
+   * Platzierung und Breite gehören dem Modal, die Kopfzeile und der Zuschnitt
+   * dem Inhalt — deshalb wandert beides zusammen.
+   */
+  const toggleExpanded = () => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    onSetModalOptions?.(
+      next
+        ? // Ohne `width`: die Breite steht als `--modal-w` am Modal selbst
+          // (`.expanded` in `issueDetail.module.scss`). Die Option bemisst nur
+          // die Hülle darum — stand dort ein anderer Wert, saß das schmalere
+          // Modal an deren linker Kante und wirkte aus der Mitte gerückt.
+          { placement: "center", centered: true, width: undefined }
+        : { placement: "right", centered: false, width: undefined },
+    );
+  };
+
   const handleComment = async (body: PMDoc) => {
     await addComment(issue.id, body, data.me.id);
     await reload();
@@ -116,8 +153,10 @@ export function IssueDetail({
     <IssueDetailView
       issue={issue}
       data={data}
-      variant={variant}
       onClose={onClose}
+      variant={variant}
+      onToggleExpanded={onSetModalOptions ? toggleExpanded : undefined}
+      isExpanded={isExpanded}
       onPatch={handlePatch}
       onComment={handleComment}
       onDelete={handleDelete}

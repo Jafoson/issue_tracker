@@ -7,6 +7,19 @@
   --detail-pad-x: 28px;
 }
 
+/* Ausgeklappt: großer Dialog statt Seitenpanel.
+
+   Die Breite steht hier und nicht in den Modal-Optionen: `.modal` bezieht sie
+   aus `--modal-w`, die Option `width` bemisst nur die Hülle darum und bliebe
+   wirkungslos. Vorher lieh sich dieser Zustand die Klasse der Vollseite und
+   erbte damit deren Deckel von 1080px. */
+.expanded {
+  --modal-w: min(1440px, 70vw);
+  /* Ohne Versatz von oben (`centered`) — je 32px Luft an beiden Kanten. Der
+     absolute Deckel hält den Dialog auf sehr hohen Bildschirmen überblickbar. */
+  --modal-max-h: min(920px, calc(100dvh - 64px));
+}
+
 /* Vollseite: mittig eingebettet statt an der Kante, mit Luft zum Rand. Sie
    steht in der Seite statt über ihr, deshalb der leichtere Schatten. */
 .page {

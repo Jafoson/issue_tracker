@@ -259,7 +259,15 @@ export function IssueSidebar({ issue, data, onPatch }: IssueSidebarProps) {
         {issueLabels.length > 0 ? (
           <div className={styles.labelsList}>
             {issueLabels.map((label) => (
-              <LabelChip key={label.id} color={label.color} size="sm">
+              <LabelChip
+                key={label.id}
+                color={label.color}
+                size="sm"
+                // Derselbe Weg wie über das Menü — `toggleLabel` nimmt es
+                // heraus, wenn es schon gesetzt ist.
+                onRemove={() => toggleLabel(label.id)}
+                removeLabel={t("actions.removeLabel", { name: label.name })}
+              >
                 {label.name}
               </LabelChip>
             ))}
