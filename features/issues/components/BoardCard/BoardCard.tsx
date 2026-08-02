@@ -25,6 +25,12 @@ interface BoardCardProps {
   projectId: string;
   lookups: IssueLookups;
   isDragging?: boolean;
+  /**
+   * Ob dieses Issue gerade im Seitenpanel steht. Die Karte bleibt dann
+   * markiert — sonst wäre nach dem Klick nicht mehr zu sehen, wovon das Panel
+   * eigentlich spricht.
+   */
+  isActive?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -45,6 +51,7 @@ export function BoardCard({
   projectId,
   lookups: { members, projects, labels, issueTypes },
   isDragging,
+  isActive,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -109,6 +116,10 @@ export function BoardCard({
       className={`${styles.card}${isDragging ? ` ${styles.dragging}` : ""}`}
       role="button"
       tabIndex={0}
+      // Dieselbe Sprache wie die Zeilen der Liste (`Table`): der Zustand steht
+      // im Attribut, das Aussehen im Stylesheet.
+      data-active={isActive || undefined}
+      aria-current={isActive || undefined}
       // Beim Schreiben nicht: ein ziehbarer Vorfahr nimmt dem Feld sonst das
       // Markieren mit der Maus weg.
       draggable={!isEditing}

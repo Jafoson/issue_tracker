@@ -13,6 +13,30 @@ export const issuePath = (workspaceId: string, identifier: string) =>
   `/${workspaceId}/issue/${identifier}`;
 
 /**
+ * Räumt `?issue=` aus der URL — mehr braucht es nicht, das Panel hängt allein
+ * daran.
+ *
+ * Bewusst ohne Router: die Server-Daten der Ansicht hängen nicht an dem
+ * Parameter, und ein Round-Trip nur fürs Schließen wäre spürbar. Next hält
+ * `useSearchParams` an `history.replaceState` synchron, die Ansicht merkt es
+ * also trotzdem — Panel zu, Zeile bzw. Karte wieder unmarkiert.
+ *
+ * Steht hier und nicht in der Komponente, weil es zwei Wege zu schließen gibt:
+ * das Kreuz am Panel und der zweite Klick auf dieselbe Zeile. Beide sollen
+ * dasselbe tun, nicht nur ungefähr.
+ */
+export function closeIssuePanel() {
+  const params = new URLSearchParams(window.location.search);
+  params.delete(ISSUE_PARAM);
+  const query = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${query ? `?${query}` : ""}`,
+  );
+}
+
+/**
  * Ob der Browser diesen Klick selbst behandeln soll: Strg/Cmd (neuer Tab),
  * Shift (neues Fenster), Alt (Ziel sichern) oder eine andere Taste als die
  * linke. Dieselbe Prüfung, die auch `next/link` seinem eigenen Router
@@ -44,8 +68,22 @@ export function useIssueOpen(workspaceId: string) {
   const searchParams = useSearchParams();
   const locale = useLocale() as Locale;
 
-  /** Panel über der aktuellen Ansicht — die Filter der Liste bleiben stehen. */
+  /** Das Issue, das gerade im Panel steht — `null`, solange keines offen ist. */
+  const openIssue = searchParams.get(ISSUE_PARAM);
+
+  /**
+   * Panel über der aktuellen Ansicht — die Filter der Liste bleiben stehen.
+   *
+   * Auf dieselbe Zeile ein zweites Mal zu klicken schließt es wieder. Das
+   * Panel zeigt dann ja schon, was der Klick verlangt; ihn ins Leere laufen zu
+   * lassen, wäre die einzige Alternative — und der Weg zum Kreuz am anderen
+   * Ende des Fensters die Folge.
+   */
   const openPanel = (identifier: string) => {
+    if (identifier === openIssue) {
+      closeIssuePanel();
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set(ISSUE_PARAM, identifier);
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -84,5 +122,5 @@ export function useIssueOpen(workspaceId: string) {
     },
   });
 
-  return { linkProps, openPanel, openPageInNewTab };
+  return { linkProps, openIssue, openPanel, openPageInNewTab };
 }

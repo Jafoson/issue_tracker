@@ -2,10 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback } from "react";
 import { createPortal } from "react-dom";
 import { IssueDetail } from "@/features/issues/components/IssueDetail/IssueDetail";
-import { ISSUE_PARAM } from "@/features/issues/issue-links";
+import { closeIssuePanel, ISSUE_PARAM } from "@/features/issues/issue-links";
 import type { IssueComposerData } from "@/features/issues/types";
 import { DockPanel, useDock } from "@/lib/context";
 import { useSessionFlag } from "@/lib/utils/useSessionFlag";
@@ -46,21 +45,6 @@ export function IssuePeek({ data }: IssuePeekProps) {
   const [isExpanded, setExpanded] = useSessionFlag(EXPANDED_KEY);
   const issueRef = searchParams.get(ISSUE_PARAM);
 
-  /**
-   * Entfernt den Parameter, ohne die Route neu zu holen: die Server-Daten
-   * hängen nicht daran, und ein Round-Trip nur fürs Schließen wäre spürbar.
-   */
-  const close = useCallback(() => {
-    const params = new URLSearchParams(window.location.search);
-    params.delete(ISSUE_PARAM);
-    const query = params.toString();
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${query ? `?${query}` : ""}`,
-    );
-  }, []);
-
   if (!issueRef || !node) return null;
 
   return createPortal(
@@ -71,12 +55,12 @@ export function IssuePeek({ data }: IssuePeekProps) {
       label={issueRef}
       overlay={isExpanded}
       closeLabel={t("actions.close")}
-      onClose={close}
+      onClose={closeIssuePanel}
     >
       <IssueDetail
         issueRef={issueRef}
         data={data}
-        onClose={close}
+        onClose={closeIssuePanel}
         isExpanded={isExpanded}
         onToggleExpanded={() => setExpanded(!isExpanded)}
       />

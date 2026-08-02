@@ -21,6 +21,20 @@
     background: var(--surface-container-high);
   }
 
+  /* Die Karte, deren Issue gerade im Panel steht. Nicht noch eine Graustufe,
+     sondern der Akzent: von „überfahren“ muss sie auf einen Blick zu
+     unterscheiden sein, und beide Zustände treffen sich zwangsläufig — der
+     zweite Klick, der das Panel schließt, geht auf ebendiese Karte.
+
+     Der Ring verdoppelt den Rahmen, statt ihn zu verbreitern: ein Pixel Akzent
+     verschwindet auf dunklem Grund zwischen den Karten, eine 2px-Linie würde
+     den Inhalt um einen Pixel verschieben. */
+  &[data-active="true"] {
+    border-color: var(--tertiary);
+    background: var(--surface-container-high);
+    box-shadow: var(--shadow-card), 0 0 0 1px var(--tertiary);
+  }
+
   :global([data-density="compact"]) & {
     --pad: 10px;
     --gap: 7px;

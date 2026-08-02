@@ -55,6 +55,7 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
             onCardDragStart={board.onDragStart}
             onCardDragEnd={board.onDragEnd}
             onCardDragOver={board.onCardDragOver}
+            isCardActive={(issue) => identifier(issue) === issueOpen.openIssue}
             onCardOpen={(issue) => issueOpen.openPanel(identifier(issue))}
             onCardOpenInNewTab={(issue) =>
               issueOpen.openPageInNewTab(identifier(issue))

@@ -157,6 +157,18 @@ tbody.group {
   &[data-active="true"] {
     background: var(--surface-container-high);
   }
+
+  /* Die Zeile, die gerade im Seitenpanel steht. Der Balken kommt zur
+     aufgehellten Fläche dazu, weil die für sich zu wenig sagt: sie sieht aus
+     wie „überfahren“ — und ausgerechnet beim zweiten Klick, der das Panel
+     wieder schließt, liegt der Zeiger auf genau dieser Zeile.
+
+     Als Innenschatten und nicht als `::before`: die Pseudo-Elemente der Zeile
+     gehören schon dem Ablage-Indikator (`data-drop`), und zwei Regeln um
+     dasselbe Element streiten sich nur. */
+  &[data-active="true"] {
+    box-shadow: inset 2px 0 0 0 var(--tertiary);
+  }
 }
 
 .cell {

@@ -28,6 +28,8 @@ interface BoardColumnProps {
   onCardDragStart: (issue: Issue) => (e: React.DragEvent) => void;
   onCardDragEnd: () => void;
   onCardDragOver: (cardId: string) => (e: React.DragEvent) => void;
+  /** Ob dieses Issue gerade im Seitenpanel steht. */
+  isCardActive: (issue: Issue) => boolean;
   onCardOpen: (issue: Issue) => void;
   /** Strg/Cmd- und Mittelklick auf eine Karte: Vollseite im neuen Tab. */
   onCardOpenInNewTab: (issue: Issue) => void;
@@ -50,6 +52,7 @@ export function BoardColumn({
   onCardDragStart,
   onCardDragEnd,
   onCardDragOver,
+  isCardActive,
   onCardOpen,
   onCardOpenInNewTab,
 }: BoardColumnProps) {
@@ -101,6 +104,7 @@ export function BoardColumn({
                 projectId={projectId}
                 lookups={lookups}
                 isDragging={dragging === issue.id}
+                isActive={isCardActive(issue)}
                 onDragStart={onCardDragStart(issue)}
                 onDragEnd={onCardDragEnd}
                 onDragOver={onCardDragOver(issue.id)}

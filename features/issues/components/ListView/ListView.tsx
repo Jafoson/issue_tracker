@@ -1,7 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useOptimistic, useState, useTransition } from "react";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
@@ -17,7 +17,7 @@ import {
 import { reorderIssue, updateIssue } from "@/features/issues/actions";
 import { AssigneePicker } from "@/features/issues/components/AssigneePicker/AssigneePicker";
 import { IssueTitleField } from "@/features/issues/components/IssueTitleField/IssueTitleField";
-import { ISSUE_PARAM, useIssueOpen } from "@/features/issues/issue-links";
+import { useIssueOpen } from "@/features/issues/issue-links";
 import { rankBetween, sortByRank } from "@/features/issues/rank";
 import type { IssueComposerData } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
@@ -54,7 +54,6 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
     composer;
   const t = useTranslations();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const issueOpen = useIssueOpen(composer.workspaceId);
   const [, startTransition] = useTransition();
   // Eingeklappte Gruppen sind reine Ansichtssache — nichts, wofür die URL oder
@@ -95,7 +94,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
 
   // Das offene Issue steht als Identifier in der URL — dieselbe Quelle nutzt die
   // Detailansicht, deshalb hebt sich die passende Zeile ohne eigenen State hervor.
-  const openIssue = searchParams.get(ISSUE_PARAM);
+  const openIssue = issueOpen.openIssue;
 
   // Workflow-Status bekommen immer eine Gruppe — auch leer, damit das "+" im
   // Kopf erreichbar bleibt. Alle übrigen nur, wenn Issues darin liegen.
