@@ -1,0 +1,16 @@
+/* Der Auslöser ist nur ein Ring um den Avatar: In Liste wie Board steht dort
+   ohnehin schon ein Bild — eine zusätzliche Schaltfläche drumherum würde die
+   Zeile bzw. die Karte beschweren. Erst beim Überfahren zeigt sich, dass hier
+   etwas zu ändern ist. Der Fokusring kommt global. */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  transition: background 0.12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+  }
+}

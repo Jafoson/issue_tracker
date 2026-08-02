@@ -244,8 +244,9 @@ tbody.group {
     color: var(--on-surface);
   }
 
+  /* Farbe wie der globale Fokusring, nur nach innen versetzt: der Griff sitzt
+     an der Kante der Karte, außen läge der Ring im Beschnitt. */
   &:focus-visible {
-    outline: 2px solid var(--primary);
     outline-offset: -2px;
     border-radius: var(--radius-sm);
   }

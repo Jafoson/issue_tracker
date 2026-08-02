@@ -1,7 +1,6 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
@@ -10,17 +9,15 @@ import {
   StatusIcon,
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
-import { fullName } from "@/lib/utils/string";
+import { useIssuePatch } from "@/features/issues/useIssuePatch";
 import type {
   Issue,
   IssueType,
   Label as LabelType,
   Priority,
   Status,
-  User,
 } from "@/types";
 import styles from "../listView.module.scss";
-import { useIssuePatch } from "../useIssuePatch";
 
 /** Mehr Labels passen nicht in eine Zeile, ohne den Titel zu verdrängen. */
 const MAX_LABELS = 2;
@@ -117,61 +114,9 @@ export function StatusCell({
   );
 }
 
-export function AssigneeCell({
-  issue,
-  members,
-}: {
-  issue: Issue;
-  members: User[];
-}) {
-  const t = useTranslations();
-  const { patch } = useIssuePatch(issue.id);
-  const assignee = issue.assignee
-    ? (members.find((m) => m.id === issue.assignee) ?? null)
-    : null;
-
-  return (
-    <InlinePicker
-      width={220}
-      align="end"
-      stop
-      trigger={
-        <button
-          type="button"
-          className={`${styles.pickerBtn} ${styles.avatarBtn}`}
-          title={assignee ? fullName(assignee) : t("fields.unassigned")}
-          aria-label={t("fields.assignee")}
-        >
-          <Avatar avatar={assignee} size={22} placeholder />
-        </button>
-      }
-    >
-      {(close) => (
-        <SelectMenu
-          items={[
-            {
-              value: null,
-              label: t("fields.unassigned"),
-              icon: <Avatar avatar={null} size={18} placeholder />,
-            },
-            ...members.map((user) => ({
-              value: user.id,
-              label: fullName(user),
-              icon: <Avatar avatar={user} size={18} />,
-            })),
-          ]}
-          value={issue.assignee}
-          onPick={(value) => {
-            patch({ assignee: value as string | null });
-            close();
-          }}
-          onClose={close}
-          searchable
-        />
-      )}
-    </InlinePicker>
-  );
-}
+/* Die Zuweisung liegt als eigene Komponente daneben — Liste und Board zeigen
+   denselben Avatar und ändern ihn auf demselben Weg:
+   features/issues/components/AssigneePicker. */
 
 // ── Anzeigende Zellen ────────────────────────────────────────────────────────
 

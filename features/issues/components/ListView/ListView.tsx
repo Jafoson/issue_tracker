@@ -15,13 +15,13 @@ import {
   useTableDnd,
 } from "@/components/ui/layout/Table/useTableDnd";
 import { reorderIssue } from "@/features/issues/actions";
+import { AssigneePicker } from "@/features/issues/components/AssigneePicker/AssigneePicker";
 import { ISSUE_PARAM, useIssueOpen } from "@/features/issues/issue-links";
 import { rankBetween, sortByRank } from "@/features/issues/rank";
 import type { IssueComposerData } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
 import type { Issue } from "@/types";
 import {
-  AssigneeCell,
   LabelsCell,
   PriorityCell,
   StatusCell,
@@ -146,7 +146,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
     {
       id: "assignee",
       align: "end",
-      cell: (issue) => <AssigneeCell issue={issue} members={members} />,
+      cell: (issue) => <AssigneePicker issue={issue} members={members} />,
     },
     {
       id: "updated",

@@ -1,9 +1,8 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useTranslations } from "next-intl";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Label } from "@/components/ui/atoms/Label/Label";
+import { AssigneePicker } from "@/features/issues/components/AssigneePicker/AssigneePicker";
 import {
   PriorityIcon,
   TypeIcon,
@@ -46,7 +45,6 @@ export function BoardCard({
   onOpen,
   onOpenInNewTab,
 }: BoardCardProps) {
-  const t = useTranslations();
   const timeAgo = useTimeAgo();
   const project = projects.find((p) => p.id === issue.project) ??
     projects.find((p) => p.id === projectId) ?? {
@@ -54,9 +52,6 @@ export function BoardCard({
       name: "?",
       color: "#686d76",
     };
-  const assignee = issue.assignee
-    ? (members.find((m) => m.id === issue.assignee) ?? null)
-    : null;
   const identifier = `${project.prefix}-${issue.key}`;
   const typeLabel = issue.type
     ? issue.type.charAt(0).toUpperCase() + issue.type.slice(1)
@@ -89,7 +84,9 @@ export function BoardCard({
       }}
       onKeyDown={onActivate(() => onOpen?.())}
     >
-      {/* Kopfzeile: Typ-Badge + Assignee — der Platzhalter zeigt fehlende Zuweisung an. */}
+      {/* Kopfzeile: Typ-Badge + Assignee. Der Avatar ist zugleich der Auslöser
+        für die Zuweisung — sie zu ändern, ist der häufigste Griff an einer
+        Karte, und dafür soll sie sich nicht erst öffnen müssen. */}
       <div className={styles.header}>
         {typeLabel && typeColor && (
           <Label color={typeColor} filled hasIcon size="xs">
@@ -97,12 +94,7 @@ export function BoardCard({
             {typeLabel}
           </Label>
         )}
-        <Avatar
-          avatar={assignee}
-          size={30}
-          placeholder
-          placeholderLabel={t("fields.unassigned")}
-        />
+        <AssigneePicker issue={issue} members={members} size={30} />
       </div>
 
       <p className={styles.title}>{issue.title}</p>
