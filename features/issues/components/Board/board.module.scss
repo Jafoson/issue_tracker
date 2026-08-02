@@ -5,6 +5,9 @@
   flex: 1;
   min-height: 0;
   overflow-x: auto;
+  /* Über das letzte Spaltenende hinaus zu wischen darf nicht die
+     Zurück-Navigation des Browsers auslösen. */
+  overscroll-behavior-x: contain;
   padding: 16px;
   align-items: stretch;
 }

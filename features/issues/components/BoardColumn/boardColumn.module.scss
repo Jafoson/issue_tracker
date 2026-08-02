@@ -46,7 +46,10 @@
   min-height: 60px;
   flex: 1;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  /* Nur senkrecht abriegeln: am Ende der Spalte soll nicht die Seite
+     weiterrutschen. Waagerecht muss die Bewegung dagegen durchkommen — sonst
+     verschluckt die Spalte die Trackpad-Wische, die dem Board gilt. */
+  overscroll-behavior-y: contain;
 }
 
 .dropIndicator {

@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { BoardColumn } from "@/features/issues/components/BoardColumn/BoardColumn";
 import { useIssueOpen } from "@/features/issues/issue-links";
 import type { IssueComposerData, IssueLookups } from "@/features/issues/types";
+import { useShiftScroll } from "@/lib/utils/useShiftScroll";
 import type { Issue, Status } from "@/types";
 import styles from "./board.module.scss";
 import { useBoardDnd } from "./useBoardDnd";
@@ -27,12 +28,14 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
   const issueOpen = useIssueOpen(composer.workspaceId);
 
   const board = useBoardDnd(issues);
+  // Shift + Rad schiebt die Spalten waagerecht, egal worüber der Zeiger steht.
+  const scrollRef = useShiftScroll();
 
   const identifier = (issue: Issue) =>
     `${lookups.projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
   return (
-    <div className={styles.board}>
+    <div ref={scrollRef} className={styles.board}>
       {columnStatuses.map((status) => {
         const { isOver, onDragOver, onDragLeave, onDrop } =
           board.columnHandlers(status.id);
