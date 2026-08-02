@@ -49,11 +49,18 @@
     "openPage": "Open as page",
     "removeLabel": "Remove {name}",
     "rename": "Rename",
+    "reorder": "Reorder {name}",
     "requestAccess": "Request access",
     "resizePanel": "Resize panel",
     "resizeSidebar": "Resize attribute column",
     "save": "Save",
     "signIn": "Sign in"
+  },
+  "a11y": {
+    "reorderCancelled": "Move cancelled. {name} stays where it was.",
+    "reorderDropped": "{name} dropped: position {position} of {total} in {group}.",
+    "reorderGrabbed": "{name} grabbed. Use the arrow keys to move, space to drop, escape to cancel.",
+    "reorderMoved": "Position {position} of {total} in {group}."
   },
   "placeholders": {
     "search": "Search…",

@@ -203,6 +203,137 @@ tbody.group {
 }
 
 /* ============================================================
+   Sortieren per Drag & Drop.
+
+   Zwei Dinge kommen hinzu, sobald `dnd` gesetzt ist: eine schmale Gasse links
+   für den Griff und eine Linie, die zeigt, wo die Zeile landet.
+   ============================================================ */
+
+/* Die Gasse entsteht als Polsterung *aller* Zeilenarten — Kopf, Gruppenband und
+   Zeile gleichermaßen. Bei `subgrid` verkürzt eine Polsterung die erste Spur;
+   nur wenn sie überall gleich ausfällt, stehen die Spalten weiter untereinander. */
+.table[data-dnd] {
+  --table-handle: 16px;
+
+  :is(.headRow, .row, .groupRow) {
+    padding-inline-start: calc(var(--table-pad) + var(--table-handle));
+  }
+}
+
+/* Sitzt in der Gasse, greift aber bis an die Kante der Zeile: sichtbar sind
+   16px, anfassen lassen sich rund 30 — ein Ziel, das man nicht suchen muss.
+   Bezug ist die Polsterungsbox der Zeile, deshalb beginnt `0` vor dem Polster. */
+.cell > .handle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--table-pad) + var(--table-handle, 16px));
+  color: var(--outline);
+  cursor: grab;
+  /* Unsichtbar, bis die Zeile gemeint ist — eine Liste voller Griffe wäre
+     unruhig, und die ganze Zeile ist ohnehin ziehbar. */
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--on-surface);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Sichtbar, sobald die Zeile gemeint ist: überfahren, fokussiert, aufgenommen. */
+.row:hover .handle,
+.handle:focus-visible,
+.handle[data-grabbed] {
+  opacity: 1;
+}
+
+/* Aufgenommen — die Tastatur führt die Zeile, bis sie abgelegt wird. */
+.handle[data-grabbed] {
+  color: var(--primary);
+  cursor: grabbing;
+}
+
+.grip {
+  width: 10px;
+  height: 16px;
+  fill: currentcolor;
+  pointer-events: none;
+}
+
+/* Die gezogene Zeile bleibt an ihrem Platz stehen und tritt zurück — so bleibt
+   die Liste ruhig, während die Linie die neue Stelle zeigt. */
+.row[data-dragging] {
+  opacity: 0.4;
+}
+
+/* Die Einfügelinie — dieselbe Sprache wie die des Boards. Sie liegt innerhalb
+   der Zeile statt auf der Fuge dazwischen: dort würde der klebende Gruppenkopf
+   der folgenden Gruppe sie überdecken. */
+.row[data-drop]::before,
+.groupRow[data-drop]::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  z-index: 3;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Der Punkt am Anfang der Linie — er fängt den Blick, wo die Linie allein zu
+   dünn wäre. Bündig am Zeilenanfang statt darüber hinaus: die Karte beschneidet
+   ihre Ränder, ein Überstand würde abgeschnitten. */
+.row[data-drop]::after,
+.groupRow[data-drop]::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  z-index: 3;
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.row[data-drop='above'] {
+  &::before { top: 0; }
+  &::after { top: -2px; }
+}
+
+.row[data-drop='below'],
+.groupRow[data-drop] {
+  &::before { bottom: 0; }
+  &::after { bottom: -2px; }
+}
+
+/* Die Live-Region: für Screenreader da, für Augen nicht. `display: none` wäre
+   still, deshalb der übliche Zuschnitt auf einen Pixel. Absolut positioniert
+   belegt sie außerdem keine Spur im Raster. */
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ============================================================
    Karten-Variante — die Tabelle als abgeschlossener Block.
 
    Statt schwebender Zeilen eine umrandete Fläche: das trägt Spaltenköpfe, die

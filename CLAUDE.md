@@ -262,6 +262,8 @@ tests/
       session.test.ts             ← createSession / getSession / clearSession
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
+    table/
+      tableDnd.test.tsx           ← Table mit `dnd` (components/ui/layout/Table)
     richtext/
       richText.test.tsx           ← PM-JSON-Renderer (components/ui/atoms/RichText)
       fromMarkdown.test.ts        ← Markdown → PM-JSON (Migration + Seed)

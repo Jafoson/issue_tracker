@@ -1,16 +1,22 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import {
   Table,
   type TableColumn,
   type TableGroup,
 } from "@/components/ui/layout/Table/Table";
+import {
+  type TableDndAnnouncement,
+  useTableDnd,
+} from "@/components/ui/layout/Table/useTableDnd";
+import { reorderIssue } from "@/features/issues/actions";
 import { ISSUE_PARAM, useIssueOpen } from "@/features/issues/issue-links";
+import { rankBetween, sortByRank } from "@/features/issues/rank";
 import type { IssueComposerData } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
 import type { Issue } from "@/types";
@@ -39,16 +45,32 @@ interface ListViewProps {
 /**
  * Issues als Tabelle, nach Status gruppiert. Zeile öffnet das Issue, die
  * Picker in Priorität, Status und Zuständigkeit ändern es direkt in der Liste.
+ * Ziehen sortiert um — innerhalb einer Gruppe und über deren Grenze hinweg,
+ * womit sich der Status ändert. Dieselbe Rangrechnung wie auf dem Board.
  */
 export function ListView({ issues, projectId, composer }: ListViewProps) {
   const { projects, members, labels, statuses, priorities, issueTypes } =
     composer;
   const t = useTranslations();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const issueOpen = useIssueOpen(composer.workspaceId);
+  const [, startTransition] = useTransition();
   // Eingeklappte Gruppen sind reine Ansichtssache — nichts, wofür die URL oder
   // der Server etwas wissen müsste.
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+
+  // Die umsortierte Zeile sitzt sofort an ihrem neuen Platz; der Server zieht
+  // nach. Ohne das spränge sie für die Dauer der Aktion zurück.
+  const [ordered, moveIssue] = useOptimistic(
+    issues,
+    (state, move: { id: string; status: string; rank: number }) =>
+      state.map((issue) =>
+        issue.id === move.id
+          ? { ...issue, status: move.status, rank: move.rank }
+          : issue,
+      ),
+  );
 
   const toggleGroup = (id: string) =>
     setCollapsed((prev) => {
@@ -69,7 +91,9 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
   const groups: TableGroup<Issue>[] = statuses
     .map((status) => ({
       status,
-      rows: issues.filter((issue) => issue.status === status.id),
+      // Nach Rang, nicht nach Anlagedatum — sonst stünde die Zeile nach dem
+      // Ziehen wieder woanders als dort, wo sie fallen gelassen wurde.
+      rows: sortByRank(ordered.filter((issue) => issue.status === status.id)),
     }))
     .filter(({ status, rows }) => status.isColumn || rows.length > 0)
     .map(({ status, rows }) => ({
@@ -132,6 +156,42 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
     },
   ];
 
+  // Was der Screenreader beim Sortieren per Tastatur hört. Die Tabelle kennt
+  // weder Sprache noch Status — sie liefert nur Zeile, Gruppe und Position.
+  const announce = ({
+    row,
+    groupId,
+    position,
+    total,
+    phase,
+  }: TableDndAnnouncement<Issue>) => {
+    const name = `${identifier(row)} ${row.title}`;
+    if (phase === "grabbed") return t("a11y.reorderGrabbed", { name });
+    if (phase === "cancelled") return t("a11y.reorderCancelled", { name });
+    const group = statuses.find((status) => status.id === groupId)?.name ?? "";
+    return phase === "moved"
+      ? t("a11y.reorderMoved", { position, total, group })
+      : t("a11y.reorderDropped", { name, position, total, group });
+  };
+
+  const dnd = useTableDnd<Issue>({
+    groups,
+    getRowKey: (issue) => issue.id,
+    rowLabel: (issue) =>
+      t("actions.reorder", { name: `${identifier(issue)} ${issue.title}` }),
+    announce,
+    // Die Gruppe ist der Status: eine Zeile, die in einer anderen Gruppe landet,
+    // wechselt ihn — dieselbe Aktion wie beim Ziehen auf dem Board.
+    onDrop: ({ row, groupId, previous, next }) => {
+      const rank = rankBetween(previous, next);
+      startTransition(async () => {
+        moveIssue({ id: row.id, status: groupId, rank });
+        await reorderIssue(row.id, groupId, rank);
+        router.refresh();
+      });
+    },
+  });
+
   return (
     <div className={styles.content}>
       <Table
@@ -141,6 +201,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
         columns={columns}
         groups={groups}
         getRowKey={(issue) => issue.id}
+        dnd={dnd}
         isRowActive={(issue) => identifier(issue) === openIssue}
         rowOverlay={(issue) => (
           <Link

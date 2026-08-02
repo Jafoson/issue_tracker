@@ -1,13 +1,8 @@
 import { useRouter } from "next/navigation";
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { reorderIssue } from "@/features/issues/actions";
+import { rankBetween, sortByRank } from "@/features/issues/rank";
 import type { Issue } from "@/types";
-
-// rank=0 means "not yet ranked" — use created timestamp as effective rank
-const erank = (issue: Issue) => (issue.rank !== 0 ? issue.rank : issue.created);
-
-const sortedByRank = (list: Issue[]) =>
-  [...list].sort((a, b) => erank(a) - erank(b));
 
 /**
  * Encapsulates board drag-and-drop: optimistic reordering across status
@@ -38,7 +33,7 @@ export function useBoardDnd(issues: Issue[]) {
   );
 
   const getColumnIssues = (statusId: string) =>
-    sortedByRank(optimisticIssues.filter((i) => i.status === statusId));
+    sortByRank(optimisticIssues.filter((i) => i.status === statusId));
 
   const clearDragState = () => {
     dragIssueRef.current = null;
@@ -74,18 +69,13 @@ export function useBoardDnd(issues: Issue[]) {
       ? colIssues.findIndex((i) => i.id === overCardId)
       : -1;
 
-    if (overIdx === -1) {
-      const last = colIssues[colIssues.length - 1];
-      return last ? erank(last) + 1000 : Date.now();
-    }
+    if (overIdx === -1)
+      return rankBetween(colIssues[colIssues.length - 1] ?? null, null);
 
     const card = colIssues[overIdx];
-    if (insertAboveRef.current) {
-      const prev = colIssues[overIdx - 1];
-      return prev ? (erank(prev) + erank(card)) / 2 : erank(card) - 1000;
-    }
-    const next = colIssues[overIdx + 1];
-    return next ? (erank(card) + erank(next)) / 2 : erank(card) + 1000;
+    if (insertAboveRef.current)
+      return rankBetween(colIssues[overIdx - 1] ?? null, card);
+    return rankBetween(card, colIssues[overIdx + 1] ?? null);
   };
 
   const columnHandlers = (statusId: string) => ({

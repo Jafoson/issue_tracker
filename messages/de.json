@@ -49,11 +49,18 @@
     "openPage": "Als Seite öffnen",
     "removeLabel": "{name} entfernen",
     "rename": "Umbenennen",
+    "reorder": "{name} verschieben",
     "requestAccess": "Zugang anfragen",
     "resizePanel": "Breite des Panels ändern",
     "resizeSidebar": "Breite der Attributspalte ändern",
     "save": "Speichern",
     "signIn": "Anmelden"
+  },
+  "a11y": {
+    "reorderCancelled": "Verschieben abgebrochen. {name} bleibt, wo es war.",
+    "reorderDropped": "{name} abgelegt: Position {position} von {total} in {group}.",
+    "reorderGrabbed": "{name} aufgenommen. Mit den Pfeiltasten verschieben, mit Leertaste ablegen, mit Escape abbrechen.",
+    "reorderMoved": "Position {position} von {total} in {group}."
   },
   "placeholders": {
     "search": "Suchen…",

@@ -1,40 +1,14 @@
-import type { CSSProperties, ReactNode } from "react";
+import {
+  type CSSProperties,
+  cloneElement,
+  isValidElement,
+  type ReactNode,
+} from "react";
 import styles from "./table.module.scss";
+import { FLAT_GROUP_ID, type TableColumn, type TableGroup } from "./types";
+import type { TableDnd } from "./useTableDnd";
 
-export type TableAlign = "start" | "center" | "end";
-
-export interface TableColumn<T> {
-  /** Stabile Spalten-ID — dient zugleich als React-Key der Zellen. */
-  id: string;
-  /**
-   * Titel in der Kopfzeile. Definiert keine Spalte einen, entfällt die
-   * Kopfzeile komplett — Listenansichten kommen oft ohne aus.
-   */
-  header?: ReactNode;
-  /**
-   * Grid-Track der Spalte: `"auto"`, `"max-content"`, `"minmax(0, 1fr)"`,
-   * `"88px"` … Inhaltsbasierte Werte messen über *alle* Zeilen hinweg, weil die
-   * Zeilen `subgrid` sind. Genau eine Spalte sollte `minmax(0, 1fr)` bekommen —
-   * sie schluckt den Rest und kürzt ihren Inhalt.
-   */
-  width?: string;
-  align?: TableAlign;
-  cell: (row: T) => ReactNode;
-}
-
-export interface TableGroup<T> {
-  id: string;
-  /** Sichtbarer Gruppenkopf — bleibt beim Scrollen oben stehen. */
-  header?: ReactNode;
-  /** Name der Gruppe für Screenreader, wenn `header` vor allem Grafik ist. */
-  label?: string;
-  /**
-   * Blendet die Zeilen aus, der Kopf bleibt stehen. Den Zustand hält der
-   * Aufrufer — er rendert den Kopf und damit auch dessen Umschalter.
-   */
-  collapsed?: boolean;
-  rows: T[];
-}
+export type { TableAlign, TableColumn, TableGroup } from "./types";
 
 interface TableBaseProps<T> {
   columns: TableColumn<T>[];
@@ -62,6 +36,12 @@ interface TableBaseProps<T> {
    * Tabelle die ganze Ansicht ist.
    */
   variant?: "plain" | "card";
+  /**
+   * Macht die Zeilen sortierbar — das Ergebnis von `useTableDnd`. Ohne diese
+   * Prop bleibt die Tabelle, was sie ist: eine Ansicht ohne Zustand, die auch
+   * eine Server Component rendern kann.
+   */
+  dnd?: TableDnd<T>;
   className?: string;
 }
 
@@ -73,6 +53,16 @@ export type TableProps<T> = TableBaseProps<T> &
   ({ rows: T[]; groups?: never } | { groups: TableGroup<T>[]; rows?: never });
 
 const DEFAULT_WIDTH = "auto";
+
+/** Sechs Punkte — das gewohnte Zeichen für "hier anfassen". */
+const GRIP_DOTS = [
+  [3, 4],
+  [7, 4],
+  [3, 8],
+  [7, 8],
+  [3, 12],
+  [7, 12],
+];
 
 /**
  * Tabelle mit einem einzigen Grid-Raster: `<tr>` greift die Spalten der
@@ -106,13 +96,14 @@ export function Table<T>({
   empty,
   fill,
   variant = "plain",
+  dnd,
   className,
   rows,
   groups,
 }: TableProps<T>) {
   // Flache Zeilen sind der Sonderfall "eine Gruppe ohne Kopf".
   const sections: TableGroup<T>[] = groups ?? [
-    { id: "rows", rows: rows ?? [] },
+    { id: FLAT_GROUP_ID, rows: rows ?? [] },
   ];
   const showHead = columns.some((column) => column.header !== undefined);
   const isEmpty = sections.every((section) => section.rows.length === 0);
@@ -138,6 +129,15 @@ export function Table<T>({
       .map((column) => column.width ?? DEFAULT_WIDTH)
       .join(" "),
   } as CSSProperties;
+
+  // Ein Anker ist von Haus aus ziehbar: ohne das Verbot nähme der Browser beim
+  // Ziehen die Verknüpfung mit statt die Zeile darunter.
+  const overlayOf = (row: T) => {
+    const node = rowOverlay?.(row);
+    return dnd && isValidElement<{ draggable?: boolean }>(node)
+      ? cloneElement(node, { draggable: false })
+      : node;
+  };
 
   // Ohne Zeilen gibt es nichts auszurichten: der Ersatzinhalt steht für sich,
   // nicht in den Spalten der Tabelle.
@@ -165,7 +165,23 @@ export function Table<T>({
     // meldet ein Screenreader eine namenlose Gruppe statt einer Tabelle.
     // `noRedundantRoles`/`useSemanticElements` sind für diese Datei deshalb in
     // der biome.json abgeschaltet.
-    <table className={root} style={trackStyle} role="table" aria-label={label}>
+    <table
+      className={root}
+      style={trackStyle}
+      role="table"
+      aria-label={label}
+      data-dnd={dnd ? "" : undefined}
+      {...(dnd ? dnd.root : {})}
+    >
+      {/* Die einzige Stelle für eine Live-Region innerhalb einer <table>. Sie
+          sagt an, was beim Sortieren per Tastatur zu sehen wäre; `role="status"`
+          nimmt ihr die Rolle als Beschriftung der Tabelle. */}
+      {dnd && (
+        <caption className={styles.status} role="status">
+          {dnd.status}
+        </caption>
+      )}
+
       {showHead && (
         <thead className={styles.group} role="rowgroup">
           <tr className={styles.headRow} role="row">
@@ -193,7 +209,11 @@ export function Table<T>({
           aria-label={section.label}
         >
           {section.header && (
-            <tr className={styles.groupRow} role="row">
+            <tr
+              className={styles.groupRow}
+              role="row"
+              {...(dnd ? dnd.groupHeader(section.id) : {})}
+            >
               <th
                 className={styles.groupCell}
                 role="columnheader"
@@ -206,25 +226,56 @@ export function Table<T>({
           )}
 
           {!section.collapsed &&
-            section.rows.map((row) => (
-              <tr
-                key={getRowKey(row)}
-                className={styles.row}
-                role="row"
-                data-active={isRowActive?.(row) || undefined}
-              >
-                {columns.map((column, index) => (
-                  <td key={column.id} className={cellClass(column)} role="cell">
-                    {/* Das Overlay hängt in der ersten Zelle, gespannt wird es
-                      über die ganze Zeile. */}
-                    {index === 0 && rowOverlay && (
-                      <div className={styles.overlay}>{rowOverlay(row)}</div>
-                    )}
-                    {column.cell(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            section.rows.map((row) => {
+              const handle = dnd?.handle(row, section.id);
+              return (
+                <tr
+                  key={getRowKey(row)}
+                  className={styles.row}
+                  role="row"
+                  data-active={isRowActive?.(row) || undefined}
+                  {...(dnd ? dnd.row(row, section.id) : {})}
+                >
+                  {columns.map((column, index) => (
+                    <td
+                      key={column.id}
+                      className={cellClass(column)}
+                      role="cell"
+                    >
+                      {/* Griff und Overlay hängen in der ersten Zelle, gespannt
+                        werden sie über die ganze Zeile. */}
+                      {index === 0 && handle && (
+                        <button
+                          type="button"
+                          className={styles.handle}
+                          {...handle}
+                        >
+                          <svg
+                            className={styles.grip}
+                            viewBox="0 0 10 16"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            {GRIP_DOTS.map(([cx, cy]) => (
+                              <circle
+                                key={`${cx}-${cy}`}
+                                cx={cx}
+                                cy={cy}
+                                r="1.15"
+                              />
+                            ))}
+                          </svg>
+                        </button>
+                      )}
+                      {index === 0 && rowOverlay && (
+                        <div className={styles.overlay}>{overlayOf(row)}</div>
+                      )}
+                      {column.cell(row)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
         </tbody>
       ))}
     </table>
