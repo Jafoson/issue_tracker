@@ -1,18 +1,23 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useTranslations } from "next-intl";
+import { type CSSProperties, useRef, useState } from "react";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { AssigneePicker } from "@/features/issues/components/AssigneePicker/AssigneePicker";
 import {
   PriorityIcon,
   TypeIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
+import { IssueTitleField } from "@/features/issues/components/IssueTitleField/IssueTitleField";
 import { isBrowserClick } from "@/features/issues/issue-links";
 import type { IssueLookups } from "@/features/issues/types";
+import { useIssuePatch } from "@/features/issues/useIssuePatch";
 import { onActivate } from "@/lib/a11y";
 import { useTimeAgo } from "@/lib/utils/useTimeAgo";
 import type { Issue, Label as LabelType } from "@/types";
 import styles from "./boardCard.module.scss";
+import { useTextEnd } from "./useTextEnd";
 
 interface BoardCardProps {
   issue: Issue;
@@ -45,7 +50,31 @@ export function BoardCard({
   onOpen,
   onOpenInNewTab,
 }: BoardCardProps) {
+  const t = useTranslations();
   const timeAgo = useTimeAgo();
+  const { patch } = useIssuePatch(issue.id);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Der Server zieht erst nach dem Schreiben nach. Bis dahin zeigt die Karte,
+  // was gerade eingetippt wurde — sonst blitzte der alte Titel wieder auf.
+  // Sobald von außen ein neuer Titel eintrifft, gilt wieder der.
+  const [written, setWritten] = useState<string | null>(null);
+  const [known, setKnown] = useState(issue.title);
+  if (issue.title !== known) {
+    setKnown(issue.title);
+    setWritten(null);
+  }
+  const title = written ?? issue.title;
+
+  // Wo der Titel aufhört — daran hängt der Stift.
+  const { ref: titleRef, end: textEnd } = useTextEnd(title);
+
+  // Ein Klick daneben beendet das Schreiben — dabei soll er nicht auch noch die
+  // Karte öffnen. Bis `mousedown` durch ist, hat der Fokus das Feld noch nicht
+  // verlassen; hier steht also, ob gerade geschrieben wurde. Jedes `mousedown`
+  // setzt den Merker neu, damit kein alter Stand einen späteren Klick schluckt.
+  const wasEditing = useRef(false);
+
   const project = projects.find((p) => p.id === issue.project) ??
     projects.find((p) => p.id === projectId) ?? {
       prefix: "?",
@@ -70,11 +99,23 @@ export function BoardCard({
       className={`${styles.card}${isDragging ? ` ${styles.dragging}` : ""}`}
       role="button"
       tabIndex={0}
-      draggable
+      // Beim Schreiben nicht: ein ziehbarer Vorfahr nimmt dem Feld sonst das
+      // Markieren mit der Maus weg.
+      draggable={!isEditing}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
-      onClick={(e) => (isBrowserClick(e) ? onOpenInNewTab?.() : onOpen?.())}
+      onMouseDown={() => {
+        wasEditing.current = isEditing;
+      }}
+      onClick={(e) => {
+        if (wasEditing.current) {
+          wasEditing.current = false;
+          return;
+        }
+        if (isBrowserClick(e)) onOpenInNewTab?.();
+        else onOpen?.();
+      }}
       // Die mittlere Maustaste meldet sich nicht über `onClick`. Ohne
       // `preventDefault` schaltet sie außerdem den Auto-Scroll ein.
       onAuxClick={(e) => {
@@ -97,7 +138,47 @@ export function BoardCard({
         <AssigneePicker issue={issue} members={members} size={30} />
       </div>
 
-      <p className={styles.title}>{issue.title}</p>
+      {isEditing ? (
+        <IssueTitleField
+          className={styles.titleEdit}
+          value={title}
+          onSave={(value) => {
+            setWritten(value);
+            patch({ title: value });
+          }}
+          onDone={() => setIsEditing(false)}
+        />
+      ) : (
+        // Der Stift liegt über dem Titel und wird an dessen gemessenes Ende
+        // gesetzt: hinter das letzte Wort, und wo dort kein Platz mehr ist, auf
+        // das Zeilenende. Im Textfluss stehen kann er nicht — die Begrenzung auf
+        // drei Zeilen schnitte ihn bei langen Titeln mit ab.
+        <div className={styles.titleRow}>
+          <p className={styles.title} ref={titleRef}>
+            {title}
+          </p>
+          <button
+            type="button"
+            className={styles.editTitle}
+            style={
+              textEnd
+                ? ({
+                    "--title-end-x": `${textEnd.x}px`,
+                    "--title-end-y": `${textEnd.y}px`,
+                  } as CSSProperties)
+                : undefined
+            }
+            title={t("actions.editTitle")}
+            aria-label={t("actions.editTitle")}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+          >
+            <Icon icon="lucide:pencil" width={13} />
+          </button>
+        </div>
+      )}
 
       {issueLabels.length > 0 && (
         <div className={styles.labels}>

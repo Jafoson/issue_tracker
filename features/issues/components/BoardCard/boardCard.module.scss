@@ -45,6 +45,11 @@
   }
 }
 
+/* Bezugsrahmen für den Stift, der über dem Titel liegt. */
+.titleRow {
+  position: relative;
+}
+
 .title {
   margin: 0;
   font-size: var(--text-base);
@@ -57,6 +62,69 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Der Stift hängt am gemessenen Ende des Titels (`--title-end-*`, gesetzt von
+   `useTextEnd`) und liegt über ihm statt neben ihm — der Titel behält damit
+   seine volle Breite und seine drei Zeilen.
+
+   `min()` entscheidet, was passiert, wenn die Zeile bis an den Rand reicht:
+   dann rutscht der Stift auf das Zeilenende und deckt es ab, statt aus der
+   Karte zu laufen. Seine Fläche ist der Kartengrund im Überfahren-Zustand — so
+   liegt er sauber auf dem Text auf, ohne dass Buchstaben durchscheinen.
+
+   Die Höhe entspricht einer Textzeile (15px × 1.45): der Knopf deckt sich mit
+   der Zeile, an deren Ende er sitzt. */
+.editTitle {
+  --edit-size: 22px;
+
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  margin-inline-start: min(
+    calc(var(--title-end-x, 0px) + 3px),
+    calc(100% - var(--edit-size))
+  );
+  margin-block-start: calc(var(--title-end-y, var(--edit-size)) - var(--edit-size));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--edit-size);
+  height: var(--edit-size);
+  border-radius: var(--radius-sm);
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+
+  &:hover {
+    background: var(--surface-container-highest);
+    color: var(--on-surface);
+  }
+}
+
+.card:hover .editTitle,
+.editTitle:focus-visible {
+  opacity: 1;
+}
+
+/* Ohne Zeigegerät gibt es kein Überfahren — dort steht der Stift immer da,
+   sonst wäre der Titel auf dem Tablet gar nicht zu ändern. */
+@media (hover: none) {
+  .editTitle {
+    opacity: 1;
+  }
+}
+
+/* Der negative Einzug hebt die Polsterung des Feldes auf — so steht der Text an
+   derselben Stelle wie eben noch der Titel. Der Rest (Markieren, Zeiger, Ebene)
+   bringt `IssueTitleField` mit. */
+.titleEdit {
+  margin-inline: -8px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: var(--leading-normal);
+  color: var(--on-surface);
 }
 
 .labels {

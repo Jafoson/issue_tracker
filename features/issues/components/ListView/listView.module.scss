@@ -20,14 +20,40 @@
   white-space: nowrap;
 }
 
+/* Der Titel ist ein Knopf, sieht aber aus wie Text — bis man ihn überfährt:
+   dann zeigt ein Rahmen, dass hier geschrieben werden kann. Er ist von Anfang
+   an da, nur durchsichtig, sonst rückte der Titel beim Überfahren um einen
+   Pixel. Der negative Einzug hält den Text an derselben Stelle wie die übrigen
+   Spalten, obwohl er innen polstert. */
 .title {
   min-width: 0;
+  padding: 2px 6px;
+  margin-inline-start: -6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   font-size: var(--text-base);
   font-weight: 500;
   color: var(--on-surface);
+  transition: border-color 0.12s, background 0.12s;
+
+  &:hover {
+    border-color: var(--outline-variant);
+    background: var(--surface-container-high);
+  }
+}
+
+/* Das Feld tritt an die Stelle des Knopfes — derselbe Einzug, damit der Text
+   beim Umschalten nicht springt. Seine eigene Polsterung bringt `EditableText`
+   mit (5px 8px), deshalb hier zwei Pixel weniger als beim Knopf. */
+.titleEdit {
+  min-width: 0;
+  flex: 1;
+  margin-inline-start: -8px;
+  font-size: var(--text-base);
+  font-weight: 500;
 }
 
 .date {

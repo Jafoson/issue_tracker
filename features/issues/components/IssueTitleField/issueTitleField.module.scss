@@ -1,0 +1,15 @@
+/* Beim Schreiben ist die Umgebung kurz ein Formular. Zwei Dinge muss das Feld
+   sich dafür zurückholen, die ihm Karte und Zeile nehmen:
+
+   `user-select` — die Board-Karte verbietet das Markieren, damit sich beim
+   Ziehen kein Text mitnimmt; im Feld muss es wieder gehen.
+
+   Die Ebene — in der Liste liegt über jeder Zeile ein Link, der sie ganz
+   ausfüllt. Ohne eigene Stufe schluckte er jeden Klick ins Feld. Dieselbe
+   Ebene, auf der dort auch die Picker liegen. */
+.field {
+  position: relative;
+  z-index: 2;
+  user-select: text;
+  cursor: text;
+}

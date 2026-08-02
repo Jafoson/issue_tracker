@@ -17,6 +17,12 @@ interface EditableTextProps {
    * verworfen — für Felder, die nicht leer sein dürfen (z.B. ein Titel).
    */
   singleLine?: boolean;
+  /**
+   * Beim Einblenden gleich schreibbereit. Für Felder, die erst auf Zuruf
+   * erscheinen (Bearbeiten-Knopf) — wer eines aufklappt, will nicht erst
+   * hineinklicken.
+   */
+  autoFocus?: boolean;
   /** Beschriftungen der beiden Knöpfe — bitte lokalisiert übergeben. */
   saveLabel?: string;
   cancelLabel?: string;
@@ -39,6 +45,7 @@ export function EditableText({
   label,
   placeholder,
   singleLine,
+  autoFocus,
   saveLabel = "Save",
   cancelLabel = "Cancel",
   className,
@@ -65,6 +72,19 @@ export function EditableText({
     isCanceling.current = true;
     inputRef.current?.blur();
   };
+
+  /**
+   * Der Fokus lässt sich nur am Element selbst setzen — dafür gibt es keinen
+   * Weg im Rendern. Der Cursor landet am Ende statt alles zu markieren:
+   * ergänzen ist der häufigere Fall als ersetzen.
+   */
+  useEffect(() => {
+    if (!autoFocus) return;
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [autoFocus]);
 
   /**
    * Escape darf hier nicht bis zum Modal durchschlagen, sonst schließt sich

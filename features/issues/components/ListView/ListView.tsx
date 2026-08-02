@@ -14,8 +14,9 @@ import {
   type TableDndAnnouncement,
   useTableDnd,
 } from "@/components/ui/layout/Table/useTableDnd";
-import { reorderIssue } from "@/features/issues/actions";
+import { reorderIssue, updateIssue } from "@/features/issues/actions";
 import { AssigneePicker } from "@/features/issues/components/AssigneePicker/AssigneePicker";
+import { IssueTitleField } from "@/features/issues/components/IssueTitleField/IssueTitleField";
 import { ISSUE_PARAM, useIssueOpen } from "@/features/issues/issue-links";
 import { rankBetween, sortByRank } from "@/features/issues/rank";
 import type { IssueComposerData } from "@/features/issues/types";
@@ -59,18 +60,28 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
   // Eingeklappte Gruppen sind reine Ansichtssache — nichts, wofür die URL oder
   // der Server etwas wissen müsste.
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  // Welche Zeile gerade ihren Titel schreibt. Die Liste hält das, nicht die
+  // Zelle: die Tabelle muss wissen, dass diese eine Zeile solange nicht zu
+  // ziehen ist.
+  const [editing, setEditing] = useState<string | null>(null);
 
-  // Die umsortierte Zeile sitzt sofort an ihrem neuen Platz; der Server zieht
-  // nach. Ohne das spränge sie für die Dauer der Aktion zurück.
-  const [ordered, moveIssue] = useOptimistic(
+  // Was gerade geändert wurde, steht sofort da; der Server zieht nach. Ohne das
+  // spränge die Zeile für die Dauer der Aktion an ihren alten Platz — oder trüge
+  // wieder ihren alten Titel.
+  const [shown, applyPatch] = useOptimistic(
     issues,
-    (state, move: { id: string; status: string; rank: number }) =>
+    (state, patch: { id: string } & Partial<Issue>) =>
       state.map((issue) =>
-        issue.id === move.id
-          ? { ...issue, status: move.status, rank: move.rank }
-          : issue,
+        issue.id === patch.id ? { ...issue, ...patch } : issue,
       ),
   );
+
+  const saveTitle = (issue: Issue, title: string) =>
+    startTransition(async () => {
+      applyPatch({ id: issue.id, title });
+      await updateIssue(issue.id, { title });
+      router.refresh();
+    });
 
   const toggleGroup = (id: string) =>
     setCollapsed((prev) => {
@@ -93,7 +104,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
       status,
       // Nach Rang, nicht nach Anlagedatum — sonst stünde die Zeile nach dem
       // Ziehen wieder woanders als dort, wo sie fallen gelassen wurde.
-      rows: sortByRank(ordered.filter((issue) => issue.status === status.id)),
+      rows: sortByRank(shown.filter((issue) => issue.status === status.id)),
     }))
     .filter(({ status, rows }) => status.isColumn || rows.length > 0)
     .map(({ status, rows }) => ({
@@ -135,7 +146,27 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
     {
       id: "title",
       width: "minmax(0, 1fr)",
-      cell: (issue) => <span className={styles.title}>{issue.title}</span>,
+      // Der Titel ist sein eigener Auslöser: anklicken und schreiben. Er liegt
+      // damit über dem Zeilen-Link — geöffnet wird das Issue über den Rest der
+      // Zeile.
+      cell: (issue) =>
+        editing === issue.id ? (
+          <IssueTitleField
+            className={styles.titleEdit}
+            value={issue.title}
+            onSave={(value) => saveTitle(issue, value)}
+            onDone={() => setEditing(null)}
+          />
+        ) : (
+          <button
+            type="button"
+            className={styles.title}
+            title={t("actions.editTitle")}
+            onClick={() => setEditing(issue.id)}
+          >
+            {issue.title}
+          </button>
+        ),
     },
     {
       id: "labels",
@@ -177,6 +208,9 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
   const dnd = useTableDnd<Issue>({
     groups,
     getRowKey: (issue) => issue.id,
+    // Wer gerade schreibt, wird nicht gezogen: eine ziehbare Zeile nähme dem
+    // Feld darin das Markieren mit der Maus weg.
+    canDrag: (issue) => issue.id !== editing,
     rowLabel: (issue) =>
       t("actions.reorder", { name: `${identifier(issue)} ${issue.title}` }),
     announce,
@@ -185,7 +219,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
     onDrop: ({ row, groupId, previous, next }) => {
       const rank = rankBetween(previous, next);
       startTransition(async () => {
-        moveIssue({ id: row.id, status: groupId, rank });
+        applyPatch({ id: row.id, status: groupId, rank });
         await reorderIssue(row.id, groupId, rank);
         router.refresh();
       });

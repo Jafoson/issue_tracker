@@ -37,6 +37,7 @@
     "createWorkspace": "Create workspace",
     "deleteIssue": "Delete issue",
     "edit": "Edit",
+    "editTitle": "Edit title",
     "expand": "Expand",
     "expandGroup": "Expand group",
     "inviteMember": "Invite member",
