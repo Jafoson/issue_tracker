@@ -1,3 +1,14 @@
+/* Alle senkrechten Maße stehen auf ganzen, geraden Pixeln — Zeilenbox, Polster,
+   Punkt und Kreuz. Der Grund ist die Umgebung: das Label sitzt mittig in einer
+   Tabellenzeile (40px minus 2×4px Polster = 32px) oder auf einer Karte, und
+   `align-items: center` halbiert die Differenz. Ist die Chiphöhe ungerade,
+   landet der ganze Chip auf einem halben Pixel, und der Browser verwischt
+   Rahmen, Schrift und Punkt. Der Punkt sieht dann aus, als läge er neben der
+   Zeile statt darauf.
+
+   Deshalb `line-height` in Pixeln statt als Faktor: `1.25 × 11px` sind 13.75 —
+   damit war der `sm`-Chip 23.75px hoch, und in der Issue-Liste stand alles
+   krumm. Die drei Größen ergeben so 28 / 24 / 20px. */
 .label {
   display: inline-flex;
   align-items: center;
@@ -10,7 +21,7 @@
   background: var(--surface-container-low);
   color: var(--on-surface);
   white-space: nowrap;
-  line-height: var(--leading-tight);
+  line-height: 14px;
 
   &.sm {
     padding: 4px 10px;
@@ -21,12 +32,11 @@
   &.xs {
     padding: 3px 8px;
     font-size: var(--text-xxs);
+    line-height: 12px;
     gap: 4px;
 
-    .dot {
-      width: 6px;
-      height: 6px;
-    }
+    /* Bei 10px Schrift setzt die Rundung den Punkt von selbst richtig ab. */
+    .dot { translate: none; }
   }
 
   /* Rechts weniger Polster, das Kreuz bringt selbst Fläche mit. */
@@ -44,22 +54,36 @@
   }
 }
 
+/* Der Punkt ist überall gleich groß: er trägt die Farbe des Labels, keine
+   Größenaussage — und nur ein gerades Maß bleibt in der geraden Zeilenbox auf
+   ganzen Pixeln (vorher 7px, und damit halb).
+
+   Flex zentriert ihn auf die Mitte der Zeilenbox. Die liegt über der Mitte des
+   Wortes: Ober- und Unterlängen zählen mit, das Wort selbst besteht aber
+   überwiegend aus x-Höhe — bei Hanken Grotesk knapp einen Pixel. Genau diesen
+   einen Pixel schiebt `translate` nach, nicht weniger: ein halber machte den
+   Kreis unscharf, und unscharf sieht schiefer aus als schief. */
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: var(--radius-pill);
   flex: none;
+  translate: 0 1px;
 }
 
 /* Das Kreuz zum Entfernen — zurückhaltend, bis man darüber fährt. Farbe erbt
-   es vom Label, damit es bei der gefüllten Variante mitzieht. */
+   es vom Label, damit es bei der gefüllten Variante mitzieht.
+
+   Es bleibt bewusst innerhalb der Zeilenbox (14px bzw. 12px): wäre es höher,
+   bestimmte es die Höhe des Chips, und die Reihe stünde bei entfernbaren
+   Labels einen Pixel anders als bei festen. */
 .remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--radius-pill);
   color: inherit;
   opacity: .5;
@@ -73,6 +97,6 @@
 
 .sm .remove,
 .xs .remove {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
