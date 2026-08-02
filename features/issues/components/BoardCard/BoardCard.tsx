@@ -17,6 +17,7 @@ import { onActivate } from "@/lib/a11y";
 import { useTimeAgo } from "@/lib/utils/useTimeAgo";
 import type { Issue, Label as LabelType } from "@/types";
 import styles from "./boardCard.module.scss";
+import { useRowFit } from "./useRowFit";
 import { useTextEnd } from "./useTextEnd";
 
 interface BoardCardProps {
@@ -89,9 +90,18 @@ export function BoardCard({
     ? (issueTypes.find((x) => x.id === issue.type)?.color ?? "#686d76")
     : null;
   const issueLabels = issue.labels
-    .slice(0, 3)
     .map((lid) => labels.find((x) => x.id === lid) ?? null)
     .filter((l): l is LabelType => l !== null);
+
+  // Die Labels bleiben auf einer Zeile — was nicht mehr danebenpasst, steht als
+  // Zahl am Ende. Eine feste Obergrenze täte es nicht: ob drei Labels passen,
+  // hängt an ihren Namen und an der Breite der Spalte, die sich ziehen lässt.
+  const { ref: labelRow, fit } = useRowFit(
+    issueLabels.length,
+    issueLabels.map((l) => l.name).join("|"),
+  );
+  const shownLabels = fit === null ? issueLabels : issueLabels.slice(0, fit);
+  const restLabels = issueLabels.length - shownLabels.length;
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: card contains block-level content; a <button> would be invalid HTML
@@ -181,12 +191,31 @@ export function BoardCard({
       )}
 
       {issueLabels.length > 0 && (
-        <div className={styles.labels}>
-          {issueLabels.map((l) => (
+        <div className={styles.labels} ref={labelRow}>
+          {shownLabels.map((l) => (
             <Label key={l.id} color={l.color} size="xs">
               {l.name}
             </Label>
           ))}
+          {/* Im Messdurchgang (`fit === null`) steht der Zähler mit der größten
+              möglichen Zahl da, damit seine Breite in die Rechnung eingeht —
+              gesehen wird er dabei nicht. */}
+          {(fit === null || restLabels > 0) && (
+            <Label
+              size="xs"
+              className={fit === null ? styles.probe : undefined}
+              title={
+                fit === null
+                  ? undefined
+                  : issueLabels
+                      .slice(fit)
+                      .map((l) => l.name)
+                      .join(", ")
+              }
+            >
+              +{fit === null ? issueLabels.length : restLabels}
+            </Label>
+          )}
         </div>
       )}
 

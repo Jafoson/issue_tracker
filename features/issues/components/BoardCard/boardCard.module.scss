@@ -127,10 +127,39 @@
   color: var(--on-surface);
 }
 
+/* Eine Zeile, mehr nicht: eine Karte soll gleich hoch bleiben, gleichgültig wie
+   viele Labels an ihrem Issue hängen — sonst tanzt beim Ziehen die ganze Spalte.
+   Was nicht mehr daneben passt, zählt der Chip am Ende zusammen; wie viele das
+   sind, misst `useRowFit`.
+
+   `overflow` ist das Netz für den Augenblick vor der Hydration und für die Karte
+   ohne JavaScript: dann steht die Reihe ungekürzt da und wird beschnitten statt
+   umzubrechen. */
 .labels {
+  /* Anker für den Messfühler. */
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+
+  /* Nicht schrumpfen lassen: sonst misst der Messdurchgang gestauchte Chips und
+     rechnet mit Breiten, die es so nie gibt. */
+  > * {
+    flex: none;
+  }
+}
+
+/* Der Messfühler: der Zähler, solange noch offen ist, ob und mit welcher Zahl es
+   ihn braucht. Er hängt aus dem Fluss — die Reihe merkt nichts von ihm, seine
+   Maße bleiben aber messbar. Bei `display: none` wären sie es nicht. */
+.probe {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* Meta-Zeile: Priorität + Identifier links, Zeit + Kommentare rechts. */
