@@ -5,12 +5,12 @@ import type { IssuePatch } from "@/features/issues/types";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
+  accessFor,
   PermissionError,
   requirePermission,
   requirePermissionOr,
-  workspaceRoleKey,
 } from "@/lib/permissions";
-import { roleRank } from "@/lib/rbac";
+import { OWNER_ROLE_KEY } from "@/lib/rbac";
 import { toPlainText } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
@@ -41,7 +41,7 @@ async function issueContext(id: string) {
     where: { id },
     select: { projectId: true, reporterId: true, assigneeId: true },
   });
-  if (!issue) throw new PermissionError("project.issue.update.any");
+  if (!issue) throw new PermissionError("issue.update.any");
   return issue;
 }
 
@@ -49,11 +49,11 @@ export async function moveIssue(id: string, status: string) {
   const issue = await issueContext(id);
   await requirePermissionOr([
     {
-      permission: "project.issue.update.any",
+      permission: "issue.update.any",
       ctx: { projectId: issue.projectId },
     },
     {
-      permission: "project.issue.update.own",
+      permission: "issue.update.own",
       ctx: { projectId: issue.projectId },
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
@@ -66,11 +66,11 @@ export async function reorderIssue(id: string, status: string, rank: number) {
   const issue = await issueContext(id);
   await requirePermissionOr([
     {
-      permission: "project.issue.update.any",
+      permission: "issue.update.any",
       ctx: { projectId: issue.projectId },
     },
     {
-      permission: "project.issue.update.own",
+      permission: "issue.update.own",
       ctx: { projectId: issue.projectId },
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
@@ -83,16 +83,16 @@ export async function updateIssue(id: string, patch: IssuePatch) {
   const issue = await issueContext(id);
   const ctx = { projectId: issue.projectId };
   await requirePermissionOr([
-    { permission: "project.issue.update.any", ctx },
+    { permission: "issue.update.any", ctx },
     {
-      permission: "project.issue.update.own",
+      permission: "issue.update.own",
       ctx,
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
   ]);
   // Das (Neu-)Zuweisen eines Issues erfordert zusätzlich die Assign-Permission.
   if (patch.assignee !== undefined) {
-    await requirePermission("project.issue.assign", ctx);
+    await requirePermission("issue.assign", ctx);
   }
 
   await db.issue.update({
@@ -127,7 +127,7 @@ export async function createIssue(data: {
   reporterId: string;
 }) {
   // Reporter ist immer der eingeloggte User — nicht der Client-Parameter.
-  const userId = await requirePermission("project.issue.create", {
+  const userId = await requirePermission("issue.create", {
     projectId: data.projectId,
   });
 
@@ -166,11 +166,11 @@ export async function createLabel(data: {
 }) {
   // Projekt-Label vs. Workspace-Label haben unterschiedliche Permissions.
   if (data.projectId) {
-    await requirePermission("project.label.create", {
+    await requirePermission("label.create", {
       projectId: data.projectId,
     });
   } else {
-    await requirePermission("workspace.label.create", {
+    await requirePermission("label.create", {
       workspaceId: data.workspaceId,
     });
   }
@@ -202,11 +202,11 @@ export async function deleteIssue(id: string) {
   const issue = await issueContext(id);
   await requirePermissionOr([
     {
-      permission: "project.issue.delete.any",
+      permission: "issue.delete.any",
       ctx: { projectId: issue.projectId },
     },
     {
-      permission: "project.issue.delete.own",
+      permission: "issue.delete.own",
       ctx: { projectId: issue.projectId },
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
@@ -224,9 +224,9 @@ export async function addComment(
     where: { id: issueId },
     select: { projectId: true },
   });
-  if (!issue) throw new PermissionError("project.comment.create");
+  if (!issue) throw new PermissionError("comment.create");
   // Autor ist immer der eingeloggte User — der Parameter wird ignoriert.
-  const userId = await requirePermission("project.comment.create", {
+  const userId = await requirePermission("comment.create", {
     projectId: issue.projectId,
   });
 
@@ -247,12 +247,12 @@ export async function deleteComment(commentId: string) {
     where: { id: commentId },
     select: { authorId: true, issue: { select: { projectId: true } } },
   });
-  if (!comment) throw new PermissionError("project.comment.delete.any");
+  if (!comment) throw new PermissionError("comment.delete.any");
   const ctx = { projectId: comment.issue.projectId };
   await requirePermissionOr([
-    { permission: "project.comment.delete.any", ctx },
+    { permission: "comment.delete.any", ctx },
     {
-      permission: "project.comment.delete.own",
+      permission: "comment.delete.own",
       ctx,
       ownerIds: [comment.authorId],
     },
@@ -264,60 +264,66 @@ export async function deleteComment(commentId: string) {
 export async function setMemberRole(
   workspaceId: string,
   userId: string,
-  role: string,
+  roleKey: string,
 ) {
-  const actorId = await requirePermission("workspace.member.role.update", {
-    workspaceId,
-  });
-  const actorRole = await workspaceRoleKey(workspaceId, actorId);
-  if (!actorRole) throw new PermissionError("workspace.member.role.update");
+  const guard = "member.role.update" as const;
+  const actorId = await requirePermission(guard, { workspaceId });
+  // Der Rang kommt jetzt aus der Datenbank statt aus einer Konstantenliste —
+  // damit greift die Hierarchie auch für selbst angelegte Rollen.
+  const actorRank = (await accessFor(actorId, { workspaceId })).rank(
+    "WORKSPACE",
+  );
 
   const target = await db.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
-    select: { role: true },
+    select: { role: { select: { key: true, rank: true } } },
   });
-  if (!target) throw new PermissionError("workspace.member.role.update");
+  if (!target) throw new PermissionError(guard);
 
   // Owner ist unveränderlich; zum Owner befördern geht nur per Ownership-Transfer.
-  if (target.role === "owner" || role === "owner") {
-    throw new PermissionError("workspace.member.role.update");
+  if (target.role.key === OWNER_ROLE_KEY || roleKey === OWNER_ROLE_KEY) {
+    throw new PermissionError(guard);
   }
-  // Die neue Rolle muss in diesem Workspace existieren.
-  const roleExists = await db.role.findUnique({
-    where: { workspaceId_key: { workspaceId, key: role } },
-    select: { key: true },
+
+  // Zuweisbar sind die geteilten System-Rollen und die eigenen dieses Workspace.
+  const next = await db.role.findFirst({
+    where: {
+      scope: "WORKSPACE",
+      key: roleKey,
+      OR: [{ system: true }, { workspaceId }],
+    },
+    select: { id: true, rank: true },
   });
-  if (!roleExists) throw new PermissionError("workspace.member.role.update");
+  if (!next) throw new PermissionError(guard);
 
   // Niemand darf eine höhere Rolle vergeben oder ein höher gestelltes Mitglied ändern.
-  const actorRank = roleRank(actorRole);
-  if (roleRank(role) > actorRank || roleRank(target.role) > actorRank) {
-    throw new PermissionError("workspace.member.role.update");
+  if (next.rank > actorRank || target.role.rank > actorRank) {
+    throw new PermissionError(guard);
   }
 
   await db.workspaceMember.update({
     where: { workspaceId_userId: { workspaceId, userId } },
-    data: { role },
+    data: { roleId: next.id },
   });
   await revalidate();
 }
 
 export async function removeMember(workspaceId: string, userId: string) {
-  const actorId = await requirePermission("workspace.member.remove", {
-    workspaceId,
-  });
-  const actorRole = await workspaceRoleKey(workspaceId, actorId);
-  if (!actorRole) throw new PermissionError("workspace.member.remove");
+  const guard = "member.remove" as const;
+  const actorId = await requirePermission(guard, { workspaceId });
+  const actorRank = (await accessFor(actorId, { workspaceId })).rank(
+    "WORKSPACE",
+  );
 
   const target = await db.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
-    select: { role: true },
+    select: { role: { select: { key: true, rank: true } } },
   });
-  if (!target) throw new PermissionError("workspace.member.remove");
+  if (!target) throw new PermissionError(guard);
 
   // Der Owner kann nicht entfernt werden; höher gestellte Mitglieder ebenfalls nicht.
-  if (target.role === "owner" || roleRank(target.role) > roleRank(actorRole)) {
-    throw new PermissionError("workspace.member.remove");
+  if (target.role.key === OWNER_ROLE_KEY || target.role.rank > actorRank) {
+    throw new PermissionError(guard);
   }
 
   await db.workspaceMember.delete({

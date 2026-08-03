@@ -96,19 +96,11 @@ export const getProjects = cache(
   },
 );
 
-export const getGlobalRole = cache(async (userId: string): Promise<string> => {
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { globalRole: true },
-  });
-  return user?.globalRole ?? "member";
-});
-
 export const getMembers = cache(
   async (workspaceId: string): Promise<User[]> => {
     const rows = await db.workspaceMember.findMany({
       where: { workspaceId },
-      include: { user: true },
+      include: { user: true, role: { select: { key: true, rank: true } } },
       orderBy: [{ user: { firstName: "asc" } }, { user: { lastName: "asc" } }],
     });
     return rows.map((m) => {
@@ -119,7 +111,8 @@ export const getMembers = cache(
         handle: m.user.handle,
         email: m.user.email,
         color: m.user.color,
-        role: m.role as User["role"],
+        role: m.role.key,
+        roleRank: m.role.rank,
         pending: m.pending,
       };
     });
@@ -183,13 +176,23 @@ export const getIssueTypes = cache(
   },
 );
 
+/**
+ * Die im Workspace zuweisbaren Rollen: die geteilten System-Rollen des Scopes
+ * WORKSPACE plus die selbst angelegten dieses Workspace. Für die Projektrollen
+ * siehe `getProjectMembersView`.
+ */
 export const getRoles = cache(async (workspaceId: string): Promise<Role[]> => {
   const rows = await db.role.findMany({
-    where: { workspaceId },
+    where: { scope: "WORKSPACE", OR: [{ system: true }, { workspaceId }] },
     orderBy: { rank: "desc" },
   });
-  // `id` ist der stabile Role-Key (= WorkspaceMember.role), den die UI als Wert nutzt.
-  return rows.map((r) => ({ id: r.key, name: r.name, desc: r.desc }));
+  // `id` ist der stabile Role-Key, den die UI als Wert nutzt.
+  return rows.map((r) => ({
+    id: r.key,
+    name: r.name,
+    desc: r.desc,
+    rank: r.rank,
+  }));
 });
 
 export const getTeams = cache(async (workspaceId: string): Promise<Team[]> => {

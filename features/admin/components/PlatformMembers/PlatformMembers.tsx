@@ -34,9 +34,11 @@ export function PlatformMembers({ users }: Props) {
               <div>
                 <div className={styles.userName}>
                   {fullName(u)}
-                  {u.globalRole === "admin" && (
-                    <Badge active>{t("platform.platformAdmin")}</Badge>
-                  )}
+                  {/* Nur wer mehr als die Nullrolle trägt, bekommt ein Abzeichen. */}
+                  {u.platformRole &&
+                    u.platformRole.key !== "platform_member" && (
+                      <Badge active>{u.platformRole.name}</Badge>
+                    )}
                 </div>
                 <div className="faint" style={{ fontSize: 12 }}>
                   @{u.handle}

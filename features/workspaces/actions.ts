@@ -2,7 +2,7 @@
 
 import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import { db } from "@/lib/db";
-import { provisionWorkspaceRbac } from "@/lib/rbac-provision";
+import { OWNER_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 import {
   DEFAULT_ISSUE_TYPES,
@@ -107,15 +107,13 @@ export async function createWorkspace(
           issueTypeId: t.id,
         })),
       });
-      // RBAC: Default-Rollen + Permissions für den neuen Workspace anlegen.
-      await provisionWorkspaceRbac(tx, finalSlug);
-
-      // Der Ersteller wird automatisch Owner.
+      // RBAC braucht hier nichts mehr: die Default-Rollen sind geteilt und
+      // liegen schon in der Datenbank. Der Ersteller wird automatisch Owner.
       await tx.workspaceMember.create({
         data: {
           workspaceId: finalSlug,
           userId: session.userId,
-          role: "owner",
+          roleId: systemRoleId("WORKSPACE", OWNER_ROLE_KEY),
           pending: false,
         },
       });

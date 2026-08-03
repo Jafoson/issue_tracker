@@ -7,6 +7,22 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── RBAC-Enums ───────────────────────────────────────────────────────────────
+
+/// Wo eine Rolle vergeben werden kann. Ein Permission-Key nennt nur Objekt und
+/// Aktion (`issue.create`) — der Scope der Rolle sagt, worauf sie wirkt.
+enum RoleScope {
+  PLATFORM
+  WORKSPACE
+  PROJECT
+}
+
+/// Ein DENY sticht über alle Ebenen hinweg jedes ALLOW.
+enum PermissionEffect {
+  ALLOW
+  DENY
+}
+
 // ─── Workspace ────────────────────────────────────────────────────────────────
 
 model Workspace {
@@ -44,10 +60,11 @@ model User {
   // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
   emailVerified DateTime?
   image         String?
-  // Globale Plattform-Rolle über allen Workspaces (SaaS-Betreiber): "admin" |
-  // "member". Gibt KEINEN Zugriff auf Tenant-Inhalte — nur auf Plattform-
-  // Operationen. Nicht zu verwechseln mit WorkspaceMember.role (Workspace-Rolle).
-  globalRole String @default("member")
+  // Rolle im Scope PLATFORM. Steuert Plattform-Operationen und gewährt für sich
+  // genommen KEINEN Zugriff auf Mandanteninhalte — dafür braucht die Rolle
+  // ausdrücklich `tenant.access`.
+  platformRoleId String?
+  platformRole   Role?   @relation("UserPlatformRole", fields: [platformRoleId], references: [id], onDelete: SetNull)
 
   workspaces         WorkspaceMember[]
   assignedIssues     Issue[]         @relation("IssueAssignee")
@@ -103,13 +120,17 @@ model VerificationToken {
 model WorkspaceMember {
   workspaceId String
   userId      String
-  role        String  @default("member")
+  // Rolle auf der Workspace-Ebene (Role.level = WORKSPACE, gleicher Workspace).
+  roleId      String
   pending     Boolean @default(false)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId],      references: [id], onDelete: Cascade)
+  // Restrict: eine Rolle, die noch jemand trägt, lässt sich nicht löschen.
+  role      Role      @relation(fields: [roleId],      references: [id], onDelete: Restrict)
 
   @@id([workspaceId, userId])
+  @@index([roleId])
 }
 
 // ─── Projects ────────────────────────────────────────────────────────────────
@@ -129,6 +150,8 @@ model Project {
   teams     TeamProject[]
   labels    Label[]
   members   ProjectMember[]
+  // Projektlokale Rollen (Role.level = PROJECT mit gesetztem projectId).
+  roles     Role[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
@@ -139,13 +162,19 @@ model Project {
 model ProjectMember {
   projectId String
   userId    String
-  role      String // = Role.key dieses Workspace; überschreibt die Workspace-Rolle für dieses Projekt
+  // Rolle auf der Projekt-Ebene (Role.level = PROJECT). Entweder eine
+  // workspaceweite Projektrolle oder eine projektlokale. Sie ersetzt die
+  // Workspace-Rolle nicht, sondern kommt hinzu: die effektiven Rechte sind die
+  // Vereinigung beider Ebenen abzüglich aller DENY-Einträge.
+  roleId    String
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId],    references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId],    references: [id], onDelete: Restrict)
 
   @@id([projectId, userId])
   @@index([userId])
+  @@index([roleId])
 }
 
 // ─── Global config (shared across workspaces via join tables) ─────────────────
@@ -212,28 +241,61 @@ model WorkspaceIssueType {
 
 // ─── Rollen & Permissions (RBAC) ──────────────────────────────────────────────
 
-// Rollen sind workspace-spezifisch: jeder Workspace hat seine eigenen Role-Zeilen
-// (die 7 Default-Rollen werden geseedet, Admins können via workspace.role.manage
-// eigene anlegen). `key` ist die stabile, code-referenzierbare ID und entspricht
-// WorkspaceMember.role / ProjectMember.role innerhalb desselben Workspace.
+// `scope` sagt, wo eine Rolle vergeben werden kann. Wem sie gehört, sagen die
+// beiden Eigentümerspalten — und die sind bei den Default-Rollen leer:
+//
+//   system  scope        workspaceId  projectId   Bedeutung
+//   ──────────────────────────────────────────────────────────────────────────
+//   true    (jeder)      null         null        Default-Rolle, existiert
+//                                                 GENAU EINMAL für alle
+//   false   PLATFORM     null         null        eigene Plattform-Rolle
+//   false   WORKSPACE    <ws>         null        eigene Rolle dieses Workspace
+//   false   PROJECT      <ws>         null        eigene Rolle, in allen
+//                                                 Projekten des Workspace
+//   false   PROJECT      <ws>         <p>         eigene Rolle, nur in diesem
+//                                                 Projekt
+//
+// System-Rollen sind nicht editierbar: sie werden von allen Mandanten geteilt,
+// eine Änderung träfe also jeden. Wer eine Abwandlung braucht, legt eine eigene
+// Rolle an.
+//
+// `key` ist die stabile, code-referenzierbare ID. Die Eindeutigkeit von (Scope,
+// Eigentümer, key) sichern partielle Unique-Indizes ab, die in der Migration von
+// Hand angelegt werden — ein `@@unique` über nullable Spalten würde in Postgres
+// nicht greifen (NULL ist dort von jedem anderen NULL verschieden).
+// Nachgeschlagen wird über die deterministisch gebildete `id` (lib/rbac/id.ts).
 model Role {
-  id          String  @id
-  workspaceId String
+  id          String    @id
+  scope       RoleScope
+  workspaceId String?
+  projectId   String?
   key         String
   name        String
-  desc        String  @default("")
-  rank        Int     @default(0)
-  editable    Boolean @default(true)
+  desc        String    @default("")
+  rank        Int       @default(0)
+  editable    Boolean   @default(true)
+  /// Default-Rolle aus lib/rbac/roles.ts — gehört niemandem, gilt für alle.
+  system      Boolean   @default(false)
 
-  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project?         @relation(fields: [projectId],   references: [id], onDelete: Cascade)
   permissions RolePermission[]
 
-  @@unique([workspaceId, key])
-  @@index([workspaceId])
+  workspaceMembers WorkspaceMember[]
+  projectMembers   ProjectMember[]
+  platformUsers    User[]            @relation("UserPlatformRole")
+
+  @@index([scope, workspaceId])
+  @@index([projectId])
 }
 
-// Permission-Keys sind global und hardcoded im Code (lib/rbac.ts). Die Tabelle
+// Permission-Keys sind hardcoded im Code (lib/rbac/permissions.ts). Die Tabelle
 // dient als FK-Ziel und dokumentiert die verfügbaren Permissions.
+//
+// Ein Key nennt nur Objekt und Aktion (`issue.create`, `label.update`) — in
+// welchen Scopes er vergeben werden darf, steht in der Registry, nicht hier.
+// Dieselbe Permission wirkt in einer Workspace-Rolle workspaceweit und in einer
+// Projektrolle nur in diesem Projekt.
 model Permission {
   key  String @id
   desc String @default("")
@@ -244,6 +306,7 @@ model Permission {
 model RolePermission {
   roleId        String
   permissionKey String
+  effect        PermissionEffect @default(ALLOW)
 
   role       Role       @relation(fields: [roleId],        references: [id],  onDelete: Cascade)
   permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)

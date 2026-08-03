@@ -11,13 +11,13 @@ declare module "next-intl" {
   }
 }
 
-// Auth.js: `id` und die globale Plattform-Rolle auf der Session verfügbar machen
-// (aus dem JWT-Callback gespiegelt).
+// Auth.js: `id` und die Anzeigedaten auf der Session verfügbar machen (aus dem
+// JWT-Callback gespiegelt). Rollen und Rechte stehen bewusst NICHT im Token —
+// die löst `lib/permissions.ts` bei jeder Prüfung frisch aus der Datenbank auf.
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      globalRole: string;
       color: string;
       firstName: string;
       lastName: string;
@@ -25,7 +25,6 @@ declare module "next-auth" {
   }
   // Was `authorize`/der Adapter zurückgeben und der jwt-Callback als `user` erhält.
   interface User {
-    globalRole?: string;
     color?: string;
     firstName?: string;
     lastName?: string;
@@ -34,7 +33,6 @@ declare module "next-auth" {
 
 declare module "next-auth/adapters" {
   interface AdapterUser {
-    globalRole?: string;
     color?: string;
     firstName?: string;
     lastName?: string;
@@ -44,7 +42,6 @@ declare module "next-auth/adapters" {
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
-    globalRole?: string;
     color?: string;
     firstName?: string;
     lastName?: string;

@@ -28,8 +28,11 @@ mock.module("@/lib/workspace-defaults", () => ({
   DEFAULT_ISSUE_TYPES: [{ id: "type-1" }],
 }));
 
+// createWorkspace provisioniert nichts mehr — die Default-Rollen sind geteilt
+// und liegen bereits in der Datenbank. Der Mock bleibt, damit der Test das auch
+// belegt statt es nur anzunehmen.
 mock.module("@/lib/rbac-provision", () => ({
-  provisionWorkspaceRbac: mockProvisionRbac,
+  provisionSystemRbac: mockProvisionRbac,
 }));
 
 import { createWorkspace } from "@/features/workspaces/actions";
@@ -193,21 +196,29 @@ describe("createWorkspace()", () => {
         expect.objectContaining({
           data: expect.objectContaining({
             userId: "user-1",
-            role: "owner",
+            // Die Owner-Rolle ist eine geteilte System-Rolle — nichts wird
+            // mehr je Workspace kopiert.
+            roleId: "sys:WORKSPACE:owner",
             pending: false,
           }),
         }),
       );
     });
 
-    it("erstellt Standard-Statuses, Prioritäten, Typen und provisioniert RBAC", async () => {
+    it("erstellt Standard-Statuses, Prioritäten und Typen", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
       expect(mockTx.workspaceStatus.createMany).toHaveBeenCalled();
       expect(mockTx.workspacePriority.createMany).toHaveBeenCalled();
       expect(mockTx.workspaceIssueType.createMany).toHaveBeenCalled();
-      expect(mockProvisionRbac).toHaveBeenCalledWith(mockTx, "my-workspace");
+    });
+
+    it("provisioniert keine Rollen mehr — die Defaults sind geteilt", async () => {
+      await createWorkspace(
+        makeFormData({ name: "My Workspace", slug: "my-workspace" }),
+      );
+      expect(mockProvisionRbac).not.toHaveBeenCalled();
     });
 
     it("erstellt ein initiales Projekt", async () => {

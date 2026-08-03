@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
+import { DEFAULT_PLATFORM_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 
 type AuthResult = { redirectTo: string } | { error: string };
@@ -73,6 +74,8 @@ export async function register(formData: FormData): Promise<AuthResult> {
         email,
         color: pickUserColor(),
         passwordHash,
+        // Jedes neue Konto startet ohne Plattform-Rechte.
+        platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
       },
     });
   } catch {

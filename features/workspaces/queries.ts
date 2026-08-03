@@ -1,7 +1,6 @@
 import "server-only";
 import { cache } from "react";
 import {
-  getGlobalRole as getGlobalRoleById,
   getIssueTypes,
   getLabels,
   getMembers,
@@ -66,16 +65,6 @@ export const getMe = cache(async (): Promise<User | null> => {
   if (!session) return null;
   const members = await getWorkspaceMembers();
   return members.find((m) => m.id === session.userId) ?? null;
-});
-
-/**
- * Globale Plattform-Rolle des eingeloggten Users ("admin" | "member") — steuert
- * den Zugang zum /admin-Bereich. Bezieht sich nur auf den eigenen User, nicht
- * auf die Workspace-Mitglieder.
- */
-export const getMyGlobalRole = cache(async (): Promise<string> => {
-  const session = await getSession();
-  return session ? getGlobalRoleById(session.userId) : "member";
 });
 
 export const getWorkspaceMembers = cache(

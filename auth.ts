@@ -5,6 +5,7 @@ import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { db } from "@/lib/db";
+import { DEFAULT_PLATFORM_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 import { splitName } from "@/lib/utils/string";
 
@@ -29,6 +30,8 @@ function createAdapter(): Adapter {
           image: data.image,
           handle,
           color: pickUserColor(),
+          // Jedes neue Konto startet ohne Plattform-Rechte.
+          platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
         },
       });
       return user as AdapterUser;
@@ -68,7 +71,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           image: user.image,
           color: user.color,
-          globalRole: user.globalRole,
         };
       },
     }),

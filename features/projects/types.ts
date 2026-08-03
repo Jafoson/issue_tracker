@@ -13,6 +13,8 @@ export interface ProjectMemberRow {
   role: string;
   /** Aufgelöster Anzeigename der Rolle — die UI braucht keine Lookup-Tabelle. */
   roleName: string;
+  /** Rang der Rolle, für die Einfärbung. Kommt aus der Datenbank. */
+  roleRank: number;
   source: ProjectAccessSource;
   /** Die Workspace-Einladung wurde noch nicht angenommen. */
   pending: boolean;

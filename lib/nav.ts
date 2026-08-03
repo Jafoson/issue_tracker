@@ -38,6 +38,7 @@ export const GLOBAL_NAV: NavEntry[] = [
 export const WORKSPACE_NAV: NavEntry[] = [
   { section: "members", icon: "lucide:users", labelKey: "members" },
   { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
+  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
   { section: "settings", icon: "lucide:settings", labelKey: "settings" },
 ];
 
@@ -67,6 +68,7 @@ export const PROJECT_NAV: NavEntry[] = [
   { section: "", icon: "lucide:layout-dashboard", labelKey: "board" },
   { section: "list", icon: "lucide:list", labelKey: "issues" },
   { section: "members", icon: "lucide:users", labelKey: "members" },
+  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
   { section: "settings", icon: "lucide:settings", labelKey: "settings" },
 ];
 

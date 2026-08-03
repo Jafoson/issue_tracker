@@ -3,12 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
+  accessFor,
+  assignmentCeiling,
   can,
   currentUserId,
-  effectiveRoleKey,
   hasPermission,
 } from "@/lib/permissions";
-import { roleRank } from "@/lib/rbac";
+import {
+  DEFAULT_PLATFORM_ROLE_KEY,
+  DEFAULT_WORKSPACE_ROLE_KEY,
+  PROJECT_GUEST_ROLE_KEY,
+  systemRoleId,
+} from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/slug";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
@@ -69,7 +75,7 @@ export async function createProject(data: {
   const name = data.name.trim();
   if (!name) return { error: "Name is required." };
 
-  const allowed = await hasPermission("workspace.project.create", {
+  const allowed = await hasPermission("project.create", {
     workspaceId: data.workspaceId,
   });
   if (!allowed)
@@ -107,7 +113,9 @@ export async function createProject(data: {
 
 interface MemberGuard {
   workspaceId: string;
+  projectId: string;
   actorId: string;
+  /** Höchster Projektrang, den der Handelnde vergeben darf. */
   actorRank: number;
 }
 
@@ -123,39 +131,55 @@ async function requireMemberManage(
   });
   if (!project) return { error: "This project no longer exists." };
 
-  if (!(await can(actorId, "project.member.manage", { projectId })))
-    return { error: "You are not allowed to manage members of this project." };
-
-  const actorRole = await effectiveRoleKey(actorId, { projectId });
-  if (!actorRole)
+  const access = await accessFor(actorId, { projectId });
+  if (!access.has("member.invite"))
     return { error: "You are not allowed to manage members of this project." };
 
   return {
     workspaceId: project.workspaceId,
+    projectId,
     actorId,
-    actorRank: roleRank(actorRole),
+    actorRank: assignmentCeiling(access, "PROJECT"),
   };
 }
 
 /**
- * Die Rolle muss in diesem Workspace existieren und darf nicht über dem eigenen
- * Rang liegen. "owner" ist eine Workspace-Rolle und als Projektrolle sinnlos —
- * Owner haben ohnehin überall Zugriff.
+ * Die Rolle auflösen, die in diesem Projekt vergeben werden soll.
+ *
+ * Zuweisbar sind die Projektrollen des Workspace (gelten in allen seinen
+ * Projekten) und die projektlokalen Rollen genau dieses Projekts. Über dem
+ * eigenen Rang vergibt niemand etwas.
  */
-async function checkAssignable(
-  workspaceId: string,
-  role: string,
-  actorRank: number,
-): Promise<string | null> {
-  if (!role || role === "owner") return "Pick a valid role.";
-  if (roleRank(role) > actorRank)
-    return "You cannot assign a role above your own.";
+async function resolveAssignable(
+  guard: MemberGuard,
+  roleKey: string,
+): Promise<{ id: string; rank: number } | { error: string }> {
+  if (!roleKey) return { error: "Pick a valid role." };
 
-  const exists = await db.role.findUnique({
-    where: { workspaceId_key: { workspaceId, key: role } },
-    select: { key: true },
+  const role = await db.role.findFirst({
+    where: {
+      scope: "PROJECT",
+      key: roleKey,
+      OR: [
+        { system: true },
+        { workspaceId: guard.workspaceId, projectId: null },
+        { projectId: guard.projectId },
+      ],
+    },
+    select: { id: true, rank: true },
+    // Die spezifischste Rolle gewinnt, falls mehrere denselben Key tragen:
+    // projektlokal vor workspaceweit vor geteilt. `nulls: "last"` ist nötig,
+    // weil Postgres bei DESC sonst NULL voranstellt.
+    orderBy: [
+      { projectId: { sort: "desc", nulls: "last" } },
+      { workspaceId: { sort: "desc", nulls: "last" } },
+    ],
   });
-  return exists ? null : "Pick a valid role.";
+  if (!role) return { error: "Pick a valid role." };
+  if (role.rank > guard.actorRank)
+    return { error: "You cannot assign a role above your own." };
+
+  return role;
 }
 
 /** Nimmt bestehende Workspace-Mitglieder mit einer eigenen Projektrolle auf. */
@@ -167,12 +191,8 @@ export async function addProjectMembers(data: {
   const guard = await requireMemberManage(data.projectId);
   if ("error" in guard) return guard;
 
-  const roleError = await checkAssignable(
-    guard.workspaceId,
-    data.role,
-    guard.actorRank,
-  );
-  if (roleError) return { error: roleError };
+  const role = await resolveAssignable(guard, data.role);
+  if ("error" in role) return role;
 
   const userIds = [...new Set(data.userIds)];
   if (userIds.length === 0) return { error: "Pick at least one member." };
@@ -190,7 +210,7 @@ export async function addProjectMembers(data: {
     data: userIds.map((userId) => ({
       projectId: data.projectId,
       userId,
-      role: data.role,
+      roleId: role.id,
     })),
     // Wer schon einen Eintrag hat, behält ihn — ein Doppelklick soll keine
     // bestehende Rolle überschreiben.
@@ -204,29 +224,25 @@ export async function addProjectMembers(data: {
 export async function setProjectMemberRole(
   projectId: string,
   userId: string,
-  role: string,
+  roleKey: string,
 ): Promise<ProjectResult> {
   const guard = await requireMemberManage(projectId);
   if ("error" in guard) return guard;
 
-  const roleError = await checkAssignable(
-    guard.workspaceId,
-    role,
-    guard.actorRank,
-  );
-  if (roleError) return { error: roleError };
+  const role = await resolveAssignable(guard, roleKey);
+  if ("error" in role) return role;
 
   const target = await db.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
-    select: { role: true },
+    select: { role: { select: { rank: true } } },
   });
   if (!target) return { error: "This person is not a member of the project." };
-  if (roleRank(target.role) > guard.actorRank)
+  if (target.role.rank > guard.actorRank)
     return { error: "You cannot change a member ranked above you." };
 
   await db.projectMember.update({
     where: { projectId_userId: { projectId, userId } },
-    data: { role },
+    data: { roleId: role.id },
   });
 
   revalidatePath("/", "layout");
@@ -246,10 +262,10 @@ export async function removeProjectMember(
 
   const target = await db.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
-    select: { role: true },
+    select: { role: { select: { rank: true } } },
   });
   if (!target) return { error: "This person is not a member of the project." };
-  if (roleRank(target.role) > guard.actorRank)
+  if (target.role.rank > guard.actorRank)
     return { error: "You cannot remove a member ranked above you." };
 
   await db.projectMember.delete({
@@ -268,9 +284,11 @@ export async function removeProjectMember(
  * werden; das ist eine Workspace-Operation und verlangt zusätzlich
  * `workspace.member.invite`.
  *
- * Die Rolle entscheidet über die Workspace-Mitgliedschaft: "guest" bleibt laut
- * RBAC bewusst außen vor und sieht nur dieses eine Projekt, jede andere Rolle
- * bekommt eine offene (`pending`) Workspace-Mitgliedschaft dazu.
+ * Die Projektrolle entscheidet über die Workspace-Mitgliedschaft: ein Gast
+ * bleibt bewusst außen vor und sieht nur dieses eine Projekt, jede andere Rolle
+ * bekommt eine offene (`pending`) Workspace-Mitgliedschaft in der Standardrolle
+ * dazu. Projekt- und Workspace-Rollen sind seit dem dreistufigen RBAC zwei
+ * getrennte Töpfe — der Projektrollen-Key taugt hier also nicht als Workspace-Rolle.
  */
 export async function inviteProjectMember(data: {
   projectId: string;
@@ -280,12 +298,8 @@ export async function inviteProjectMember(data: {
   const guard = await requireMemberManage(data.projectId);
   if ("error" in guard) return guard;
 
-  const roleError = await checkAssignable(
-    guard.workspaceId,
-    data.role,
-    guard.actorRank,
-  );
-  if (roleError) return { error: roleError };
+  const role = await resolveAssignable(guard, data.role);
+  if ("error" in role) return role;
 
   const email = data.email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
@@ -306,7 +320,11 @@ export async function inviteProjectMember(data: {
     if (member) return { error: "This person is already in the project." };
 
     await db.projectMember.create({
-      data: { projectId: data.projectId, userId: existing.id, role: data.role },
+      data: {
+        projectId: data.projectId,
+        userId: existing.id,
+        roleId: role.id,
+      },
     });
 
     revalidatePath("/", "layout");
@@ -314,7 +332,7 @@ export async function inviteProjectMember(data: {
   }
 
   if (
-    !(await can(guard.actorId, "workspace.member.invite", {
+    !(await can(guard.actorId, "member.invite", {
       workspaceId: guard.workspaceId,
     }))
   ) {
@@ -337,23 +355,24 @@ export async function inviteProjectMember(data: {
         handle,
         email,
         color: pickUserColor(),
+        platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
       },
       select: { id: true },
     });
 
-    if (data.role !== "guest") {
+    if (data.role !== PROJECT_GUEST_ROLE_KEY) {
       await tx.workspaceMember.create({
         data: {
           workspaceId: guard.workspaceId,
           userId: user.id,
-          role: data.role,
+          roleId: systemRoleId("WORKSPACE", DEFAULT_WORKSPACE_ROLE_KEY),
           pending: true,
         },
       });
     }
 
     await tx.projectMember.create({
-      data: { projectId: data.projectId, userId: user.id, role: data.role },
+      data: { projectId: data.projectId, userId: user.id, roleId: role.id },
     });
   });
 

@@ -1,8 +1,23 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import { PLATFORM, requirePermission } from "@/lib/permissions";
 
 // Plattform-Ebene: workspace-übergreifende Abfragen für den /admin-Bereich.
 // Nur in Server Components/Layouts verwenden (DB-Zugriff).
+//
+// Jede Abfrage prüft selbst. Das Layout in app/[locale]/(default)/admin tut das
+// zwar auch, aber ein Layout ist keine Sicherheitsgrenze: es schützt nur die
+// Seiten unter sich, nicht jeden Aufruf dieser Funktionen.
+
+async function requirePlatformAccess(): Promise<void> {
+  await requirePermission("platform.access", PLATFORM);
+}
+
+/** Die Plattform-Rolle eines Users, so weit die Oberfläche sie braucht. */
+export interface PlatformRoleRef {
+  key: string;
+  name: string;
+}
 
 export interface CurrentUser {
   id: string;
@@ -11,7 +26,7 @@ export interface CurrentUser {
   handle: string;
   email: string;
   color: string;
-  globalRole: string;
+  platformRole: PlatformRoleRef | null;
 }
 
 export interface PlatformUser {
@@ -21,9 +36,11 @@ export interface PlatformUser {
   handle: string;
   email: string;
   color: string;
-  globalRole: string;
+  platformRole: PlatformRoleRef | null;
   workspaceCount: number;
 }
+
+const platformRoleSelect = { select: { key: true, name: true } } as const;
 
 export interface PlatformStats {
   workspaces: number;
@@ -42,7 +59,7 @@ export const getCurrentUser = cache(
         handle: true,
         email: true,
         color: true,
-        globalRole: true,
+        platformRole: platformRoleSelect,
       },
     });
     return user;
@@ -50,6 +67,7 @@ export const getCurrentUser = cache(
 );
 
 export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
+  await requirePlatformAccess();
   const rows = await db.user.findMany({
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     select: {
@@ -59,7 +77,7 @@ export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
       handle: true,
       email: true,
       color: true,
-      globalRole: true,
+      platformRole: platformRoleSelect,
       _count: { select: { workspaces: true } },
     },
   });
@@ -70,12 +88,13 @@ export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
     handle: u.handle,
     email: u.email,
     color: u.color,
-    globalRole: u.globalRole,
+    platformRole: u.platformRole,
     workspaceCount: u._count.workspaces,
   }));
 });
 
 export const getPlatformStats = cache(async (): Promise<PlatformStats> => {
+  await requirePlatformAccess();
   const [workspaces, users, projects] = await Promise.all([
     db.workspace.count(),
     db.user.count(),

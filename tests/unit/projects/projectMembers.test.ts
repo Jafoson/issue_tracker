@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockProjectFindUnique = mock();
-const mockRoleFindUnique = mock();
+const mockRoleFindFirst = mock();
 const mockWorkspaceMemberFindMany = mock();
 const mockProjectMemberFindUnique = mock();
 const mockProjectMemberCreateMany = mock();
@@ -15,7 +15,7 @@ const mockUserFindUnique = mock();
 mock.module("@/lib/db", () => ({
   db: {
     project: { findUnique: mockProjectFindUnique, create: mock() },
-    role: { findUnique: mockRoleFindUnique },
+    role: { findFirst: mockRoleFindFirst },
     user: { findUnique: mockUserFindUnique },
     workspaceMember: {
       findMany: mockWorkspaceMemberFindMany,
@@ -34,13 +34,25 @@ mock.module("@/lib/db", () => ({
 
 const mockCan = mock();
 const mockCurrentUserId = mock();
-const mockEffectiveRoleKey = mock();
+const mockAccessFor = mock();
 
 mock.module("@/lib/permissions", () => ({
   can: mockCan,
   currentUserId: mockCurrentUserId,
-  effectiveRoleKey: mockEffectiveRoleKey,
+  accessFor: mockAccessFor,
   hasPermission: mock(),
+  // Reine Funktion — hier im Original nachgebildet, damit die Rangregel
+  // wirklich mitgetestet wird und nicht wegge­mockt ist.
+  assignmentCeiling: (
+    access: {
+      roleKey: (l: string) => string | null;
+      rank: (l: string) => number;
+    },
+    level: string,
+  ) =>
+    access.roleKey(level) === null
+      ? Number.POSITIVE_INFINITY
+      : access.rank(level),
 }));
 
 mock.module("@/lib/session", () => ({ getSession: mock() }));
@@ -63,11 +75,23 @@ const PROJECT = "p-1";
 const WS = "acme";
 const ACTOR = "u-actor";
 
-/** Standardlage: Admin (Rang 5) mit Verwaltungsrecht in einem echten Projekt. */
+/** Ein Handelnder mit Rechten und einem Rang auf der Projekt-Ebene. */
+function access(permissions: string[], projectRank: number | null) {
+  return {
+    has: (p: string) => permissions.includes(p),
+    rank: (level: string) => (level === "PROJECT" ? (projectRank ?? -1) : -1),
+    roleKey: (level: string) =>
+      level === "PROJECT" && projectRank !== null ? "some-role" : null,
+    workspaceId: WS,
+    projectId: PROJECT,
+  };
+}
+
+/** Standardlage: darf verwalten, trägt selbst keine Projektrolle (Rang offen). */
 function reset() {
   for (const m of [
     mockProjectFindUnique,
-    mockRoleFindUnique,
+    mockRoleFindFirst,
     mockWorkspaceMemberFindMany,
     mockProjectMemberFindUnique,
     mockProjectMemberCreateMany,
@@ -77,16 +101,18 @@ function reset() {
     mockUserFindUnique,
     mockCan,
     mockCurrentUserId,
-    mockEffectiveRoleKey,
+    mockAccessFor,
   ]) {
     m.mockReset();
   }
 
   mockCurrentUserId.mockResolvedValue(ACTOR);
   mockCan.mockResolvedValue(true);
-  mockEffectiveRoleKey.mockResolvedValue("admin");
+  mockAccessFor.mockResolvedValue(
+    access(["member.invite", "member.invite"], null),
+  );
   mockProjectFindUnique.mockResolvedValue({ workspaceId: WS });
-  mockRoleFindUnique.mockResolvedValue({ key: "member" });
+  mockRoleFindFirst.mockResolvedValue({ id: "wsp:acme:contributor", rank: 3 });
   mockWorkspaceMemberFindMany.mockResolvedValue([{ userId: "u-1" }]);
   mockProjectMemberCreateMany.mockResolvedValue({ count: 1 });
   mockProjectMemberCreate.mockResolvedValue({});
@@ -95,7 +121,11 @@ function reset() {
 }
 
 const add = () =>
-  addProjectMembers({ projectId: PROJECT, userIds: ["u-1"], role: "member" });
+  addProjectMembers({
+    projectId: PROJECT,
+    userIds: ["u-1"],
+    role: "contributor",
+  });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -109,7 +139,7 @@ describe("addProjectMembers() — Zugriffsschutz", () => {
   });
 
   it("lehnt ab, wenn project.member.manage fehlt", async () => {
-    mockCan.mockResolvedValue(false);
+    mockAccessFor.mockResolvedValue(access([], null));
     expect(await add()).toHaveProperty("error");
     expect(mockProjectMemberCreateMany).not.toHaveBeenCalled();
   });
@@ -124,11 +154,16 @@ describe("addProjectMembers() — Rollen", () => {
   beforeEach(reset);
 
   it("vergibt keine Rolle über dem eigenen Rang", async () => {
-    mockEffectiveRoleKey.mockResolvedValue("manager"); // Rang 4
+    mockAccessFor.mockResolvedValue(access(["member.invite"], 2));
+    mockRoleFindFirst.mockResolvedValue({
+      id: "wsp:acme:project_admin",
+      rank: 4,
+    });
+
     const result = await addProjectMembers({
       projectId: PROJECT,
       userIds: ["u-1"],
-      role: "admin", // Rang 5
+      role: "project_admin",
     });
     expect(result).toEqual({
       error: "You cannot assign a role above your own.",
@@ -136,7 +171,10 @@ describe("addProjectMembers() — Rollen", () => {
     expect(mockProjectMemberCreateMany).not.toHaveBeenCalled();
   });
 
-  it("vergibt niemals 'owner' als Projektrolle", async () => {
+  it("lehnt Rollen ab, die es auf der Projekt-Ebene nicht gibt", async () => {
+    // Eine Workspace-Rolle wie "owner" findet sich hier nicht — Projekt- und
+    // Workspace-Rollen sind seit dem dreistufigen RBAC getrennte Töpfe.
+    mockRoleFindFirst.mockResolvedValue(null);
     const result = await addProjectMembers({
       projectId: PROJECT,
       userIds: ["u-1"],
@@ -145,20 +183,33 @@ describe("addProjectMembers() — Rollen", () => {
     expect(result).toEqual({ error: "Pick a valid role." });
   });
 
-  it("lehnt Rollen ab, die es in diesem Workspace nicht gibt", async () => {
-    mockRoleFindUnique.mockResolvedValue(null);
-    expect(await add()).toEqual({ error: "Pick a valid role." });
-  });
-
-  it("erlaubt eine Rolle auf Augenhöhe", async () => {
-    mockEffectiveRoleKey.mockResolvedValue("manager");
-    mockRoleFindUnique.mockResolvedValue({ key: "manager" });
+  it("lehnt eine leere Rolle ab", async () => {
     const result = await addProjectMembers({
       projectId: PROJECT,
       userIds: ["u-1"],
-      role: "manager",
+      role: "",
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ error: "Pick a valid role." });
+  });
+
+  it("erlaubt eine Rolle auf Augenhöhe", async () => {
+    mockAccessFor.mockResolvedValue(access(["member.invite"], 3));
+    mockRoleFindFirst.mockResolvedValue({
+      id: "wsp:acme:contributor",
+      rank: 3,
+    });
+    expect(await add()).toEqual({ ok: true });
+  });
+
+  it("sucht geteilte, workspaceweite und projektlokale Rollen", async () => {
+    await add();
+    const where = mockRoleFindFirst.mock.calls[0][0].where;
+    expect(where.scope).toBe("PROJECT");
+    expect(where.OR).toEqual([
+      { system: true },
+      { workspaceId: WS, projectId: null },
+      { projectId: PROJECT },
+    ]);
   });
 });
 
@@ -177,7 +228,7 @@ describe("addProjectMembers() — Aufnahme", () => {
     const result = await addProjectMembers({
       projectId: PROJECT,
       userIds: [],
-      role: "member",
+      role: "contributor",
     });
     expect(result).toEqual({ error: "Pick at least one member." });
   });
@@ -185,7 +236,9 @@ describe("addProjectMembers() — Aufnahme", () => {
   it("überschreibt bestehende Einträge nicht", async () => {
     expect(await add()).toEqual({ ok: true });
     expect(mockProjectMemberCreateMany).toHaveBeenCalledWith({
-      data: [{ projectId: PROJECT, userId: "u-1", role: "member" }],
+      data: [
+        { projectId: PROJECT, userId: "u-1", roleId: "wsp:acme:contributor" },
+      ],
       skipDuplicates: true,
     });
   });
@@ -195,7 +248,7 @@ describe("addProjectMembers() — Aufnahme", () => {
     await addProjectMembers({
       projectId: PROJECT,
       userIds: ["u-1", "u-1"],
-      role: "member",
+      role: "contributor",
     });
     expect(mockProjectMemberCreateMany.mock.calls[0][0].data).toHaveLength(1);
   });
@@ -205,13 +258,15 @@ describe("setProjectMemberRole()", () => {
   beforeEach(reset);
 
   it("ändert kein höher gestelltes Mitglied", async () => {
-    mockEffectiveRoleKey.mockResolvedValue("member"); // Rang 2
-    mockProjectMemberFindUnique.mockResolvedValue({ role: "member" });
-    mockRoleFindUnique.mockResolvedValue({ key: "viewer" });
-    // Ziel ist Manager (Rang 4) — über dem Aufrufer.
-    mockProjectMemberFindUnique.mockResolvedValue({ role: "manager" });
+    mockAccessFor.mockResolvedValue(access(["member.invite"], 2));
+    mockRoleFindFirst.mockResolvedValue({
+      id: "wsp:acme:project_viewer",
+      rank: 2,
+    });
+    // Ziel ist Project Admin (Rang 4) — über dem Aufrufer.
+    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
 
-    const result = await setProjectMemberRole(PROJECT, "u-1", "viewer");
+    const result = await setProjectMemberRole(PROJECT, "u-1", "project_viewer");
     expect(result).toEqual({
       error: "You cannot change a member ranked above you.",
     });
@@ -220,20 +275,20 @@ describe("setProjectMemberRole()", () => {
 
   it("lehnt ab, wenn es gar keinen Projekt-Eintrag gibt", async () => {
     mockProjectMemberFindUnique.mockResolvedValue(null);
-    const result = await setProjectMemberRole(PROJECT, "u-1", "member");
+    const result = await setProjectMemberRole(PROJECT, "u-1", "contributor");
     expect(result).toEqual({
       error: "This person is not a member of the project.",
     });
   });
 
   it("schreibt die neue Rolle", async () => {
-    mockProjectMemberFindUnique.mockResolvedValue({ role: "viewer" });
-    expect(await setProjectMemberRole(PROJECT, "u-1", "member")).toEqual({
+    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 2 } });
+    expect(await setProjectMemberRole(PROJECT, "u-1", "contributor")).toEqual({
       ok: true,
     });
     expect(mockProjectMemberUpdate).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-1" } },
-      data: { role: "member" },
+      data: { roleId: "wsp:acme:contributor" },
     });
   });
 });
@@ -242,7 +297,7 @@ describe("removeProjectMember()", () => {
   beforeEach(reset);
 
   it("entfernt den Projekt-Eintrag", async () => {
-    mockProjectMemberFindUnique.mockResolvedValue({ role: "member" });
+    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 3 } });
     expect(await removeProjectMember(PROJECT, "u-1")).toEqual({ ok: true });
     expect(mockProjectMemberDelete).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-1" } },
@@ -250,8 +305,8 @@ describe("removeProjectMember()", () => {
   });
 
   it("entfernt kein höher gestelltes Mitglied", async () => {
-    mockEffectiveRoleKey.mockResolvedValue("member");
-    mockProjectMemberFindUnique.mockResolvedValue({ role: "admin" });
+    mockAccessFor.mockResolvedValue(access(["member.invite"], 2));
+    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
     expect(await removeProjectMember(PROJECT, "u-1")).toEqual({
       error: "You cannot remove a member ranked above you.",
     });
@@ -266,7 +321,7 @@ describe("inviteProjectMember()", () => {
     const result = await inviteProjectMember({
       projectId: PROJECT,
       email: "keine-adresse",
-      role: "member",
+      role: "contributor",
     });
     expect(result).toEqual({ error: "Please enter a valid email address." });
   });
@@ -278,7 +333,7 @@ describe("inviteProjectMember()", () => {
     const result = await inviteProjectMember({
       projectId: PROJECT,
       email: "Ada@Example.com",
-      role: "member",
+      role: "contributor",
     });
 
     expect(result).toEqual({ ok: true });
@@ -288,7 +343,11 @@ describe("inviteProjectMember()", () => {
       select: { id: true },
     });
     expect(mockProjectMemberCreate).toHaveBeenCalledWith({
-      data: { projectId: PROJECT, userId: "u-9", role: "member" },
+      data: {
+        projectId: PROJECT,
+        userId: "u-9",
+        roleId: "wsp:acme:contributor",
+      },
     });
   });
 
@@ -299,7 +358,7 @@ describe("inviteProjectMember()", () => {
     const result = await inviteProjectMember({
       projectId: PROJECT,
       email: "ada@example.com",
-      role: "member",
+      role: "contributor",
     });
     expect(result).toEqual({ error: "This person is already in the project." });
     expect(mockProjectMemberCreate).not.toHaveBeenCalled();
@@ -310,13 +369,13 @@ describe("inviteProjectMember()", () => {
     // Projekt darf verwaltet werden, neue Accounts aber nicht.
     mockCan.mockImplementation(
       async (_userId: string, permission: string) =>
-        permission !== "workspace.member.invite",
+        permission !== "member.invite",
     );
 
     const result = await inviteProjectMember({
       projectId: PROJECT,
       email: "neu@example.com",
-      role: "member",
+      role: "contributor",
     });
     expect(result).toEqual({
       error: "You are not allowed to invite new people to this workspace.",

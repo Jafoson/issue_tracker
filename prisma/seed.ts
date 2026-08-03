@@ -2,7 +2,8 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { type Prisma, PrismaClient } from "../lib/generated/prisma/client";
-import { provisionWorkspaceRbac } from "../lib/rbac-provision";
+import { systemRoleId } from "../lib/rbac";
+import { provisionSystemRbac } from "../lib/rbac-provision";
 import { fromMarkdown } from "../lib/richtext/fromMarkdown";
 import { toPlainText } from "../lib/richtext/text";
 import { uid } from "../lib/utils/id";
@@ -829,16 +830,20 @@ async function main() {
   }
   console.log(`   ✓ ${ISSUE_TYPES.length} issue types`);
 
-  await provisionWorkspaceRbac(db, WS);
-  console.log("   ✓ RBAC roles & permissions");
+  // Die System-Rollen liegen genau einmal in der Datenbank und werden von
+  // allen Mandanten geteilt — nichts wird pro Workspace kopiert.
+  await provisionSystemRbac(db);
+  console.log("   ✓ RBAC permissions & shared system roles");
 
   for (const u of USERS) {
     const id = ref(realUserId, u.id, "user");
+    const roleId = systemRoleId(
+      "PLATFORM",
+      PLATFORM_ADMIN_IDS.has(u.id) ? "platform_admin" : "platform_member",
+    );
     await db.user.upsert({
       where: { id },
-      update: {
-        globalRole: PLATFORM_ADMIN_IDS.has(u.id) ? "admin" : "member",
-      },
+      update: { platformRoleId: roleId },
       create: {
         id,
         firstName: u.firstName,
@@ -846,7 +851,7 @@ async function main() {
         handle: u.handle,
         email: u.email,
         color: u.color,
-        globalRole: PLATFORM_ADMIN_IDS.has(u.id) ? "admin" : "member",
+        platformRoleId: roleId,
       },
     });
   }
@@ -854,15 +859,16 @@ async function main() {
 
   for (const m of WORKSPACE_MEMBERS) {
     const userId = ref(realUserId, m.userId, "member user");
+    const roleId = systemRoleId("WORKSPACE", m.role);
     await db.workspaceMember.upsert({
       where: {
         workspaceId_userId: { workspaceId: m.workspaceId, userId },
       },
-      update: { role: m.role, pending: m.pending },
+      update: { roleId, pending: m.pending },
       create: {
         workspaceId: m.workspaceId,
         userId,
-        role: m.role,
+        roleId,
         pending: m.pending,
       },
     });

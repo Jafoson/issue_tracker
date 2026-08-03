@@ -97,7 +97,7 @@ export function ProjectMembers({
       <Label
         size="sm"
         filled={own}
-        color={roleColor(row.role)}
+        color={roleColor(row.roleRank)}
         title={own ? undefined : t("projectMembers.inherited")}
       >
         {row.roleName}

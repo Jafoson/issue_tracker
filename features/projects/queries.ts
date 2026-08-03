@@ -1,13 +1,12 @@
 import { cache } from "react";
-import { getRoles } from "@/features/issues/queries";
 import type {
   ProjectMemberRow,
   ProjectMembersView,
 } from "@/features/projects/types";
 import { db } from "@/lib/db";
-import { can, currentUserId, effectiveRoleKey } from "@/lib/permissions";
-import { roleRank } from "@/lib/rbac";
-import type { Project, User } from "@/types";
+import { accessFor, assignmentCeiling, currentUserId } from "@/lib/permissions";
+import { DEFAULT_PROJECT_ROLE_KEY } from "@/lib/rbac";
+import type { Project, Role, User } from "@/types";
 
 export interface ProjectWithStats extends Project {
   issueCount: number;
@@ -71,6 +70,10 @@ const byName = [
  * Die Seite bekommt fertige Zeilen inklusive `manageable` — welche Rolle wen
  * anfassen darf, entscheidet der Server, nicht der Client.
  */
+const memberRoleSelect = {
+  select: { id: true, key: true, name: true, rank: true },
+} as const;
+
 export const getProjectMembersView = cache(
   async (projectId: string): Promise<ProjectMembersView | null> => {
     const project = await db.project.findUnique({
@@ -82,50 +85,74 @@ export const getProjectMembersView = cache(
 
     const actorId = await currentUserId();
 
-    const [projectMembers, workspaceMembers, roles] = await Promise.all([
-      db.projectMember.findMany({
-        where: { projectId },
-        include: { user: true },
-        orderBy: byName,
-      }),
-      db.workspaceMember.findMany({
-        where: { workspaceId },
-        include: { user: true },
-        orderBy: byName,
-      }),
-      getRoles(workspaceId),
-    ]);
+    const [projectMembers, workspaceMembers, projectRoles, viewAllRoles] =
+      await Promise.all([
+        db.projectMember.findMany({
+          where: { projectId },
+          include: { user: true, role: memberRoleSelect },
+          orderBy: byName,
+        }),
+        db.workspaceMember.findMany({
+          where: { workspaceId },
+          include: { user: true, role: memberRoleSelect },
+          orderBy: byName,
+        }),
+        // Zuweisbar sind die Projektrollen des Workspace plus die
+        // projektlokalen Rollen genau dieses Projekts.
+        db.role.findMany({
+          where: {
+            scope: "PROJECT",
+            OR: [
+              { system: true },
+              { workspaceId, projectId: null },
+              { projectId },
+            ],
+          },
+          orderBy: { rank: "desc" },
+        }),
+        // Welche Workspace-Rollen ihre Träger in jedes Projekt sehen lassen.
+        // Ersetzt die frühere Abfrage auf die Namen "owner" und "admin".
+        db.role.findMany({
+          where: {
+            scope: "WORKSPACE",
+            OR: [{ system: true }, { workspaceId }],
+            permissions: {
+              some: {
+                permissionKey: "project.view.all",
+                effect: "ALLOW",
+              },
+            },
+          },
+          select: { id: true },
+        }),
+      ]);
 
-    const canManage = actorId
-      ? await can(actorId, "project.member.manage", { projectId })
-      : false;
-    const canInvite = actorId
-      ? await can(actorId, "workspace.member.invite", { workspaceId })
-      : false;
-    // Ohne Verwaltungsrecht ist der Rang belanglos — dann ist ohnehin nichts
-    // bedienbar, und die Abfrage entfällt.
-    const actorRank =
-      canManage && actorId
-        ? roleRank((await effectiveRoleKey(actorId, { projectId })) ?? "")
-        : -1;
+    const access = actorId
+      ? await accessFor(actorId, { projectId })
+      : await accessFor(null, { projectId });
+    const canManage = access.has("member.invite");
+    const canInvite = access.has("member.invite");
+    const actorRank = canManage
+      ? assignmentCeiling(access, "PROJECT")
+      : Number.NEGATIVE_INFINITY;
 
-    const roleName = (key: string) =>
-      roles.find((r) => r.id === key)?.name ?? key;
+    const seesEveryProject = new Set(viewAllRoles.map((r) => r.id));
     const pendingOf = new Map(
       workspaceMembers.map((m) => [m.userId, m.pending]),
     );
 
     const rows: ProjectMemberRow[] = projectMembers.map((pm) => ({
       user: toUser(pm.user, pendingOf.get(pm.userId) ?? false),
-      role: pm.role,
-      roleName: roleName(pm.role),
+      role: pm.role.key,
+      roleName: pm.role.name,
+      roleRank: pm.role.rank,
       source: "project",
       pending: pendingOf.get(pm.userId) ?? false,
       you: pm.userId === actorId,
       // Niemand ändert ein Mitglied, das über ihm steht — und die eigene Rolle
       // schon gar nicht über diese Tabelle.
       manageable:
-        canManage && pm.userId !== actorId && roleRank(pm.role) <= actorRank,
+        canManage && pm.userId !== actorId && pm.role.rank <= actorRank,
     }));
 
     const hasOwnEntry = new Set(projectMembers.map((pm) => pm.userId));
@@ -135,9 +162,9 @@ export const getProjectMembersView = cache(
       if (hasOwnEntry.has(wm.userId)) continue;
 
       const user = toUser(wm.user, wm.pending);
-      // Owner und Admins kommen implizit überall rein; ein Projekt-Eintrag
-      // würde daran nichts ändern und wäre nur eine leere Geste.
-      const isPrivileged = wm.role === "owner" || wm.role === "admin";
+      // Wer ohnehin jedes Projekt sieht, braucht keinen Projekt-Eintrag — der
+      // wäre nur eine leere Geste.
+      const isPrivileged = seesEveryProject.has(wm.roleId);
       if (!isPrivileged) candidates.push(user);
 
       if (wm.pending) continue;
@@ -145,8 +172,9 @@ export const getProjectMembersView = cache(
 
       rows.push({
         user,
-        role: wm.role,
-        roleName: roleName(wm.role),
+        role: wm.role.key,
+        roleName: wm.role.name,
+        roleRank: wm.role.rank,
         source: "workspace",
         pending: false,
         you: wm.userId === actorId,
@@ -154,11 +182,18 @@ export const getProjectMembersView = cache(
       });
     }
 
-    const assignableRoles = canManage
-      ? roles.filter((r) => r.id !== "owner" && roleRank(r.id) <= actorRank)
+    const assignableRoles: Role[] = canManage
+      ? projectRoles
+          .filter((r) => r.rank <= actorRank)
+          .map((r) => ({
+            id: r.key,
+            name: r.name,
+            desc: r.desc,
+            rank: r.rank,
+          }))
       : [];
     const defaultRole =
-      assignableRoles.find((r) => r.id === "member")?.id ??
+      assignableRoles.find((r) => r.id === DEFAULT_PROJECT_ROLE_KEY)?.id ??
       assignableRoles.at(-1)?.id ??
       "";
 
