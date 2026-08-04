@@ -9,6 +9,7 @@ const mockProjectFindUnique = mock();
 const mockProjectMemberFindUnique = mock();
 const mockProjectFindMany = mock();
 const mockProjectMemberFindMany = mock();
+const mockProjectMemberFindFirst = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -22,6 +23,7 @@ mock.module("@/lib/db", () => ({
     projectMember: {
       findUnique: mockProjectMemberFindUnique,
       findMany: mockProjectMemberFindMany,
+      findFirst: mockProjectMemberFindFirst,
     },
   },
 }));
@@ -40,6 +42,7 @@ import {
   accessibleProjectIds,
   assignmentCeiling,
   can,
+  canEnterWorkspace,
 } from "@/lib/permissions";
 
 // ── Helfer ────────────────────────────────────────────────────────────────────
@@ -88,6 +91,11 @@ function setup(
   });
   mockProjectMemberFindUnique.mockResolvedValue(
     opts.project ? { role: opts.project } : null,
+  );
+  // `canEnterWorkspace` fragt danach: steht die Person in irgendeinem Projekt
+  // des Workspace? Standardlage ist „nur, wenn sie eine Projektrolle hat".
+  mockProjectMemberFindFirst.mockResolvedValue(
+    opts.project ? { projectId: "p1" } : null,
   );
 }
 
@@ -389,6 +397,67 @@ describe("assignmentCeiling", () => {
     const access = await accessFor("u1", { projectId: "p1" });
     expect(assignmentCeiling(access, "PROJECT")).toBe(Number.POSITIVE_INFINITY);
     expect(assignmentCeiling(access, "WORKSPACE")).toBe(5);
+  });
+});
+
+// Zutritt ist keine Permission — er entscheidet, ob die Workspace-Hülle
+// überhaupt rendert. Drei Wege hinein, und eine offene Einladung ist keiner.
+describe("canEnterWorkspace", () => {
+  it("lässt Mitglieder hinein", async () => {
+    setup({ workspace: role("member", 2, allow("project.view")) });
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(true);
+  });
+
+  it("sperrt aus, wer weder im Workspace noch in einem Projekt ist", async () => {
+    setup();
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(false);
+  });
+
+  it("lässt einen Projekt-Gast ohne Workspace-Mitgliedschaft hinein", async () => {
+    setup();
+    // Kein `WorkspaceMember`, aber eine Zeile in einem Projekt des Workspace.
+    mockProjectMemberFindFirst.mockResolvedValue({ projectId: "p1" });
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(true);
+  });
+
+  it("sperrt einen gesperrten Workspace zu", async () => {
+    setup({
+      workspace: role("owner", 6, allow("project.view.all")),
+      suspended: true,
+    });
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(false);
+  });
+
+  it("lässt eine offene Einladung nicht hinein", async () => {
+    setup({
+      workspace: role("member", 2, allow("project.view")),
+      pending: true,
+    });
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(false);
+  });
+
+  it("lässt Support überall hinein", async () => {
+    setup({
+      platform: role("platform_support", 1, allow("tenant.access")),
+      suspended: true,
+    });
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(true);
+  });
+
+  it("lässt einen Plattform-Admin ohne tenant.access nicht hinein", async () => {
+    setup({
+      platform: role(
+        "platform_admin",
+        2,
+        allow("platform.access", "user.manage"),
+      ),
+    });
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(false);
+  });
+
+  it("verlangt eine Session", async () => {
+    setup({ workspace: role("owner", 6, allow("project.view.all")) });
+    expect(await canEnterWorkspace(null, "ws1")).toBe(false);
   });
 });
 

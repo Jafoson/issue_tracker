@@ -45,7 +45,9 @@ export function ProjectMembers({
   candidates,
   assignableRoles,
   defaultRole,
-  canManage,
+  canAdd,
+  canSetRole,
+  canRemove,
   canInvite,
 }: ProjectMembersProps) {
   const t = useTranslations();
@@ -78,7 +80,7 @@ export function ProjectMembers({
       />
     ));
 
-  const addButton = canManage && (
+  const addButton = canAdd && (
     <Button
       variant="primary"
       icon={<Icon icon="lucide:plus" width={15} />}
@@ -103,9 +105,11 @@ export function ProjectMembers({
         {row.roleName}
       </Label>
     );
-    // Nur eine eigene Projektrolle lässt sich hier ändern. Die geerbte gehört
-    // dem Workspace — wer sie anfassen will, nimmt die Person erst ins Projekt.
-    if (!own || !row.manageable || assignableRoles.length === 0) return pill;
+    // Nur eine eigene Projektrolle lässt sich hier ändern, und nur mit
+    // `member.role.update`. Die geerbte gehört dem Workspace — wer sie anfassen
+    // will, nimmt die Person erst ins Projekt.
+    if (!own || !row.manageable || !canSetRole || assignableRoles.length === 0)
+      return pill;
 
     return (
       <InlinePicker
@@ -157,8 +161,10 @@ export function ProjectMembers({
     if (!row.manageable) return null;
 
     // Geerbter Zugriff lässt sich nicht entziehen — nur in eine eigene
-    // Projektrolle überführen, die man danach ändern kann.
+    // Projektrolle überführen, die man danach ändern kann. Das ist eine Aufnahme
+    // ins Projekt und hängt deshalb an `member.invite`.
     if (row.source === "workspace") {
+      if (!canAdd) return null;
       const label = t("projectMembers.addToProject");
       return (
         <Button
@@ -180,6 +186,8 @@ export function ProjectMembers({
         />
       );
     }
+
+    if (!canRemove) return null;
 
     const label = t("projectMembers.removeFromProject");
     return (

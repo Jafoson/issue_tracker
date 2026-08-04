@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
+import { openInvitation } from "@/lib/invitations";
+import { enrollInWorkspaceProjects } from "@/lib/project-membership";
 import { DEFAULT_PLATFORM_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 
@@ -90,6 +92,98 @@ export async function register(formData: FormData): Promise<AuthResult> {
   }
 
   return { redirectTo: "/create-workspace" };
+}
+
+/**
+ * Nimmt eine Einladung an: Name und Passwort setzen, Zugang freischalten.
+ *
+ * Das Konto gibt es an dieser Stelle schon — es entstand beim Einladen, ohne
+ * Passwort und mit `WorkspaceMember.pending = true`. Hier bekommt es beides, was
+ * es zum Arbeiten braucht:
+ *
+ *   1. Passwort und Name (das Konto war bis hier nicht anmeldbar),
+ *   2. `pending = false` — erst damit greifen die Rechte der Workspace-Rolle,
+ *   3. Aufnahme in die öffentlichen Projekte: zwischen Einladung und Annahme
+ *      können neue dazugekommen sein.
+ *
+ * Ein Projekt-Gast hat keine Workspace-Mitgliedschaft. Für den entfallen 2 und 3
+ * — sein Zugriff hängt allein an der Projektzeile, die schon steht.
+ *
+ * Der Token gilt danach als verbraucht (`acceptedAt`), unabhängig davon, ob der
+ * anschließende Login klappt: er ist eine Einladung, kein Passwort-Reset.
+ */
+export async function acceptInvitation(
+  token: string,
+  formData: FormData,
+): Promise<AuthResult> {
+  const firstName = (formData.get("firstName") as string | null)?.trim() ?? "";
+  const lastName = (formData.get("lastName") as string | null)?.trim() ?? "";
+  const password = (formData.get("password") as string | null) ?? "";
+
+  if (!firstName) return { error: "Please enter your first name." };
+  if (password.length < 8)
+    return { error: "Password must be at least 8 characters." };
+
+  const invitation = await openInvitation(db, token, new Date());
+  // Unbekannt, abgelaufen, schon benutzt oder Workspace gesperrt — eine Meldung
+  // für alle Fälle, damit der Endpunkt kein Orakel für gültige Tokens ist.
+  if (!invitation)
+    return { error: "This invitation is no longer valid. Ask for a new one." };
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: invitation.userId },
+      data: { firstName, lastName, passwordHash },
+    });
+
+    const membership = await tx.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: invitation.workspaceId,
+          userId: invitation.userId,
+        },
+      },
+      select: { pending: true },
+    });
+
+    if (membership?.pending) {
+      await tx.workspaceMember.update({
+        where: {
+          workspaceId_userId: {
+            workspaceId: invitation.workspaceId,
+            userId: invitation.userId,
+          },
+        },
+        data: { pending: false },
+      });
+      await enrollInWorkspaceProjects(tx, {
+        workspaceId: invitation.workspaceId,
+        userId: invitation.userId,
+      });
+    }
+
+    await tx.invitation.update({
+      where: { token: invitation.token },
+      data: { acceptedAt: new Date() },
+    });
+  });
+
+  try {
+    await signIn("credentials", {
+      email: invitation.email,
+      password,
+      redirect: false,
+    });
+  } catch (error) {
+    if (!(error instanceof AuthError)) throw error;
+    // Der Zugang steht, nur die Sitzung nicht — von der Anmeldeseite kommt die
+    // Person jetzt mit ihrem neuen Passwort hinein.
+    return { redirectTo: "/login" };
+  }
+
+  return { redirectTo: `/${invitation.workspaceId}` };
 }
 
 export async function logout(): Promise<void> {

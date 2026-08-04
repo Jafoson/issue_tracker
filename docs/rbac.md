@@ -14,15 +14,27 @@ eigene Rollen anlegen.
 3. Die **Default-Rollen liegen genau einmal in der Datenbank** und gehören
    niemandem. Alle Mandanten zeigen auf dieselben Zeilen. Selbst angelegte
    Rollen hängen am Workspace oder am Projekt.
-4. Ein Benutzer hat **je Scope höchstens eine Rolle** — also bis zu drei. Die
-   effektiven Rechte sind die **Vereinigung aller ALLOW abzüglich aller DENY**.
+4. Ein Benutzer hat **je Scope höchstens eine Rolle** — also bis zu drei.
+   Gefragt wird immer die Ebene, um die es geht: **im Projekt entscheidet die
+   Projektrolle, im Workspace die Workspace-Rolle.**
 5. Darüber liegen drei implizite Regeln plus der Support-Generalschlüssel, alle
    an genau einer Stelle: `lib/permissions.ts`.
 
 ```
-erlaubt = ⋃ ALLOW(Plattform-Rolle, Workspace-Rolle, Projektrolle)
-          \ ⋃ DENY(dieselben Rollen)
+Workspace-Kontext:  Plattform ∪ Workspace
+Projekt-Kontext:    Plattform ∪ Workspace(ohne Projektrechte) ∪ Projektrolle
+
+erlaubt = ALLOW(zuständige Ebenen) \ ⋃ DENY(alle Ebenen)
 ```
+
+Im Projekt **ersetzt** die Projektrolle also die projektbezogenen Rechte der
+Workspace-Rolle, statt sie zu ergänzen. Keine Zeile in `ProjectMember` heißt
+keine Projektrechte. Was allein workspaceweit gilt (`project.create`,
+`project.view.all`, `team.*` …) bleibt unberührt — eine Projektrolle kann diese
+Keys laut Registry gar nicht tragen.
+
+Ein DENY sticht dagegen über alle Ebenen: eine Projektrolle hebelt kein
+workspaceweites Verbot aus, sonst wäre das Verbot wertlos.
 
 ### Warum der Key seine Ebene nicht mehr nennt
 
@@ -40,22 +52,25 @@ vergeben werden darf. `workspace.update` in einer Projektrolle wäre sinnlos und
 ist gesperrt; `role.manage` gilt dagegen in allen drei Scopes und bedeutet dort
 jeweils „die Rollen dieses Topfes".
 
-### Warum DENY und nicht einfach „weglassen"?
+### Wozu dann noch DENY?
 
-Weil die Vereinigung nie etwas wegnimmt. Wer im Workspace `project_lead` ist,
-bringt volle Projektrechte mit — eine Projektrolle, die diese Rechte bloß nicht
-aufführt, ändert daran nichts. Nur ein ausdrückliches DENY stuft herab:
+Die Herabstufung im Projekt erledigt schon das Ersetzen — eine Projektrolle, die
+`issue.update.any` nicht aufführt, gewährt es in diesem Projekt auch nicht:
 
 ```
 Workspace-Rolle project_lead   ALLOW issue.update.any
-Projektrolle    project_viewer DENY  issue.update.any
+Projektrolle    project_viewer (führt es nicht auf)
 → in diesem Projekt nur lesen, überall sonst voller Zugriff
 ```
 
-Deshalb verbieten die einschränkenden Projektrollen (`project_viewer`,
-`project_guest`, `blocked`) **erschöpfend** alles, was sie nicht erlauben. Ein
-angenehmer Nebeneffekt: eine neu eingeführte Projekt-Permission ist für sie
-automatisch gesperrt und muss bewusst freigeschaltet werden.
+DENY bleibt für das, was das Ersetzen nicht kann: **ein Verbot nach oben.** Es
+gilt über alle Ebenen und trifft damit auch die rein workspaceweiten Rechte, an
+die eine Projektrolle sonst nicht herankommt.
+
+Dass `project_viewer`, `project_guest` und `blocked` trotzdem **erschöpfend**
+verbieten, ist ein Erbe des früheren Vereinigungsmodells. Es bleibt, weil es die
+Absicht ausdrücklich festhält und ein neu eingeführtes Recht für diese Rollen
+automatisch sperrt — nötig für die Herabstufung ist es nicht mehr.
 
 ---
 
@@ -124,8 +139,9 @@ ist damit eine sichtbare Eskalation und keine Nebenwirkung des Admin-Seins.
 | `viewer` | 1 | lesen und kommentieren |
 | `guest` | 0 | wie Viewer |
 
-Workspace-Rollen dürfen projektbezogene Permissions tragen — die gelten dann als
-Basis in **allen** Projekten des Workspace.
+Workspace-Rollen dürfen projektbezogene Permissions tragen — die gelten in
+**allen** Projekten des Workspace, in denen die Person keine eigene Projektrolle
+hat. Sobald sie eine hat, entscheidet diese.
 
 ### PROJECT
 
@@ -148,12 +164,16 @@ Server Actions.
 
 1. **Gesperrter Workspace** (`Workspace.suspended`) → keine Mandanten-Rechte.
 2. **Offene Einladung** (`WorkspaceMember.pending`) → dasselbe.
-3. **Privates Projekt ohne eigenen `ProjectMember`-Eintrag** → alle
-   projektbezogenen Rechte fallen weg, es sei denn, die Rechte enthalten
-   `project.view.all`.
+3. **Projekt ohne eigenen `ProjectMember`-Eintrag** → alle projektbezogenen
+   Rechte fallen weg, es sei denn, die Rechte enthalten `project.view.all`.
 
-Regel 3 ersetzt den früher hart kodierten Vollzugriff von Owner und Admin: statt
-`role === "owner" || role === "admin"` im Code steht die Permission
+Regel 3 gilt für **jedes** Projekt, nicht nur für private: `ProjectMember` ist die
+Liste, wer im Projekt ist, und der Resolver liest `Project.visibility` gar nicht.
+Die Sichtbarkeit legt nur fest, wer beim Anlegen automatisch eingetragen wird
+(`lib/project-membership.ts`).
+
+Die Ausnahme ersetzt den früher hart kodierten Vollzugriff von Owner und Admin:
+statt `role === "owner" || role === "admin"` im Code steht die Permission
 `project.view.all` in der Rolle. Im Code stehen keine Rollennamen mehr.
 
 > **Regel 1 und 2 greifen, bevor die Mandanten-Rollen eingesammelt werden** —
@@ -208,9 +228,25 @@ const access = await getAccess({ projectId });
 access.has("issue.create");
 access.rank("PROJECT");
 
-// Listen ohne N+1:
+// Listen ohne N+1 — die Sichtbarkeitsregel für ganze Projektlisten:
 const visible = await accessibleProjectIds(userId, workspaceId);
+const mine = await visibleProjectIds(workspaceId);   // für den eingeloggten User
+
+// Zutritt zum Mandanten — keine Permission, sondern Zugehörigkeit:
+await canEnterWorkspace(userId, workspaceId);
+await currentUserCanEnterWorkspace(workspaceId);
 ```
+
+### Zutritt ist keine Permission
+
+Für „darf diese Person den Workspace überhaupt betreten?" gibt es keinen Key.
+Zutritt hat, wer dazugehört, und dafür gibt es drei Wege: `tenant.access`, eine
+**angenommene** Mitgliedschaft, oder eine Projektmitgliedschaft ohne
+Workspace-Mitgliedschaft (Projekt-Gast). Der dritte Weg ist der Grund, warum eine
+reine `WorkspaceMember`-Abfrage hier nicht genügt.
+
+Die Workspace-Id steht in der URL — ohne diese Prüfung erreicht jeder Angemeldete
+jeden Mandanten. `app/[locale]/(default)/[workspace]/layout.tsx` prüft sie.
 
 ### Der Kontext ist an die Permission gebunden
 
@@ -240,6 +276,31 @@ Ein falscher Kontext ist damit ein Kompilierfehler statt einer stillen
 `app/[locale]/(default)/admin/layout.tsx` prüft `platform.access`, **und** die
 Abfragen in `features/admin/queries.ts` prüfen noch einmal selbst. Ein Layout
 schützt nur die Seiten unter sich, nicht jeden Aufruf einer Funktion.
+
+#### Der Lesepfad prüft mit
+
+Schreibende Actions verlangen ihre Permission, lesende Abfragen die Sichtbarkeit.
+Ohne das wäre `blocked` eine Rolle, die nur Knöpfe ausgraut:
+
+| Abfrage | Prüfung |
+|---|---|
+| `getProjects`, `getProjectsWithStats` | auf `visibleProjectIds` gefiltert |
+| `getIssuesByProject` | `project.view` |
+| `getIssueById`, `getIssueByRef` | `project.view`, sonst `null` |
+| `getSearchIssues`, `getMyIssues`, `getInboxIssues` | auf sichtbare Projekte gefiltert |
+| `getLabels` | Projekt-Labels nur aus sichtbaren Projekten |
+| `getMembers`, `getTeams` | `canEnterWorkspace` |
+| `getProjectMembersView`, `getProjectSettingsView` | `project.view`, sonst `null` |
+
+Diese Prüfungen **fangen leer statt zu werfen**: die Abfragen laufen in Server
+Components, die parallel zum Layout rendern — eine Ausnahme landete dort als 500,
+bevor das `notFound()` des Layouts greift. Leere Daten führen über die
+bestehenden `if (!me) notFound()`-Pfade zum richtigen Ergebnis.
+
+`app/api/issues/[id]/route.ts` liegt außerhalb des Middleware-Matchers (`proxy.ts`
+klammert `/api` aus) und prüft deshalb beides selbst: Session und `project.view`.
+Ein fehlendes Recht antwortet mit 404, nicht 403 — sonst verriete die Antwort,
+dass es das Issue gibt.
 
 ---
 
@@ -271,6 +332,63 @@ Die geteilten System-Rollen erscheinen in jeder Ansicht mit, aber gesperrt.
 
 Eine Rolle, die noch jemand trägt, lässt sich nicht löschen (Fremdschlüssel auf
 `RESTRICT`, plus verständliche Fehlermeldung davor).
+
+---
+
+## Mitglieder verwalten: drei Rechte, nicht eines
+
+`member.invite`, `member.role.update` und `member.remove` sind einzeln vergebbar —
+also prüft jede Aktion ihr eigenes, im Workspace (`features/issues/actions.ts`)
+wie im Projekt (`features/projects/actions.ts`):
+
+| Aktion | Recht |
+|---|---|
+| aufnehmen, per E-Mail einladen | `member.invite` |
+| Rolle eines Mitglieds ändern | `member.role.update` |
+| aus Workspace/Projekt entfernen | `member.remove` |
+
+Die Oberfläche bekommt die drei Flags getrennt (`canAdd`, `canSetRole`,
+`canRemove`) und zeigt genau das, was die Action auch durchlässt. Dazu kommen drei
+Regeln, die für beide Ebenen gelten: niemand fasst ein höher gestelltes Mitglied
+an, niemand sich selbst, und wer `project.view.all` hat, lässt sich per
+Projektrolle nicht herabstufen.
+
+### Einladungen
+
+Eine unbekannte Adresse einzuladen erzeugt sofort ein Konto — ohne Passwort, mit
+`WorkspaceMember.pending = true` — und dazu einen Token (`Invitation`). Erst das
+Annehmen macht daraus einen Zugang: Passwort und Name entstehen, `pending` fällt
+weg, und die Projektmitgliedschaften werden nachgezogen (`acceptInvitation` in
+`features/auth/actions.ts`).
+
+Das ist der Grund, warum `pending` überhaupt eine Regel im Resolver hat: eine
+offene Einladung bekommt keine Rechte, bis sie angenommen ist. Vorher gab es den
+Weg dorthin nicht — `pending` wurde gesetzt und nie wieder gelöscht.
+
+`/invite/<token>` ist deshalb öffentlich (`proxy.ts`): der Token *ist* die
+Berechtigung, und wer ihn einlöst, hat noch kein Passwort. Unbekannt, abgelaufen,
+schon benutzt oder Workspace gesperrt sehen alle gleich aus — sonst wäre die Seite
+ein Orakel für gültige Tokens. Mailversand gibt es nicht; die Actions geben den
+Link zurück, und die Oberfläche zeigt ihn zum Kopieren.
+
+### Projekt-Sichtbarkeit
+
+`Project.visibility` steuert **nur**, wer automatisch eingetragen wird — den
+Zugriff regelt allein `ProjectMember`:
+
+```
+public   → wer im Workspace ist, wird aufgenommen (auch später Beitretende)
+private  → nur wer ausdrücklich aufgenommen wurde; beim Anlegen nur der Ersteller
+```
+
+Auf `public` zu schalten nimmt alle Workspace-Mitglieder auf. Der Weg zurück nimmt
+niemandem etwas: wer drin ist, bleibt drin, nur der Automatismus hört auf.
+Jemanden hinauszunehmen ist eine eigene, sichtbare Handlung
+(`removeProjectMember`) und kein Nebeneffekt eines Schalters — deshalb sagt die
+Einstellungsseite das auch ausdrücklich.
+
+Verwaltet wird das unter `/[workspace]/project/[slug]/settings` mit
+`project.update`; das Löschen daneben mit `project.delete`.
 
 ---
 
@@ -345,8 +463,18 @@ genau eine Zeile zu ergänzen.
 ```
 tests/unit/permissions/
   rbac.test.ts         Registry: flache Keys, Scope-Zuordnung, Rollen in sich stimmig
-  resolver.test.ts     Union, DENY sticht, tenant.access, die impliziten Regeln
+  resolver.test.ts     Ersetzen im Projekt, DENY sticht, tenant.access, die
+                       impliziten Regeln, Zutritt, sichtbare Projekte
   roleActions.test.ts  geteilte Rollen, Rang-Grenzen, keine Rechte-Eskalation
+tests/unit/projects/
+  projectMembers.test.ts   die drei member.*-Rechte getrennt, Rang, Selbstbezug
+  projectSettings.test.ts  project.update / project.delete, Sichtbarkeitswechsel
+tests/unit/invitations/
+  invitations.test.ts      Token, Frist, und wann eine Einladung nicht mehr gilt
+tests/unit/auth/
+  acceptInvitation.test.ts pending → false, Projekte nachziehen, Token verbrauchen
+tests/unit/workspace/
+  inviteWorkspaceMember.test.ts  bekanntes Konto vs. Einladungslink, Rang-Grenze
 ```
 
 `bun run test` (nicht `bun test` — siehe CLAUDE.md).

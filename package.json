@@ -14,9 +14,9 @@
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d --wait && bun prisma generate && bun prisma migrate deploy && bun prisma db seed",
     "db:logs": "docker compose logs -f postgres",
-    "test": "bun test tests/unit/auth tests/unit/proxy tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects tests/unit/permissions/rbac.test.ts tests/unit/permissions/roleActions.test.ts && bun test tests/unit/permissions/resolver.test.ts && bun test tests/unit/session && bun test tests/unit/richtext tests/unit/table",
+    "test": "bun test tests/unit/auth tests/unit/proxy tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects tests/unit/invitations tests/unit/permissions/rbac.test.ts tests/unit/permissions/roleActions.test.ts && bun test tests/unit/permissions/resolver.test.ts && bun test tests/unit/session && bun test tests/unit/richtext tests/unit/table",
     "test:watch": "bun test --watch tests/",
-    "test:coverage": "bun test --coverage tests/unit/auth tests/unit/proxy tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects tests/unit/permissions/rbac.test.ts tests/unit/permissions/roleActions.test.ts && bun test --coverage tests/unit/permissions/resolver.test.ts && bun test --coverage tests/unit/session && bun test --coverage tests/unit/richtext tests/unit/table"
+    "test:coverage": "bun test --coverage tests/unit/auth tests/unit/proxy tests/unit/workspace tests/unit/issues tests/unit/tabbar tests/unit/projects tests/unit/invitations tests/unit/permissions/rbac.test.ts tests/unit/permissions/roleActions.test.ts && bun test --coverage tests/unit/permissions/resolver.test.ts && bun test --coverage tests/unit/session && bun test --coverage tests/unit/richtext tests/unit/table"
   },
   "prisma": {
     "seed": "bun prisma/seed.ts"

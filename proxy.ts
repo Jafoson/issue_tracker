@@ -4,7 +4,11 @@ import { auth } from "@/auth.edge";
 import { routing } from "@/i18n/routing";
 
 // Öffentliche Seiten (ohne Locale-Präfix), die ohne gültige Session erreichbar sind.
-const PUBLIC_PATHS = ["/login", "/register"];
+//
+// `/invite` gehört dazu: der Token im Pfad ist die Berechtigung, und wer eine
+// Einladung annimmt, hat noch kein Passwort — ein Auth-Gate davor wäre eine Tür,
+// hinter der der Schlüssel liegt.
+const PUBLIC_PATHS = ["/login", "/register", "/invite"];
 
 const handleI18nRouting = createMiddleware(routing);
 

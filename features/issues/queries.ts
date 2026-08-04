@@ -1,5 +1,11 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import {
+  accessibleProjectIds,
+  currentUserCanEnterWorkspace,
+  hasPermission,
+  visibleProjectIds,
+} from "@/lib/permissions";
 import { toDoc } from "@/lib/richtext/doc";
 import type {
   Issue,
@@ -61,6 +67,18 @@ function mapIssue(i: {
 }
 
 // ── Cached queries (deduplicated per request) ─────────────────────────────────
+//
+// Jede Abfrage prüft selbst — ein Layout schützt nur die Seiten unter sich, nicht
+// jeden Aufruf einer Funktion (siehe docs/rbac.md, „Enforcement"). Zwei Prüfungen
+// kommen hier vor:
+//
+//   `currentUserCanEnterWorkspace`  gehört die Person überhaupt in den Workspace?
+//   `visibleProjectIds`             welche Projekte darf sie darin sehen?
+//
+// Beide fangen leer statt zu werfen: die Abfragen laufen in Server Components,
+// die parallel zum Layout rendern — eine Ausnahme würde dort als 500 landen,
+// bevor das `notFound()` des Layouts greift. Leere Daten führen dagegen über die
+// bestehenden `if (!me) notFound()`-Pfade zum richtigen Ergebnis.
 
 export const getWorkspace = cache(async (id: string) => {
   // Gesperrte Workspaces (vom Plattform-Admin suspendiert) sind für den normalen
@@ -82,8 +100,14 @@ export const getUserWorkspaces = cache(async (userId: string) => {
 
 export const getProjects = cache(
   async (workspaceId: string): Promise<Project[]> => {
+    // Die Projektliste ist die Navigation der ganzen App — was hier fehlt,
+    // taucht auch in Sidebar, TabBar und Suche nicht auf. Deshalb ist sie der
+    // Ort für die Sichtbarkeitsregel, und nicht jede Seite für sich.
+    const visible = await visibleProjectIds(workspaceId);
+    if (visible.size === 0) return [];
+
     const rows = await db.project.findMany({
-      where: { workspaceId },
+      where: { workspaceId, id: { in: [...visible] } },
       orderBy: { name: "asc" },
     });
     return rows.map((p) => ({
@@ -98,6 +122,11 @@ export const getProjects = cache(
 
 export const getMembers = cache(
   async (workspaceId: string): Promise<User[]> => {
+    // Die Mitgliederliste trägt Namen und E-Mail-Adressen — sie gehört niemandem
+    // von außen. `getMe()` liest sie ebenfalls, eine leere Liste führt dort
+    // deshalb geradewegs zum `notFound()` der Seiten.
+    if (!(await currentUserCanEnterWorkspace(workspaceId))) return [];
+
     const rows = await db.workspaceMember.findMany({
       where: { workspaceId },
       include: { user: true, role: { select: { key: true, rank: true } } },
@@ -121,8 +150,14 @@ export const getMembers = cache(
 
 export const getLabels = cache(
   async (workspaceId: string): Promise<Label[]> => {
+    // Workspace-Labels gelten überall, Projekt-Labels nur dort — und ein Projekt,
+    // das jemand nicht sehen darf, verrät auch seine Labels nicht.
+    const visible = await visibleProjectIds(workspaceId);
     const rows = await db.label.findMany({
-      where: { workspaceId },
+      where: {
+        workspaceId,
+        OR: [{ projectId: null }, { projectId: { in: [...visible] } }],
+      },
       orderBy: { name: "asc" },
     });
     return rows.map((l) => ({
@@ -196,6 +231,9 @@ export const getRoles = cache(async (workspaceId: string): Promise<Role[]> => {
 });
 
 export const getTeams = cache(async (workspaceId: string): Promise<Team[]> => {
+  // Wie die Mitgliederliste: ein Team nennt seine Mitglieder.
+  if (!(await currentUserCanEnterWorkspace(workspaceId))) return [];
+
   const rows = await db.team.findMany({
     where: { workspaceId },
     include: {
@@ -226,6 +264,11 @@ export async function getIssuesByProject(
     q?: string;
   } = {},
 ): Promise<Issue[]> {
+  // Die Issues sind der Inhalt des Projekts — ohne `project.view` gibt es sie
+  // nicht. Das greift auch für `blocked`: die Rolle verbietet alles, also auch
+  // das Lesen, und nicht nur das Schreiben.
+  if (!(await hasPermission("project.view", { projectId }))) return [];
+
   // URL filter values are human-readable slugs — resolve them to the internal
   // values stored on the issue (status slug == status id, so it needs no lookup).
   const statuses = filters.status?.split(",").filter(Boolean) ?? [];
@@ -289,12 +332,17 @@ export async function getIssuesByProject(
   return rows.map(mapIssue);
 }
 
+// Auch die eigenen Issues bleiben an das Projekt gebunden: wer aus einem Projekt
+// entfernt wird, sieht das Issue nicht weiter, nur weil sein Name darauf steht.
 export async function getMyIssues(
   userId: string,
   workspaceId: string,
 ): Promise<Issue[]> {
+  const visible = await accessibleProjectIds(userId, workspaceId);
+  if (visible.size === 0) return [];
+
   const rows = await db.issue.findMany({
-    where: { assigneeId: userId, project: { workspaceId } },
+    where: { assigneeId: userId, projectId: { in: [...visible] } },
     include: { comments: { orderBy: { created: "asc" } } },
     orderBy: { updated: "desc" },
   });
@@ -305,9 +353,12 @@ export async function getInboxIssues(
   userId: string,
   workspaceId: string,
 ): Promise<Issue[]> {
+  const visible = await accessibleProjectIds(userId, workspaceId);
+  if (visible.size === 0) return [];
+
   const rows = await db.issue.findMany({
     where: {
-      project: { workspaceId },
+      projectId: { in: [...visible] },
       OR: [{ assigneeId: userId }, { reporterId: userId }],
       comments: { some: { authorId: { not: userId } } },
     },
@@ -328,7 +379,13 @@ export async function getIssueById(id: string): Promise<Issue | null> {
     where: { id },
     include: { comments: { orderBy: { created: "asc" } } },
   });
-  return i ? mapIssue(i) : null;
+  if (!i) return null;
+  // Ein einzelnes Issue über seine Id — der direkteste Weg an fremde Inhalte,
+  // wenn hier nichts steht. `null` statt einer Ausnahme: die Aufrufer machen
+  // daraus ein 404, und ein 404 verrät nicht, dass es das Issue gibt.
+  if (!(await hasPermission("project.view", { projectId: i.projectId })))
+    return null;
+  return mapIssue(i);
 }
 
 /**
@@ -348,6 +405,8 @@ export const getIssueByRef = cache(
       where: { workspaceId, prefix },
     });
     if (!project) return null;
+    if (!(await hasPermission("project.view", { projectId: project.id })))
+      return null;
 
     const i = await db.issue.findUnique({
       where: { projectId_key: { projectId: project.id, key } },
@@ -359,8 +418,13 @@ export const getIssueByRef = cache(
 
 export const getSearchIssues = cache(
   async (workspaceId: string): Promise<SearchableIssue[]> => {
+    // Die Suche greift über alle Projekte des Workspace — genau deshalb muss die
+    // Sichtbarkeit hier stehen und nicht erst in der Anzeige.
+    const visible = await visibleProjectIds(workspaceId);
+    if (visible.size === 0) return [];
+
     const rows = await db.issue.findMany({
-      where: { project: { workspaceId } },
+      where: { projectId: { in: [...visible] } },
       select: {
         id: true,
         key: true,

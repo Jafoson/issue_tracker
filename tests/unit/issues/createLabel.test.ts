@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 mock.module("@/lib/db", () => ({
   db: {
     label: { create: mock(), findUnique: mock() },
+    // Ein Projekt-Label leitet seinen Workspace aus dem Projekt ab, statt der
+    // Eingabe zu glauben.
+    project: { findUnique: mock() },
   },
 }));
 
@@ -24,6 +27,7 @@ import { db } from "@/lib/db";
 
 const mockLabelCreate = db.label.create as ReturnType<typeof mock>;
 const mockLabelFindUnique = db.label.findUnique as ReturnType<typeof mock>;
+const mockProjectFindUnique = db.project.findUnique as ReturnType<typeof mock>;
 const mockRevalidate = revalidatePath as ReturnType<typeof mock>;
 
 const BASE = {
@@ -55,6 +59,8 @@ describe("createLabel()", () => {
     mockLabelCreate.mockReset();
     mockLabelFindUnique.mockReset();
     mockLabelFindUnique.mockResolvedValue(null); // slug is free
+    mockProjectFindUnique.mockReset();
+    mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-1" });
     mockRevalidate.mockReset();
   });
 
@@ -150,6 +156,35 @@ describe("createLabel()", () => {
         projectId: "proj-1",
       });
       expect(result.projectId).toBe("proj-1");
+    });
+
+    // Der Aufruf kommt aus dem Client und darf sich seinen Workspace nicht
+    // aussuchen: geprüft wird im Projekt, geschrieben wird deshalb auch dort.
+    it("nimmt den Workspace aus dem Projekt, nicht aus der Eingabe", async () => {
+      mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-echt" });
+
+      await createLabel({
+        ...BASE,
+        workspaceId: "ws-fremd",
+        projectId: "proj-1",
+      });
+
+      expect(mockLabelCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            workspace: { connect: { id: "ws-echt" } },
+            project: { connect: { id: "proj-1" } },
+          }),
+        }),
+      );
+    });
+
+    it("wirft, wenn das Projekt nicht existiert", async () => {
+      mockProjectFindUnique.mockResolvedValue(null);
+      await expect(
+        createLabel({ ...BASE, projectId: "proj-weg" }),
+      ).rejects.toThrow();
+      expect(mockLabelCreate).not.toHaveBeenCalled();
     });
   });
 

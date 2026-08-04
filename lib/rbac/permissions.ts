@@ -17,7 +17,11 @@
 /** Die drei Scopes, in denen Rollen existieren. */
 export type RoleScope = "PLATFORM" | "WORKSPACE" | "PROJECT";
 
-export const ROLE_SCOPES: RoleScope[] = ["PLATFORM", "WORKSPACE", "PROJECT"];
+export const ROLE_SCOPES = [
+  "PLATFORM",
+  "WORKSPACE",
+  "PROJECT",
+] as const satisfies readonly RoleScope[];
 
 /**
  * Wirkung eines Rollen-Eintrags. Ein DENY sticht über alle Scopes hinweg jedes
@@ -204,7 +208,7 @@ export function toPermission(value: string): Permission | null {
 
 /** Narrowt einen beliebigen (DB-)String auf die `RoleScope`-Union. */
 export function toRoleScope(value: string): RoleScope | null {
-  return (ROLE_SCOPES as string[]).includes(value)
+  return (ROLE_SCOPES as readonly string[]).includes(value)
     ? (value as RoleScope)
     : null;
 }

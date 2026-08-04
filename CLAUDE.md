@@ -256,16 +256,21 @@ tests/
       login.test.ts               ← login() Server Action
       register.test.ts            ← register() Server Action
       logout.test.ts              ← logout() Server Action
+      acceptInvitation.test.ts    ← Einladung annehmen (pending → false)
     middleware/
       middleware.test.ts          ← Auth-Middleware (JWT, Routing)
     session/
       session.test.ts             ← createSession / getSession / clearSession
+    invitations/
+      invitations.test.ts         ← lib/invitations (Token, Frist, Gültigkeit)
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
+      inviteWorkspaceMember.test.ts ← Mitglied einladen (Konto oder Link)
     projects/
       createProject.test.ts       ← createProject() Server Action
       projectMembers.test.ts      ← Projektrollen verwalten
       projectMembership.test.ts   ← lib/project-membership (Aufnahme & Austritt)
+      projectSettings.test.ts     ← updateProject / deleteProject, Sichtbarkeit
     permissions/
       resolver.test.ts            ← lib/permissions (eigener Prozess, siehe unten)
       rbac.test.ts                ← Registry aus lib/rbac
@@ -298,6 +303,12 @@ nur `cache`, und `react-dom/server` verweigert dann den Dienst. Und
 `permissions/roleActions.test.ts` mockt `@/lib/permissions` komplett weg — im selben
 Prozess prüft `permissions/resolver.test.ts` dann den Mock statt den Resolver. Das
 `test`-Script in `package.json` splittet den Aufruf deshalb in mehrere Prozesse:
+
+Umgekehrt gilt: **kein Modul mocken, dessen eigene Tests im selben Prozess laufen.**
+`auth/acceptInvitation.test.ts` prüft eine Funktion, die `lib/invitations` benutzt,
+und mockt trotzdem nur `@/lib/db` — ein `mock.module("@/lib/invitations")` hätte
+`invitations/invitations.test.ts` gegen den Mock testen lassen. Der DB-Mock ist die
+kleinere Annahme und lässt den echten Code laufen.
 
 ```
 # Korrekt:

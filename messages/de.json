@@ -149,7 +149,14 @@
     "colTeams": "Teams",
     "noTeams": "Keine Teams",
     "removeTitle": "Mitglied entfernen",
-    "activeProjects": "{count, plural, one {# aktives Projekt} other {# aktive Projekte}}"
+    "activeProjects": "{count, plural, one {# aktives Projekt} other {# aktive Projekte}}",
+    "inviteTitle": "Mitglied einladen",
+    "inviteDesc": "Die Person bekommt Zugriff auf diesen Workspace und seine öffentlichen Projekte.",
+    "inviteLinkTitle": "Einladung erstellt",
+    "inviteLinkDesc": "Es gibt noch keinen Mailversand — schicke diesen Link an die eingeladene Person. Er gilt 14 Tage.",
+    "inviteLinkCopy": "Link kopieren",
+    "inviteLinkCopied": "Kopiert",
+    "inviteAdded": "{email} ist jetzt im Workspace."
   },
   "projectMembers": {
     "subtitle": "{count, plural, one {# Person hat} other {# Personen haben}} Zugriff auf „{project}“. Rollen und Zugriff verwaltest du hier.",
@@ -174,6 +181,24 @@
     "addSelected": "{count, plural, =0 {Hinzufügen} one {# hinzufügen} other {# hinzufügen}}",
     "toAdd": "zum Hinzufügen",
     "toInvite": "zum Einladen"
+  },
+  "projectSettings": {
+    "subtitle": "Kürzel {prefix} · Adresse /{slug}",
+    "general": "Allgemein",
+    "saved": "Gespeichert",
+    "visibility": "Sichtbarkeit",
+    "public": "Öffentlich",
+    "private": "Privat",
+    "publicTitle": "Öffentlich im Workspace",
+    "privateTitle": "Privates Projekt",
+    "publicDesc": "Wer in den Workspace kommt, wird automatisch aufgenommen.",
+    "privateDesc": "Es ist nur dabei, wer ausdrücklich aufgenommen wurde. Neue Workspace-Mitglieder kommen nicht von selbst dazu.",
+    "privateDescNew": "Zunächst bist nur du dabei. Weitere Personen nimmst du danach ausdrücklich auf.",
+    "visibilityNote": "Auf „privat“ umzuschalten nimmt niemandem den Zugriff: die {count, plural, one {# Person} other {# Personen}} im Projekt bleiben drin. Wen du nicht mehr dabei haben willst, entfernst du unter Mitglieder.",
+    "dangerZone": "Gefahrenzone",
+    "deleteTitle": "Dieses Projekt löschen",
+    "deleteDesc": "{count, plural, =0 {Das Projekt hat keine Aufgaben.} one {# Aufgabe wird mit gelöscht.} other {# Aufgaben werden mit gelöscht.}} Das lässt sich nicht zurücknehmen.",
+    "deleteConfirm": "Endgültig löschen"
   },
   "teams": {
     "title": "Teams",
@@ -279,6 +304,14 @@
     "continueWith": "Weiter mit {provider}",
     "haveAccount": "Bereits ein Konto?",
     "signUp": "Registrieren"
+  },
+  "invite": {
+    "title": "Willkommen bei {workspace}",
+    "subtitle": "Setze Namen und Passwort, dann bist du drin.",
+    "accept": "Einladung annehmen",
+    "haveAccount": "Schon ein Konto?",
+    "invalidTitle": "Diese Einladung gilt nicht mehr",
+    "invalidText": "Der Link ist abgelaufen, wurde schon benutzt, oder es gibt ihn nicht. Bitte um eine neue Einladung — oder melde dich an, wenn du bereits ein Konto hast."
   },
   "filters": {
     "statuses": "{count} Status",

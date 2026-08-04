@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import { CopyField } from "@/components/ui/atoms/CopyField/CopyField";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Input } from "@/components/ui/atoms/Input/Input";
@@ -71,6 +72,11 @@ export function AddProjectMembersModal({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(defaultRole);
   const [error, setError] = useState("");
+  // Entsteht beim Einladen einer unbekannten Adresse: das Konto hat kein
+  // Passwort, dieser Link ist der einzige Weg hinein. Solange es keinen
+  // Mailversand gibt, ist er das Ergebnis der Handlung — der Dialog schließt
+  // deshalb nicht, sondern zeigt ihn.
+  const [inviteUrl, setInviteUrl] = useState("");
 
   const roleName = roles.find((r) => r.id === role)?.name ?? role;
 
@@ -111,164 +117,200 @@ export function AddProjectMembersModal({
         return;
       }
       router.refresh();
+      // Ein neu entstandenes Konto braucht seinen Einladungslink — der Dialog
+      // bleibt offen, bis er kopiert werden konnte.
+      if (result.inviteUrl) {
+        setInviteUrl(result.inviteUrl);
+        return;
+      }
       close();
     });
   };
 
-  useSubmitShortcut(submit);
+  const finish = () => {
+    router.refresh();
+    close();
+  };
+
+  useSubmitShortcut(inviteUrl ? finish : submit);
 
   return (
     <Modal width={520}>
       <ModalHeader
         leading={
           <Icon
-            icon="lucide:user-plus"
+            icon={inviteUrl ? "lucide:mail-check" : "lucide:user-plus"}
             width={16}
             className={styles.headerIcon}
           />
         }
-        title={t("projectMembers.addTitle", { project: projectName })}
-        onClose={close}
+        title={
+          inviteUrl
+            ? t("members.inviteLinkTitle")
+            : t("projectMembers.addTitle", { project: projectName })
+        }
+        onClose={finish}
         closeLabel={t("actions.close")}
       />
 
-      <ModalBody className={styles.body}>
-        {canInvite && (
-          <SegmentedControl
-            items={[
-              {
-                value: "workspace",
-                label: t("projectMembers.fromWorkspace"),
-              },
-              { value: "invite", label: t("projectMembers.byEmail") },
-            ]}
-            value={mode}
-            onChange={(value) => {
-              setMode(value as Mode);
-              setError("");
-            }}
+      {inviteUrl ? (
+        <ModalBody className={styles.body}>
+          <p className={styles.inviteLinkDesc}>{t("members.inviteLinkDesc")}</p>
+          <CopyField
+            value={inviteUrl}
+            copyLabel={t("members.inviteLinkCopy")}
+            copiedLabel={t("members.inviteLinkCopied")}
           />
-        )}
-
-        {mode === "workspace" ? (
-          candidates.length === 0 ? (
-            <EmptyState
-              icon={<Icon icon="lucide:users" width={28} />}
-              title={t("projectMembers.allAdded")}
-              description={
-                canInvite ? t("projectMembers.allAddedHint") : undefined
-              }
+        </ModalBody>
+      ) : (
+        <ModalBody className={styles.body}>
+          {canInvite && (
+            <SegmentedControl
+              items={[
+                {
+                  value: "workspace",
+                  label: t("projectMembers.fromWorkspace"),
+                },
+                { value: "invite", label: t("projectMembers.byEmail") },
+              ]}
+              value={mode}
+              onChange={(value) => {
+                setMode(value as Mode);
+                setError("");
+              }}
             />
-          ) : (
-            <>
-              <Input
-                autoFocus
-                variant="search"
-                size="sm"
-                placeholder={t("projectMembers.searchPlaceholder")}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+          )}
 
-              <ul className={styles.list}>
-                {filtered.map((user) => {
-                  const isSelected = selected.has(user.id);
-                  return (
-                    <li key={user.id}>
-                      <button
-                        type="button"
-                        className={styles.candidate}
-                        aria-pressed={isSelected}
-                        onClick={() => toggle(user.id)}
-                      >
-                        <UserCell
-                          avatar={user}
-                          name={fullName(user)}
-                          meta={user.email}
-                          size={28}
-                          trailing={
-                            user.pending && (
-                              <Label size="xs" color="var(--amber)">
-                                {t("projectMembers.pending")}
-                              </Label>
-                            )
-                          }
-                        />
-                        <Icon
-                          className={styles.check}
-                          icon={isSelected ? "lucide:check" : "lucide:plus"}
-                          width={15}
-                        />
-                      </button>
+          {mode === "workspace" ? (
+            candidates.length === 0 ? (
+              <EmptyState
+                icon={<Icon icon="lucide:users" width={28} />}
+                title={t("projectMembers.allAdded")}
+                description={
+                  canInvite ? t("projectMembers.allAddedHint") : undefined
+                }
+              />
+            ) : (
+              <>
+                <Input
+                  autoFocus
+                  variant="search"
+                  size="sm"
+                  placeholder={t("projectMembers.searchPlaceholder")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+
+                <ul className={styles.list}>
+                  {filtered.map((user) => {
+                    const isSelected = selected.has(user.id);
+                    return (
+                      <li key={user.id}>
+                        <button
+                          type="button"
+                          className={styles.candidate}
+                          aria-pressed={isSelected}
+                          onClick={() => toggle(user.id)}
+                        >
+                          <UserCell
+                            avatar={user}
+                            name={fullName(user)}
+                            meta={user.email}
+                            size={28}
+                            trailing={
+                              user.pending && (
+                                <Label size="xs" color="var(--amber)">
+                                  {t("projectMembers.pending")}
+                                </Label>
+                              )
+                            }
+                          />
+                          <Icon
+                            className={styles.check}
+                            icon={isSelected ? "lucide:check" : "lucide:plus"}
+                            width={15}
+                          />
+                        </button>
+                      </li>
+                    );
+                  })}
+
+                  {filtered.length === 0 && (
+                    <li className={styles.noResults}>
+                      {t("empty.noResults", { q: query })}
                     </li>
-                  );
-                })}
+                  )}
+                </ul>
+              </>
+            )
+          ) : (
+            <Input
+              autoFocus
+              label={t("fields.email")}
+              hint={t("projectMembers.inviteHint")}
+              placeholder="ada@example.com"
+              value={email}
+              spellCheck={false}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          )}
 
-                {filtered.length === 0 && (
-                  <li className={styles.noResults}>
-                    {t("empty.noResults", { q: query })}
-                  </li>
-                )}
-              </ul>
-            </>
-          )
-        ) : (
-          <Input
-            autoFocus
-            label={t("fields.email")}
-            hint={t("projectMembers.inviteHint")}
-            placeholder="ada@example.com"
-            value={email}
-            spellCheck={false}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        )}
+          <div className={styles.roleRow}>
+            <span className={styles.roleLabel}>{t("fields.role")}</span>
+            <InlinePicker
+              trigger={
+                <Badge as="button" mono={false} active>
+                  {roleName}
+                  <Icon icon="lucide:chevron-down" width={12} />
+                </Badge>
+              }
+              width={220}
+            >
+              {(closePicker) => (
+                <SelectMenu
+                  items={roles.map((r) => ({ value: r.id, label: r.name }))}
+                  value={role}
+                  onPick={(value) => {
+                    setRole(String(value));
+                    closePicker();
+                  }}
+                  onClose={closePicker}
+                />
+              )}
+            </InlinePicker>
+          </div>
 
-        <div className={styles.roleRow}>
-          <span className={styles.roleLabel}>{t("fields.role")}</span>
-          <InlinePicker
-            trigger={
-              <Badge as="button" mono={false} active>
-                {roleName}
-                <Icon icon="lucide:chevron-down" width={12} />
-              </Badge>
-            }
-            width={220}
-          >
-            {(closePicker) => (
-              <SelectMenu
-                items={roles.map((r) => ({ value: r.id, label: r.name }))}
-                value={role}
-                onPick={(value) => {
-                  setRole(String(value));
-                  closePicker();
-                }}
-                onClose={closePicker}
-              />
-            )}
-          </InlinePicker>
-        </div>
-
-        {error && <p className={styles.error}>{error}</p>}
-      </ModalBody>
+          {error && <p className={styles.error}>{error}</p>}
+        </ModalBody>
+      )}
 
       <ModalFooter
         hint={
-          <ModalShortcut keys={["⌘", "↵"]}>
-            {mode === "workspace"
-              ? t("projectMembers.toAdd")
-              : t("projectMembers.toInvite")}
-          </ModalShortcut>
+          inviteUrl ? undefined : (
+            <ModalShortcut keys={["⌘", "↵"]}>
+              {mode === "workspace"
+                ? t("projectMembers.toAdd")
+                : t("projectMembers.toInvite")}
+            </ModalShortcut>
+          )
         }
       >
-        <Button variant="ghost" onClick={close}>
-          {t("actions.cancel")}
-        </Button>
-        <Button variant="primary" disabled={!canSubmit} onClick={submit}>
-          {mode === "workspace"
-            ? t("projectMembers.addSelected", { count: selected.size })
-            : t("actions.inviteMember")}
-        </Button>
+        {inviteUrl ? (
+          <Button variant="primary" onClick={finish}>
+            {t("actions.close")}
+          </Button>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={close}>
+              {t("actions.cancel")}
+            </Button>
+            <Button variant="primary" disabled={!canSubmit} onClick={submit}>
+              {mode === "workspace"
+                ? t("projectMembers.addSelected", { count: selected.size })
+                : t("actions.inviteMember")}
+            </Button>
+          </>
+        )}
       </ModalFooter>
     </Modal>
   );

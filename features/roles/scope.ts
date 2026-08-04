@@ -7,8 +7,8 @@ import {
   PLATFORM,
 } from "@/lib/permissions";
 import {
+  platformRoleId,
   projectRoleId,
-  systemRoleId,
   workspaceProjectRoleId,
   workspaceRoleId,
 } from "@/lib/rbac";
@@ -63,7 +63,7 @@ export function ownerColumns(target: RoleTarget): {
 
 /** Deterministische Id einer neuen Rolle in diesem Topf. */
 export function targetRoleId(target: RoleTarget, key: string): string {
-  if (target.scope === "PLATFORM") return systemRoleId("PLATFORM", key);
+  if (target.scope === "PLATFORM") return platformRoleId(key);
   if (target.scope === "WORKSPACE") {
     return workspaceRoleId(target.workspaceId, key);
   }

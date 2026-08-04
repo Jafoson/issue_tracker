@@ -12,6 +12,7 @@
 // DENY sticht über alle Ebenen. Ausgewertet wird das in `lib/permissions.ts`.
 
 export {
+  platformRoleId,
   projectRoleId,
   systemRoleId,
   workspaceProjectRoleId,

@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
  * Rollen des Workspace — zwei Töpfe auf einer Seite.
  *
  * Oben die Workspace-Rollen selbst, darunter die Projektrollen, die in allen
- * Projekten dieses Workspace zuweisbar sind. Beide hängen an
- * `workspace.role.manage`: wer die Projektrollen des Workspace setzt,
- * entscheidet über alle seine Projekte auf einmal.
+ * Projekten dieses Workspace zuweisbar sind. Beide hängen an `role.manage` im
+ * Workspace-Kontext: wer die Projektrollen des Workspace setzt, entscheidet über
+ * alle seine Projekte auf einmal.
  */
 export default async function WorkspaceRolesPage({
   params,

@@ -63,6 +63,15 @@ describe("proxy() – Auth-Gate", () => {
       const location = response.headers.get("Location") ?? "";
       expect(location).not.toContain("callbackUrl");
     });
+
+    // Der Token im Pfad ist die Berechtigung, und wer eine Einladung annimmt, hat
+    // noch kein Passwort — ein Auth-Gate davor wäre eine Tür, hinter der der
+    // Schlüssel liegt.
+    it("lässt /invite/<token> ohne Session passieren", async () => {
+      const response = await proxy(makeRequest("/de/invite/abc123"));
+      const location = response.headers.get("Location") ?? "";
+      expect(location).not.toContain("callbackUrl");
+    });
   });
 
   describe("Gültige Session", () => {

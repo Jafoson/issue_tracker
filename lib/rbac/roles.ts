@@ -102,9 +102,9 @@ const PLATFORM_ROLES: SystemRole[] = [
 
 // ─── Scope WORKSPACE ──────────────────────────────────────────────────────────
 //
-// Diese Rollen dürfen auch projektbezogene Permissions tragen — die gelten dann
-// als Basis in **allen** Projekten des Workspace. Die Projekt-Ebene ergänzt
-// (ALLOW) oder entzieht (DENY) darauf.
+// Diese Rollen dürfen auch projektbezogene Permissions tragen — die gelten in
+// **allen** Projekten des Workspace, in denen die Person keine eigene Projektrolle
+// hat. Sobald sie eine hat, entscheidet diese (siehe `projectGrants`).
 
 const WORKSPACE_ROLES: SystemRole[] = [
   {

@@ -9,6 +9,7 @@
 // geparst werden. Wer Scope oder Eigentümer braucht, liest die Spalten.
 //
 //   sys:WORKSPACE:member       System-Rolle, existiert genau einmal
+//   pf:auditor                 eigene Plattform-Rolle
 //   ws:acme:reviewer           eigene Workspace-Rolle
 //   wsp:acme:triage            eigene Projektrolle, in allen Projekten von acme
 //   pr:p_7f3a:triage           eigene Projektrolle, nur in diesem Projekt
@@ -18,6 +19,15 @@ import type { RoleScope } from "./permissions";
 /** System-Rolle — ohne Bindung an Workspace oder Projekt. */
 export function systemRoleId(scope: RoleScope, key: string): string {
   return `sys:${scope}:${key}`;
+}
+
+/**
+ * Eigene Rolle im Scope PLATFORM — gehört ebenfalls niemandem, ist aber keine
+ * System-Rolle. Eigenes Präfix, damit `sys:` weiter genau das heißt, was es sagt:
+ * eine geteilte Default-Rolle aus `lib/rbac/roles.ts`.
+ */
+export function platformRoleId(key: string): string {
+  return `pf:${key}`;
 }
 
 /** Eigene Rolle im Scope WORKSPACE, gehört diesem Workspace. */

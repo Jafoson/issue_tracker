@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { ProjectVisibility } from "@/features/projects/types";
 import { db } from "@/lib/db";
+import { createInvitation, invitationUrl } from "@/lib/invitations";
 import {
   accessFor,
   assignmentCeiling,
@@ -11,6 +13,7 @@ import {
 } from "@/lib/permissions";
 import {
   enrollInWorkspaceProjects,
+  enrollMember,
   enrollWorkspaceMembers,
 } from "@/lib/project-membership";
 import {
@@ -24,7 +27,12 @@ import { slugify } from "@/lib/slug";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 import { uid } from "@/lib/utils/id";
 
-type ProjectResult = { ok: true } | { error: string };
+/**
+ * `inviteUrl` steht nur beim Einladen einer unbekannten Adresse da: dann entsteht
+ * ein Konto ohne Passwort, und der Link ist der einzige Weg hinein. Ohne
+ * Mailversand zeigt ihn die Oberfläche zum Kopieren.
+ */
+type ProjectResult = { ok: true; inviteUrl?: string } | { error: string };
 
 function basePrefix(name: string): string {
   return (
@@ -72,6 +80,7 @@ export async function createProject(data: {
   name: string;
   prefix?: string;
   color: string;
+  visibility?: ProjectVisibility;
 }): Promise<ProjectResult> {
   const session = await getSession();
   if (!session) return { error: "You must be logged in." };
@@ -84,6 +93,9 @@ export async function createProject(data: {
   });
   if (!allowed)
     return { error: "You are not allowed to create projects here." };
+
+  const visibility: ProjectVisibility =
+    data.visibility === "private" ? "private" : "public";
 
   const desired =
     (data.prefix?.trim() || basePrefix(name))
@@ -103,12 +115,134 @@ export async function createProject(data: {
         slug,
         prefix,
         color: data.color,
+        visibility,
       },
     });
 
-    // Ein neues Projekt ist öffentlich: wer im Workspace ist, ist darin. Der
-    // Eintrag hält das fest — auch für den Ersteller.
-    await enrollWorkspaceMembers(tx, { id, workspaceId: data.workspaceId });
+    const project = { id, workspaceId: data.workspaceId };
+    // Ein öffentliches Projekt nimmt alle auf, die im Workspace sind — der
+    // Eintrag hält das fest, auch für den Ersteller. In ein privates kommt nur
+    // er selbst; alle weiteren werden ausdrücklich aufgenommen.
+    if (visibility === "private") {
+      await enrollMember(tx, project, session.userId);
+    } else {
+      await enrollWorkspaceMembers(tx, project);
+    }
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// ─── Projekt ändern und löschen ───────────────────────────────────────────────
+
+/** Prüft ein Projektrecht und liefert den Workspace des Projekts mit. */
+async function requireProjectManage(
+  projectId: string,
+  permission: "project.update" | "project.delete",
+): Promise<{ workspaceId: string; actorId: string } | { error: string }> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: { workspaceId: true },
+  });
+  if (!project) return { error: "This project no longer exists." };
+
+  if (!(await can(actorId, permission, { projectId }))) {
+    return {
+      error:
+        permission === "project.delete"
+          ? "You are not allowed to delete this project."
+          : "You are not allowed to change this project.",
+    };
+  }
+
+  return { workspaceId: project.workspaceId, actorId };
+}
+
+/**
+ * Name, Kürzel, Farbe und Sichtbarkeit eines Projekts.
+ *
+ * Der Slug bleibt, wie er ist: er steht in jeder geteilten Adresse, und ein
+ * umbenanntes Projekt soll keine toten Links hinterlassen.
+ *
+ * Auf `public` umzuschalten nimmt alle Workspace-Mitglieder auf — das ist, was
+ * öffentlich heißt. Der Weg zurück nimmt niemandem etwas: wer drin ist, bleibt
+ * drin, nur neue Mitglieder kommen nicht mehr von selbst dazu. Jemanden
+ * hinauszunehmen ist eine eigene Handlung (`removeProjectMember`), kein
+ * Nebeneffekt eines Schalters.
+ */
+export async function updateProject(
+  projectId: string,
+  data: {
+    name?: string;
+    prefix?: string;
+    color?: string;
+    visibility?: ProjectVisibility;
+  },
+): Promise<ProjectResult> {
+  const guard = await requireProjectManage(projectId, "project.update");
+  if ("error" in guard) return guard;
+
+  const name = data.name?.trim();
+  if (name !== undefined && !name) return { error: "Name is required." };
+
+  let prefix: string | undefined;
+  if (data.prefix !== undefined) {
+    prefix = data.prefix
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase()
+      .slice(0, 4);
+    if (!prefix) return { error: "The identifier cannot be empty." };
+
+    // Beim Anlegen hängt `uniquePrefix` stillschweigend eine Ziffer an. Hier
+    // wäre das falsch: wer ein Kürzel ausdrücklich eingibt, soll erfahren, dass
+    // es vergeben ist, statt ein anderes zu bekommen.
+    const taken = await db.project.findUnique({
+      where: { workspaceId_prefix: { workspaceId: guard.workspaceId, prefix } },
+      select: { id: true },
+    });
+    if (taken && taken.id !== projectId)
+      return {
+        error: "Another project in this workspace uses that identifier.",
+      };
+  }
+
+  const project = await db.project.update({
+    where: { id: projectId },
+    data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(prefix !== undefined ? { prefix } : {}),
+      ...(data.color !== undefined ? { color: data.color } : {}),
+      ...(data.visibility !== undefined ? { visibility: data.visibility } : {}),
+    },
+    select: { id: true, workspaceId: true },
+  });
+
+  if (data.visibility === "public") {
+    await enrollWorkspaceMembers(db, project);
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Löscht ein Projekt mit allem, was daran hängt.
+ *
+ * Die Issues gehen zuerst: ihr Fremdschlüssel steht auf `Restrict`, das Projekt
+ * ließe sich sonst gar nicht löschen. Kommentare, Projektmitglieder, Labels und
+ * projektlokale Rollen kaskadieren von selbst.
+ */
+export async function deleteProject(projectId: string): Promise<ProjectResult> {
+  const guard = await requireProjectManage(projectId, "project.delete");
+  if ("error" in guard) return guard;
+
+  await db.$transaction(async (tx) => {
+    await tx.issue.deleteMany({ where: { projectId } });
+    await tx.project.delete({ where: { id: projectId } });
   });
 
   revalidatePath("/", "layout");
@@ -134,8 +268,20 @@ interface MemberGuard {
   actorRank: number;
 }
 
+/**
+ * Die drei Mitglieder-Rechte sind getrennt vergebbar, also prüft jede Aktion ihr
+ * eigenes: aufnehmen (`member.invite`), umrollen (`member.role.update`),
+ * entfernen (`member.remove`). Ein Recht auf eines davon ist keines auf die
+ * anderen — der Workspace-Pfad in `features/issues/actions.ts` hält es genauso.
+ */
+type MemberPermission =
+  | "member.invite"
+  | "member.remove"
+  | "member.role.update";
+
 async function requireMemberManage(
   projectId: string,
+  permission: MemberPermission,
 ): Promise<MemberGuard | { error: string }> {
   const actorId = await currentUserId();
   if (!actorId) return { error: "You must be logged in." };
@@ -147,7 +293,7 @@ async function requireMemberManage(
   if (!project) return { error: "This project no longer exists." };
 
   const access = await accessFor(actorId, { projectId });
-  if (!access.has("member.invite"))
+  if (!access.has(permission))
     return { error: "You are not allowed to manage members of this project." };
 
   return {
@@ -216,7 +362,7 @@ export async function addProjectMembers(data: {
   userIds: string[];
   role: string;
 }): Promise<ProjectResult> {
-  const guard = await requireMemberManage(data.projectId);
+  const guard = await requireMemberManage(data.projectId, "member.invite");
   if ("error" in guard) return guard;
 
   const role = await resolveAssignable(guard, data.role);
@@ -254,8 +400,13 @@ export async function setProjectMemberRole(
   userId: string,
   roleKey: string,
 ): Promise<ProjectResult> {
-  const guard = await requireMemberManage(projectId);
+  const guard = await requireMemberManage(projectId, "member.role.update");
   if ("error" in guard) return guard;
+
+  // Die eigene Rolle ändert niemand über diese Tabelle — sonst wäre der
+  // Rangvergleich unten eine Prüfung gegen sich selbst.
+  if (userId === guard.actorId)
+    return { error: "You cannot change your own role here." };
 
   const role = await resolveAssignable(guard, roleKey);
   if ("error" in role) return role;
@@ -292,8 +443,13 @@ export async function removeProjectMember(
   projectId: string,
   userId: string,
 ): Promise<ProjectResult> {
-  const guard = await requireMemberManage(projectId);
+  const guard = await requireMemberManage(projectId, "member.remove");
   if ("error" in guard) return guard;
+
+  // Sich selbst nimmt man nicht heraus: das wäre der Verlust des eigenen
+  // Zugriffs mit einem Klick, und ohne Weg zurück.
+  if (userId === guard.actorId)
+    return { error: "You cannot remove yourself from the project." };
 
   const target = await db.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
@@ -316,10 +472,10 @@ export async function removeProjectMember(
 /**
  * Lädt jemanden per E-Mail ins Projekt ein.
  *
- * Existiert der Account schon, reicht `project.member.manage` — es entsteht nur
- * ein Projekt-Eintrag. Für eine unbekannte Adresse muss ein Account angelegt
- * werden; das ist eine Workspace-Operation und verlangt zusätzlich
- * `workspace.member.invite`.
+ * Existiert der Account schon, reicht `member.invite` im Projekt — es entsteht
+ * nur ein Projekt-Eintrag. Für eine unbekannte Adresse muss ein Account angelegt
+ * werden; das ist eine Workspace-Operation und verlangt `member.invite`
+ * zusätzlich im Workspace-Kontext.
  *
  * Die Projektrolle entscheidet über die Workspace-Mitgliedschaft: ein Gast
  * bleibt bewusst außen vor und sieht nur dieses eine Projekt, jede andere Rolle
@@ -332,7 +488,7 @@ export async function inviteProjectMember(data: {
   email: string;
   role: string;
 }): Promise<ProjectResult> {
-  const guard = await requireMemberManage(data.projectId);
+  const guard = await requireMemberManage(data.projectId, "member.invite");
   if ("error" in guard) return guard;
 
   const role = await resolveAssignable(guard, data.role);
@@ -383,8 +539,9 @@ export async function inviteProjectMember(data: {
   // etwas Lesbares zeigen.
   const localPart = email.split("@")[0];
   const handle = await generateHandle(email);
+  const now = new Date();
 
-  await db.$transaction(async (tx) => {
+  const token = await db.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         firstName: localPart.charAt(0).toUpperCase() + localPart.slice(1),
@@ -423,8 +580,19 @@ export async function inviteProjectMember(data: {
       update: { roleId: role.id },
       create: { projectId: data.projectId, userId: user.id, roleId: role.id },
     });
+
+    // Das Konto hat kein Passwort — ohne diesen Token käme niemand hinein.
+    return createInvitation(
+      tx,
+      {
+        userId: user.id,
+        workspaceId: guard.workspaceId,
+        projectId: data.projectId,
+      },
+      now,
+    );
   });
 
   revalidatePath("/", "layout");
-  return { ok: true };
+  return { ok: true, inviteUrl: invitationUrl(token) };
 }

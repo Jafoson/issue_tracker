@@ -1,0 +1,28 @@
+.nameRow {
+  display: flex;
+  gap: 12px;
+
+  > * {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Die Adresse gehört zur Einladung und ist hier nichts zu Entscheidendes. Sie
+   sieht deshalb aus wie eine Angabe, nicht wie ein Feld — kein Rahmen, keine
+   Schreibmarke, aber dieselbe Zeilenhöhe wie die Felder darunter. */
+.email {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.emailLabel {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.emailValue {
+  font-size: var(--text-base);
+  color: var(--on-surface);
+}

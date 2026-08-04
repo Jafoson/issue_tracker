@@ -75,3 +75,12 @@
   color: var(--error);
   font-size: var(--text-sm);
 }
+
+/* Erklärt den Einladungslink darunter — dieselbe Rolle wie ein Feld-Hint, nur für
+   den ganzen Dialogschritt. */
+.inviteLinkDesc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}

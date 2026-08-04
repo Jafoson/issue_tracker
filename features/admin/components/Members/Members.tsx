@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
-import { removeMember, setMemberRole } from "@/features/issues/actions";
+import { removeMember, setMemberRole } from "@/features/workspaces/actions";
+import { useModal } from "@/lib/context";
 import { roleColor } from "@/lib/rbac";
 import { fullName } from "@/lib/utils/string";
 import type { Role, Team, User } from "@/types";
+import { InviteMemberModal } from "./components/InviteMemberModal";
 import styles from "./members.module.scss";
 
 /**
@@ -38,7 +40,24 @@ export function Members({ members, teams, me, roles, can }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const { workspace } = useParams<{ workspace: string }>();
+  const { openModal } = useModal();
   const [, startTransition] = useTransition();
+
+  // Vergeben lässt sich nur, was unter dem eigenen Rang liegt — dieselbe Grenze
+  // wie beim Ändern einer Rolle in der Tabelle. `owner` steht nie darin: den gibt
+  // es nur per Ownership-Transfer.
+  const assignableRoles = roles.filter(
+    (r) => r.id !== "owner" && r.rank <= (me.roleRank ?? -1),
+  );
+
+  const openInvite = () =>
+    openModal(({ close }) => (
+      <InviteMemberModal
+        workspaceId={workspace}
+        roles={assignableRoles}
+        close={close}
+      />
+    ));
 
   const roleName = (key: string | undefined) =>
     roles.find((r) => r.id === key)?.name ?? key ?? "";
@@ -59,10 +78,11 @@ export function Members({ members, teams, me, roles, can }: Props) {
     <div className={styles.wrap}>
       <div className={styles.pageHeader}>
         <h2 className={styles.pageTitle}>{t("members.title")}</h2>
-        {can.invite && (
+        {can.invite && assignableRoles.length > 0 && (
           <Button
             variant="primary"
             icon={<Icon icon="lucide:plus" width={15} />}
+            onClick={openInvite}
           >
             {t("actions.inviteMember")}
           </Button>

@@ -1,0 +1,153 @@
+// ─── Einladungen ──────────────────────────────────────────────────────────────
+//
+// Wer per E-Mail eingeladen wird, bekommt sofort ein Konto — ohne Passwort und
+// mit `WorkspaceMember.pending = true`. Bis hierher kam das Projekt schon vorher;
+// was fehlte, war der Weg von dort zum fertigen Zugang. Diese Datei ist dieser
+// Weg: einen Token ausstellen, ihn einlösen, und dazwischen nichts verraten.
+//
+// Es gibt keinen Mailversand. Statt die Einladung zu verschicken, gibt die Action
+// den Link zurück, und die Oberfläche zeigt ihn zum Kopieren. Sobald Mail dazukommt,
+// verschickt sie dieselbe URL — hier ändert sich dafür nichts.
+
+import { randomBytes } from "node:crypto";
+import type { Prisma } from "@/lib/generated/prisma/client";
+
+/** Passt auf den Prisma-Client wie auf einen Transaktions-Client. */
+type Db = Prisma.TransactionClient;
+
+/** Wie lange eine Einladung gilt. */
+const VALID_DAYS = 14;
+
+/**
+ * 32 Byte aus dem Zufallsgenerator des Betriebssystems, base64url kodiert.
+ *
+ * Der Token ist der einzige Schutz des Links — er muss unerratbar sein, nicht
+ * kurz. `randomBytes` statt `Math.random`: letzteres ist vorhersagbar.
+ */
+export function newInvitationToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+/**
+ * Stellt eine Einladung aus und gibt ihren Token zurück.
+ *
+ * Ältere, noch offene Einladungen derselben Person in denselben Workspace werden
+ * dabei verworfen: es soll nicht zwei Links geben, von denen einer ins Leere
+ * führt, sobald der andere benutzt wurde.
+ */
+export async function createInvitation(
+  db: Db,
+  data: { userId: string; workspaceId: string; projectId?: string | null },
+  now: Date,
+): Promise<string> {
+  await db.invitation.deleteMany({
+    where: {
+      userId: data.userId,
+      workspaceId: data.workspaceId,
+      acceptedAt: null,
+    },
+  });
+
+  const token = newInvitationToken();
+  const expires = new Date(now.getTime() + VALID_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.invitation.create({
+    data: {
+      token,
+      userId: data.userId,
+      workspaceId: data.workspaceId,
+      projectId: data.projectId ?? null,
+      expires,
+    },
+  });
+
+  return token;
+}
+
+/** Der Pfad, unter dem eine Einladung angenommen wird. Ohne Locale-Präfix. */
+export function invitationPath(token: string): string {
+  return `/invite/${token}`;
+}
+
+/**
+ * Die absolute Einladungs-URL.
+ *
+ * Die Basis kommt aus der Umgebung — der Link wird kopiert und woanders geöffnet,
+ * ein relativer Pfad taugt dafür nicht. `AUTH_URL` ist gesetzt, weil Auth.js sie
+ * ohnehin braucht; `NEXTAUTH_URL` und ein lokaler Fallback stehen daneben, damit
+ * die Funktion nirgends leer ausgeht.
+ */
+export function invitationUrl(token: string): string {
+  const base = (
+    process.env.AUTH_URL ??
+    process.env.NEXTAUTH_URL ??
+    "http://localhost:3000"
+  ).replace(/\/+$/, "");
+  return `${base}${invitationPath(token)}`;
+}
+
+export interface OpenInvitation {
+  token: string;
+  workspaceId: string;
+  workspaceName: string;
+  projectId: string | null;
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  /** Das Konto hat schon ein Passwort — die Einladung braucht keines mehr. */
+  hasPassword: boolean;
+}
+
+/**
+ * Lädt eine Einladung, die noch eingelöst werden kann.
+ *
+ * `null` heißt in jedem Fall dasselbe: unbekannt, abgelaufen oder schon benutzt.
+ * Die Seite zeigt darauf eine Meldung, die zwischen diesen Fällen nicht
+ * unterscheidet — sonst wäre der Endpunkt ein Orakel für gültige Tokens.
+ */
+export async function openInvitation(
+  db: Db,
+  token: string,
+  now: Date,
+): Promise<OpenInvitation | null> {
+  if (!token) return null;
+
+  const invitation = await db.invitation.findUnique({
+    where: { token },
+    select: {
+      token: true,
+      workspaceId: true,
+      projectId: true,
+      expires: true,
+      acceptedAt: true,
+      workspace: { select: { name: true, suspended: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          passwordHash: true,
+        },
+      },
+    },
+  });
+  if (!invitation) return null;
+  if (invitation.acceptedAt) return null;
+  if (invitation.expires <= now) return null;
+  // Ein gesperrter Workspace nimmt niemanden auf — auch keinen Eingeladenen.
+  if (invitation.workspace.suspended) return null;
+
+  return {
+    token: invitation.token,
+    workspaceId: invitation.workspaceId,
+    workspaceName: invitation.workspace.name,
+    projectId: invitation.projectId,
+    userId: invitation.user.id,
+    email: invitation.user.email,
+    firstName: invitation.user.firstName,
+    lastName: invitation.user.lastName,
+    hasPassword: invitation.user.passwordHash !== null,
+  };
+}

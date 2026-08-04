@@ -154,6 +154,17 @@ const loadProjectRole = cache(
   },
 );
 
+/** Steht die Person in mindestens einem Projekt dieses Workspace? */
+const inAnyProject = cache(
+  async (userId: string, workspaceId: string): Promise<boolean> => {
+    const row = await db.projectMember.findFirst({
+      where: { userId, project: { workspaceId } },
+      select: { projectId: true },
+    });
+    return row !== null;
+  },
+);
+
 // ─── Ergebnis ─────────────────────────────────────────────────────────────────
 
 /** Welche Rechte gelten, und aus welchen Rollen sie kommen. */
@@ -468,6 +479,43 @@ export async function requirePermission<P extends Permission>(
   throw new PermissionError(permission);
 }
 
+// ─── Zutritt zum Mandanten ────────────────────────────────────────────────────
+
+/**
+ * Darf jemand den Workspace überhaupt betreten?
+ *
+ * Es gibt dafür keinen Permission-Key: Zutritt hat, wer dazugehört. Drei Wege
+ * führen hinein, und keiner davon ist eine Permission —
+ *
+ *   1. `tenant.access` (Support-Generalschlüssel),
+ *   2. eine angenommene Mitgliedschaft im Workspace,
+ *   3. eine Projektmitgliedschaft, ohne im Workspace zu sein (Projekt-Gast).
+ *
+ * Weg 3 ist der Grund, warum eine reine `WorkspaceMember`-Abfrage hier nicht
+ * genügt: ein Gast ist ausdrücklich zu genau einem Projekt eingeladen und würde
+ * sonst aus der Hülle ausgesperrt, in der dieses Projekt liegt.
+ *
+ * Eine offene Einladung zählt nicht: `loadBase` gibt einer solchen Zeile keine
+ * Rechte, die Seiten wären also ohnehin leer.
+ */
+export const canEnterWorkspace = cache(
+  async (userId: string | null, workspaceId: string): Promise<boolean> => {
+    if (!userId) return false;
+    const base = await loadBase(userId, workspaceId);
+    if (base.master) return true;
+    if (base.closed) return false;
+    if (base.roles.WORKSPACE) return true;
+    return inAnyProject(userId, workspaceId);
+  },
+);
+
+/** Wie `canEnterWorkspace`, aber für den eingeloggten Benutzer. */
+export async function currentUserCanEnterWorkspace(
+  workspaceId: string,
+): Promise<boolean> {
+  return canEnterWorkspace(await currentUserId(), workspaceId);
+}
+
 // ─── Rang-Hierarchie ──────────────────────────────────────────────────────────
 
 /**
@@ -497,7 +545,7 @@ export function assignmentCeiling(access: Access, scope: RoleScope): number {
  * die Projektrolle kommt je Projekt dazu und entscheidet — dieselbe Regel wie in
  * `projectGrants`, nur über alle Projekte auf einmal.
  */
-export async function accessibleProjectIds(
+export const accessibleProjectIds = cache(async function accessibleProjectIds(
   userId: string | null,
   workspaceId: string,
 ): Promise<Set<string>> {
@@ -535,4 +583,11 @@ export async function accessibleProjectIds(
   }
 
   return visible;
+});
+
+/** Wie `accessibleProjectIds`, aber für den eingeloggten Benutzer. */
+export async function visibleProjectIds(
+  workspaceId: string,
+): Promise<Set<string>> {
+  return accessibleProjectIds(await currentUserId(), workspaceId);
 }

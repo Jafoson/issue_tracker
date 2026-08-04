@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { Input } from "@/components/ui/atoms/Input/Input";
+import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import {
   ModalFooter,
   ModalShortcut,
@@ -14,6 +15,7 @@ import {
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
 import { createProject } from "@/features/projects/actions";
+import type { ProjectVisibility } from "@/features/projects/types";
 import { PALETTE } from "@/lib/utils";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import styles from "./createProjectModal.module.scss";
@@ -43,6 +45,7 @@ export function CreateProjectModal({
   const [prefix, setPrefix] = useState("");
   const [prefixTouched, setPrefixTouched] = useState(false);
   const [color, setColor] = useState(PALETTE[0]);
+  const [visibility, setVisibility] = useState<ProjectVisibility>("public");
   const [error, setError] = useState("");
 
   // Solange der Prefix nicht von Hand angefasst wurde, folgt er dem Namen.
@@ -57,6 +60,7 @@ export function CreateProjectModal({
         name: name.trim(),
         prefix: effectivePrefix,
         color,
+        visibility,
       });
       if ("error" in result) {
         setError(result.error);
@@ -112,6 +116,27 @@ export function CreateProjectModal({
         <div className={styles.field}>
           <span className={styles.label}>{t("fields.color")}</span>
           <ColorPicker value={color} onChange={setColor} />
+        </div>
+
+        {/* Die Wahl fällt hier, weil sie entscheidet, wer eingetragen wird:
+            öffentlich nimmt den ganzen Workspace auf, privat nur dich. */}
+        <div className={styles.field}>
+          <span className={styles.label}>
+            {t("projectSettings.visibility")}
+          </span>
+          <SegmentedControl
+            items={[
+              { value: "public", label: t("projectSettings.public") },
+              { value: "private", label: t("projectSettings.private") },
+            ]}
+            value={visibility}
+            onChange={(v) => setVisibility(v as ProjectVisibility)}
+          />
+          <span className={styles.hint}>
+            {visibility === "public"
+              ? t("projectSettings.publicDesc")
+              : t("projectSettings.privateDescNew")}
+          </span>
         </div>
 
         {error && <p className={styles.error}>{error}</p>}

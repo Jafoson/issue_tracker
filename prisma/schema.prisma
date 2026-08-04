@@ -23,6 +23,14 @@ enum PermissionEffect {
   DENY
 }
 
+/// Wer beim Anlegen und beim Beitritt automatisch ins Projekt eingetragen wird.
+/// Über den Zugriff selbst entscheidet allein `ProjectMember` — ein privates
+/// Projekt hat nur die, die ausdrücklich aufgenommen wurden.
+enum ProjectVisibility {
+  public
+  private
+}
+
 // ─── Workspace ────────────────────────────────────────────────────────────────
 
 model Workspace {
@@ -35,14 +43,15 @@ model Workspace {
   suspended Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  members    WorkspaceMember[]
-  projects   Project[]
-  labels     Label[]
-  teams      Team[]
-  statuses   WorkspaceStatus[]
-  priorities WorkspacePriority[]
-  issueTypes WorkspaceIssueType[]
-  roles      Role[]
+  members     WorkspaceMember[]
+  projects    Project[]
+  labels      Label[]
+  teams       Team[]
+  invitations Invitation[]
+  statuses    WorkspaceStatus[]
+  priorities  WorkspacePriority[]
+  issueTypes  WorkspaceIssueType[]
+  roles       Role[]
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -50,31 +59,32 @@ model Workspace {
 model User {
   // @default(cuid()) ist für den Auth.js-Adapter nötig: dessen createUser strippt
   // die id und überlässt die Generierung der DB. Bestehende Zeilen sind unberührt.
-  id            String    @id @default(cuid())
-  firstName     String
-  lastName      String
-  handle        String    @unique
-  email         String    @unique
-  color         String
-  passwordHash  String?
+  id             String    @id @default(cuid())
+  firstName      String
+  lastName       String
+  handle         String    @unique
+  email          String    @unique
+  color          String
+  passwordHash   String?
   // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
-  emailVerified DateTime?
-  image         String?
+  emailVerified  DateTime?
+  image          String?
   // Rolle im Scope PLATFORM. Steuert Plattform-Operationen und gewährt für sich
   // genommen KEINEN Zugriff auf Mandanteninhalte — dafür braucht die Rolle
   // ausdrücklich `tenant.access`.
   platformRoleId String?
-  platformRole   Role?   @relation("UserPlatformRole", fields: [platformRoleId], references: [id], onDelete: SetNull)
+  platformRole   Role?     @relation("UserPlatformRole", fields: [platformRoleId], references: [id], onDelete: SetNull)
 
   workspaces         WorkspaceMember[]
-  assignedIssues     Issue[]         @relation("IssueAssignee")
-  reportedIssues     Issue[]         @relation("IssueReporter")
+  assignedIssues     Issue[]           @relation("IssueAssignee")
+  reportedIssues     Issue[]           @relation("IssueReporter")
   comments           Comment[]
-  leadingTeams       Team[]          @relation("TeamLead")
+  leadingTeams       Team[]            @relation("TeamLead")
   teamMemberships    TeamMember[]
   projectMemberships ProjectMember[]
   accounts           Account[]
   sessions           Session[]
+  invitations        Invitation[]
 }
 
 // ─── Auth.js (NextAuth) ─────────────────────────────────────────────────────────
@@ -120,14 +130,14 @@ model VerificationToken {
 model WorkspaceMember {
   workspaceId String
   userId      String
-  // Rolle auf der Workspace-Ebene (Role.level = WORKSPACE, gleicher Workspace).
+  // Rolle auf der Workspace-Ebene (Role.scope = WORKSPACE, gleicher Workspace).
   roleId      String
   pending     Boolean @default(false)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId],      references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Restrict: eine Rolle, die noch jemand trägt, lässt sich nicht löschen.
-  role      Role      @relation(fields: [roleId],      references: [id], onDelete: Restrict)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   @@id([workspaceId, userId])
   @@index([roleId])
@@ -136,22 +146,23 @@ model WorkspaceMember {
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 model Project {
-  id           String @id
+  id           String            @id
   workspaceId  String
   name         String
   slug         String
   prefix       String
   color        String
-  lastIssueKey Int    @default(0)
-  visibility   String @default("public") // "public" | "private"
+  lastIssueKey Int               @default(0)
+  visibility   ProjectVisibility @default(public)
 
-  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  issues    Issue[]
-  teams     TeamProject[]
-  labels    Label[]
-  members   ProjectMember[]
-  // Projektlokale Rollen (Role.level = PROJECT mit gesetztem projectId).
-  roles     Role[]
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues      Issue[]
+  teams       TeamProject[]
+  labels      Label[]
+  members     ProjectMember[]
+  invitations Invitation[]
+  // Projektlokale Rollen (Role.scope = PROJECT mit gesetztem projectId).
+  roles       Role[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
@@ -179,12 +190,46 @@ model ProjectMember {
   roleId    String
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId],    references: [id], onDelete: Cascade)
-  role    Role    @relation(fields: [roleId],    references: [id], onDelete: Restrict)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   @@id([projectId, userId])
   @@index([userId])
   @@index([roleId])
+}
+
+// ─── Einladungen ──────────────────────────────────────────────────────────────
+//
+// Wer per E-Mail eingeladen wird, bekommt sofort ein Konto — ohne Passwort und
+// mit `WorkspaceMember.pending = true`. Diese Zeile ist der Weg von dort zum
+// fertigen Zugang: `token` ist der Einladungslink, und angenommen wird er genau
+// einmal (`acceptedAt`). Beim Annehmen entstehen Passwort und Name, `pending`
+// fällt weg, und die Projektmitgliedschaften werden nachgezogen
+// (`features/auth/actions.ts`).
+//
+// Ohne Mailversand zeigt die Oberfläche den Link zum Kopieren. Sobald es Mail
+// gibt, verschickt sie dieselbe URL — die Tabelle bleibt, wie sie ist.
+//
+// Ein Projekt-Gast hat keine Workspace-Mitgliedschaft. Für den gilt dieselbe
+// Zeile: `workspaceId` sagt nur, wo die Einladung herkam.
+
+model Invitation {
+  token       String    @id
+  workspaceId String
+  userId      String
+  /// Projekt, aus dem die Einladung kam — Ziel des Sprungs nach der Annahme.
+  projectId   String?
+  createdAt   DateTime  @default(now())
+  expires     DateTime
+  /// Gesetzt, sobald der Zugang eingerichtet wurde. Danach ist der Token tot.
+  acceptedAt  DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId, workspaceId])
+  @@index([workspaceId])
 }
 
 // ─── Global config (shared across workspaces via join tables) ─────────────────
@@ -205,7 +250,7 @@ model WorkspaceStatus {
   statusId    String
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  status    Status    @relation(fields: [statusId],    references: [id], onDelete: Cascade)
+  status    Status    @relation(fields: [statusId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, statusId])
 }
@@ -225,7 +270,7 @@ model WorkspacePriority {
   priorityId  Int
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  priority  Priority  @relation(fields: [priorityId],  references: [id], onDelete: Cascade)
+  priority  Priority  @relation(fields: [priorityId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, priorityId])
 }
@@ -288,7 +333,7 @@ model Role {
   system      Boolean   @default(false)
 
   workspace   Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project     Project?         @relation(fields: [projectId],   references: [id], onDelete: Cascade)
+  project     Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   permissions RolePermission[]
 
   workspaceMembers WorkspaceMember[]
@@ -318,7 +363,7 @@ model RolePermission {
   permissionKey String
   effect        PermissionEffect @default(ALLOW)
 
-  role       Role       @relation(fields: [roleId],        references: [id],  onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
 
   @@id([roleId, permissionKey])
@@ -336,7 +381,7 @@ model Label {
   color       String
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project   Project?  @relation(fields: [projectId],   references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -354,25 +399,25 @@ model Issue {
 
   // ProseMirror-Dokument. Angezeigt wird es von `components/ui/atoms/RichText`,
   // geschrieben von `RichTextEditor`.
-  description Json @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}")
+  description     Json   @default("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}")
   // Aus `description` abgeleiteter Fließtext — `contains` arbeitet nicht auf
   // einer Json-Spalte, die Volltextsuche in `getProjectIssues` braucht ihn.
   // Wird in `features/issues/actions.ts` bei jedem Schreibvorgang neu gesetzt.
   descriptionText String @default("")
 
-  type String @default("feature")
-  labels      String[]
-  rank        Float    @default(0)
-  created     DateTime @default(now())
-  updated     DateTime @updatedAt
+  type    String   @default("feature")
+  labels  String[]
+  rank    Float    @default(0)
+  created DateTime @default(now())
+  updated DateTime @updatedAt
 
   assigneeId String?
   reporterId String
   projectId  String
 
-  assignee User?    @relation("IssueAssignee", fields: [assigneeId], references: [id])
-  reporter User     @relation("IssueReporter", fields: [reporterId], references: [id])
-  project  Project  @relation(fields: [projectId], references: [id])
+  assignee User?     @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  reporter User      @relation("IssueReporter", fields: [reporterId], references: [id])
+  project  Project   @relation(fields: [projectId], references: [id])
   comments Comment[]
 
   @@unique([projectId, key])
@@ -383,7 +428,7 @@ model Issue {
 // ─── Comments ────────────────────────────────────────────────────────────────
 
 model Comment {
-  id String @id
+  id       String   @id
   // Wie `Issue.description`: ProseMirror-Dokument plus abgeleiteter Fließtext
   // für Vorschauen (Inbox) und spätere Suche.
   body     Json
@@ -393,7 +438,7 @@ model Comment {
   issueId  String
   authorId String
 
-  issue  Issue @relation(fields: [issueId],  references: [id], onDelete: Cascade)
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
   author User  @relation(fields: [authorId], references: [id])
 }
 
@@ -410,7 +455,7 @@ model Team {
   leadId String
   lead   User   @relation("TeamLead", fields: [leadId], references: [id])
 
-  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members   TeamMember[]
   projects  TeamProject[]
 
@@ -431,7 +476,7 @@ model TeamProject {
   teamId    String
   projectId String
 
-  team    Team    @relation(fields: [teamId],    references: [id], onDelete: Cascade)
+  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@id([teamId, projectId])

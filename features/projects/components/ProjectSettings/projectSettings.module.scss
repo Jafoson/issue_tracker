@@ -1,0 +1,149 @@
+/* Gescrollt wird die Seite, nicht der Abschnitt — dieselbe Aufteilung wie in der
+   Mitgliederliste, damit beide Unterseiten eines Projekts gleich sitzen. */
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 680px;
+}
+
+/* Der Farbpunkt des Projekts im Seitenkopf — dieselbe Marke wie in der
+   Seitenleiste, damit erkennbar bleibt, welches Projekt gemeint ist. */
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.section {
+  padding: 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+/* Zeile mit Erklärung links und Steuerung rechts. Die Erklärung darf umbrechen,
+   die Steuerung nicht — sonst rutscht der Schalter unter seinen eigenen Text. */
+.row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+
+  & > :last-child {
+    flex-shrink: 0;
+  }
+}
+
+.rowLabel {
+  font-size: var(--text-base);
+  margin-bottom: 3px;
+}
+
+.rowDesc {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Bestätigung des Speicherns. Verschwindet, sobald wieder etwas geändert wird —
+   sie gehört zum abgeschlossenen Vorgang, nicht zum Formular. */
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green);
+  font-size: var(--text-sm);
+}
+
+/* Der Hinweis, dass ein Wechsel auf „privat" niemanden hinauswirft. Steht unter
+   dem Schalter, weil er dessen Grenze erklärt — nicht seine Funktion. */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+
+  & svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+/* Löschen ist nicht rückholbar, also trägt der Abschnitt die Warnfarbe schon im
+   Rahmen — bevor jemand den Knopf sucht. */
+.danger {
+  border-color: color-mix(in oklab, var(--error) 40%, var(--outline-variant));
+
+  & .sectionTitle {
+    color: var(--error);
+  }
+}
+
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deleteButton {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

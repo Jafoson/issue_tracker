@@ -17,6 +17,11 @@
 // Private Projekte bleiben außen vor: dort ist nur, wer ausdrücklich aufgenommen
 // wurde. `Project.visibility` entscheidet also nur, wer automatisch eingetragen
 // wird — den Zugriff selbst regelt allein diese Tabelle.
+//
+// Umgekehrt heißt das auch: ein Projekt privat zu schalten nimmt niemandem etwas.
+// Wer schon drin ist, bleibt drin; nur neue Workspace-Mitglieder kommen nicht mehr
+// von selbst dazu. Jemanden hinauszunehmen ist eine eigene, sichtbare Handlung
+// (`removeProjectMember`) — und keine Nebenwirkung eines Schalters.
 
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
@@ -103,6 +108,39 @@ export async function enrollWorkspaceMembers(
       roleId: projectRoleIdFor(m.role.permissions),
     })),
     // Wer schon eine Zeile hat, behält seine Rolle.
+    skipDuplicates: true,
+  });
+}
+
+/**
+ * Eine einzelne Person ins Projekt aufnehmen, mit der aus ihrer Workspace-Rolle
+ * abgeleiteten Projektrolle.
+ *
+ * Für ein privates Projekt: dort wird niemand automatisch eingetragen, der
+ * Ersteller braucht seine Zeile aber trotzdem — sonst hätte er das Projekt
+ * angelegt und käme nicht hinein.
+ */
+export async function enrollMember(
+  db: Db,
+  project: { id: string; workspaceId: string },
+  userId: string,
+): Promise<void> {
+  const membership = await db.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: { workspaceId: project.workspaceId, userId },
+    },
+    select: { role: roleGrants },
+  });
+  if (!membership) return;
+
+  await db.projectMember.createMany({
+    data: [
+      {
+        projectId: project.id,
+        userId,
+        roleId: projectRoleIdFor(membership.role.permissions),
+      },
+    ],
     skipDuplicates: true,
   });
 }

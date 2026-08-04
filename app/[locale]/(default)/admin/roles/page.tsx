@@ -4,9 +4,10 @@ import { RoleManager } from "@/features/roles/components/RoleManager/RoleManager
 export const dynamic = "force-dynamic";
 
 /**
- * Rollen der globalen Ebene. Das umgebende Layout verlangt bereits
- * `platform.admin.access`; wer hier etwas ändern will, braucht zusätzlich
- * `platform.role.manage` — das prüft `getRoleManagerView`.
+ * Rollen der Plattform-Ebene. Das umgebende Layout verlangt bereits
+ * `platform.access`; wer hier etwas ändern will, braucht zusätzlich
+ * `role.manage` im Plattform-Kontext. `getRoleManagerView` löst das auf und
+ * liefert `canManage` — geblockt wird in `features/roles/actions.ts`.
  */
 export default async function AdminRolesPage() {
   const t = await getTranslations();

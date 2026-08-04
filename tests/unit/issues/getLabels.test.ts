@@ -11,6 +11,17 @@ mock.module("react", () => ({
   cache: (fn: unknown) => fn,
 }));
 
+// Projekt-Labels hängen an der Sichtbarkeit des Projekts — hier steht die
+// Standardlage „p-1 ist sichtbar".
+const mockVisibleProjectIds = mock(async () => new Set(["p-1"]));
+
+mock.module("@/lib/permissions", () => ({
+  visibleProjectIds: mockVisibleProjectIds,
+  accessibleProjectIds: mock(async () => new Set(["p-1"])),
+  currentUserCanEnterWorkspace: mock(async () => true),
+  hasPermission: mock(async () => true),
+}));
+
 import { getLabels } from "@/features/issues/queries";
 import { db } from "@/lib/db";
 
@@ -25,9 +36,23 @@ describe("getLabels()", () => {
     mockLabelFindMany.mockResolvedValue([]);
     await getLabels("ws-1");
     expect(mockLabelFindMany).toHaveBeenCalledWith({
-      where: { workspaceId: "ws-1" },
+      where: {
+        workspaceId: "ws-1",
+        // Workspace-Labels immer, Projekt-Labels nur aus sichtbaren Projekten.
+        OR: [{ projectId: null }, { projectId: { in: ["p-1"] } }],
+      },
       orderBy: { name: "asc" },
     });
+  });
+
+  it("lässt Projekt-Labels unsichtbarer Projekte weg", async () => {
+    mockVisibleProjectIds.mockResolvedValueOnce(new Set<string>());
+    mockLabelFindMany.mockResolvedValue([]);
+    await getLabels("ws-1");
+    expect(mockLabelFindMany.mock.calls[0][0].where.OR).toEqual([
+      { projectId: null },
+      { projectId: { in: [] } },
+    ]);
   });
 
   it("mappt DB-Rows auf Label-Objekte mit projectId", async () => {

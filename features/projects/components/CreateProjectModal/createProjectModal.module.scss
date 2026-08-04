@@ -22,6 +22,14 @@
   color: var(--on-surface-variant);
 }
 
+/* Erklärt die Folge der Auswahl darüber — dieselbe Rolle wie `hint` am Input,
+   deshalb auch dessen Ton. */
+.hint {
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+  line-height: 1.4;
+}
+
 /* Vier Zeichen brauchen kein volles Feld — schmal halten, damit der
    Beispiel-Hint darunter als Einheit gelesen wird. */
 .prefixRow {

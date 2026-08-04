@@ -13,6 +13,7 @@ import {
   getWorkspace,
 } from "@/features/issues/queries";
 import { getCurrentWorkspaceId } from "@/lib/current-workspace";
+import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import type {
   IssueType,
@@ -59,12 +60,49 @@ export const getMyWorkspaces = cache(async (): Promise<Workspace[]> => {
   return session ? getUserWorkspaces(session.userId) : [];
 });
 
-/** Der eingeloggte User als Mitglied des aktiven Workspace. */
+/**
+ * Der eingeloggte User als Mitglied des aktiven Workspace.
+ *
+ * Der Regelfall ist die Zeile aus der Mitgliederliste — sie bringt Rolle und Rang
+ * mit. Wer nicht darin steht, ist damit aber nicht niemand: ein Projekt-Gast ist
+ * zu genau einem Projekt eingeladen und hat keine Workspace-Mitgliedschaft. Für
+ * ihn kommen die Angaben direkt aus seinem Konto, ohne Rolle.
+ *
+ * Ohne diesen zweiten Weg wäre `getMe()` für Gäste `null` — und weil die
+ * Issue-Oberfläche daran hängt (`getIssueComposerData`), liefen sie überall in ein
+ * 404, obwohl ihr Zugriff auf das Projekt in Ordnung ist.
+ */
 export const getMe = cache(async (): Promise<User | null> => {
   const session = await getSession();
   if (!session) return null;
+
   const members = await getWorkspaceMembers();
-  return members.find((m) => m.id === session.userId) ?? null;
+  const member = members.find((m) => m.id === session.userId);
+  if (member) return member;
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      handle: true,
+      email: true,
+      color: true,
+      image: true,
+    },
+  });
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    handle: user.handle,
+    email: user.email,
+    color: user.color,
+    ...(user.image ? { image: user.image } : {}),
+  };
 });
 
 export const getWorkspaceMembers = cache(

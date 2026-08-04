@@ -1,0 +1,55 @@
+/* Panel, Header und Footer kommen aus components/ui/layout/Modal —
+   hier stehen nur die Inhalte. */
+
+.body {
+  gap: 16px;
+  padding: 18px var(--modal-pad-x);
+}
+
+.headerIcon {
+  color: var(--on-surface-variant);
+}
+
+.desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface-variant);
+}
+
+/* Wie in der Mitgliedertabelle: der Pfeil steht neben der Rolle, nicht in ihr. */
+.roleTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 0;
+  border-radius: var(--radius-sm);
+  color: var(--outline);
+  transition: color 0.12s;
+
+  &:hover {
+    color: var(--on-surface);
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--error);
+}

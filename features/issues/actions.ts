@@ -5,13 +5,10 @@ import type { IssuePatch } from "@/features/issues/types";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
-  accessFor,
   PermissionError,
   requirePermission,
   requirePermissionOr,
 } from "@/lib/permissions";
-import { dropProjectMemberships } from "@/lib/project-membership";
-import { OWNER_ROLE_KEY } from "@/lib/rbac";
 import { toPlainText } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
@@ -165,25 +162,33 @@ export async function createLabel(data: {
   workspaceId: string;
   projectId?: string | null;
 }) {
-  // Projekt-Label vs. Workspace-Label haben unterschiedliche Permissions.
+  // Ein Projekt-Label gehört zwei Eltern: dem Projekt und dessen Workspace. Der
+  // Workspace kommt deshalb aus dem Projekt und nicht aus dem Aufruf — geprüft
+  // wird im Projekt-Kontext, geschrieben würde sonst woanders. Ein Aufruf mit
+  // fremder `workspaceId` legt damit kein Label im fremden Mandanten mehr an.
+  let workspaceId = data.workspaceId;
+
   if (data.projectId) {
-    await requirePermission("label.create", {
-      projectId: data.projectId,
+    const project = await db.project.findUnique({
+      where: { id: data.projectId },
+      select: { workspaceId: true },
     });
+    if (!project) throw new PermissionError("label.create");
+    workspaceId = project.workspaceId;
+
+    await requirePermission("label.create", { projectId: data.projectId });
   } else {
-    await requirePermission("label.create", {
-      workspaceId: data.workspaceId,
-    });
+    await requirePermission("label.create", { workspaceId });
   }
 
-  const slug = await uniqueLabelSlug(data.workspaceId, data.name);
+  const slug = await uniqueLabelSlug(workspaceId, data.name);
   const label = await db.label.create({
     data: {
       id: uid("l"),
       name: data.name,
       slug,
       color: data.color,
-      workspace: { connect: { id: data.workspaceId } },
+      workspace: { connect: { id: workspaceId } },
       ...(data.projectId
         ? { project: { connect: { id: data.projectId } } }
         : {}),
@@ -259,81 +264,5 @@ export async function deleteComment(commentId: string) {
     },
   ]);
   await db.comment.delete({ where: { id: commentId } });
-  await revalidate();
-}
-
-export async function setMemberRole(
-  workspaceId: string,
-  userId: string,
-  roleKey: string,
-) {
-  const guard = "member.role.update" as const;
-  const actorId = await requirePermission(guard, { workspaceId });
-  // Der Rang kommt jetzt aus der Datenbank statt aus einer Konstantenliste —
-  // damit greift die Hierarchie auch für selbst angelegte Rollen.
-  const actorRank = (await accessFor(actorId, { workspaceId })).rank(
-    "WORKSPACE",
-  );
-
-  const target = await db.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId, userId } },
-    select: { role: { select: { key: true, rank: true } } },
-  });
-  if (!target) throw new PermissionError(guard);
-
-  // Owner ist unveränderlich; zum Owner befördern geht nur per Ownership-Transfer.
-  if (target.role.key === OWNER_ROLE_KEY || roleKey === OWNER_ROLE_KEY) {
-    throw new PermissionError(guard);
-  }
-
-  // Zuweisbar sind die geteilten System-Rollen und die eigenen dieses Workspace.
-  const next = await db.role.findFirst({
-    where: {
-      scope: "WORKSPACE",
-      key: roleKey,
-      OR: [{ system: true }, { workspaceId }],
-    },
-    select: { id: true, rank: true },
-  });
-  if (!next) throw new PermissionError(guard);
-
-  // Niemand darf eine höhere Rolle vergeben oder ein höher gestelltes Mitglied ändern.
-  if (next.rank > actorRank || target.role.rank > actorRank) {
-    throw new PermissionError(guard);
-  }
-
-  await db.workspaceMember.update({
-    where: { workspaceId_userId: { workspaceId, userId } },
-    data: { roleId: next.id },
-  });
-  await revalidate();
-}
-
-export async function removeMember(workspaceId: string, userId: string) {
-  const guard = "member.remove" as const;
-  const actorId = await requirePermission(guard, { workspaceId });
-  const actorRank = (await accessFor(actorId, { workspaceId })).rank(
-    "WORKSPACE",
-  );
-
-  const target = await db.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId, userId } },
-    select: { role: { select: { key: true, rank: true } } },
-  });
-  if (!target) throw new PermissionError(guard);
-
-  // Der Owner kann nicht entfernt werden; höher gestellte Mitglieder ebenfalls nicht.
-  if (target.role.key === OWNER_ROLE_KEY || target.role.rank > actorRank) {
-    throw new PermissionError(guard);
-  }
-
-  await db.$transaction(async (tx) => {
-    await tx.workspaceMember.delete({
-      where: { workspaceId_userId: { workspaceId, userId } },
-    });
-    // Wer nicht mehr im Workspace ist, ist in keinem seiner Projekte mehr. Ohne
-    // das behielte die Person über ihre Projektrollen weiter Zugriff.
-    await dropProjectMemberships(tx, { workspaceId, userId });
-  });
   await revalidate();
 }
