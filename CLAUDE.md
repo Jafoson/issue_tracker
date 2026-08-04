@@ -262,6 +262,14 @@ tests/
       session.test.ts             ← createSession / getSession / clearSession
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
+    projects/
+      createProject.test.ts       ← createProject() Server Action
+      projectMembers.test.ts      ← Projektrollen verwalten
+      projectMembership.test.ts   ← lib/project-membership (Aufnahme & Austritt)
+    permissions/
+      resolver.test.ts            ← lib/permissions (eigener Prozess, siehe unten)
+      rbac.test.ts                ← Registry aus lib/rbac
+      roleActions.test.ts         ← Rollenverwaltung
     table/
       tableDnd.test.tsx           ← Table mit `dnd` (components/ui/layout/Table)
     richtext/
@@ -286,8 +294,10 @@ Bun 1.3 teilt den Modul-Cache zwischen Test-Dateien innerhalb eines Prozesses. D
 andere Test-Dateien `@/lib/session` mocken, würde dieser Mock in `session.test.ts`
 durchlecken wenn alle Tests in einem einzigen `bun test`-Aufruf laufen. Dasselbe gilt
 für die Richtext-Tests: `issues/getLabels.test.ts` ersetzt `react` durch einen Stub mit
-nur `cache`, und `react-dom/server` verweigert dann den Dienst. Das `test`-Script
-in `package.json` splittet den Aufruf deshalb in drei separate Prozesse:
+nur `cache`, und `react-dom/server` verweigert dann den Dienst. Und
+`permissions/roleActions.test.ts` mockt `@/lib/permissions` komplett weg — im selben
+Prozess prüft `permissions/resolver.test.ts` dann den Mock statt den Resolver. Das
+`test`-Script in `package.json` splittet den Aufruf deshalb in mehrere Prozesse:
 
 ```
 # Korrekt:

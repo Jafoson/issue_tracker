@@ -62,10 +62,11 @@ const byName = [
 /**
  * Wer Zugriff auf ein Projekt hat — und woher dieser Zugriff kommt.
  *
- * Zwei Quellen, wie in `lib/permissions.ts`: ein `ProjectMember`-Eintrag setzt
- * eine eigene Projektrolle, sonst gilt die Workspace-Rolle. Letztere greift nur
- * bei öffentlichen Projekten; Owner und Admins sehen ohnehin jedes Projekt und
- * lassen sich deshalb auch nicht per Projekt-Eintrag herabstufen.
+ * Die Liste ist `ProjectMember`: jede Zeile eine Person mit ihrer Projektrolle,
+ * und die entscheidet hier (`lib/permissions.ts`). Dazu kommen nur die, die sich
+ * per Projektrolle gar nicht herabstufen lassen — Owner und Admins des Workspace
+ * sehen jedes Projekt, auch ohne Eintrag darin. Sie stehen mit ihrer
+ * Workspace-Rolle in der Liste (`source: "workspace"`).
  *
  * Die Seite bekommt fertige Zeilen inklusive `manageable` — welche Rolle wen
  * anfassen darf, entscheidet der Server, nicht der Client.
@@ -78,10 +79,10 @@ export const getProjectMembersView = cache(
   async (projectId: string): Promise<ProjectMembersView | null> => {
     const project = await db.project.findUnique({
       where: { id: projectId },
-      select: { workspaceId: true, visibility: true },
+      select: { workspaceId: true },
     });
     if (!project) return null;
-    const { workspaceId, visibility } = project;
+    const { workspaceId } = project;
 
     const actorId = await currentUserId();
 
@@ -136,7 +137,14 @@ export const getProjectMembersView = cache(
       ? assignmentCeiling(access, "PROJECT")
       : Number.NEGATIVE_INFINITY;
 
-    const seesEveryProject = new Set(viewAllRoles.map((r) => r.id));
+    const viewAll = new Set(viewAllRoles.map((r) => r.id));
+    // Wer über seine Workspace-Rolle jedes Projekt sieht, lässt sich per
+    // Projektrolle nicht herabstufen (`keepsProjectRights` in lib/permissions.ts).
+    const privileged = new Set(
+      workspaceMembers
+        .filter((m) => viewAll.has(m.roleId))
+        .map((m) => m.userId),
+    );
     const pendingOf = new Map(
       workspaceMembers.map((m) => [m.userId, m.pending]),
     );
@@ -150,9 +158,13 @@ export const getProjectMembersView = cache(
       pending: pendingOf.get(pm.userId) ?? false,
       you: pm.userId === actorId,
       // Niemand ändert ein Mitglied, das über ihm steht — und die eigene Rolle
-      // schon gar nicht über diese Tabelle.
+      // schon gar nicht über diese Tabelle. Die Leitung des Workspace bleibt
+      // außen vor: an ihren Rechten würde die Änderung nichts ändern.
       manageable:
-        canManage && pm.userId !== actorId && pm.role.rank <= actorRank,
+        canManage &&
+        pm.userId !== actorId &&
+        !privileged.has(pm.userId) &&
+        pm.role.rank <= actorRank,
     }));
 
     const hasOwnEntry = new Set(projectMembers.map((pm) => pm.userId));
@@ -164,11 +176,13 @@ export const getProjectMembersView = cache(
       const user = toUser(wm.user, wm.pending);
       // Wer ohnehin jedes Projekt sieht, braucht keinen Projekt-Eintrag — der
       // wäre nur eine leere Geste.
-      const isPrivileged = seesEveryProject.has(wm.roleId);
+      const isPrivileged = privileged.has(wm.userId);
       if (!isPrivileged) candidates.push(user);
 
       if (wm.pending) continue;
-      if (!isPrivileged && visibility !== "public") continue;
+      // Ohne Projektrolle gibt es keinen Zugriff — außer für die, die jedes
+      // Projekt sehen. Nur sie stehen hier ohne eigenen Eintrag in der Liste.
+      if (!isPrivileged) continue;
 
       rows.push({
         user,

@@ -2,6 +2,7 @@
 
 import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import { db } from "@/lib/db";
+import { enrollWorkspaceMembers } from "@/lib/project-membership";
 import { OWNER_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 import {
@@ -132,6 +133,13 @@ export async function createWorkspace(
           prefix,
           color,
         },
+      });
+
+      // Der Ersteller steht damit auch im Projekt — bisher fehlte er in
+      // `ProjectMember`, weil sein Zugriff allein aus der Owner-Rolle kam.
+      await enrollWorkspaceMembers(tx, {
+        id: projectId,
+        workspaceId: finalSlug,
       });
     });
   } catch (e) {

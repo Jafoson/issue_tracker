@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { type Prisma, PrismaClient } from "../lib/generated/prisma/client";
+import { enrollWorkspaceMembers } from "../lib/project-membership";
 import { systemRoleId } from "../lib/rbac";
 import { provisionSystemRbac } from "../lib/rbac-provision";
 import { fromMarkdown } from "../lib/richtext/fromMarkdown";
@@ -889,8 +890,13 @@ async function main() {
         color: p.color,
       },
     });
+    // Wer im Workspace ist, ist in dessen öffentlichen Projekten — ohne eigene
+    // Projektrolle, die Rechte kommen aus dem Workspace.
+    await enrollWorkspaceMembers(db, { id, workspaceId: p.workspaceId });
   }
-  console.log(`   ✓ ${PROJECTS.length} projects`);
+  console.log(
+    `   ✓ ${PROJECTS.length} projects (${PROJECTS.length * WORKSPACE_MEMBERS.length} memberships)`,
+  );
 
   for (const l of LABELS) {
     const id = ref(realLabelId, l.id, "label");

@@ -157,15 +157,25 @@ model Project {
   @@unique([workspaceId, slug])
 }
 
-// ─── Project membership (projekt-spezifische Rollen & Guests) ─────────────────
+// ─── Project membership (wer im Projekt ist, mit welcher Rolle) ───────────────
+//
+// Eine Zeile je Person und Projekt, für **jeden**, der im Projekt ist — das
+// Gegenstück zu `WorkspaceMember` eine Ebene tiefer. Wer im Workspace ist, wird
+// in dessen öffentlichen Projekten mit einer passenden Projektrolle eingetragen
+// (lib/project-membership.ts). Danach ist diese Rolle unabhängig: sie gilt in
+// genau diesem Projekt und lässt sich dort ändern, ohne den Workspace anzufassen.
+//
+// Diese Tabelle ist die Zugriffsentscheidung für alles Projektbezogene: keine
+// Zeile heißt kein Zugriff (lib/permissions.ts). `Project.visibility` steuert
+// deshalb nur noch, wer beim Anlegen automatisch eingetragen wird.
 
 model ProjectMember {
   projectId String
   userId    String
-  // Rolle auf der Projekt-Ebene (Role.level = PROJECT). Entweder eine
-  // workspaceweite Projektrolle oder eine projektlokale. Sie ersetzt die
-  // Workspace-Rolle nicht, sondern kommt hinzu: die effektiven Rechte sind die
-  // Vereinigung beider Ebenen abzüglich aller DENY-Einträge.
+  // Rolle auf der Projekt-Ebene (Role.scope = PROJECT). Entweder eine
+  // workspaceweite Projektrolle oder eine projektlokale. Sie **ersetzt** in
+  // diesem Projekt die Workspace-Rolle: was hier erlaubt ist, gilt — ein DENY
+  // der oberen Ebenen bleibt aber ein DENY.
   roleId    String
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

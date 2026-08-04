@@ -10,6 +10,10 @@ import {
   hasPermission,
 } from "@/lib/permissions";
 import {
+  enrollInWorkspaceProjects,
+  enrollWorkspaceMembers,
+} from "@/lib/project-membership";
+import {
   DEFAULT_PLATFORM_ROLE_KEY,
   DEFAULT_WORKSPACE_ROLE_KEY,
   PROJECT_GUEST_ROLE_KEY,
@@ -88,16 +92,23 @@ export async function createProject(data: {
       .slice(0, 4) || basePrefix(name);
   const prefix = await uniquePrefix(data.workspaceId, desired);
   const slug = await uniqueSlug(data.workspaceId, slugify(name));
+  const id = uid("p");
 
-  await db.project.create({
-    data: {
-      id: uid("p"),
-      workspaceId: data.workspaceId,
-      name,
-      slug,
-      prefix,
-      color: data.color,
-    },
+  await db.$transaction(async (tx) => {
+    await tx.project.create({
+      data: {
+        id,
+        workspaceId: data.workspaceId,
+        name,
+        slug,
+        prefix,
+        color: data.color,
+      },
+    });
+
+    // Ein neues Projekt ist öffentlich: wer im Workspace ist, ist darin. Der
+    // Eintrag hält das fest — auch für den Ersteller.
+    await enrollWorkspaceMembers(tx, { id, workspaceId: data.workspaceId });
   });
 
   revalidatePath("/", "layout");
@@ -110,6 +121,10 @@ export async function createProject(data: {
 // und Tabellenzeilen, die die Ursache direkt anzeigen sollen. Die Prüfungen
 // spiegeln `setMemberRole` auf Workspace-Ebene — niemand vergibt eine Rolle
 // über der eigenen und niemand fasst ein höher gestelltes Mitglied an.
+//
+// Jeder im Projekt hat eine Zeile in `ProjectMember` und damit eine Projektrolle
+// (siehe `lib/project-membership.ts`). Diese Aktionen sind die Verwaltung dieser
+// Rolle — sie gilt nur hier und lässt den Workspace unberührt.
 
 interface MemberGuard {
   workspaceId: string;
@@ -182,6 +197,19 @@ async function resolveAssignable(
   return role;
 }
 
+/**
+ * Wer jedes Projekt des Workspace sieht (Owner, Admin), lässt sich per
+ * Projektrolle nicht herabstufen — `keepsProjectRights` in lib/permissions.ts
+ * übergeht sie ohnehin. Die Zeile hier zu ändern hieße nur, in der Tabelle etwas
+ * zu behaupten, was nicht gilt.
+ */
+async function notDowngradable(
+  guard: MemberGuard,
+  userId: string,
+): Promise<boolean> {
+  return can(userId, "project.view.all", { workspaceId: guard.workspaceId });
+}
+
 /** Nimmt bestehende Workspace-Mitglieder mit einer eigenen Projektrolle auf. */
 export async function addProjectMembers(data: {
   projectId: string;
@@ -212,8 +240,8 @@ export async function addProjectMembers(data: {
       userId,
       roleId: role.id,
     })),
-    // Wer schon einen Eintrag hat, behält ihn — ein Doppelklick soll keine
-    // bestehende Rolle überschreiben.
+    // Wer schon eine Rolle in diesem Projekt hat, behält sie — ein Doppelklick
+    // soll sie nicht überschreiben. Zum Ändern gibt es `setProjectMemberRole`.
     skipDuplicates: true,
   });
 
@@ -239,6 +267,8 @@ export async function setProjectMemberRole(
   if (!target) return { error: "This person is not a member of the project." };
   if (target.role.rank > guard.actorRank)
     return { error: "You cannot change a member ranked above you." };
+  if (await notDowngradable(guard, userId))
+    return { error: "This member sees every project of the workspace." };
 
   await db.projectMember.update({
     where: { projectId_userId: { projectId, userId } },
@@ -250,8 +280,13 @@ export async function setProjectMemberRole(
 }
 
 /**
- * Entfernt die Projektrolle. Bei öffentlichen Projekten bleibt der geerbte
- * Workspace-Zugriff bestehen — entzogen wird nur die Sonderrolle.
+ * Nimmt jemanden aus dem Projekt.
+ *
+ * Damit ist der Zugriff weg, nicht nur eine Sonderrolle: über das Projekt
+ * entscheidet allein diese Tabelle. Die Workspace-Mitgliedschaft bleibt — wer
+ * wieder mitarbeiten soll, wird neu aufgenommen. Owner und Admins des Workspace
+ * lassen sich so nicht aussperren, ihre Rechte hängen nicht am Projekt-Eintrag
+ * (`keepsProjectRights` in lib/permissions.ts).
  */
 export async function removeProjectMember(
   projectId: string,
@@ -267,6 +302,8 @@ export async function removeProjectMember(
   if (!target) return { error: "This person is not a member of the project." };
   if (target.role.rank > guard.actorRank)
     return { error: "You cannot remove a member ranked above you." };
+  if (await notDowngradable(guard, userId))
+    return { error: "This member sees every project of the workspace." };
 
   await db.projectMember.delete({
     where: { projectId_userId: { projectId, userId } },
@@ -369,10 +406,22 @@ export async function inviteProjectMember(data: {
           pending: true,
         },
       });
+      // Wer in den Workspace kommt, ist in dessen öffentlichen Projekten — nicht
+      // nur in dem, aus dem die Einladung kam.
+      await enrollInWorkspaceProjects(tx, {
+        workspaceId: guard.workspaceId,
+        userId: user.id,
+      });
     }
 
-    await tx.projectMember.create({
-      data: { projectId: data.projectId, userId: user.id, roleId: role.id },
+    // Im einladenden Projekt gilt die eingeladene Rolle statt der abgeleiteten.
+    // Die Zeile kann aus der Aufnahme oben schon stehen, deshalb `upsert`.
+    await tx.projectMember.upsert({
+      where: {
+        projectId_userId: { projectId: data.projectId, userId: user.id },
+      },
+      update: { roleId: role.id },
+      create: { projectId: data.projectId, userId: user.id, roleId: role.id },
     });
   });
 

@@ -5,8 +5,9 @@ const mockTx = {
   workspaceStatus: { createMany: mock() },
   workspacePriority: { createMany: mock() },
   workspaceIssueType: { createMany: mock() },
-  workspaceMember: { create: mock() },
+  workspaceMember: { create: mock(), findMany: mock() },
   project: { create: mock() },
+  projectMember: { createMany: mock() },
 };
 
 const mockProvisionRbac = mock();
@@ -59,6 +60,19 @@ function resetTxMocks() {
       m.mockResolvedValue({});
     }
   }
+  // Der Ersteller ist nach `workspaceMember.create` das einzige Mitglied — genau
+  // das liest die Aufnahme ins Projekt aus. Als Owner trägt er `project.view.all`.
+  mockTx.workspaceMember.findMany.mockResolvedValue([
+    {
+      userId: "user-1",
+      role: {
+        permissions: [
+          { permissionKey: "project.view.all", effect: "ALLOW" },
+          { permissionKey: "member.invite", effect: "ALLOW" },
+        ],
+      },
+    },
+  ]);
 }
 
 describe("createWorkspace()", () => {
@@ -226,6 +240,20 @@ describe("createWorkspace()", () => {
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
       expect(mockTx.project.create).toHaveBeenCalledTimes(1);
+    });
+
+    it("trägt den Ersteller als Project Admin im initialen Projekt ein", async () => {
+      await createWorkspace(
+        makeFormData({ name: "My Workspace", slug: "my-workspace" }),
+      );
+
+      const projectId = mockTx.project.create.mock.calls[0]?.[0]?.data?.id;
+      expect(mockTx.projectMember.createMany).toHaveBeenCalledWith({
+        data: [
+          { projectId, userId: "user-1", roleId: "sys:PROJECT:project_admin" },
+        ],
+        skipDuplicates: true,
+      });
     });
   });
 });

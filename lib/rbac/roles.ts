@@ -13,15 +13,16 @@
 // eines Scopes die Hierarchie ab und steuert die „höchstens die eigene Rolle
 // vergebbar"-Regel.
 //
-// Ausgewertet werden Rollen als Vereinigung über alle Scopes, wobei ein DENY
-// immer sticht:
+// Gefragt wird die Ebene, um die es geht: im Projekt entscheidet die Projektrolle
+// (sie ersetzt dort die Workspace-Rolle), im Workspace die Workspace-Rolle. Ein
+// DENY sticht über alle Ebenen — es ist das einzige Mittel, das auch nach oben
+// wirkt. Die Auswertung steht in `lib/permissions.ts`.
 //
-//     erlaubt = ⋃ ALLOW(Rollen)  \  ⋃ DENY(Rollen)
-//
-// Weil die Vereinigung nie etwas wegnimmt, genügt es bei einer einschränkenden
-// Rolle nicht, Permissions weglassen — was die Workspace-Rolle gewährt, bliebe
-// sonst bestehen. Die restriktiven Projektrollen setzen ihre Grenzen darum
-// ausdrücklich per DENY.
+// Die erschöpfenden DENY-Listen der restriktiven Projektrollen stammen aus dem
+// früheren Vereinigungsmodell und sind für die Herabstufung nicht mehr nötig —
+// die leere ALLOW-Liste genügt. Sie bleiben, weil sie die Absicht ausdrücklich
+// festhalten und ein workspaceweites Recht auch dann sperren, wenn es später neu
+// dazukommt.
 
 import { type Permission, permissionsFor, type RoleScope } from "./permissions";
 
@@ -274,6 +275,12 @@ export const DEFAULT_WORKSPACE_ROLE_KEY = "member";
 export const DEFAULT_PROJECT_ROLE_KEY = "contributor";
 /** Projektrolle für Gäste ohne Workspace-Mitgliedschaft. */
 export const PROJECT_GUEST_ROLE_KEY = "project_guest";
+/** Volle Kontrolle über ein Projekt. */
+export const PROJECT_ADMIN_ROLE_KEY = "project_admin";
+/** Lesen und kommentieren, sonst nichts. */
+export const PROJECT_VIEWER_ROLE_KEY = "project_viewer";
+/** Ausdrücklicher Ausschluss aus einem Projekt. */
+export const PROJECT_BLOCKED_ROLE_KEY = "blocked";
 
 /**
  * Farbe des Rollen-Punktes in der Oberfläche.

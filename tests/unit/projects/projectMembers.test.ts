@@ -11,6 +11,16 @@ const mockProjectMemberCreate = mock();
 const mockProjectMemberUpdate = mock();
 const mockProjectMemberDelete = mock();
 const mockUserFindUnique = mock();
+const mockTransaction = mock();
+
+// Der Tx-Client für den Einladungsweg mit neuem Account: dort entstehen Konto,
+// Workspace-Mitgliedschaft und die Projekt-Einträge zusammen.
+const mockTx = {
+  user: { create: mock() },
+  workspaceMember: { create: mock(), findUnique: mock() },
+  project: { findMany: mock() },
+  projectMember: { createMany: mock(), upsert: mock() },
+};
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -28,7 +38,7 @@ mock.module("@/lib/db", () => ({
       update: mockProjectMemberUpdate,
       delete: mockProjectMemberDelete,
     },
-    $transaction: mock(),
+    $transaction: mockTransaction,
   },
 }));
 
@@ -99,6 +109,7 @@ function reset() {
     mockProjectMemberUpdate,
     mockProjectMemberDelete,
     mockUserFindUnique,
+    mockTransaction,
     mockCan,
     mockCurrentUserId,
     mockAccessFor,
@@ -106,8 +117,35 @@ function reset() {
     m.mockReset();
   }
 
+  for (const group of Object.values(mockTx)) {
+    for (const fn of Object.values(group)) {
+      fn.mockReset();
+      fn.mockResolvedValue({});
+    }
+  }
+  mockTx.user.create.mockResolvedValue({ id: "u-new" });
+  // Die neue Mitgliedschaft ist die Standardrolle — daraus wird eine
+  // Contributor-Rolle in den Projekten.
+  mockTx.workspaceMember.findUnique.mockResolvedValue({
+    role: {
+      permissions: [
+        { permissionKey: "project.view", effect: "ALLOW" },
+        { permissionKey: "issue.create", effect: "ALLOW" },
+      ],
+    },
+  });
+  mockTx.project.findMany.mockResolvedValue([{ id: PROJECT }, { id: "p-2" }]);
+  mockTransaction.mockImplementation(
+    async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx),
+  );
+
   mockCurrentUserId.mockResolvedValue(ACTOR);
-  mockCan.mockResolvedValue(true);
+  // Der Handelnde darf einladen; das Ziel ist ein normales Mitglied und sieht
+  // nicht jedes Projekt — sonst ließe es sich hier gar nicht anfassen.
+  mockCan.mockImplementation(
+    async (_userId: string, permission: string) =>
+      permission !== "project.view.all",
+  );
   mockAccessFor.mockResolvedValue(
     access(["member.invite", "member.invite"], null),
   );
@@ -291,17 +329,39 @@ describe("setProjectMemberRole()", () => {
       data: { roleId: "wsp:acme:contributor" },
     });
   });
+
+  it("stuft die Leitung des Workspace nicht herab", async () => {
+    // Wer jedes Projekt sieht, behält seine Rechte ohnehin — der Eintrag würde
+    // in der Tabelle nur etwas behaupten, was nicht gilt.
+    mockCan.mockResolvedValue(true);
+    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
+
+    expect(await setProjectMemberRole(PROJECT, "u-1", "contributor")).toEqual({
+      error: "This member sees every project of the workspace.",
+    });
+    expect(mockProjectMemberUpdate).not.toHaveBeenCalled();
+  });
 });
 
 describe("removeProjectMember()", () => {
   beforeEach(reset);
 
-  it("entfernt den Projekt-Eintrag", async () => {
+  it("entfernt den Projekt-Eintrag — und damit den Zugriff", async () => {
     mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 3 } });
     expect(await removeProjectMember(PROJECT, "u-1")).toEqual({ ok: true });
     expect(mockProjectMemberDelete).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-1" } },
     });
+  });
+
+  it("entfernt die Leitung des Workspace nicht", async () => {
+    mockCan.mockResolvedValue(true);
+    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
+
+    expect(await removeProjectMember(PROJECT, "u-1")).toEqual({
+      error: "This member sees every project of the workspace.",
+    });
+    expect(mockProjectMemberDelete).not.toHaveBeenCalled();
   });
 
   it("entfernt kein höher gestelltes Mitglied", async () => {
@@ -380,5 +440,63 @@ describe("inviteProjectMember()", () => {
     expect(result).toEqual({
       error: "You are not allowed to invite new people to this workspace.",
     });
+  });
+
+  it("trägt einen neuen Account in allen öffentlichen Projekten ein", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    const result = await inviteProjectMember({
+      projectId: PROJECT,
+      email: "neu@example.com",
+      role: "contributor",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockTx.workspaceMember.create).toHaveBeenCalled();
+    // Die abgeleitete Rolle in jedem öffentlichen Projekt des Workspace …
+    expect(mockTx.projectMember.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          projectId: PROJECT,
+          userId: "u-new",
+          roleId: "sys:PROJECT:contributor",
+        },
+        {
+          projectId: "p-2",
+          userId: "u-new",
+          roleId: "sys:PROJECT:contributor",
+        },
+      ],
+      skipDuplicates: true,
+    });
+    // … und im einladenden Projekt die eingeladene Rolle.
+    expect(mockTx.projectMember.upsert).toHaveBeenCalledWith({
+      where: { projectId_userId: { projectId: PROJECT, userId: "u-new" } },
+      update: { roleId: "wsp:acme:contributor" },
+      create: {
+        projectId: PROJECT,
+        userId: "u-new",
+        roleId: "wsp:acme:contributor",
+      },
+    });
+  });
+
+  it("lässt einen Gast außerhalb des Workspace und der anderen Projekte", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+    mockRoleFindFirst.mockResolvedValue({
+      id: "sys:PROJECT:project_guest",
+      rank: 1,
+    });
+
+    const result = await inviteProjectMember({
+      projectId: PROJECT,
+      email: "gast@example.com",
+      role: "project_guest",
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockTx.workspaceMember.create).not.toHaveBeenCalled();
+    expect(mockTx.projectMember.createMany).not.toHaveBeenCalled();
+    expect(mockTx.projectMember.upsert).toHaveBeenCalled();
   });
 });

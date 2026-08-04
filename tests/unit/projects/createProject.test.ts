@@ -4,11 +4,21 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 const mockProjectFindUnique = mock();
 const mockProjectCreate = mock();
+const mockTransaction = mock();
+
+// Projekt anlegen und die Mitglieder aufnehmen gehören zusammen und laufen
+// deshalb in einer Transaktion. Der Tx-Client ist derselbe Mock-Satz.
+const mockTx = {
+  project: { create: mockProjectCreate },
+  workspaceMember: { findMany: mock() },
+  projectMember: { createMany: mock() },
+};
 
 mock.module("@/lib/db", () => ({
   db: {
     project: { findUnique: mockProjectFindUnique, create: mockProjectCreate },
     workspaceMember: { findUnique: mock() },
+    $transaction: mockTransaction,
   },
 }));
 
@@ -41,11 +51,19 @@ const mockMemberFindUnique = db.workspaceMember.findUnique as ReturnType<
 const WS = "my-workspace";
 const MEMBER = { pending: false };
 
+const grant = (permissionKey: string) => ({
+  permissionKey,
+  effect: "ALLOW" as const,
+});
+
 function reset() {
   mockGetSession.mockReset();
   mockFindUnique.mockReset();
   mockCreate.mockReset();
   mockMemberFindUnique.mockReset();
+  mockTransaction.mockReset();
+  mockTx.workspaceMember.findMany.mockReset();
+  mockTx.projectMember.createMany.mockReset();
 
   mockGetSession.mockResolvedValue({ userId: "u1" });
   mockMemberFindUnique.mockResolvedValue(MEMBER);
@@ -53,6 +71,21 @@ function reset() {
   mockHasPermission.mockResolvedValue(true); // allowed by default
   mockFindUnique.mockResolvedValue(null); // no conflicts by default
   mockCreate.mockResolvedValue({});
+  // Ein Owner und ein Mitglied — daraus werden Project Admin und Contributor.
+  mockTx.workspaceMember.findMany.mockResolvedValue([
+    {
+      userId: "u1",
+      role: { permissions: [grant("project.view.all"), grant("issue.create")] },
+    },
+    {
+      userId: "u2",
+      role: { permissions: [grant("project.view"), grant("issue.create")] },
+    },
+  ]);
+  mockTx.projectMember.createMany.mockResolvedValue({ count: 2 });
+  mockTransaction.mockImplementation(
+    async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx),
+  );
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -175,6 +208,36 @@ describe("createProject() — Fehlerbehandlung", () => {
     mockHasPermission.mockResolvedValue(false);
     await createProject({ workspaceId: WS, name: "X", color: "#fff" });
     expect(mockCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("createProject() — Mitglieder", () => {
+  beforeEach(reset);
+
+  it("trägt alle Workspace-Mitglieder mit eigener Projektrolle ein", async () => {
+    await createProject({ workspaceId: WS, name: "Orbit", color: "#fff" });
+
+    const projectId = mockCreate.mock.calls[0]?.[0]?.data?.id;
+    // Die Rolle leitet sich aus der Workspace-Rolle ab, damit im Projekt
+    // niemand plötzlich mehr oder weniger darf als vorher.
+    expect(mockTx.projectMember.createMany).toHaveBeenCalledWith({
+      data: [
+        { projectId, userId: "u1", roleId: "sys:PROJECT:project_admin" },
+        { projectId, userId: "u2", roleId: "sys:PROJECT:contributor" },
+      ],
+      skipDuplicates: true,
+    });
+  });
+
+  it("legt Projekt und Mitgliedschaften in einer Transaktion an", async () => {
+    await createProject({ workspaceId: WS, name: "Orbit", color: "#fff" });
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("trägt niemanden ein, wenn der Workspace keine Mitglieder hat", async () => {
+    mockTx.workspaceMember.findMany.mockResolvedValue([]);
+    await createProject({ workspaceId: WS, name: "Orbit", color: "#fff" });
+    expect(mockTx.projectMember.createMany).not.toHaveBeenCalled();
   });
 });
 

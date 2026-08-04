@@ -97,16 +97,48 @@ beforeEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("Vereinigung über die Ebenen", () => {
-  it("addiert Workspace- und Projektrechte", async () => {
+describe("Im Projekt entscheidet die Projektrolle", () => {
+  it("ersetzt die projektbezogenen Rechte der Workspace-Rolle", async () => {
     setup({
-      workspace: role("member", 2, allow("project.view")),
-      project: role("contributor", 3, allow("issue.create")),
+      workspace: role("member", 2, allow("project.view", "issue.create")),
+      project: role("project_viewer", 2, allow("project.view")),
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
+    // Aus der Projektrolle.
     expect(access.has("project.view")).toBe(true);
-    expect(access.has("issue.create")).toBe(true);
+    // Die Workspace-Rolle gibt es, im Projekt zählt sie dafür aber nicht.
+    expect(access.has("issue.create")).toBe(false);
+  });
+
+  it("lässt die rein workspaceweiten Rechte unberührt", async () => {
+    setup({
+      workspace: role(
+        "manager",
+        4,
+        allow("audit.view", "project.create", "issue.create"),
+      ),
+      project: role("project_viewer", 2, allow("project.view")),
+    });
+
+    const access = await accessFor("u1", { projectId: "p1" });
+    // Eine Projektrolle kann diese Keys gar nicht tragen — sie bleiben.
+    expect(access.has("audit.view")).toBe(true);
+    expect(access.has("project.create")).toBe(true);
+    // Projektbezogen: hier entscheidet die Projektrolle.
+    expect(access.has("issue.create")).toBe(false);
+  });
+
+  it("gibt ohne Projektrolle keine Projektrechte", async () => {
+    // `ProjectMember` ist die Liste, wer im Projekt ist — kein Eintrag, kein
+    // Zugriff, auch bei einem öffentlichen Projekt.
+    setup({
+      workspace: role("member", 2, allow("project.view", "issue.create")),
+    });
+
+    const access = await accessFor("u1", { projectId: "p1" });
+    expect(access.has("project.view")).toBe(false);
+    expect(access.has("issue.create")).toBe(false);
   });
 
   it("gewährt ohne jede Rolle nichts", async () => {
@@ -137,9 +169,9 @@ describe("Vereinigung über die Ebenen", () => {
 });
 
 describe("DENY sticht", () => {
-  it("nimmt der Projektrolle weg, was die Workspace-Rolle gibt", async () => {
-    // Genau der Fall aus der Praxis: ein project_lead wird in diesem einen
-    // Projekt zum Leser herabgestuft.
+  it("stuft in diesem einen Projekt herab", async () => {
+    // Genau der Fall aus der Praxis: ein project_lead ist in diesem Projekt nur
+    // Leser. Dass er woanders mehr darf, spielt hier keine Rolle.
     setup({
       workspace: role(
         "project_lead",
@@ -157,8 +189,9 @@ describe("DENY sticht", () => {
     expect(access.has("issue.update.any")).toBe(false);
   });
 
-  it("wirkt unabhängig von der Reihenfolge der Ebenen", async () => {
-    // Verbot auf der Workspace-Ebene, Erlaubnis auf der Projekt-Ebene.
+  it("hebelt ein workspaceweites Verbot nicht aus", async () => {
+    // Verbot auf der Workspace-Ebene, Erlaubnis auf der Projekt-Ebene: das
+    // Verbot bleibt, sonst wäre es wertlos.
     setup({
       workspace: role("restricted", 1, [["issue.delete.any", "DENY"]]),
       project: role("project_admin", 4, allow("issue.delete.any")),
@@ -187,10 +220,11 @@ describe("Plattform-Scope und tenant.access", () => {
     expect(access.has("platform.access")).toBe(true);
   });
 
-  it("stört die Workspace-Rechte des Benutzers nicht", async () => {
+  it("stört die Rechte des Benutzers nicht", async () => {
     setup({
       platform: role("platform_member", 0, []),
-      workspace: role("member", 2, allow("project.view")),
+      workspace: role("member", 2, []),
+      project: role("contributor", 3, allow("project.view")),
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
@@ -274,45 +308,57 @@ describe("Gesperrter Workspace und offene Einladung", () => {
   });
 });
 
-describe("Private Projekte", () => {
-  it("sperrt ein privates Projekt ohne Mitgliedschaft", async () => {
+describe("Mitgliedschaft entscheidet", () => {
+  it("sperrt ein Projekt ohne Eintrag, egal wie sichtbar es ist", async () => {
     setup({
       workspace: role("member", 2, allow("project.view", "audit.view")),
-      visibility: "private",
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
     expect(access.has("project.view")).toBe(false);
-    // Nur die Projekt-Permissions fallen weg, die Workspace-Ebene bleibt.
+    // Nur die projektbezogenen Rechte fallen weg, die Workspace-Ebene bleibt.
     expect(access.has("audit.view")).toBe(true);
-  });
-
-  it("öffnet es mit workspace.project.view.all", async () => {
-    setup({
-      workspace: role("admin", 5, allow("project.view", "project.view.all")),
-      visibility: "private",
-    });
-
-    const access = await accessFor("u1", { projectId: "p1" });
-    expect(access.has("project.view")).toBe(true);
   });
 
   it("öffnet es mit einem eigenen Projekteintrag", async () => {
     setup({
       workspace: role("member", 2, []),
       project: role("contributor", 3, allow("project.view")),
-      visibility: "private",
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
     expect(access.has("project.view")).toBe(true);
   });
 
-  it("lässt öffentliche Projekte unberührt", async () => {
-    setup({ workspace: role("member", 2, allow("project.view")) });
+  it("öffnet es für project.view.all auch ohne Eintrag", async () => {
+    setup({
+      workspace: role("admin", 5, allow("project.view", "project.view.all")),
+    });
 
     const access = await accessFor("u1", { projectId: "p1" });
     expect(access.has("project.view")).toBe(true);
+  });
+
+  it("lässt die Leitung des Workspace nicht herabstufen", async () => {
+    // Ein Project Admin könnte sonst den Owner aus dessen eigenem Projekt
+    // aussperren — und niemand käme mehr an die Mitgliederverwaltung.
+    setup({
+      workspace: role(
+        "owner",
+        6,
+        allow("project.view", "project.view.all", "member.invite"),
+      ),
+      project: role("project_viewer", 2, [
+        ["project.view", "ALLOW"],
+        ["member.invite", "DENY"],
+      ]),
+    });
+
+    const access = await accessFor("u1", { projectId: "p1" });
+    expect(access.has("member.invite")).toBe(true);
+    // Und die Rangfolge bleibt nach oben offen, sonst ließe sich die
+    // Herabstufung nicht zurücknehmen.
+    expect(assignmentCeiling(access, "PROJECT")).toBe(Number.POSITIVE_INFINITY);
   });
 });
 
@@ -347,34 +393,29 @@ describe("assignmentCeiling", () => {
 });
 
 describe("accessibleProjectIds", () => {
-  it("filtert private Projekte ohne Mitgliedschaft heraus", async () => {
+  it("zeigt nur, wo eine Projektrolle vorliegt", async () => {
     setup({ workspace: role("member", 2, allow("project.view")) });
-    mockProjectFindMany.mockResolvedValue([
-      { id: "p1", visibility: "public" },
-      { id: "p2", visibility: "private" },
+    mockProjectFindMany.mockResolvedValue([{ id: "p1" }, { id: "p2" }]);
+    mockProjectMemberFindMany.mockResolvedValue([
+      { projectId: "p1", role: role("contributor", 3, allow("project.view")) },
     ]);
-    mockProjectMemberFindMany.mockResolvedValue([]);
 
     const visible = await accessibleProjectIds("u1", "ws1");
     expect([...visible]).toEqual(["p1"]);
   });
 
-  it("nimmt private Projekte mit eigenem Eintrag auf", async () => {
+  it("zeigt nichts ohne jede Projektrolle", async () => {
     setup({ workspace: role("member", 2, allow("project.view")) });
-    mockProjectFindMany.mockResolvedValue([
-      { id: "p2", visibility: "private" },
-    ]);
-    mockProjectMemberFindMany.mockResolvedValue([
-      { projectId: "p2", role: role("contributor", 3, allow("project.view")) },
-    ]);
+    mockProjectFindMany.mockResolvedValue([{ id: "p1" }, { id: "p2" }]);
+    mockProjectMemberFindMany.mockResolvedValue([]);
 
     const visible = await accessibleProjectIds("u1", "ws1");
-    expect([...visible]).toEqual(["p2"]);
+    expect([...visible]).toEqual([]);
   });
 
   it("respektiert ein DENY der Projektrolle", async () => {
     setup({ workspace: role("member", 2, allow("project.view")) });
-    mockProjectFindMany.mockResolvedValue([{ id: "p1", visibility: "public" }]);
+    mockProjectFindMany.mockResolvedValue([{ id: "p1" }]);
     mockProjectMemberFindMany.mockResolvedValue([
       {
         projectId: "p1",
@@ -386,18 +427,31 @@ describe("accessibleProjectIds", () => {
     expect([...visible]).toEqual([]);
   });
 
-  it("zeigt einem Owner auch die privaten", async () => {
+  it("zeigt einem Owner alles, auch ohne Eintrag", async () => {
     setup({
       workspace: role("owner", 6, allow("project.view", "project.view.all")),
     });
-    mockProjectFindMany.mockResolvedValue([
-      { id: "p1", visibility: "public" },
-      { id: "p2", visibility: "private" },
-    ]);
+    mockProjectFindMany.mockResolvedValue([{ id: "p1" }, { id: "p2" }]);
     mockProjectMemberFindMany.mockResolvedValue([]);
 
     const visible = await accessibleProjectIds("u1", "ws1");
     expect([...visible].sort()).toEqual(["p1", "p2"]);
+  });
+
+  it("zeigt in einem gesperrten Workspace nichts", async () => {
+    setup({
+      workspace: role("owner", 6, allow("project.view")),
+      suspended: true,
+    });
+    mockProjectFindMany.mockResolvedValue([{ id: "p1" }]);
+    mockProjectMemberFindMany.mockResolvedValue([
+      {
+        projectId: "p1",
+        role: role("project_admin", 4, allow("project.view")),
+      },
+    ]);
+
+    expect([...(await accessibleProjectIds("u1", "ws1"))]).toEqual([]);
   });
 
   it("gibt ohne Session eine leere Menge", async () => {

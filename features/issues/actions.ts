@@ -10,6 +10,7 @@ import {
   requirePermission,
   requirePermissionOr,
 } from "@/lib/permissions";
+import { dropProjectMemberships } from "@/lib/project-membership";
 import { OWNER_ROLE_KEY } from "@/lib/rbac";
 import { toPlainText } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
@@ -326,8 +327,13 @@ export async function removeMember(workspaceId: string, userId: string) {
     throw new PermissionError(guard);
   }
 
-  await db.workspaceMember.delete({
-    where: { workspaceId_userId: { workspaceId, userId } },
+  await db.$transaction(async (tx) => {
+    await tx.workspaceMember.delete({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+    // Wer nicht mehr im Workspace ist, ist in keinem seiner Projekte mehr. Ohne
+    // das behielte die Person über ihre Projektrollen weiter Zugriff.
+    await dropProjectMemberships(tx, { workspaceId, userId });
   });
   await revalidate();
 }

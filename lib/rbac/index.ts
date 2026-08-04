@@ -6,9 +6,10 @@
 // (`issue.create`); wo er wirkt, sagt der Scope der Rolle, die ihn trägt. Die
 // Default-Rollen liegen genau einmal in der Datenbank und gehören niemandem;
 // selbst angelegte Rollen hängen am Workspace oder am Projekt. Ein Benutzer hat
-// je Scope höchstens eine Rolle, und die effektiven Rechte sind die Vereinigung
-// aller ALLOW-Einträge abzüglich aller DENY-Einträge. Ausgewertet wird das in
-// `lib/permissions.ts`.
+// eine Plattform-Rolle, eine Rolle je Workspace (`WorkspaceMember`) und eine je
+// Projekt (`ProjectMember`). Gefragt wird immer die Ebene, um die es geht: im
+// Projekt entscheidet die Projektrolle, im Workspace die Workspace-Rolle. Ein
+// DENY sticht über alle Ebenen. Ausgewertet wird das in `lib/permissions.ts`.
 
 export {
   projectRoleId,
@@ -34,7 +35,10 @@ export {
   DEFAULT_PROJECT_ROLE_KEY,
   DEFAULT_WORKSPACE_ROLE_KEY,
   OWNER_ROLE_KEY,
+  PROJECT_ADMIN_ROLE_KEY,
+  PROJECT_BLOCKED_ROLE_KEY,
   PROJECT_GUEST_ROLE_KEY,
+  PROJECT_VIEWER_ROLE_KEY,
   roleColor,
   SYSTEM_ROLES,
   type SystemRole,

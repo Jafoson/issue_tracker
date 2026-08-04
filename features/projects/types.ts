@@ -2,8 +2,9 @@ import type { Role, User } from "@/types";
 
 /**
  * Woher die Rolle stammt, mit der jemand im Projekt steht:
- * `project` = eigener `ProjectMember`-Eintrag, `workspace` = aus der
- * Workspace-Rolle geerbt (öffentliche Projekte, Owner und Admins).
+ * `project` = eigene Projektrolle aus `ProjectMember`, der Normalfall.
+ * `workspace` = ohne Projekt-Eintrag drin, weil die Workspace-Rolle jedes Projekt
+ * sieht (Owner, Admin) — die einzige verbliebene Quelle neben der Projektrolle.
  */
 export type ProjectAccessSource = "project" | "workspace";
 
