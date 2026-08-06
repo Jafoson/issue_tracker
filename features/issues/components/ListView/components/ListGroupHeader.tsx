@@ -34,6 +34,10 @@ export function ListGroupHeader({
   const t = useTranslations();
   const { openModal } = useModal();
 
+  // Wie im Spaltenkopf des Boards: ohne `issue.create` in diesem Projekt fehlt
+  // das Plus. Entschieden hat das der Server (`creatableProjectIds`).
+  const canCreate = composer.creatableProjectIds.includes(projectId);
+
   const createIssue = () =>
     openModal(({ close }) => (
       <CreateIssueModal
@@ -61,15 +65,17 @@ export function ListGroupHeader({
       <StatusIcon status={status.id} size={15} color={status.color} />
       <span className={styles.groupName}>{status.name}</span>
       <span className={styles.groupCount}>{count}</span>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={styles.groupAdd}
-        title={t("actions.newIssue")}
-        aria-label={t("actions.newIssue")}
-        icon={<Icon icon="lucide:plus" width={15} />}
-        onClick={createIssue}
-      />
+      {canCreate && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={styles.groupAdd}
+          title={t("actions.newIssue")}
+          aria-label={t("actions.newIssue")}
+          icon={<Icon icon="lucide:plus" width={15} />}
+          onClick={createIssue}
+        />
+      )}
     </>
   );
 }

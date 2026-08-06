@@ -58,6 +58,11 @@ export function BoardColumn({
 }: BoardColumnProps) {
   const { openModal } = useModal();
 
+  // Ohne `issue.create` in diesem Projekt gibt es weder das Plus im Spaltenkopf
+  // noch die Zeile am Ende der Spalte. Der Server hat das schon entschieden
+  // (`creatableProjectIds`), hier wird es nur nicht gezeichnet.
+  const canCreate = composer.creatableProjectIds.includes(projectId);
+
   function showCreateIssueModal() {
     openModal(({ close }) => (
       <CreateIssueModal
@@ -81,14 +86,16 @@ export function BoardColumn({
         <StatusIcon status={status.id} size={16} color={status.color} />
         <span className={styles.colTitle}>{status.name}</span>
         <Badge mono>{issues.length}</Badge>
-        <Button
-          type="button"
-          variant="ghost"
-          className={`${styles.headerAdd}`}
-          title={newIssueLabel}
-          onClick={showCreateIssueModal}
-          icon={<Icon icon="lucide:plus" width={15} />}
-        />
+        {canCreate && (
+          <Button
+            type="button"
+            variant="ghost"
+            className={`${styles.headerAdd}`}
+            title={newIssueLabel}
+            onClick={showCreateIssueModal}
+            icon={<Icon icon="lucide:plus" width={15} />}
+          />
+        )}
       </div>
 
       <div className={styles.cards}>
@@ -117,15 +124,17 @@ export function BoardColumn({
             </React.Fragment>
           );
         })}
-        <button
-          type="button"
-          className={styles.addCard}
-          title={newIssueLabel}
-          onClick={showCreateIssueModal}
-        >
-          <Icon icon="lucide:plus" width={15} />
-          <span>{newIssueLabel}</span>
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className={styles.addCard}
+            title={newIssueLabel}
+            onClick={showCreateIssueModal}
+          >
+            <Icon icon="lucide:plus" width={15} />
+            <span>{newIssueLabel}</span>
+          </button>
+        )}
       </div>
     </div>
   );

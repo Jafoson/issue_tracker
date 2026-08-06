@@ -46,6 +46,18 @@ export interface IssueEditorData {
 /** Der Composer braucht zusätzlich die Issue-Typen für seinen Typ-Picker. */
 export interface IssueComposerData extends IssueEditorData {
   issueTypes: IssueType[];
+  /**
+   * Projekte, in denen der Benutzer `issue.create` hat — die Teilmenge von
+   * `projects`, in der ein neues Issue entstehen darf.
+   *
+   * Bewusst eine eigene Liste und keine Filterung von `projects`: die dient auch
+   * als Nachschlagetabelle für bestehende Issues (Prefix, Farbe). Wer sie
+   * kürzte, um Knöpfe zu verstecken, hätte Karten ohne Projektnamen.
+   *
+   * Leer heißt: kein „Neues Issue" — nirgends. Entschieden wird das in
+   * `features/issues/editor-data.ts`, nicht in den vier Knöpfen.
+   */
+  creatableProjectIds: string[];
 }
 
 /**

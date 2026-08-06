@@ -82,6 +82,12 @@ export function CreateIssueModal({
   const [projectId, setProjectId] = useState(initialProjectId);
   const project = projects.find((p) => p.id === projectId);
 
+  // Umschalten geht nur dorthin, wo auch etwas entstehen darf. `projects` bleibt
+  // vollständig — es löst die Angaben bestehender Issues auf.
+  const creatableProjects = projects.filter((p) =>
+    data.creatableProjectIds.includes(p.id),
+  );
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState<PMDoc>(emptyDoc);
   const [status, setStatus] = useState(initialStatus);
@@ -180,7 +186,7 @@ export function CreateIssueModal({
     >
       {(closeMenu) => (
         <SelectMenu
-          items={projects.map((p) => ({
+          items={creatableProjects.map((p) => ({
             value: p.id,
             label: p.name,
             hint: p.prefix,

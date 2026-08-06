@@ -302,6 +302,30 @@ klammert `/api` aus) und prüft deshalb beides selbst: Session und `project.view
 Ein fehlendes Recht antwortet mit 404, nicht 403 — sonst verriete die Antwort,
 dass es das Issue gibt.
 
+#### Wie die Oberfläche davon erfährt
+
+Stufe 3 ist nur UX, aber sie soll nicht raten. **Keine Komponente prüft selbst** —
+jede bekommt fertige Flags von der Server Component über ihr, und keine kennt einen
+Rollennamen:
+
+| Oberfläche | Flags | Quelle |
+|---|---|---|
+| Mitglieder (Workspace) | `can.invite`, `can.setRole`, `can.remove` | Seite via `getAccess` |
+| Mitglieder (Projekt) | `canAdd`, `canSetRole`, `canRemove`, je Zeile `manageable` | `getProjectMembersView` |
+| Projekt-Einstellungen | `canUpdate`, `canDelete` | `getProjectSettingsView` |
+| Rollen-Editor | `canManage`, `grantable`, `maxRank`, je Rolle `manageable` | `getRoleManagerView` |
+| „Neues Issue" | `creatableProjectIds` | `getIssueComposerData` |
+
+Der letzte Fall zeigt das Muster: es gibt **drei** Stellen, die ein Issue anlegen
+(Knopf in der Seitenleiste, Board-Spalte, Gruppenkopf der Liste), und alle drei
+bekommen dasselbe `IssueComposerData`. Also wird `issue.create` **einmal** je
+sichtbarem Projekt aufgelöst und als `creatableProjectIds` mitgegeben; die Knöpfe
+fragen nur noch `includes(projectId)`. Board-Spalte und Gruppenkopf prüfen ihr
+eigenes Projekt, der Knopf in der Seitenleiste verschwindet erst, wenn **nirgends**
+etwas entstehen darf — und der Projektwechsler im Dialog bietet nur die erlaubten
+an. `projects` selbst bleibt vollständig: die Liste löst auch die Angaben
+bestehender Issues auf (Prefix, Farbe), gekürzt gäbe es Karten ohne Projektnamen.
+
 ---
 
 ## Rollen verwalten
@@ -475,6 +499,14 @@ tests/unit/auth/
   acceptInvitation.test.ts pending → false, Projekte nachziehen, Token verbrauchen
 tests/unit/workspace/
   inviteWorkspaceMember.test.ts  bekanntes Konto vs. Einladungslink, Rang-Grenze
+tests/unit/issues/
+  composerData.test.ts     creatableProjectIds: nur Projekte mit issue.create
+tests/unit/ui/
+  issueCreateButtons.test.tsx  dass die drei „Neues Issue"-Auslöser verschwinden
 ```
+
+Die `.tsx`-Tests brauchen `react-dom/server` und laufen deshalb im letzten
+Prozess des `test`-Scripts — zusammen mit den Richtext- und Table-Tests, nicht
+neben `issues/getLabels.test.ts`, das `react` durch einen Stub ersetzt.
 
 `bun run test` (nicht `bun test` — siehe CLAUDE.md).

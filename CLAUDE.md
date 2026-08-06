@@ -271,12 +271,19 @@ tests/
       projectMembers.test.ts      ← Projektrollen verwalten
       projectMembership.test.ts   ← lib/project-membership (Aufnahme & Austritt)
       projectSettings.test.ts     ← updateProject / deleteProject, Sichtbarkeit
+    issues/
+      createLabel.test.ts         ← createLabel() Server Action
+      getLabels.test.ts           ← Label-Abfrage (ersetzt `react` durch Stub!)
+      composerData.test.ts        ← creatableProjectIds (wo darf angelegt werden)
+      rank.test.ts                ← Sortierschlüssel für Drag & Drop
     permissions/
       resolver.test.ts            ← lib/permissions (eigener Prozess, siehe unten)
       rbac.test.ts                ← Registry aus lib/rbac
       roleActions.test.ts         ← Rollenverwaltung
     table/
       tableDnd.test.tsx           ← Table mit `dnd` (components/ui/layout/Table)
+    ui/
+      issueCreateButtons.test.tsx ← rechteabhängige Auslöser („Neues Issue")
     richtext/
       richText.test.tsx           ← PM-JSON-Renderer (components/ui/atoms/RichText)
       fromMarkdown.test.ts        ← Markdown → PM-JSON (Migration + Seed)
