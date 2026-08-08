@@ -44,6 +44,11 @@ export const getRoleManagerView = cache(
       },
     });
 
+    // Auf der Plattform ist der Topf die Plattform — der globale Zähler ist dort
+    // schon der richtige Ausschnitt.
+    const here =
+      target.scope === "PLATFORM" ? null : await carriersInTarget(target);
+
     const maxRank = canManage
       ? assignmentCeiling(access, target.scope)
       : Number.NEGATIVE_INFINITY;
@@ -64,7 +69,8 @@ export const getRoleManagerView = cache(
         // System-Rollen sind für alle Mandanten dieselbe Zeile und deshalb
         // gesperrt. Über den eigenen Rang greift ohnehin niemand hinaus.
         manageable: canManage && r.editable && r.rank <= maxRank,
-        memberCount:
+        memberCount: here ? (here.get(r.id) ?? 0) : r._count.platformUsers,
+        totalCarriers:
           r._count.workspaceMembers +
           r._count.projectMembers +
           r._count.platformUsers,
@@ -90,3 +96,39 @@ export const getRoleManagerView = cache(
     };
   },
 );
+
+/**
+ * Wie viele Personen jede Rolle **in diesem Topf** tragen, `roleId` → Anzahl.
+ *
+ * Der Zähler aus `_count` kann das nicht leisten: er zählt eine Beziehung ganz
+ * oder gar nicht, und dieselbe Rolle steht in mehreren Projekten. Eine geteilte
+ * Standardrolle käme so auf die Summe aller Mandanten — eine Zahl, die auf
+ * einer Projektseite niemandem etwas sagt.
+ *
+ * Deshalb eine eigene Abfrage über die Mitgliedstabelle des Topfes. Sie zählt
+ * in der Datenbank statt Zeilen zu laden: es geht um die Menge, nicht um die
+ * Namen.
+ */
+async function carriersInTarget(
+  target: Exclude<RoleTarget, { scope: "PLATFORM" }>,
+): Promise<Map<string, number>> {
+  const groups =
+    target.scope === "WORKSPACE"
+      ? await db.workspaceMember.groupBy({
+          by: ["roleId"],
+          where: { workspaceId: target.workspaceId },
+          _count: { _all: true },
+        })
+      : await db.projectMember.groupBy({
+          by: ["roleId"],
+          // Der Topf eines Projekts zählt nur dessen Mitglieder. Die
+          // Projektrollen des Workspace gelten dagegen in allen seinen
+          // Projekten — dort zählt jedes davon mit.
+          where: target.projectId
+            ? { projectId: target.projectId }
+            : { project: { workspaceId: target.workspaceId } },
+          _count: { _all: true },
+        });
+
+  return new Map(groups.map((g) => [g.roleId, g._count._all]));
+}

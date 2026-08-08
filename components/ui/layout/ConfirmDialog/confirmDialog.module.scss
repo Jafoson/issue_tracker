@@ -1,0 +1,29 @@
+/* Der Dialog selbst kommt aus `Modal` — hier steht nur, was eine Rückfrage
+   davon abweichend braucht: ein Fließtext statt eines Formulars und eine rote
+   Bestätigung für die Wege, die etwas kosten. */
+
+.body {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.text {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--on-surface-variant);
+}
+
+/* Nur die Farbe wechselt; Maße, Zustände und die Aufhellung beim Überfahren
+   bleiben die des Primary-Knopfes — deshalb eine Ergänzung per `className`
+   statt einer eigenen Button-Variante. Rot ist hier die Eigenschaft dieser
+   einen Antwort, keine neue Sorte Knopf.
+
+   `--error`/`--on-error` statt `--red`: das Paar dreht sich im dunklen Thema
+   mit, ein festes Rot mit weißer Schrift täte das nicht. */
+.danger {
+  background: var(--error);
+  color: var(--on-error);
+
+  &::after { background: var(--on-error); }
+}

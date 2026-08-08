@@ -9,6 +9,9 @@ const mockRoleUpdate = mock();
 const mockRoleDelete = mock();
 const mockGrantUpsert = mock();
 const mockGrantDeleteMany = mock();
+// Die Stapel-Action schickt ihre Schreibvorgänge als Transaktion los. Der Mock
+// wartet sie einfach ab — geprüft wird hier, *was* geschrieben wird.
+const mockTransaction = mock((ops: unknown[]) => Promise.all(ops));
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -23,6 +26,7 @@ mock.module("@/lib/db", () => ({
       upsert: mockGrantUpsert,
       deleteMany: mockGrantDeleteMany,
     },
+    $transaction: mockTransaction,
   },
 }));
 
@@ -51,6 +55,7 @@ import {
   createRole,
   deleteRole,
   setRoleGrant,
+  setRoleGrants,
   updateRole,
 } from "@/features/roles/actions";
 import type { RoleTarget } from "@/features/roles/types";
@@ -73,6 +78,7 @@ function actor(permissions: string[], ranks: Record<string, number> = {}) {
 /** Die Rolle, die `requireRoleManage` laden wird. */
 function existingRole(
   overrides: Partial<{
+    id: string;
     rank: number;
     editable: boolean;
     system: boolean;
@@ -319,6 +325,91 @@ describe("Scope-Grenze der Permissions", () => {
       "ALLOW",
     );
     expect(result).toEqual({ error: "Unknown permission." });
+  });
+});
+
+describe("Stapel aus der Matrix", () => {
+  // Der Speichern-Knopf schickt alles auf einmal — die Action muss deshalb
+  // mehrere Rollen in einem Aufruf vertragen und darf keine halben Stapel
+  // hinterlassen.
+  beforeEach(() => {
+    mockAccessFor.mockResolvedValue(
+      actor(["role.manage", "issue.create", "project.view"], { WORKSPACE: 5 }),
+    );
+    mockRoleFindUnique.mockImplementation(
+      async ({ where }: { where: { id: string } }) =>
+        existingRole({ id: where.id }),
+    );
+  });
+
+  it("schreibt Erlauben und Zurücknehmen über mehrere Rollen hinweg", async () => {
+    const result = await setRoleGrants([
+      { roleId: "ws:ws1:a", permission: "issue.create", effect: "ALLOW" },
+      { roleId: "ws:ws1:b", permission: "project.view", effect: null },
+    ]);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockGrantUpsert).toHaveBeenCalledTimes(1);
+    expect(mockGrantDeleteMany).toHaveBeenCalledTimes(1);
+    // Ein Zug, nicht zwei: sonst stünde nach einem Fehler die Hälfte in der DB.
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("prüft jede Rolle einmal, nicht jede Zelle", async () => {
+    await setRoleGrants([
+      { roleId: "ws:ws1:custom", permission: "issue.create", effect: "ALLOW" },
+      { roleId: "ws:ws1:custom", permission: "project.view", effect: "DENY" },
+      { roleId: "ws:ws1:custom", permission: "comment.create", effect: null },
+    ]);
+
+    expect(mockRoleFindUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it("verwirft den ganzen Stapel, wenn eine Zelle unzulässig ist", async () => {
+    const result = await setRoleGrants([
+      { roleId: "ws:ws1:custom", permission: "issue.create", effect: "ALLOW" },
+      // Die hat der Handelnde selbst nicht.
+      {
+        roleId: "ws:ws1:custom",
+        permission: "workspace.delete",
+        effect: "ALLOW",
+      },
+    ]);
+
+    expect(result).toEqual({
+      error: "You cannot grant a permission you do not have.",
+    });
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockGrantUpsert).not.toHaveBeenCalled();
+    expect(mockGrantDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("hält auch an einer gesperrten Rolle den ganzen Stapel auf", async () => {
+    mockRoleFindUnique.mockImplementation(
+      async ({ where }: { where: { id: string } }) =>
+        existingRole({ id: where.id, system: where.id.startsWith("sys:") }),
+    );
+
+    const result = await setRoleGrants([
+      { roleId: "ws:ws1:custom", permission: "issue.create", effect: "ALLOW" },
+      {
+        roleId: "sys:WORKSPACE:member",
+        permission: "issue.create",
+        effect: "DENY",
+      },
+    ]);
+
+    expect(result).toEqual({
+      error:
+        "This is a shared default role and cannot be changed. Create your own role instead.",
+    });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("lässt einen leeren Stapel gelten, ohne die DB anzufassen", async () => {
+    expect(await setRoleGrants([])).toEqual({ ok: true });
+    expect(mockRoleFindUnique).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 });
 

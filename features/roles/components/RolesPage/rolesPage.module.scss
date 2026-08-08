@@ -1,0 +1,28 @@
+/* Die Seitenränder sitzen in den Abschnitten, nicht hier: Kopfzeile und Körper
+   haben unterschiedliche Polster nach oben und unten — dieselbe Aufteilung wie
+   auf den anderen Verwaltungsseiten. */
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.switcher {
+  flex: none;
+  display: flex;
+  padding: 12px 24px 0;
+}
+
+.section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  /* `hidden` allein reicht nicht: das `display: flex` oben stäche es aus. */
+  &[hidden] {
+    display: none;
+  }
+}

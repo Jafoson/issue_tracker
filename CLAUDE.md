@@ -284,6 +284,7 @@ tests/
       tableDnd.test.tsx           ← Table mit `dnd` (components/ui/layout/Table)
     ui/
       issueCreateButtons.test.tsx ← rechteabhängige Auslöser („Neues Issue")
+      permissionMatrix.test.tsx   ← Rollen-Matrix (features/roles)
     richtext/
       richText.test.tsx           ← PM-JSON-Renderer (components/ui/atoms/RichText)
       fromMarkdown.test.ts        ← Markdown → PM-JSON (Migration + Seed)

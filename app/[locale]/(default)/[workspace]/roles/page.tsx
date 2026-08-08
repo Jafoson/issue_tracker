@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { RoleManager } from "@/features/roles/components/RoleManager/RoleManager";
+import { RolesPage } from "@/features/roles/components/RolesPage/RolesPage";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getAccess } from "@/lib/permissions";
 
@@ -30,17 +31,37 @@ export default async function WorkspaceRolesPage({
   if (!access.has("role.manage")) notFound();
 
   return (
-    <>
-      <RoleManager
-        target={{ scope: "WORKSPACE", workspaceId: workspace }}
-        title={t("roles.workspaceTitle")}
-        subtitle={t("roles.workspaceSubtitle")}
-      />
-      <RoleManager
-        target={{ scope: "PROJECT", workspaceId: workspace, projectId: null }}
-        title={t("roles.workspaceProjectTitle")}
-        subtitle={t("roles.workspaceProjectSubtitle")}
-      />
-    </>
+    <RolesPage
+      sections={[
+        {
+          id: "workspace",
+          label: t("roles.workspaceTitle"),
+          node: (
+            <RoleManager
+              showTitle={false}
+              target={{ scope: "WORKSPACE", workspaceId: workspace }}
+              title={t("roles.workspaceTitle")}
+              subtitle={t("roles.workspaceSubtitle")}
+            />
+          ),
+        },
+        {
+          id: "project",
+          label: t("roles.workspaceProjectTitle"),
+          node: (
+            <RoleManager
+              showTitle={false}
+              target={{
+                scope: "PROJECT",
+                workspaceId: workspace,
+                projectId: null,
+              }}
+              title={t("roles.workspaceProjectTitle")}
+              subtitle={t("roles.workspaceProjectSubtitle")}
+            />
+          ),
+        },
+      ]}
+    />
   );
 }

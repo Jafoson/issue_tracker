@@ -1,0 +1,93 @@
+.editor {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(200px, 2fr) 92px auto;
+  align-items: start;
+  gap: 12px;
+  padding: 13px 40px 13px 14px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--surface-container-lowest);
+  animation: rolesEditorIn .14s ease;
+}
+
+@keyframes rolesEditorIn {
+  from {
+    opacity: .3;
+    transform: translateY(-3px);
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Auf Höhe der Eingabefelder, nicht ihrer Beschriftungen. */
+  align-self: center;
+  padding-top: 14px;
+}
+
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+
+.inUse {
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+
+.delete {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transition: background .12s, border-color .12s;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--red) 12%, transparent);
+    border-color: color-mix(in srgb, var(--red) 40%, transparent);
+  }
+
+  &:disabled {
+    opacity: var(--opacity-disabled, .4);
+    cursor: not-allowed;
+  }
+}
+
+.close {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  transition: background .12s, color .12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+  }
+}
+
+@media (max-width: 900px) {
+  .editor {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .meta {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+}

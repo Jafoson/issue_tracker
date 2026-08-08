@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { RoleManager } from "@/features/roles/components/RoleManager/RoleManager";
+import { RolesPage } from "@/features/roles/components/RolesPage/RolesPage";
 import { getWorkspaceProjects } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getAccess } from "@/lib/permissions";
@@ -33,14 +34,24 @@ export default async function ProjectRolesPage({
   if (!access.has("role.manage")) notFound();
 
   return (
-    <RoleManager
-      target={{
-        scope: "PROJECT",
-        workspaceId: workspace,
-        projectId: project.id,
-      }}
-      title={t("roles.projectTitle")}
-      subtitle={t("roles.projectSubtitle", { project: project.name })}
+    <RolesPage
+      sections={[
+        {
+          id: "project",
+          label: t("roles.projectTitle"),
+          node: (
+            <RoleManager
+              target={{
+                scope: "PROJECT",
+                workspaceId: workspace,
+                projectId: project.id,
+              }}
+              title={t("roles.projectTitle")}
+              subtitle={t("roles.projectSubtitle", { project: project.name })}
+            />
+          ),
+        },
+      ]}
     />
   );
 }

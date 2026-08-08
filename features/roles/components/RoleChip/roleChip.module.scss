@@ -1,0 +1,85 @@
+/* Der Chip hebt sich über die Fläche ab, nicht über die Farbe: die Karte liegt
+   auf `--surface-container-lowest`, der Chip zwei Stufen darüber auf
+   `--surface-container`, sein Herkunftsfeld noch eine höher. So bleibt die
+   Reihenfolge lesbar (Name vor Herkunft), ohne dass die Rangfarbe dafür
+   herhalten muss.
+
+   `overflow: hidden`, weil das zweite Feld eine eigene Fläche hat: ohne den
+   Beschnitt stünden dessen eckige Ecken über die Pille hinaus. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-pill);
+  background: var(--surface-container);
+  font-size: var(--text-xs);
+  /* Ganze, gerade Maße: 3px + 16px + 3px + 2×1px Rahmen = 24px, dieselbe Höhe
+     wie ein `sm`-Label. Krumme Höhen landen in einer zentrierten Zeile auf
+     halben Pixeln und verwischen Punkt und Rahmen. */
+  line-height: 16px;
+
+  /* Wer die Rolle nicht ändern kann, soll sie trotzdem lesen können: der Chip
+     tritt eine Stufe zurück, statt zu verblassen. In einem Topf sind fast alle
+     Rollen geteilte Standardrollen — die eine eigene fällt so von selbst auf,
+     und das Schloss daneben sagt, warum. */
+  &[data-locked] {
+    background: var(--surface-container-low);
+
+    .name { color: var(--on-surface-variant); }
+    /* Der Punkt behält seine Rangfarbe, nur gedämpft: er ist derselbe Punkt wie
+       im Kopf der Matrix darunter, und der bleibt farbig. */
+    .dot { opacity: .6; }
+    .tag { background: var(--surface-container); }
+  }
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 9px;
+  color: var(--on-surface);
+  font-weight: 500;
+}
+
+.dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+}
+
+/* Der Name kürzt, die Herkunft nicht: „Geteilt" ist ein festes Wort, der
+   Eigenname kann beliebig lang werden („Project Admin (ohne Issues)"). Vollen
+   Text trägt der `title` des Chips. */
+.text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  flex: none;
+  /* Über die volle Höhe, damit die Trennlinie den Chip wirklich teilt. */
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  /* Schmal gehalten: jeder Pixel hier fehlt dem Namen daneben, und der ist das,
+     was gelesen wird. */
+  padding: 0 7px;
+  border-left: 1px solid var(--outline-variant);
+  /* Zwei Stufen über dem Namensfeld statt einer: im hellen Thema liegen die
+     Container-Töne dicht beieinander, und eine Stufe wäre dort allein an der
+     Trennlinie zu erkennen. */
+  background: var(--surface-container-highest);
+  color: var(--on-surface-variant);
+  font-size: var(--text-xxs);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

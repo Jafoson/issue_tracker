@@ -8,7 +8,7 @@ import {
   targetOfRole,
   targetRoleId,
 } from "@/features/roles/scope";
-import type { RoleTarget } from "@/features/roles/types";
+import type { GrantChange, RoleTarget } from "@/features/roles/types";
 import { db } from "@/lib/db";
 import {
   type Access,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/permissions";
 import {
   isPermissionAllowedIn,
+  type Permission,
   type PermissionEffect,
   toPermission,
 } from "@/lib/rbac";
@@ -235,33 +236,82 @@ export async function setRoleGrant(
   permissionKey: string,
   effect: PermissionEffect | null,
 ): Promise<RoleResult> {
-  const found = await requireRoleManage(roleId);
-  if ("error" in found) return found;
+  return setRoleGrants([{ roleId, permission: permissionKey, effect }]);
+}
 
-  const permission = toPermission(permissionKey);
-  if (!permission) return { error: "Unknown permission." };
+/**
+ * Schreibt einen ganzen Stapel Einträge — was der Speichern-Knopf der Matrix
+ * abschickt.
+ *
+ * Alles oder nichts: erst wird jede einzelne Änderung geprüft, geschrieben wird
+ * danach in einer Transaktion. Ein halb übernommener Stapel wäre bei
+ * Berechtigungen die schlechteste aller Antworten — die Oberfläche zeigte einen
+ * Fehler, und trotzdem hätte sich die Hälfte der Rechte verschoben.
+ */
+export async function setRoleGrants(
+  changes: GrantChange[],
+): Promise<RoleResult> {
+  if (changes.length === 0) return { ok: true };
 
-  // Nicht jede Permission ist in jedem Scope sinnvoll — `workspace.update`
-  // gehört nicht in eine Projektrolle.
-  if (!isPermissionAllowedIn(permission, found.target.scope))
-    return { error: "That permission does not apply in this scope." };
+  // Ein Stapel trifft ein paar Rollen und viele Zellen. Die Prüfung einer Rolle
+  // lädt sie und wiegt ihren Rang gegen den des Handelnden — das fällt deshalb
+  // je Rolle an, nicht je Änderung.
+  const checked = new Map<
+    string,
+    Awaited<ReturnType<typeof requireRoleManage>>
+  >();
 
-  // Erlauben kann nur, wer es selbst darf. Verbieten darf jeder, der die Rolle
-  // verwaltet — ein Verbot vergrößert niemandes Rechte.
-  if (effect === "ALLOW" && !found.guard.access.has(permission))
-    return { error: "You cannot grant a permission you do not have." };
+  const writes: {
+    roleId: string;
+    permission: Permission;
+    effect: PermissionEffect | null;
+  }[] = [];
 
-  if (effect === null) {
-    await db.rolePermission.deleteMany({
-      where: { roleId, permissionKey: permission },
-    });
-  } else {
-    await db.rolePermission.upsert({
-      where: { roleId_permissionKey: { roleId, permissionKey: permission } },
-      update: { effect },
-      create: { roleId, permissionKey: permission, effect },
+  for (const change of changes) {
+    let found = checked.get(change.roleId);
+    if (!found) {
+      found = await requireRoleManage(change.roleId);
+      checked.set(change.roleId, found);
+    }
+    if ("error" in found) return found;
+
+    const permission = toPermission(change.permission);
+    if (!permission) return { error: "Unknown permission." };
+
+    // Nicht jede Permission ist in jedem Scope sinnvoll — `workspace.update`
+    // gehört nicht in eine Projektrolle.
+    if (!isPermissionAllowedIn(permission, found.target.scope))
+      return { error: "That permission does not apply in this scope." };
+
+    // Erlauben kann nur, wer es selbst darf. Verbieten darf jeder, der die Rolle
+    // verwaltet — ein Verbot vergrößert niemandes Rechte.
+    if (change.effect === "ALLOW" && !found.guard.access.has(permission))
+      return { error: "You cannot grant a permission you do not have." };
+
+    writes.push({
+      roleId: change.roleId,
+      permission,
+      effect: change.effect,
     });
   }
+
+  // Die Abfragen entstehen erst hier: oben stünde nach einem Fehler ein halbes
+  // Dutzend fertiger Schreibvorgänge herum, die niemand mehr abschickt.
+  await db.$transaction(
+    writes.map(({ roleId, permission, effect }) =>
+      effect === null
+        ? db.rolePermission.deleteMany({
+            where: { roleId, permissionKey: permission },
+          })
+        : db.rolePermission.upsert({
+            where: {
+              roleId_permissionKey: { roleId, permissionKey: permission },
+            },
+            update: { effect },
+            create: { roleId, permissionKey: permission, effect },
+          }),
+    ),
+  );
 
   await revalidate();
   return { ok: true };

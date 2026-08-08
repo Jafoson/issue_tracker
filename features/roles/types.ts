@@ -27,8 +27,35 @@ export interface RoleView {
   grants: Record<string, PermissionEffect>;
   /** Der Handelnde darf diese Rolle ändern (Rang, `editable`, Berechtigung). */
   manageable: boolean;
-  /** Wie viele Personen sie tragen — solange jemand sie trägt, geht kein Löschen. */
+  /**
+   * Wie viele Personen sie **in diesem Topf** tragen — im Projekt also die
+   * Mitglieder dieses Projekts, im Workspace die seinen.
+   *
+   * Geteilte Standardrollen tragen plattformweit Hunderte; die Zahl beantwortet
+   * hier aber „wie viele bei uns", und das ist die einzige, mit der man auf
+   * dieser Seite etwas anfangen kann.
+   */
   memberCount: number;
+  /**
+   * Wie viele sie überhaupt tragen, über alle Workspaces und Projekte hinweg.
+   *
+   * Nur dafür da, die Löschbarkeit zu beantworten: der Fremdschlüssel steht auf
+   * RESTRICT, und der zählt nicht nach Töpfen.
+   */
+  totalCarriers: number;
+}
+
+/**
+ * Eine Änderung an genau einem Permission-Eintrag.
+ *
+ * Dieselbe Form nimmt die Matrix entgegen und die Action wieder an: zwischen
+ * beiden liegt der Speichern-Knopf, der einen Stapel davon sammelt.
+ */
+export interface GrantChange {
+  roleId: string;
+  permission: string;
+  /** `null` nimmt den Eintrag zurück auf „nicht gesetzt". */
+  effect: PermissionEffect | null;
 }
 
 /** Alles, was ein Rollen-Editor rendert. */
