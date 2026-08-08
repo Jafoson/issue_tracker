@@ -17,12 +17,6 @@ enum RoleScope {
   PROJECT
 }
 
-/// Ein DENY sticht über alle Ebenen hinweg jedes ALLOW.
-enum PermissionEffect {
-  ALLOW
-  DENY
-}
-
 /// Wer beim Anlegen und beim Beitritt automatisch ins Projekt eingetragen wird.
 /// Über den Zugriff selbst entscheidet allein `ProjectMember` — ein privates
 /// Projekt hat nur die, die ausdrücklich aufgenommen wurden.
@@ -184,9 +178,9 @@ model ProjectMember {
   projectId String
   userId    String
   // Rolle auf der Projekt-Ebene (Role.scope = PROJECT). Entweder eine
-  // workspaceweite Projektrolle oder eine projektlokale. Sie **ersetzt** in
-  // diesem Projekt die Workspace-Rolle: was hier erlaubt ist, gilt — ein DENY
-  // der oberen Ebenen bleibt aber ein DENY.
+  // workspaceweite Projektrolle oder eine projektlokale. Sie ist in diesem
+  // Projekt die ganze Wahrheit: was hier nicht steht, gilt hier nicht. Die
+  // Workspace-Rolle greift nur über `project.admin.all` durch.
   roleId    String
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -358,10 +352,21 @@ model Permission {
   roles RolePermission[]
 }
 
+// Eine Zeile heißt: diese Rolle hat diese Permission. Es gibt keine Gegenrichtung.
+//
+// Früher stand hier ein `effect` mit ALLOW und DENY. Das war nötig, solange eine
+// Prüfung mehrere Rollen vereinigte und ein Recht von oben wieder weggenommen
+// werden musste. Seit jeder Kontext genau eine Rolle auflöst (lib/permissions.ts)
+// kann eine Rolle pro Permission ohnehin nur eine Zeile haben — ein DENY wäre von
+// „keine Zeile" nicht zu unterscheiden gewesen. Ein Verbotsschild, das nichts
+// verbietet, ist in einer Rechtetabelle schlimmer als keines.
+//
+// Kämen einmal Rechte über Teams dazu, würden wieder mehrere Rollen zusammenlaufen
+// und ein Verbot bekäme wieder eine Bedeutung. Dann gehört es für diesen Fall neu
+// entworfen, statt einen Rest aus einem anderen Modell weiterzuschleppen.
 model RolePermission {
   roleId        String
   permissionKey String
-  effect        PermissionEffect @default(ALLOW)
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)

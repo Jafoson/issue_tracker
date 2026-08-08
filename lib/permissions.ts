@@ -1,11 +1,14 @@
 import "server-only";
 import { cache } from "react";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import {
+  isPermissionAllowedIn,
   type PERMISSIONS,
   type Permission,
   permissionsFor,
   type RoleScope,
+  toPermission,
 } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 
@@ -14,29 +17,44 @@ export type { Permission } from "@/lib/rbac";
 // ─── Berechtigungsprüfung über drei Scopes ────────────────────────────────────
 //
 // Ein Benutzer hat je Scope höchstens eine Rolle: eine auf der Plattform, eine
-// im Workspace (`WorkspaceMember`), eine je Projekt (`ProjectMember`). Gefragt
-// wird die Ebene, um die es geht:
+// im Workspace (`WorkspaceMember`), eine je Projekt (`ProjectMember`).
 //
-//     Workspace-Kontext:  Plattform ∪ Workspace
-//     Projekt-Kontext:    Plattform ∪ Workspace(ohne Projektrechte) ∪ Projektrolle
+// **Jeder Kontext löst genau eine dieser Rollen auf.** Es wird nichts vereinigt:
 //
-// Im Projekt entscheidet also die Projektrolle. Sie ergänzt die Workspace-Rolle
-// nicht, sondern ersetzt sie für alles, was ein Projekt betrifft: keine Zeile in
-// `ProjectMember` heißt keine Projektrechte. Was allein workspaceweit gilt
-// (`project.create`, `project.view.all`, `team.*` …) bleibt unberührt — eine
-// Projektrolle kann diese Keys laut Registry gar nicht tragen.
+//     Plattform-Kontext:  Plattform-Rolle
+//     Workspace-Kontext:  Workspace-Rolle
+//     Projekt-Kontext:    Projektrolle
 //
-// Von jedem Ergebnis gehen die DENY-Einträge aller Ebenen ab:
+// Im Projekt gelten also nur Projektrechte, im Workspace nur Workspace-Rechte.
+// Was die Ebene darüber erlaubt, spielt für die Ebene darunter keine Rolle —
+// keine Zeile in `ProjectMember` heißt keine Projektrechte, auch für einen
+// Workspace-Owner. Ein Verbot gibt es nicht und braucht es nicht: eine Rolle
+// listet, was sie erlaubt, und „nicht aufgeführt" ist bereits das Verbot.
 //
-//     erlaubt = ALLOW(zuständige Ebenen)  \  ⋃ DENY(alle Ebenen)
+// Zwei Sicherungen halten das durch, auch wenn die Datenbank etwas anderes
+// erzählt: `collect()` nimmt aus einer Rolle nur die Keys, die sie laut Registry
+// tragen darf, und `permissionsFor(scope)` begrenzt jedes Ergebnis. Eine alte
+// oder von Hand gesetzte `RolePermission`-Zeile im falschen Scope ist damit
+// wirkungslos statt gefährlich.
 //
-// Ein DENY sticht also immer. Die Feinheiten stehen bei `projectGrants` und
-// `keepsProjectRights`.
+// ── Die Generalschlüssel ──
 //
-// Ein Permission-Key nennt nur Objekt und Aktion. Dass `issue.create` in einer
-// Workspace-Rolle für alle Projekte gilt und in einer Projektrolle nur für
-// dieses, ergibt sich allein daraus, an welcher Rolle er hängt — hier ist dafür
-// keine Sonderbehandlung nötig.
+// Strikte Trennung allein würde die Leitung eines Workspace aus ihren eigenen
+// Projekten aussperren. Dafür gibt es drei Keys, und nur sie durchbrechen die
+// Trennung — nach unten, nie nach oben:
+//
+//     tenant.access      (PLATFORM)   alles in jedem Workspace und Projekt
+//     project.admin.all  (WORKSPACE)  alles in jedem Projekt des Workspace
+//     project.view.all   (WORKSPACE)  lesend in jedes Projekt des Workspace
+//
+// Sie werden geprüft, **bevor** die Rolle der unteren Ebene überhaupt geladen
+// wird. Genau darin liegt die Zusage: ein `blocked`-Eintrag auf einem Workspace-
+// Admin ist keine Herabstufung, sondern eine wirkungslose Zeile. Es gibt keinen
+// Datenzustand, der daran etwas ändert.
+//
+// Ein Permission-Key nennt nur Objekt und Aktion. Dass `label.create` in einer
+// Workspace-Rolle den workspaceweiten Label meint und in einer Projektrolle den
+// des Projekts, ergibt sich allein daraus, an welcher Rolle er hängt.
 
 // ─── Kontext ──────────────────────────────────────────────────────────────────
 
@@ -89,13 +107,18 @@ async function requireUserId(): Promise<string> {
 
 // ─── Cached DB-Lookups (pro Request dedupliziert) ─────────────────────────────
 
+// `satisfies` statt nur `as const`: eine Auswahl, die in einer Variablen steht,
+// prüft TypeScript beim Einsetzen nicht mehr auf überflüssige Felder — nur
+// direkt geschriebene Objektliterale bekommen diese Prüfung. Ohne die Zusicherung
+// hier überlebt ein Feld, das es im Schema nicht mehr gibt, jeden Typecheck und
+// fällt erst zur Laufzeit auf.
 const roleSelect = {
   key: true,
   rank: true,
-  permissions: { select: { permissionKey: true, effect: true } },
-} as const;
+  permissions: { select: { permissionKey: true } },
+} as const satisfies Prisma.RoleSelect;
 
-type GrantRow = { permissionKey: string; effect: "ALLOW" | "DENY" };
+type GrantRow = { permissionKey: string };
 type RoleWithGrants = { key: string; rank: number; permissions: GrantRow[] };
 
 const loadPlatformRole = cache(
@@ -199,47 +222,42 @@ function makeAccess(
   };
 }
 
-/** Übernimmt die Einträge einer Rolle in die ALLOW- bzw. DENY-Menge. */
+/**
+ * Die Rechte einer Rolle, sofern sie in diesem Scope überhaupt gelten können.
+ *
+ * Der Scope-Filter ist die eigentliche Trennung der Ebenen: was eine Rolle
+ * dieses Scopes laut Registry nicht tragen darf, wird übergangen. Eine Zeile in
+ * `RolePermission`, die aus einer früheren Fassung stammt oder von Hand gesetzt
+ * wurde, wird dadurch wirkungslos — sie muss nicht erst aufgeräumt werden, damit
+ * die Trennung stimmt.
+ */
 function collect(
   role: RoleWithGrants | null | undefined,
-  allow: Set<Permission>,
-  deny: Set<Permission>,
-): void {
-  if (!role) return;
-  for (const grant of role.permissions) {
-    const permission = grant.permissionKey as Permission;
-    if (grant.effect === "DENY") deny.add(permission);
-    else allow.add(permission);
-  }
-}
-
-function difference(
-  allow: Set<Permission>,
-  deny: Set<Permission>,
+  scope: RoleScope,
 ): Set<Permission> {
-  if (deny.size === 0) return allow;
-  return new Set([...allow].filter((p) => !deny.has(p)));
+  const granted = new Set<Permission>();
+  if (!role) return granted;
+  for (const grant of role.permissions) {
+    const permission = toPermission(grant.permissionKey);
+    if (!permission) continue;
+    if (!isPermissionAllowedIn(permission, scope)) continue;
+    granted.add(permission);
+  }
+  return granted;
 }
 
 function grants(role: RoleWithGrants | null, permission: Permission): boolean {
-  return (
-    role?.permissions.some(
-      (g) => g.permissionKey === permission && g.effect === "ALLOW",
-    ) ?? false
-  );
+  return role?.permissions.some((g) => g.permissionKey === permission) ?? false;
 }
 
 // ─── Auflösung ────────────────────────────────────────────────────────────────
 
 const EMPTY: Access = makeAccess(new Set(), {}, null, null);
 
-/** Alle Permissions, die eine Projektrolle tragen kann. */
-const PROJECT_SCOPED = new Set<Permission>(permissionsFor("PROJECT"));
-
-/** Was die Ebenen über dem Projekt hergeben. */
+/** Was die Workspace-Ebene hergibt — die Unterlage beider Mandanten-Kontexte. */
 interface Base {
-  allow: Set<Permission>;
-  deny: Set<Permission>;
+  /** Nur WORKSPACE-Keys, nur aus der Workspace-Rolle. */
+  granted: Set<Permission>;
   roles: Partial<Record<RoleScope, ScopeRole>>;
   /** `tenant.access`: Support-Generalschlüssel, hebt alle Regeln auf. */
   master: boolean;
@@ -248,22 +266,17 @@ interface Base {
 }
 
 /**
- * Plattform- und Workspace-Ebene einsammeln.
+ * Die Workspace-Ebene einsammeln.
  *
- * Beide Kontexte brauchen das: die Workspace-Prüfung als Ergebnis, die
- * Projekt-Prüfung als Unterlage. Deshalb steht es hier für sich.
+ * Beide Mandanten-Kontexte brauchen das: der Workspace-Kontext als Ergebnis, der
+ * Projekt-Kontext für die Generalschlüssel und die Sperrgründe. Die
+ * Plattform-Rolle wird dabei **nicht** eingesammelt — sie wirkt im Mandanten nur
+ * über `tenant.access`. Ihr Key und Rang stehen trotzdem im Ergebnis, damit die
+ * Oberfläche sie anzeigen kann.
  */
 async function loadBase(userId: string, workspaceId: string): Promise<Base> {
-  const allow = new Set<Permission>();
-  const deny = new Set<Permission>();
+  let granted = new Set<Permission>();
   const roles: Partial<Record<RoleScope, ScopeRole>> = {};
-
-  // ── Scope PLATFORM ──────────────────────────────────────────────────────────
-  const platformRole = await loadPlatformRole(userId);
-  if (platformRole) {
-    roles.PLATFORM = { key: platformRole.key, rank: platformRole.rank };
-    collect(platformRole, allow, deny);
-  }
 
   // ── Support-Zugriff ─────────────────────────────────────────────────────────
   //
@@ -273,75 +286,40 @@ async function loadBase(userId: string, workspaceId: string): Promise<Base> {
   // hat, bekommt im Mandanten alles und ist von den Regeln unten ausgenommen:
   // gerade wenn ein Workspace gesperrt oder ein Projekt privat ist, muss der
   // Support hineinsehen können. `platform_admin` hat ihn bewusst NICHT.
+  const platformRole = await loadPlatformRole(userId);
+  if (platformRole) {
+    roles.PLATFORM = { key: platformRole.key, rank: platformRole.rank };
+  }
   if (grants(platformRole, "tenant.access"))
-    return { allow, deny, roles, master: true, closed: false };
+    return { granted, roles, master: true, closed: false };
 
-  // ── Regel 1 & 2: gesperrt, oder noch nicht angenommen ───────────────────────
+  // ── Gesperrt, oder noch nicht angenommen ────────────────────────────────────
   //
-  // Die Prüfung steht VOR dem Einsammeln der Mandanten-Rollen, nicht danach.
-  // Nachträglich zu filtern wäre falsch: manche Permissions sind in mehreren
-  // Scopes vergebbar (`workspace.delete` etwa auch auf der Plattform), und nach
-  // dem Vereinigen ist nicht mehr erkennbar, aus welcher Rolle eine kam. Wer
-  // hier gar nichts einsammelt, kann auch nichts Falsches behalten.
+  // Die Prüfung steht VOR dem Einsammeln der Workspace-Rolle. Wer hier gar
+  // nichts einsammelt, kann auch nichts Falsches behalten.
   const [workspace, membership] = await Promise.all([
     loadWorkspaceMeta(workspaceId),
     loadWorkspaceRole(workspaceId, userId),
   ]);
 
   if (!workspace || workspace.suspended || membership?.pending)
-    return { allow, deny, roles, master: false, closed: true };
+    return { granted, roles, master: false, closed: true };
 
   // ── Scope WORKSPACE ─────────────────────────────────────────────────────────
   if (membership) {
     roles.WORKSPACE = { key: membership.role.key, rank: membership.role.rank };
-    collect(membership.role, allow, deny);
+    granted = collect(membership.role, "WORKSPACE");
   }
 
-  return { allow, deny, roles, master: false, closed: false };
+  return { granted, roles, master: false, closed: false };
 }
 
-/**
- * Wer jedes Projekt sehen darf (Owner, Admin), lässt sich per Projektrolle nicht
- * herabstufen.
- *
- * Ohne diese Ausnahme könnte ein Project Admin die Leitung des Workspace aus
- * deren eigenem Projekt aussperren — und niemand käme mehr an dessen
- * Mitgliederverwaltung heran. Die Oberfläche verspricht das ohnehin schon
- * (`getProjectMembersView`), hier steht es durchgesetzt.
- */
-function keepsProjectRights(base: Base): boolean {
-  return difference(base.allow, base.deny).has("project.view.all");
-}
-
-/**
- * Die Rechte in einem Projekt.
- *
- * Hier entscheidet die Projektrolle: sie **ersetzt** die projektbezogenen Rechte
- * der Workspace-Rolle, statt sie zu ergänzen. Was jemand in diesem Projekt darf,
- * steht in `ProjectMember` — was er im Workspace darf, in `WorkspaceMember`. Ohne
- * Zeile in `ProjectMember` gibt es also keine Projektrechte, auch nicht bei einem
- * öffentlichen Projekt.
- *
- * Unberührt davon bleiben die Rechte, die nur workspaceweit gelten
- * (`project.create`, `project.view.all`, `team.*` …) — eine Projektrolle kann sie
- * gar nicht tragen, also kann sie sie auch nicht ersetzen.
- *
- * Ein DENY der oberen Ebenen bleibt ein DENY: eine Projektrolle hebelt kein
- * workspaceweites Verbot aus, sonst wäre das Verbot wertlos.
- */
-function projectGrants(
+/** Trägt die Workspace-Rolle diesen Generalschlüssel? */
+function opens(
   base: Base,
-  projectRole: RoleWithGrants | null,
-): Set<Permission> {
-  if (keepsProjectRights(base)) return difference(base.allow, base.deny);
-
-  const allow = new Set<Permission>(
-    [...base.allow].filter((p) => !PROJECT_SCOPED.has(p)),
-  );
-  const deny = new Set(base.deny);
-  collect(projectRole, allow, deny);
-
-  return difference(allow, deny);
+  key: "project.admin.all" | "project.view.all",
+): boolean {
+  return base.granted.has(key);
 }
 
 async function resolve(
@@ -353,50 +331,61 @@ async function resolve(
   // ── Kontext PLATFORM ────────────────────────────────────────────────────────
   if ("scope" in ctx) {
     const platformRole = await loadPlatformRole(userId);
-    const allow = new Set<Permission>();
-    const deny = new Set<Permission>();
     const roles: Partial<Record<RoleScope, ScopeRole>> = {};
     if (platformRole) {
       roles.PLATFORM = { key: platformRole.key, rank: platformRole.rank };
-      collect(platformRole, allow, deny);
     }
-    return makeAccess(difference(allow, deny), roles, null, null);
+    return makeAccess(collect(platformRole, "PLATFORM"), roles, null, null);
   }
 
   // ── Kontext WORKSPACE ───────────────────────────────────────────────────────
   if (!("projectId" in ctx)) {
     const base = await loadBase(userId, ctx.workspaceId);
     const granted = base.master
-      ? new Set<Permission>([...base.allow, ...permissionsFor("WORKSPACE")])
-      : difference(base.allow, base.deny);
+      ? new Set<Permission>(permissionsFor("WORKSPACE"))
+      : base.granted;
     return makeAccess(granted, base.roles, ctx.workspaceId, null);
   }
 
   // ── Kontext PROJECT ─────────────────────────────────────────────────────────
+  //
+  // Vier Regeln, in dieser Reihenfolge. Die ersten drei entscheiden ohne die
+  // Projektrolle — deshalb kann keine Projektrolle sie aushebeln.
   const project = await loadProjectMeta(ctx.projectId);
   if (!project) return EMPTY;
 
   const base = await loadBase(userId, project.workspaceId);
   const where = [project.workspaceId, ctx.projectId] as const;
 
-  if (base.master) {
-    const everything = new Set<Permission>([
-      ...base.allow,
-      ...permissionsFor("PROJECT"),
-    ]);
-    return makeAccess(everything, base.roles, ...where);
-  }
-  if (base.closed)
-    return makeAccess(difference(base.allow, base.deny), base.roles, ...where);
+  // 1. Support sieht in jedes Projekt jedes Mandanten.
+  if (base.master)
+    return makeAccess(new Set(permissionsFor("PROJECT")), base.roles, ...where);
 
+  // 2. Gesperrter Workspace oder offene Einladung: nichts.
+  if (base.closed) return makeAccess(new Set(), base.roles, ...where);
+
+  // 3. Der Generalschlüssel des Workspace. Die Projektrolle wird gar nicht erst
+  //    geladen — und `roles.PROJECT` bleibt leer, damit `assignmentCeiling` nach
+  //    oben offen ist. Sonst könnte ein Owner, den jemand auf `blocked` gesetzt
+  //    hat, diese Herabstufung nicht mehr zurücknehmen.
+  if (opens(base, "project.admin.all"))
+    return makeAccess(new Set(permissionsFor("PROJECT")), base.roles, ...where);
+
+  // 4. Sonst entscheidet allein die Projektrolle. Keine Zeile in
+  //    `ProjectMember` heißt keine Projektrechte — auch bei einem öffentlichen
+  //    Projekt und auch für ein Workspace-Mitglied.
   const projectRole = await loadProjectRole(ctx.projectId, userId);
-  // Der Rang der Projektrolle bindet nur, wenn sie auch entscheidet. Wer nicht
-  // herabstufbar ist, bleibt beim Rollenvergeben nach oben offen — sonst könnte
-  // er die eigene Herabstufung nicht zurücknehmen.
-  if (projectRole && !keepsProjectRights(base))
+  if (projectRole)
     base.roles.PROJECT = { key: projectRole.key, rank: projectRole.rank };
 
-  return makeAccess(projectGrants(base, projectRole), base.roles, ...where);
+  const granted = collect(projectRole, "PROJECT");
+
+  // Der schwächere Generalschlüssel: sehen ja, anfassen nein. Er steht nach der
+  // Projektrolle, wirkt aber wie die anderen an ihr vorbei — ein `blocked`
+  // verbirgt ein Projekt nicht vor dem, der laut Workspace-Rolle alle sehen darf.
+  if (opens(base, "project.view.all")) granted.add("project.view");
+
+  return makeAccess(granted, base.roles, ...where);
 }
 
 // ─── Öffentliche API ───────────────────────────────────────────────────────────
@@ -540,10 +529,10 @@ export function assignmentCeiling(access: Access, scope: RoleScope): number {
  * Die Projekte eines Workspace, die `userId` sehen darf.
  *
  * Die Sammelvariante zu `can(…, "project.view", { projectId })`: Listen und
- * Navigationen bekämen sonst eine Auflösung je Projekt. Plattform- und
- * Workspace-Ebene gelten für alle Projekte gleich und werden einmal aufgelöst;
- * die Projektrolle kommt je Projekt dazu und entscheidet — dieselbe Regel wie in
- * `projectGrants`, nur über alle Projekte auf einmal.
+ * Navigationen bekämen sonst eine Auflösung je Projekt. Die Generalschlüssel
+ * gelten für alle Projekte gleich und werden einmal aufgelöst; sonst entscheidet
+ * die Projektrolle je Projekt — dieselben vier Regeln wie in `resolve`, nur über
+ * alle Projekte auf einmal.
  */
 export const accessibleProjectIds = cache(async function accessibleProjectIds(
   userId: string | null,
@@ -561,25 +550,27 @@ export const accessibleProjectIds = cache(async function accessibleProjectIds(
     }),
   ]);
 
-  // Support und die Leitung des Workspace sehen jedes Projekt, auch ohne Rolle
-  // darin (Ausnahme 2 in `projectGrants`).
+  // Regeln 1 und 3: Support und die Leitung des Workspace sehen jedes Projekt,
+  // auch ohne Rolle darin.
   if (
     base.master ||
-    difference(base.allow, base.deny).has("project.view.all")
+    opens(base, "project.admin.all") ||
+    opens(base, "project.view.all")
   ) {
     for (const project of projects) visible.add(project.id);
     return visible;
   }
+  // Regel 2.
   if (base.closed) return visible;
 
   const ownRole = new Map(memberships.map((m) => [m.projectId, m.role]));
 
+  // Regel 4: keine Projektrolle heißt kein Zugriff — `ProjectMember` ist die
+  // Liste, wer im Projekt ist.
   for (const project of projects) {
-    // Keine Projektrolle heißt kein Zugriff — `ProjectMember` ist die Liste,
-    // wer im Projekt ist.
     const role = ownRole.get(project.id);
     if (!role) continue;
-    if (projectGrants(base, role).has("project.view")) visible.add(project.id);
+    if (collect(role, "PROJECT").has("project.view")) visible.add(project.id);
   }
 
   return visible;

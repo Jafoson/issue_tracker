@@ -93,7 +93,7 @@ function reset() {
   }
   mockTx.user.create.mockResolvedValue({ id: "u-new" });
   mockTx.workspaceMember.findUnique.mockResolvedValue({
-    role: { permissions: [{ permissionKey: "issue.create", effect: "ALLOW" }] },
+    role: { permissions: [{ permissionKey: "issue.create" }] },
   });
   mockTx.project.findMany.mockResolvedValue([{ id: "p-1" }]);
   mockTransaction.mockImplementation(

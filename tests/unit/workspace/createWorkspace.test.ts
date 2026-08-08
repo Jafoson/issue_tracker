@@ -61,14 +61,15 @@ function resetTxMocks() {
     }
   }
   // Der Ersteller ist nach `workspaceMember.create` das einzige Mitglied — genau
-  // das liest die Aufnahme ins Projekt aus. Als Owner trägt er `project.view.all`.
+  // das liest die Aufnahme ins Projekt aus. Als Owner wird er Project Admin.
   mockTx.workspaceMember.findMany.mockResolvedValue([
     {
       userId: "user-1",
       role: {
+        key: "owner",
         permissions: [
-          { permissionKey: "project.view.all", effect: "ALLOW" },
-          { permissionKey: "member.invite", effect: "ALLOW" },
+          { permissionKey: "project.admin.all" },
+          { permissionKey: "member.invite" },
         ],
       },
     },

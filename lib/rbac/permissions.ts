@@ -13,6 +13,23 @@
 //
 // Deshalb steht bei jeder Permission, in welchen Scopes sie vergeben werden
 // darf. `workspace.delete` in einer Projektrolle wäre sinnlos und ist gesperrt.
+//
+// Diese Liste ist zugleich die Grenze zwischen den Ebenen. Jeder Kontext löst
+// **genau eine** Rolle auf (`lib/permissions.ts`), und `collect()` nimmt aus ihr
+// nur, was sie laut `scopes` überhaupt tragen darf. Eine Permission, die hier
+// nicht für einen Scope freigegeben ist, kann dort also gar nicht wirken — auch
+// dann nicht, wenn eine alte Zeile in `RolePermission` das Gegenteil behauptet.
+//
+// Zwei Keys durchbrechen die Trennung bewusst, und nur sie. Es sind die
+// Generalschlüssel, mit denen eine Ebene die darunter aufschließt:
+//
+//   tenant.access      (PLATFORM)   → alles in jedem Workspace und Projekt
+//   project.admin.all  (WORKSPACE)  → alles in jedem Projekt des Workspace
+//   project.view.all   (WORKSPACE)  → lesend in jedes Projekt des Workspace
+//
+// Sie stehen im Resolver vor der Rollenauflösung. Genau daran hängt die Zusage,
+// dass die Leitung eines Workspace sich aus keinem seiner Projekte aussperren
+// lässt: eine Projektrolle wird für sie gar nicht erst geladen.
 
 /** Die drei Scopes, in denen Rollen existieren. */
 export type RoleScope = "PLATFORM" | "WORKSPACE" | "PROJECT";
@@ -23,12 +40,6 @@ export const ROLE_SCOPES = [
   "PROJECT",
 ] as const satisfies readonly RoleScope[];
 
-/**
- * Wirkung eines Rollen-Eintrags. Ein DENY sticht über alle Scopes hinweg jedes
- * ALLOW — siehe `lib/permissions.ts`.
- */
-export type PermissionEffect = "ALLOW" | "DENY";
-
 interface PermissionDef {
   desc: string;
   /** Scopes, in denen diese Permission vergeben werden darf. */
@@ -37,7 +48,16 @@ interface PermissionDef {
 
 const PLATFORM_ONLY = ["PLATFORM"] as const;
 const WORKSPACE_ONLY = ["WORKSPACE"] as const;
-/** Wirkt im Workspace auf alle seine Projekte, oder gezielt in einem Projekt. */
+const PROJECT_ONLY = ["PROJECT"] as const;
+/**
+ * Für Objekte, die es auf beiden Ebenen wirklich gibt: einen workspaceweiten
+ * Label und einen Projekt-Label, ein Workspace-Mitglied und ein Projekt-Mitglied.
+ * Der Key ist derselbe, gemeint ist je nach tragender Rolle ein anderes Objekt.
+ *
+ * Das ist keine Abkürzung für „gilt auch im Projekt". Was es nur im Projekt gibt
+ * — Issues, Kommentare, das Projekt selbst — steht auf `PROJECT_ONLY`, sonst
+ * könnte eine Workspace-Rolle daran vorbei in jedes Projekt hineinregieren.
+ */
 const WORKSPACE_AND_PROJECT = ["WORKSPACE", "PROJECT"] as const;
 
 export const PERMISSIONS = {
@@ -103,19 +123,23 @@ export const PERMISSIONS = {
   },
   "project.view": {
     desc: "Projekt sehen (relevant für private Projekte)",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "project.view.all": {
-    desc: "Alle Projekte sehen, auch private ohne Mitgliedschaft",
+    desc: "Alle Projekte des Workspace lesend sehen, auch ohne Mitgliedschaft",
+    scopes: WORKSPACE_ONLY,
+  },
+  "project.admin.all": {
+    desc: "In jedem Projekt des Workspace alle Rechte haben, ohne Mitglied zu sein",
     scopes: WORKSPACE_ONLY,
   },
   "project.update": {
     desc: "Projektname, Präfix und Farbe ändern",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "project.delete": {
     desc: "Projekt löschen",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
 
   // ── Teams ───────────────────────────────────────────────────────────────────
@@ -140,40 +164,44 @@ export const PERMISSIONS = {
   "label.delete": { desc: "Label löschen", scopes: WORKSPACE_AND_PROJECT },
 
   // ── Issues ──────────────────────────────────────────────────────────────────
-  "issue.create": { desc: "Issue erstellen", scopes: WORKSPACE_AND_PROJECT },
+  //
+  // Ein Issue liegt immer in einem Projekt — es gibt kein workspaceweites Issue.
+  // Status und Priorität zu setzen steckt in `issue.update.*`; welche Status und
+  // Prioritäten es überhaupt gibt, regelt `config.manage` im Workspace.
+  "issue.create": { desc: "Issue erstellen", scopes: PROJECT_ONLY },
   "issue.update.any": {
-    desc: "Beliebige Issues bearbeiten",
-    scopes: WORKSPACE_AND_PROJECT,
+    desc: "Beliebige Issues bearbeiten (Status, Priorität, Labels, Text)",
+    scopes: PROJECT_ONLY,
   },
   "issue.update.own": {
     desc: "Nur eigene Issues bearbeiten (Reporter oder Assignee)",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "issue.delete.any": {
     desc: "Beliebige Issues löschen",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "issue.delete.own": {
     desc: "Nur eigene Issues löschen",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "issue.assign": {
     desc: "Issues anderen Mitgliedern zuweisen",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
 
   // ── Kommentare ──────────────────────────────────────────────────────────────
   "comment.create": {
     desc: "Kommentar zu einem Issue schreiben",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "comment.delete.any": {
     desc: "Beliebige Kommentare löschen",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
   "comment.delete.own": {
     desc: "Nur eigene Kommentare löschen",
-    scopes: WORKSPACE_AND_PROJECT,
+    scopes: PROJECT_ONLY,
   },
 } as const satisfies Record<string, PermissionDef>;
 

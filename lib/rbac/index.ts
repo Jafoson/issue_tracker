@@ -8,8 +8,9 @@
 // selbst angelegte Rollen hängen am Workspace oder am Projekt. Ein Benutzer hat
 // eine Plattform-Rolle, eine Rolle je Workspace (`WorkspaceMember`) und eine je
 // Projekt (`ProjectMember`). Gefragt wird immer die Ebene, um die es geht: im
-// Projekt entscheidet die Projektrolle, im Workspace die Workspace-Rolle. Ein
-// DENY sticht über alle Ebenen. Ausgewertet wird das in `lib/permissions.ts`.
+// Projekt entscheidet die Projektrolle, im Workspace die Workspace-Rolle. Eine
+// Rolle listet nur, was sie erlaubt — ein Gegenteil gibt es nicht. Ausgewertet
+// wird das in `lib/permissions.ts`.
 
 export {
   platformRoleId,
@@ -23,7 +24,6 @@ export {
   isPermissionAllowedIn,
   PERMISSIONS,
   type Permission,
-  type PermissionEffect,
   permissionDesc,
   permissionsFor,
   ROLE_SCOPES,
@@ -35,6 +35,7 @@ export {
   DEFAULT_PLATFORM_ROLE_KEY,
   DEFAULT_PROJECT_ROLE_KEY,
   DEFAULT_WORKSPACE_ROLE_KEY,
+  defaultProjectRoleKeyOf,
   OWNER_ROLE_KEY,
   PROJECT_ADMIN_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,

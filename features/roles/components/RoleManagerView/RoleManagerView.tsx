@@ -94,16 +94,18 @@ export function RoleManagerView({
 
   /** Was der Server heute sagt — der Bezugspunkt für „geändert". */
   const saved = (roleId: string, permission: string) =>
-    view.roles.find((role) => role.id === roleId)?.grants[permission] ?? null;
+    view.roles
+      .find((role) => role.id === roleId)
+      ?.grants.includes(permission) ?? false;
 
   const stage = (change: GrantChange) =>
     setDraft((current) => {
       const next = new Map(current);
       const id = cellId(change.roleId, change.permission);
-      // Wer im Kreis herum wieder beim Ausgangswert landet, hat nichts geändert
+      // Wer zweimal klickt, ist wieder beim Ausgangswert und hat nichts geändert
       // — dann verschwindet die Zelle aus dem Stapel und mit ihr womöglich die
       // ganze Leiste.
-      if (change.effect === saved(change.roleId, change.permission))
+      if (change.granted === saved(change.roleId, change.permission))
         next.delete(id);
       else next.set(id, change);
       return next;
@@ -346,11 +348,11 @@ function withDraft(
     const changes = byRole.get(role.id);
     if (!changes) return role;
 
-    const grants = { ...role.grants };
+    const grants = new Set(role.grants);
     for (const change of changes) {
-      if (change.effect === null) delete grants[change.permission];
-      else grants[change.permission] = change.effect;
+      if (change.granted) grants.add(change.permission);
+      else grants.delete(change.permission);
     }
-    return { ...role, grants };
+    return { ...role, grants: [...grants] };
   });
 }

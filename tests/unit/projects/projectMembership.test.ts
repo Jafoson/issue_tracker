@@ -34,9 +34,19 @@ const WS = "acme";
 
 /** Rollen-Einträge, wie die Datenbank sie liefert. */
 const allow = (...keys: string[]) =>
-  keys.map((permissionKey) => ({ permissionKey, effect: "ALLOW" }));
+  keys.map((permissionKey) => ({ permissionKey }));
 
-const role = (...keys: string[]) => ({ permissions: allow(...keys) });
+/**
+ * Eine Workspace-Rolle, wie die Ableitung sie sieht. Der Key entscheidet bei den
+ * System-Rollen, die Einträge nur bei selbst angelegten.
+ */
+const role = (key: string, ...keys: string[]) => ({
+  key,
+  permissions: allow(...keys),
+});
+
+/** Eine selbst angelegte Rolle — ihr Key steht in keiner Registry. */
+const custom = (...keys: string[]) => role("eigene-rolle", ...keys);
 
 beforeEach(() => {
   for (const m of [
@@ -50,44 +60,52 @@ beforeEach(() => {
     m.mockResolvedValue({});
   }
   workspaceMemberFindMany.mockResolvedValue([
-    { userId: "u-owner", role: role("member.invite", "project.view.all") },
-    { userId: "u-member", role: role("project.view", "issue.create") },
+    { userId: "u-owner", role: role("owner") },
+    { userId: "u-member", role: role("member") },
   ]);
-  workspaceMemberFindUnique.mockResolvedValue({
-    role: role("project.view", "issue.create"),
-  });
+  workspaceMemberFindUnique.mockResolvedValue({ role: role("member") });
   projectFindMany.mockResolvedValue([{ id: "p-1" }, { id: "p-2" }]);
 });
 
 describe("projectRoleKeyFor()", () => {
-  it("macht aus der Workspace-Leitung einen Project Admin", () => {
-    expect(projectRoleKeyFor(allow("project.view.all"))).toBe("project_admin");
-    expect(projectRoleKeyFor(allow("member.invite"))).toBe("project_admin");
+  // Bei den System-Rollen steht die Zuordnung ausdrücklich in lib/rbac/roles.ts.
+  // Sie zu erraten ginge nicht mehr: eine Workspace-Rolle sagt seit der Trennung
+  // der Ebenen nichts mehr darüber, was jemand in einem Projekt darf.
+  it("folgt bei System-Rollen der erklärten Zuordnung", () => {
+    expect(projectRoleKeyFor(role("owner"))).toBe("project_admin");
+    expect(projectRoleKeyFor(role("admin"))).toBe("project_admin");
+    expect(projectRoleKeyFor(role("project_lead"))).toBe("project_admin");
+    expect(projectRoleKeyFor(role("member"))).toBe("contributor");
+    expect(projectRoleKeyFor(role("viewer"))).toBe("project_viewer");
+    expect(projectRoleKeyFor(role("guest"))).toBe("project_viewer");
   });
 
-  it("macht aus einem Mitglied einen Contributor", () => {
-    expect(projectRoleKeyFor(allow("project.view", "issue.create"))).toBe(
-      "contributor",
-    );
-  });
-
-  it("macht aus einem Leser einen Viewer", () => {
-    expect(projectRoleKeyFor(allow("project.view", "comment.create"))).toBe(
+  it("übergeht bei System-Rollen die Einträge", () => {
+    // Der Key gewinnt: eine System-Rolle ist überall dieselbe Zeile, ihre
+    // Zuordnung soll nicht davon abhängen, was gerade in der Tabelle steht.
+    expect(projectRoleKeyFor(role("viewer", "project.admin.all"))).toBe(
       "project_viewer",
     );
   });
 
-  it("sperrt, wer auch vorher kein Projekt sehen durfte", () => {
-    expect(projectRoleKeyFor(allow("workspace.update"))).toBe("blocked");
-    expect(projectRoleKeyFor([])).toBe("blocked");
+  it("macht aus einer eigenen Rolle mit Durchgriff einen Project Admin", () => {
+    expect(projectRoleKeyFor(custom("project.admin.all"))).toBe(
+      "project_admin",
+    );
   });
 
-  it("achtet auf DENY — ein verbotenes Recht zählt nicht", () => {
-    const grants = [
-      ...allow("project.view", "issue.create"),
-      { permissionKey: "issue.create", effect: "DENY" },
-    ];
-    expect(projectRoleKeyFor(grants)).toBe("project_viewer");
+  it("macht aus einer eigenen Rolle, die etwas anlegen darf, einen Contributor", () => {
+    expect(projectRoleKeyFor(custom("project.create"))).toBe("contributor");
+    expect(projectRoleKeyFor(custom("label.create"))).toBe("contributor");
+  });
+
+  it("macht aus jeder anderen eigenen Rolle einen Leser", () => {
+    // Nie `blocked`: einen Ausschluss spricht man aus, er ist kein Nebenprodukt
+    // einer schwachen Rolle.
+    expect(projectRoleKeyFor(custom("workspace.update"))).toBe(
+      "project_viewer",
+    );
+    expect(projectRoleKeyFor(custom())).toBe("project_viewer");
   });
 });
 

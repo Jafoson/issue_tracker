@@ -2,6 +2,7 @@ import "server-only";
 import type { RoleTarget } from "@/features/roles/types";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
+  type Access,
   type Permission,
   type PermissionContext,
   PLATFORM,
@@ -90,6 +91,30 @@ export function targetGuard(target: RoleTarget): {
     return { permission, ctx: { projectId: target.projectId } };
   }
   return { permission, ctx: { workspaceId: target.workspaceId } };
+}
+
+/**
+ * Darf der Handelnde diese Permission in einer Rolle dieses Topfes per ALLOW
+ * vergeben? Niemand verteilt, was er selbst nicht hat — sonst wäre jede
+ * Rollenverwaltung ein Weg zur Selbstbeförderung.
+ *
+ * Der Sonderfall ist derselbe, den `targetGuard` oben schon macht: eine
+ * workspaceweite Projektrolle wird im **Workspace**-Kontext verwaltet, trägt
+ * aber **Projekt**-Permissions. Seit im Workspace-Kontext keine Projektrechte
+ * mehr stehen, ginge dort sonst gar nichts mehr zu erlauben. Gemessen wird der
+ * Handelnde deshalb an dem Schlüssel, der ihm alle Projekte öffnet.
+ *
+ * Für eine projektlokale Rolle greift das nicht: dort wurde er im Projekt selbst
+ * gemessen, und die Frage lässt sich unmittelbar beantworten.
+ */
+export function canGrantIn(
+  access: Access,
+  target: RoleTarget,
+  permission: Permission,
+): boolean {
+  if (target.scope === "PROJECT" && target.projectId === null)
+    return access.has("project.admin.all");
+  return access.has(permission);
 }
 
 /** Der Topf, zu dem eine geladene Rollen-Zeile gehört. */

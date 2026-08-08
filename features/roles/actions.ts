@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  canGrantIn,
   ownerColumns,
   rolesInTarget,
   targetGuard,
@@ -19,7 +20,6 @@ import {
 import {
   isPermissionAllowedIn,
   type Permission,
-  type PermissionEffect,
   toPermission,
 } from "@/lib/rbac";
 import { slugify } from "@/lib/slug";
@@ -33,9 +33,10 @@ type RoleResult = { ok: true } | { error: string };
 //      eine eigene Rolle an.
 //   2. Niemand fasst eine Rolle über dem eigenen Rang an und legt keine an,
 //      die darüber läge.
-//   3. Niemand vergibt per ALLOW eine Permission, die er selbst nicht hat.
-//      Sonst wäre jede Rollenverwaltung ein Weg zur Selbstbeförderung. DENY ist
-//      davon ausgenommen: etwas zu verbieten erweitert niemandes Rechte.
+//   3. Niemand gibt einer Rolle eine Permission, die er selbst nicht hat.
+//      Sonst wäre jede Rollenverwaltung ein Weg zur Selbstbeförderung.
+//      Wegnehmen darf dagegen jeder, der die Rolle verwaltet — das vergrößert
+//      niemandes Rechte.
 
 async function revalidate() {
   revalidatePath("/", "layout");
@@ -227,16 +228,13 @@ export async function deleteRole(roleId: string): Promise<RoleResult> {
 
 // ─── Permissions setzen ───────────────────────────────────────────────────────
 
-/**
- * Setzt einen Permission-Eintrag einer Rolle auf ALLOW, DENY oder zurück auf
- * „nicht gesetzt" (`effect: null`).
- */
+/** Gibt einer Rolle eine Permission (`granted`) oder nimmt sie ihr wieder weg. */
 export async function setRoleGrant(
   roleId: string,
   permissionKey: string,
-  effect: PermissionEffect | null,
+  granted: boolean,
 ): Promise<RoleResult> {
-  return setRoleGrants([{ roleId, permission: permissionKey, effect }]);
+  return setRoleGrants([{ roleId, permission: permissionKey, granted }]);
 }
 
 /**
@@ -264,7 +262,7 @@ export async function setRoleGrants(
   const writes: {
     roleId: string;
     permission: Permission;
-    effect: PermissionEffect | null;
+    granted: boolean;
   }[] = [];
 
   for (const change of changes) {
@@ -283,32 +281,31 @@ export async function setRoleGrants(
     if (!isPermissionAllowedIn(permission, found.target.scope))
       return { error: "That permission does not apply in this scope." };
 
-    // Erlauben kann nur, wer es selbst darf. Verbieten darf jeder, der die Rolle
-    // verwaltet — ein Verbot vergrößert niemandes Rechte.
-    if (change.effect === "ALLOW" && !found.guard.access.has(permission))
+    // Geben kann nur, wer es selbst darf. Wegnehmen darf jeder, der die Rolle
+    // verwaltet — das vergrößert niemandes Rechte.
+    if (
+      change.granted &&
+      !canGrantIn(found.guard.access, found.target, permission)
+    )
       return { error: "You cannot grant a permission you do not have." };
 
-    writes.push({
-      roleId: change.roleId,
-      permission,
-      effect: change.effect,
-    });
+    writes.push({ roleId: change.roleId, permission, granted: change.granted });
   }
 
   // Die Abfragen entstehen erst hier: oben stünde nach einem Fehler ein halbes
   // Dutzend fertiger Schreibvorgänge herum, die niemand mehr abschickt.
   await db.$transaction(
-    writes.map(({ roleId, permission, effect }) =>
-      effect === null
-        ? db.rolePermission.deleteMany({
-            where: { roleId, permissionKey: permission },
-          })
-        : db.rolePermission.upsert({
+    writes.map(({ roleId, permission, granted }) =>
+      granted
+        ? db.rolePermission.upsert({
             where: {
               roleId_permissionKey: { roleId, permissionKey: permission },
             },
-            update: { effect },
-            create: { roleId, permissionKey: permission, effect },
+            update: {},
+            create: { roleId, permissionKey: permission },
+          })
+        : db.rolePermission.deleteMany({
+            where: { roleId, permissionKey: permission },
           }),
     ),
   );

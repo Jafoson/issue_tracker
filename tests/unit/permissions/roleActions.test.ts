@@ -211,7 +211,7 @@ describe("Geteilte und geschützte Rollen", () => {
   it("verweigert Permission-Änderungen an einer geteilten Rolle", async () => {
     mockRoleFindUnique.mockResolvedValue(existingRole({ system: true }));
     expect(
-      await setRoleGrant("sys:WORKSPACE:member", "issue.create", "ALLOW"),
+      await setRoleGrant("sys:WORKSPACE:member", "team.create", true),
     ).toEqual(shared);
     expect(mockGrantUpsert).not.toHaveBeenCalled();
   });
@@ -236,7 +236,7 @@ describe("Keine Rechte-Eskalation", () => {
     const result = await setRoleGrant(
       "ws:ws1:custom",
       "workspace.delete",
-      "ALLOW",
+      true,
     );
     expect(result).toEqual({
       error: "You cannot grant a permission you do not have.",
@@ -246,28 +246,29 @@ describe("Keine Rechte-Eskalation", () => {
 
   it("erlaubt ALLOW für eine Permission, die er selbst hat", async () => {
     mockAccessFor.mockResolvedValue(
-      actor([...manage, "issue.create"], { WORKSPACE: 5 }),
+      actor([...manage, "team.create"], { WORKSPACE: 5 }),
     );
-    const result = await setRoleGrant("ws:ws1:custom", "issue.create", "ALLOW");
+    const result = await setRoleGrant("ws:ws1:custom", "team.create", true);
     expect(result).toEqual({ ok: true });
     expect(mockGrantUpsert).toHaveBeenCalled();
   });
 
-  it("erlaubt DENY auch ohne die Permission selbst zu haben", async () => {
-    // Verbieten vergrößert niemandes Rechte — das ist kein Eskalationsweg.
+  it("erlaubt das Wegnehmen auch ohne die Permission selbst zu haben", async () => {
+    // Wegnehmen vergrößert niemandes Rechte — das ist kein Eskalationsweg.
     mockAccessFor.mockResolvedValue(actor(manage, { WORKSPACE: 5 }));
     const result = await setRoleGrant(
       "ws:ws1:custom",
       "workspace.delete",
-      "DENY",
+      false,
     );
     expect(result).toEqual({ ok: true });
-    expect(mockGrantUpsert).toHaveBeenCalled();
+    expect(mockGrantDeleteMany).toHaveBeenCalled();
+    expect(mockGrantUpsert).not.toHaveBeenCalled();
   });
 
   it("nimmt einen Eintrag mit `null` zurück", async () => {
     mockAccessFor.mockResolvedValue(actor(manage, { WORKSPACE: 5 }));
-    const result = await setRoleGrant("ws:ws1:custom", "project.view", null);
+    const result = await setRoleGrant("ws:ws1:custom", "team.create", false);
     expect(result).toEqual({ ok: true });
     expect(mockGrantDeleteMany).toHaveBeenCalled();
     expect(mockGrantUpsert).not.toHaveBeenCalled();
@@ -282,11 +283,7 @@ describe("Scope-Grenze der Permissions", () => {
     mockAccessFor.mockResolvedValue(
       actor(["role.manage", "workspace.update"], { PROJECT: 4 }),
     );
-    const result = await setRoleGrant(
-      "pr:p1:custom",
-      "workspace.update",
-      "ALLOW",
-    );
+    const result = await setRoleGrant("pr:p1:custom", "workspace.update", true);
     expect(result).toEqual({
       error: "That permission does not apply in this scope.",
     });
@@ -300,19 +297,62 @@ describe("Scope-Grenze der Permissions", () => {
     mockAccessFor.mockResolvedValue(
       actor(["role.manage", "label.create"], { PROJECT: 4 }),
     );
-    expect(await setRoleGrant("pr:p1:custom", "label.create", "ALLOW")).toEqual(
-      { ok: true },
-    );
+    expect(await setRoleGrant("pr:p1:custom", "label.create", true)).toEqual({
+      ok: true,
+    });
   });
 
-  it("nimmt eine Projekt-Permission in einer Workspace-Rolle an", async () => {
-    // Sie wirkt dann in allen Projekten des Workspace.
+  it("weist eine Projekt-Permission in einer Workspace-Rolle ab", async () => {
+    // Was nur im Projekt gilt, gehört in eine Projektrolle. Eine Workspace-Rolle
+    // damit zu bestücken wäre wirkungslos — der Resolver übergeht solche Keys.
     mockRoleFindUnique.mockResolvedValue(existingRole());
-    mockAccessFor.mockResolvedValue(
-      actor(["role.manage", "project.view"], { WORKSPACE: 5 }),
+    mockAccessFor.mockResolvedValue(actor(["role.manage"], { WORKSPACE: 5 }));
+    const result = await setRoleGrant("ws:ws1:custom", "issue.create", true);
+    expect(result).toEqual({
+      error: "That permission does not apply in this scope.",
+    });
+  });
+
+  it("misst den Handelnden bei einer workspaceweiten Projektrolle am Generalschlüssel", async () => {
+    // Diese Rollen gelten in allen Projekten und werden deshalb im
+    // Workspace-Kontext verwaltet — dort stehen aber keine Projektrechte mehr.
+    // Gemessen wird der Handelnde an dem Schlüssel, der ihm alle Projekte
+    // öffnet; sonst könnte er auf einer solchen Rolle gar nichts erlauben.
+    mockRoleFindUnique.mockResolvedValue(
+      existingRole({
+        id: "wsp:ws1:triage",
+        scope: "PROJECT",
+        workspaceId: "ws1",
+        projectId: null,
+      }),
     );
-    const result = await setRoleGrant("ws:ws1:custom", "project.view", "ALLOW");
-    expect(result).toEqual({ ok: true });
+    mockAccessFor.mockResolvedValue(
+      actor(["role.manage", "project.admin.all"], { WORKSPACE: 5 }),
+    );
+
+    expect(await setRoleGrant("wsp:ws1:triage", "issue.create", true)).toEqual({
+      ok: true,
+    });
+  });
+
+  it("lässt ohne den Generalschlüssel keine Projektrechte vergeben", async () => {
+    // Ein Workspace-Manager verwaltet Rollen, greift aber nicht in die Projekte
+    // durch — er kann dort also auch keine Rechte verteilen.
+    mockRoleFindUnique.mockResolvedValue(
+      existingRole({
+        id: "wsp:ws1:triage",
+        scope: "PROJECT",
+        workspaceId: "ws1",
+        projectId: null,
+      }),
+    );
+    mockAccessFor.mockResolvedValue(
+      actor(["role.manage", "issue.create"], { WORKSPACE: 4 }),
+    );
+
+    expect(await setRoleGrant("wsp:ws1:triage", "issue.create", true)).toEqual({
+      error: "You cannot grant a permission you do not have.",
+    });
   });
 
   it("weist einen unbekannten Permission-Key ab", async () => {
@@ -322,7 +362,7 @@ describe("Scope-Grenze der Permissions", () => {
     const result = await setRoleGrant(
       "ws:ws1:custom",
       "project.issue.create",
-      "ALLOW",
+      true,
     );
     expect(result).toEqual({ error: "Unknown permission." });
   });
@@ -334,7 +374,7 @@ describe("Stapel aus der Matrix", () => {
   // hinterlassen.
   beforeEach(() => {
     mockAccessFor.mockResolvedValue(
-      actor(["role.manage", "issue.create", "project.view"], { WORKSPACE: 5 }),
+      actor(["role.manage", "team.create", "audit.view"], { WORKSPACE: 5 }),
     );
     mockRoleFindUnique.mockImplementation(
       async ({ where }: { where: { id: string } }) =>
@@ -344,8 +384,8 @@ describe("Stapel aus der Matrix", () => {
 
   it("schreibt Erlauben und Zurücknehmen über mehrere Rollen hinweg", async () => {
     const result = await setRoleGrants([
-      { roleId: "ws:ws1:a", permission: "issue.create", effect: "ALLOW" },
-      { roleId: "ws:ws1:b", permission: "project.view", effect: null },
+      { roleId: "ws:ws1:a", permission: "team.create", granted: true },
+      { roleId: "ws:ws1:b", permission: "audit.view", granted: false },
     ]);
 
     expect(result).toEqual({ ok: true });
@@ -357,9 +397,9 @@ describe("Stapel aus der Matrix", () => {
 
   it("prüft jede Rolle einmal, nicht jede Zelle", async () => {
     await setRoleGrants([
-      { roleId: "ws:ws1:custom", permission: "issue.create", effect: "ALLOW" },
-      { roleId: "ws:ws1:custom", permission: "project.view", effect: "DENY" },
-      { roleId: "ws:ws1:custom", permission: "comment.create", effect: null },
+      { roleId: "ws:ws1:custom", permission: "team.create", granted: true },
+      { roleId: "ws:ws1:custom", permission: "audit.view", granted: false },
+      { roleId: "ws:ws1:custom", permission: "team.delete", granted: false },
     ]);
 
     expect(mockRoleFindUnique).toHaveBeenCalledTimes(1);
@@ -367,12 +407,12 @@ describe("Stapel aus der Matrix", () => {
 
   it("verwirft den ganzen Stapel, wenn eine Zelle unzulässig ist", async () => {
     const result = await setRoleGrants([
-      { roleId: "ws:ws1:custom", permission: "issue.create", effect: "ALLOW" },
+      { roleId: "ws:ws1:custom", permission: "team.create", granted: true },
       // Die hat der Handelnde selbst nicht.
       {
         roleId: "ws:ws1:custom",
         permission: "workspace.delete",
-        effect: "ALLOW",
+        granted: true,
       },
     ]);
 
@@ -391,11 +431,11 @@ describe("Stapel aus der Matrix", () => {
     );
 
     const result = await setRoleGrants([
-      { roleId: "ws:ws1:custom", permission: "issue.create", effect: "ALLOW" },
+      { roleId: "ws:ws1:custom", permission: "team.create", granted: true },
       {
         roleId: "sys:WORKSPACE:member",
-        permission: "issue.create",
-        effect: "DENY",
+        permission: "team.create",
+        granted: false,
       },
     ]);
 

@@ -37,18 +37,7 @@ function roleRow(r: SystemRole) {
 
 function grantRows(r: SystemRole) {
   const roleId = systemRoleId(r.scope, r.key);
-  return [
-    ...r.allow.map((permissionKey) => ({
-      roleId,
-      permissionKey,
-      effect: "ALLOW" as const,
-    })),
-    ...r.deny.map((permissionKey) => ({
-      roleId,
-      permissionKey,
-      effect: "DENY" as const,
-    })),
-  ];
+  return r.allow.map((permissionKey) => ({ roleId, permissionKey }));
 }
 
 /**

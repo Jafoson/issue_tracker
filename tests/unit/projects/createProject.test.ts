@@ -51,10 +51,7 @@ const mockMemberFindUnique = db.workspaceMember.findUnique as ReturnType<
 const WS = "my-workspace";
 const MEMBER = { pending: false };
 
-const grant = (permissionKey: string) => ({
-  permissionKey,
-  effect: "ALLOW" as const,
-});
+const grant = (permissionKey: string) => ({ permissionKey });
 
 function reset() {
   mockGetSession.mockReset();
@@ -75,11 +72,11 @@ function reset() {
   mockTx.workspaceMember.findMany.mockResolvedValue([
     {
       userId: "u1",
-      role: { permissions: [grant("project.view.all"), grant("issue.create")] },
+      role: { key: "admin", permissions: [grant("project.admin.all")] },
     },
     {
       userId: "u2",
-      role: { permissions: [grant("project.view"), grant("issue.create")] },
+      role: { key: "member", permissions: [grant("label.create")] },
     },
   ]);
   mockTx.projectMember.createMany.mockResolvedValue({ count: 2 });

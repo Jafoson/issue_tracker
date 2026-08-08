@@ -26,9 +26,9 @@
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
   DEFAULT_PROJECT_ROLE_KEY,
+  defaultProjectRoleKeyOf,
   type Permission,
   PROJECT_ADMIN_ROLE_KEY,
-  PROJECT_BLOCKED_ROLE_KEY,
   PROJECT_VIEWER_ROLE_KEY,
   systemRoleId,
 } from "@/lib/rbac";
@@ -39,48 +39,52 @@ type Db = Prisma.TransactionClient;
 /** Ein Rollen-Eintrag, wie ihn die Datenbank liefert. */
 interface Grant {
   permissionKey: string;
-  effect: string;
 }
 
-/** Die Rollen-Einträge mitzulesen genügt für die Ableitung. */
+/** Key und Rollen-Einträge genügen für die Ableitung. */
 const roleGrants = {
-  select: { permissions: { select: { permissionKey: true, effect: true } } },
-} as const;
+  select: {
+    key: true,
+    permissions: { select: { permissionKey: true } },
+  },
+} as const satisfies Prisma.RoleDefaultArgs;
+
+/** So viel einer Workspace-Rolle, wie die Ableitung braucht. */
+interface WorkspaceRole {
+  key: string;
+  permissions: readonly Grant[];
+}
 
 /**
  * Die Projektrolle, mit der jemand ins Projekt aufgenommen wird.
  *
- * Als Startwert soll sie dem entsprechen, was die Workspace-Rolle im Projekt
- * hergibt — sonst dürfte durch das Eintragen plötzlich jemand mehr oder weniger.
- * Entschieden wird deshalb an den Rechten, nicht am Rollen-Key: eigene
- * Workspace-Rollen tragen beliebige Keys.
+ * Seit die Ebenen getrennt sind, sagt eine Workspace-Rolle nichts mehr darüber,
+ * was ihr Träger in einem Projekt darf — über Issues und Kommentare steht dort
+ * nichts. Die Zuordnung wird deshalb bei den System-Rollen ausdrücklich erklärt
+ * (`defaultProjectRoleKey` in lib/rbac/roles.ts) statt aus Rechten erraten.
  *
- * Dieselbe Ableitung steht in der Migration
- * `20260804120000_project_membership_for_everyone`.
+ * Nur für selbst angelegte Workspace-Rollen bleibt eine Ableitung nötig. Sie
+ * fällt bewusst nie auf `blocked`: einen Ausschluss spricht man aus, er ist kein
+ * Nebenprodukt einer schwachen Rolle.
  */
-export function projectRoleKeyFor(grants: readonly Grant[]): string {
-  const allow = new Set<string>();
-  const deny = new Set<string>();
-  for (const g of grants) {
-    if (g.effect === "DENY") deny.add(g.permissionKey);
-    else allow.add(g.permissionKey);
-  }
-  const has = (permission: Permission) =>
-    allow.has(permission) && !deny.has(permission);
+export function projectRoleKeyFor(role: WorkspaceRole): string {
+  const declared = defaultProjectRoleKeyOf(role.key);
+  if (declared) return declared;
 
-  // Verwaltet Projektmitglieder oder sieht ohnehin jedes Projekt.
-  if (has("member.invite") || has("project.view.all"))
-    return PROJECT_ADMIN_ROLE_KEY;
-  // Arbeitet mit.
-  if (has("issue.create")) return DEFAULT_PROJECT_ROLE_KEY;
-  // Liest mit.
-  if (has("project.view")) return PROJECT_VIEWER_ROLE_KEY;
-  // Durfte auch vorher kein Projekt sehen.
-  return PROJECT_BLOCKED_ROLE_KEY;
+  const granted = new Set<string>(role.permissions.map((g) => g.permissionKey));
+  const has = (permission: Permission) => granted.has(permission);
+
+  // Greift ohnehin in jedes Projekt durch — der Eintrag ändert daran nichts.
+  if (has("project.admin.all")) return PROJECT_ADMIN_ROLE_KEY;
+  // Darf im Workspace etwas anlegen, arbeitet also mit.
+  if (has("project.create") || has("label.create"))
+    return DEFAULT_PROJECT_ROLE_KEY;
+  // Sonst: mitlesen.
+  return PROJECT_VIEWER_ROLE_KEY;
 }
 
-function projectRoleIdFor(grants: readonly Grant[]): string {
-  return systemRoleId("PROJECT", projectRoleKeyFor(grants));
+function projectRoleIdFor(role: WorkspaceRole): string {
+  return systemRoleId("PROJECT", projectRoleKeyFor(role));
 }
 
 /**
@@ -105,7 +109,7 @@ export async function enrollWorkspaceMembers(
     data: members.map((m) => ({
       projectId: project.id,
       userId: m.userId,
-      roleId: projectRoleIdFor(m.role.permissions),
+      roleId: projectRoleIdFor(m.role),
     })),
     // Wer schon eine Zeile hat, behält seine Rolle.
     skipDuplicates: true,
@@ -138,7 +142,7 @@ export async function enrollMember(
       {
         projectId: project.id,
         userId,
-        roleId: projectRoleIdFor(membership.role.permissions),
+        roleId: projectRoleIdFor(membership.role),
       },
     ],
     skipDuplicates: true,
@@ -172,7 +176,7 @@ export async function enrollInWorkspaceProjects(
   ]);
   if (!membership || projects.length === 0) return;
 
-  const roleId = projectRoleIdFor(membership.role.permissions);
+  const roleId = projectRoleIdFor(membership.role);
   await db.projectMember.createMany({
     data: projects.map((p) => ({
       projectId: p.id,

@@ -74,8 +74,8 @@ function reset() {
     pending: true,
     role: {
       permissions: [
-        { permissionKey: "project.view", effect: "ALLOW" },
-        { permissionKey: "issue.create", effect: "ALLOW" },
+        { permissionKey: "project.view" },
+        { permissionKey: "issue.create" },
       ],
     },
   });

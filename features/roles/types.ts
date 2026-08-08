@@ -1,4 +1,4 @@
-import type { PermissionEffect, RoleScope } from "@/lib/rbac";
+import type { RoleScope } from "@/lib/rbac";
 
 /**
  * Welcher Topf von Rollen gemeint ist.
@@ -23,8 +23,8 @@ export interface RoleView {
   system: boolean;
   /** Gehört genau einem Projekt statt dem Workspace. */
   local: boolean;
-  /** Permission-Key → Wirkung. Fehlt der Key, ist nichts gesetzt. */
-  grants: Record<string, PermissionEffect>;
+  /** Die Permission-Keys, die diese Rolle hat. */
+  grants: string[];
   /** Der Handelnde darf diese Rolle ändern (Rang, `editable`, Berechtigung). */
   manageable: boolean;
   /**
@@ -54,8 +54,8 @@ export interface RoleView {
 export interface GrantChange {
   roleId: string;
   permission: string;
-  /** `null` nimmt den Eintrag zurück auf „nicht gesetzt". */
-  effect: PermissionEffect | null;
+  /** `true` gibt der Rolle die Permission, `false` nimmt sie ihr. */
+  granted: boolean;
 }
 
 /** Alles, was ein Rollen-Editor rendert. */

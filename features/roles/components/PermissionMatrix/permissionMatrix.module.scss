@@ -74,16 +74,10 @@
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
 
-  &[data-effect="ALLOW"] {
+  &[data-granted] {
     border-color: color-mix(in srgb, var(--green) 55%, transparent);
     background: color-mix(in srgb, var(--green) 18%, transparent);
     color: var(--green);
-  }
-
-  &[data-effect="DENY"] {
-    border-color: color-mix(in srgb, var(--red) 55%, transparent);
-    background: color-mix(in srgb, var(--red) 18%, transparent);
-    color: var(--red);
   }
 }
 
@@ -337,16 +331,10 @@ tbody tr:first-child .groupHead {
   color: var(--on-surface-variant);
   transition: background .12s, border-color .12s, color .12s, transform .08s;
 
-  .cell[data-effect="ALLOW"] & {
+  .cell[data-granted] & {
     border-color: color-mix(in srgb, var(--green) 55%, transparent);
     background: color-mix(in srgb, var(--green) 20%, transparent);
     color: var(--green);
-  }
-
-  .cell[data-effect="DENY"] & {
-    border-color: color-mix(in srgb, var(--red) 55%, transparent);
-    background: color-mix(in srgb, var(--red) 20%, transparent);
-    color: var(--red);
   }
 }
 
@@ -358,14 +346,9 @@ button.mark {
     background: var(--surface-container-high);
   }
 
-  .cell[data-effect="ALLOW"] &:hover:not(:disabled) {
+  .cell[data-granted] &:hover:not(:disabled) {
     border-color: var(--green);
     background: color-mix(in srgb, var(--green) 30%, transparent);
-  }
-
-  .cell[data-effect="DENY"] &:hover:not(:disabled) {
-    border-color: var(--red);
-    background: color-mix(in srgb, var(--red) 30%, transparent);
   }
 
   &:active:not(:disabled) {

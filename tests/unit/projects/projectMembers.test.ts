@@ -134,10 +134,8 @@ function reset() {
   // Contributor-Rolle in den Projekten.
   mockTx.workspaceMember.findUnique.mockResolvedValue({
     role: {
-      permissions: [
-        { permissionKey: "project.view", effect: "ALLOW" },
-        { permissionKey: "issue.create", effect: "ALLOW" },
-      ],
+      key: "member",
+      permissions: [{ permissionKey: "label.create" }],
     },
   });
   mockTx.project.findMany.mockResolvedValue([{ id: PROJECT }, { id: "p-2" }]);
@@ -146,11 +144,11 @@ function reset() {
   );
 
   mockCurrentUserId.mockResolvedValue(ACTOR);
-  // Der Handelnde darf einladen; das Ziel ist ein normales Mitglied und sieht
-  // nicht jedes Projekt — sonst ließe es sich hier gar nicht anfassen.
+  // Der Handelnde darf einladen; das Ziel ist ein normales Mitglied ohne
+  // Generalschlüssel — sonst ließe es sich hier gar nicht anfassen.
   mockCan.mockImplementation(
     async (_userId: string, permission: string) =>
-      permission !== "project.view.all",
+      permission !== "project.admin.all",
   );
   mockAccessFor.mockResolvedValue(access(MANAGE, null));
   mockProjectFindUnique.mockResolvedValue({ workspaceId: WS });
@@ -361,13 +359,13 @@ describe("setProjectMemberRole()", () => {
   });
 
   it("stuft die Leitung des Workspace nicht herab", async () => {
-    // Wer jedes Projekt sieht, behält seine Rechte ohnehin — der Eintrag würde
-    // in der Tabelle nur etwas behaupten, was nicht gilt.
+    // Wer den Generalschlüssel trägt, behält seine Rechte ohnehin — der Eintrag
+    // würde in der Tabelle nur etwas behaupten, was nicht gilt.
     mockCan.mockResolvedValue(true);
     mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
 
     expect(await setProjectMemberRole(PROJECT, "u-1", "contributor")).toEqual({
-      error: "This member sees every project of the workspace.",
+      error: "This member has full access to every project of the workspace.",
     });
     expect(mockProjectMemberUpdate).not.toHaveBeenCalled();
   });
@@ -407,7 +405,7 @@ describe("removeProjectMember()", () => {
     mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
 
     expect(await removeProjectMember(PROJECT, "u-1")).toEqual({
-      error: "This member sees every project of the workspace.",
+      error: "This member has full access to every project of the workspace.",
     });
     expect(mockProjectMemberDelete).not.toHaveBeenCalled();
   });

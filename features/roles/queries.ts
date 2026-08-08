@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { rolesInTarget, targetGuard } from "@/features/roles/scope";
+import { canGrantIn, rolesInTarget, targetGuard } from "@/features/roles/scope";
 import type {
   RoleManagerView,
   RoleTarget,
@@ -8,11 +8,7 @@ import type {
 } from "@/features/roles/types";
 import { db } from "@/lib/db";
 import { accessFor, assignmentCeiling, currentUserId } from "@/lib/permissions";
-import {
-  type PermissionEffect,
-  permissionDesc,
-  permissionsFor,
-} from "@/lib/rbac";
+import { permissionDesc, permissionsFor } from "@/lib/rbac";
 
 /**
  * Alles, was ein Rollen-Editor braucht — die Rollen des Topfes, ihre Einträge,
@@ -33,7 +29,7 @@ export const getRoleManagerView = cache(
       where: rolesInTarget(target),
       orderBy: [{ system: "desc" }, { rank: "desc" }, { name: "asc" }],
       include: {
-        permissions: { select: { permissionKey: true, effect: true } },
+        permissions: { select: { permissionKey: true } },
         _count: {
           select: {
             workspaceMembers: true,
@@ -54,8 +50,7 @@ export const getRoleManagerView = cache(
       : Number.NEGATIVE_INFINITY;
 
     const roles: RoleView[] = rows.map((r) => {
-      const grants: Record<string, PermissionEffect> = {};
-      for (const g of r.permissions) grants[g.permissionKey] = g.effect;
+      const grants = r.permissions.map((g) => g.permissionKey);
 
       return {
         id: r.id,
@@ -90,7 +85,9 @@ export const getRoleManagerView = cache(
       // Nur weitergeben, was man selbst hat. Sonst wäre jede Rollenverwaltung
       // ein Weg zur Selbstbeförderung.
       grantable: canManage
-        ? permissionsFor(target.scope).filter((p) => access.has(p))
+        ? permissionsFor(target.scope).filter((p) =>
+            canGrantIn(access, target, p),
+          )
         : [],
       maxRank,
     };

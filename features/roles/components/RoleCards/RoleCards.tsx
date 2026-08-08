@@ -54,9 +54,7 @@ export function RoleCards({
   return (
     <div className={styles.cards}>
       {roles.map((role) => {
-        const grants = Object.values(role.grants);
-        const allow = grants.filter((e) => e === "ALLOW").length;
-        const deny = grants.filter((e) => e === "DENY").length;
+        const allow = role.grants.length;
         const editing = editingId === role.id;
         const off = hidden.has(role.id);
 
@@ -105,11 +103,6 @@ export function RoleCards({
                 <span className={styles.allow} title={t("roles.permissions")}>
                   {t("roles.grantCount", { count: allow, total })}
                 </span>
-                {deny > 0 && (
-                  <span className={styles.deny} title={t("roles.denied")}>
-                    −{deny}
-                  </span>
-                )}
                 <span className={styles.carriers} title={carriersHint}>
                   {t("roles.carriers", { count: role.memberCount })}
                 </span>

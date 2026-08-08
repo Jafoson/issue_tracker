@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Input } from "@/components/ui/atoms/Input/Input";
 import type { GrantChange, RoleView } from "@/features/roles/types";
-import { type PermissionEffect, roleColor } from "@/lib/rbac";
+import { roleColor } from "@/lib/rbac";
 import styles from "./permissionMatrix.module.scss";
 
 /** Adresse einer Zelle — dieselbe Bildung nutzt der Aufrufer für `changed`. */
@@ -20,7 +20,7 @@ interface Props {
   roles: RoleView[];
   /** Zeilen — die Permissions, die in diesem Scope vergeben werden dürfen. */
   permissions: { key: string; desc: string }[];
-  /** Permissions, die der Handelnde per ALLOW weitergeben darf. */
+  /** Permissions, die der Handelnde weitergeben darf. */
   grantable: string[];
   /**
    * Zellen, die vom Stand des Servers abweichen (`cellId`) — auch die gerade
@@ -43,11 +43,10 @@ interface Props {
  * Karten nacheinander. Deshalb bleiben Kopfzeile und erste Spalte beim Scrollen
  * stehen; ohne beides verliert eine Matrix ihren Nutzen.
  *
- * Ein Eintrag hat drei Zustände: nicht gesetzt, erlaubt, verboten. Das Verbot
- * ist eine eigene Wahl und nicht bloß die Abwesenheit einer Erlaubnis — weil
- * sich die Scopes vereinigen, nimmt „nicht gesetzt" nichts weg, was ein anderer
- * Scope bereits gewährt. Nur DENY tut das. Ein Klick geht deshalb im Kreis
- * (nicht gesetzt → erlaubt → verboten), Umschalt+Klick setzt direkt zurück.
+ * Eine Zelle hat zwei Zustände: die Rolle hat die Permission, oder sie hat sie
+ * nicht. Ein drittes „ausdrücklich verboten" gab es einmal; seit jeder Kontext
+ * genau eine Rolle auflöst, wäre es von „hat sie nicht" nicht zu unterscheiden
+ * — ein Verbotsschild, das nichts verbietet, gehört in keine Rechtetabelle.
  *
  * Geschrieben wird erst auf Knopfdruck. Ein Klick auf eine Zelle ist selten
  * allein gemeint: wer eine Rolle umbaut, geht eine Spalte entlang und trifft
@@ -105,20 +104,14 @@ export function PermissionMatrix({
 
         <ul className={styles.legend}>
           <li>
-            <span className={styles.swatch} data-effect="ALLOW">
+            <span className={styles.swatch} data-granted>
               <Icon icon="lucide:check" width={11} />
             </span>
             {t("roles.allowed")}
           </li>
           <li>
-            <span className={styles.swatch} data-effect="DENY">
-              <Icon icon="lucide:ban" width={11} />
-            </span>
-            {t("roles.denied")}
-          </li>
-          <li>
-            <span className={styles.swatch} data-effect="unset" />
-            {t("roles.effectUnset")}
+            <span className={styles.swatch} />
+            {t("roles.notAllowed")}
           </li>
         </ul>
       </div>
@@ -210,7 +203,7 @@ export function PermissionMatrix({
                             key={role.id}
                             role={role}
                             permission={permission}
-                            effect={role.grants[permission.key] ?? null}
+                            granted={role.grants.includes(permission.key)}
                             allowLocked={!canGrant.has(permission.key)}
                             changed={changed.has(
                               cellId(role.id, permission.key),
@@ -267,7 +260,7 @@ export function PermissionMatrix({
 function Cell({
   role,
   permission,
-  effect,
+  granted,
   allowLocked,
   changed,
   saving,
@@ -275,7 +268,7 @@ function Cell({
 }: {
   role: RoleView;
   permission: { key: string; desc: string };
-  effect: PermissionEffect | null;
+  granted: boolean;
   allowLocked: boolean;
   /** Weicht vom Stand des Servers ab und ginge beim Speichern mit. */
   changed: boolean;
@@ -284,75 +277,61 @@ function Cell({
 }) {
   const t = useTranslations();
 
-  const state =
-    effect === "ALLOW"
-      ? t("roles.allowed")
-      : effect === "DENY"
-        ? t("roles.denied")
-        : t("roles.effectUnset");
+  const state = granted ? t("roles.allowed") : t("roles.notAllowed");
 
   // Zeile und Spalte stehen im Tabellenkopf; vorgelesen wird beides ohnehin.
-  // Der Name hier nennt sie trotzdem mit, weil der Knopf auch einzeln
+  // Der Name hier nennt sie trotzdem mit, weil der Schalter auch einzeln
   // angesteuert wird.
   const name = `${permission.desc} — ${role.name}: ${state}`;
 
   if (!role.manageable) {
     return (
-      <td className={styles.cell} data-effect={effect ?? "unset"} data-locked>
+      <td
+        className={styles.cell}
+        data-granted={granted || undefined}
+        data-locked
+      >
         <span
           className={styles.mark}
           title={role.system ? t("roles.sharedLocked") : t("roles.locked")}
         >
-          <StateIcon effect={effect} />
+          {granted && <Icon icon="lucide:check" width={13} />}
           <span className={styles.srOnly}>{name}</span>
         </span>
       </td>
     );
   }
 
-  // Wer eine Erlaubnis selbst nicht hat, kann sie nicht weitergeben — die
-  // Stufe wird dann übersprungen, verbieten bleibt möglich.
-  const next = (reset: boolean): PermissionEffect | null => {
-    if (reset) return null;
-    if (effect === null) return allowLocked ? "DENY" : "ALLOW";
-    if (effect === "ALLOW") return "DENY";
-    return null;
-  };
+  // Wer eine Permission selbst nicht hat, kann sie nicht weitergeben. Wegnehmen
+  // darf er sie trotzdem — das vergrößert niemandes Rechte.
+  const locked = allowLocked && !granted;
 
   return (
     <td
       className={styles.cell}
-      data-effect={effect ?? "unset"}
+      data-granted={granted || undefined}
       data-changed={changed || undefined}
     >
       <button
         type="button"
         className={styles.mark}
+        role="switch"
+        aria-checked={granted}
         aria-label={changed ? `${name} — ${t("roles.unsaved")}` : name}
-        title={
-          allowLocked && effect !== "DENY" ? t("roles.allowLocked") : state
-        }
-        disabled={saving}
-        onClick={(event) => {
-          const effectNext = next(event.shiftKey);
-          if (effectNext === effect) return;
+        title={locked ? t("roles.allowLocked") : state}
+        disabled={saving || locked}
+        onClick={() =>
           onChange({
             roleId: role.id,
             permission: permission.key,
-            effect: effectNext,
-          });
-        }}
+            granted: !granted,
+          })
+        }
       >
-        <StateIcon effect={effect} />
+        {granted && <Icon icon="lucide:check" width={13} />}
       </button>
     </td>
   );
-}
-
-function StateIcon({ effect }: { effect: PermissionEffect | null }) {
-  if (effect === "ALLOW") return <Icon icon="lucide:check" width={13} />;
-  if (effect === "DENY") return <Icon icon="lucide:ban" width={13} />;
-  return null;
 }
 
 // ─── Gruppierung ──────────────────────────────────────────────────────────────

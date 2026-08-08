@@ -36,7 +36,7 @@ function role(over: Partial<RoleView> & Pick<RoleView, "id">): RoleView {
     rank: 2,
     system: false,
     local: false,
-    grants: {},
+    grants: [],
     manageable: true,
     memberCount: 0,
     totalCarriers: 0,
@@ -84,20 +84,39 @@ describe("PermissionMatrix", () => {
     expect(html.split('class="roleHead"').length - 1).toBe(2);
   });
 
-  it("zeigt Erlaubnis und Verbot je Zelle getrennt an", () => {
+  it("zeigt je Zelle an, ob die Rolle das Recht hat", () => {
     const html = render([
-      role({ id: "admin", grants: { "issue.create": "ALLOW" } }),
-      role({ id: "viewer", grants: { "issue.create": "DENY" } }),
+      role({ id: "admin", grants: ["issue.create"] }),
+      role({ id: "viewer" }),
     ]);
 
     const [admin, viewer] = cells(html, "issue.create");
-    expect(admin).toContain('data-effect="ALLOW"');
-    expect(viewer).toContain('data-effect="DENY"');
+    expect(admin).toContain("data-granted");
+    expect(viewer).not.toContain("data-granted");
   });
 
-  it("lässt nicht gesetzte Einträge leer statt sie als Verbot zu zeigen", () => {
-    const [cell] = cells(render([role({ id: "admin" })]), "comment.create");
-    expect(cell).toContain('data-effect="unset"');
+  it("führt die Zelle als Schalter mit zwei Zuständen", () => {
+    // Es gibt kein drittes „ausdrücklich verboten" mehr: nicht aufgeführt ist
+    // bereits das Verbot, weil im Kontext nur diese eine Rolle zählt.
+    const html = render([role({ id: "admin", grants: ["issue.create"] })]);
+
+    const [granted] = cells(html, "issue.create");
+    const [notGranted] = cells(html, "comment.create");
+    expect(granted).toContain('role="switch"');
+    expect(granted).toContain('aria-checked="true"');
+    expect(notGranted).toContain('aria-checked="false"');
+  });
+
+  it("sperrt den Schalter, wo der Handelnde das Recht selbst nicht hat", () => {
+    // Wegnehmen bleibt möglich — das vergrößert niemandes Rechte.
+    const html = render([role({ id: "admin", grants: ["issue.create"] })], {
+      grantable: [],
+    });
+
+    const [granted] = cells(html, "issue.create");
+    const [notGranted] = cells(html, "comment.create");
+    expect(notGranted).toContain("disabled");
+    expect(granted).not.toContain("disabled");
   });
 
   it("sperrt geteilte Rollen: Anzeige statt Knopf", () => {
@@ -124,7 +143,7 @@ describe("PermissionMatrix", () => {
 
   it("beschriftet den Knopf mit Recht, Rolle und Zustand", () => {
     const html = render([
-      role({ id: "admin", name: "Admin", grants: { "issue.create": "ALLOW" } }),
+      role({ id: "admin", name: "Admin", grants: ["issue.create"] }),
     ]);
     expect(html).toContain(
       'aria-label="Issue erstellen — Admin: roles.allowed"',
@@ -151,10 +170,7 @@ describe("Offene Änderungen", () => {
 
   it("markiert genau die Zellen, die noch nicht geschrieben sind", () => {
     const html = render(
-      [
-        role({ id: "admin", grants: { "issue.create": "ALLOW" } }),
-        role({ id: "viewer" }),
-      ],
+      [role({ id: "admin", grants: ["issue.create"] }), role({ id: "viewer" })],
       { changed: new Set([cellId("admin", "issue.create")]) },
     );
 
@@ -162,7 +178,7 @@ describe("Offene Änderungen", () => {
     expect(admin).toContain("data-changed");
     expect(viewer).not.toContain("data-changed");
     // Der Zustand der Zelle bleibt daneben lesbar — offen heißt nicht unklar.
-    expect(admin).toContain('data-effect="ALLOW"');
+    expect(admin).toContain("data-granted");
   });
 
   it("zählt auch Änderungen an ausgeblendeten Spalten mit", () => {

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { PLATFORM, requirePermission } from "@/lib/permissions";
 
 // Plattform-Ebene: workspace-übergreifende Abfragen für den /admin-Bereich.
@@ -40,7 +41,9 @@ export interface PlatformUser {
   workspaceCount: number;
 }
 
-const platformRoleSelect = { select: { key: true, name: true } } as const;
+const platformRoleSelect = {
+  select: { key: true, name: true },
+} as const satisfies Prisma.RoleDefaultArgs;
 
 export interface PlatformStats {
   workspaces: number;

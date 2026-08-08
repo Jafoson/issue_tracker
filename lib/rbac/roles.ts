@@ -13,16 +13,15 @@
 // eines Scopes die Hierarchie ab und steuert die „höchstens die eigene Rolle
 // vergebbar"-Regel.
 //
-// Gefragt wird die Ebene, um die es geht: im Projekt entscheidet die Projektrolle
-// (sie ersetzt dort die Workspace-Rolle), im Workspace die Workspace-Rolle. Ein
-// DENY sticht über alle Ebenen — es ist das einzige Mittel, das auch nach oben
-// wirkt. Die Auswertung steht in `lib/permissions.ts`.
+// Jeder Kontext löst genau eine Rolle auf: im Projekt die Projektrolle, im
+// Workspace die Workspace-Rolle, auf der Plattform die Plattform-Rolle. Eine
+// Workspace-Rolle trägt deshalb keine Issue- oder Kommentar-Rechte mehr — die
+// Registry lässt das im Scope WORKSPACE gar nicht zu. Wer in den Projekten
+// seines Workspace durchgreifen können muss, bekommt dafür `project.admin.all`.
+// Die Auswertung steht in `lib/permissions.ts`.
 //
-// Die erschöpfenden DENY-Listen der restriktiven Projektrollen stammen aus dem
-// früheren Vereinigungsmodell und sind für die Herabstufung nicht mehr nötig —
-// die leere ALLOW-Liste genügt. Sie bleiben, weil sie die Absicht ausdrücklich
-// festhalten und ein workspaceweites Recht auch dann sperren, wenn es später neu
-// dazukommt.
+// Eine Rolle listet nur, was sie erlaubt. Ein Gegenteil gibt es nicht: da jeder
+// Kontext genau eine Rolle auflöst, ist „nicht aufgeführt" bereits das Verbot.
 
 import { type Permission, permissionsFor, type RoleScope } from "./permissions";
 
@@ -33,18 +32,21 @@ export interface SystemRole {
   desc: string;
   rank: number;
   allow: Permission[];
-  deny: Permission[];
+  /**
+   * Nur für Workspace-Rollen: die Projektrolle, mit der ein Träger dieser Rolle
+   * in ein Projekt des Workspace aufgenommen wird.
+   *
+   * Seit die Ebenen getrennt sind, lässt sich das nicht mehr aus den
+   * Workspace-Rechten ableiten — dort steht über Issues und Kommentare nichts
+   * mehr. Also wird es hier gesagt, statt es zu erraten
+   * (`lib/project-membership.ts`).
+   */
+  defaultProjectRoleKey?: string;
 }
 
 const PLATFORM_PERMS = permissionsFor("PLATFORM");
 const WORKSPACE_PERMS = permissionsFor("WORKSPACE");
 const PROJECT_PERMS = permissionsFor("PROJECT");
-
-/** Alles aus `pool`, was nicht in `allow` steht — macht DENY-Listen erschöpfend. */
-function complement(pool: Permission[], allow: Permission[]): Permission[] {
-  const granted = new Set<Permission>(allow);
-  return pool.filter((p) => !granted.has(p));
-}
 
 const READ_AND_COMMENT: Permission[] = [
   "project.view",
@@ -78,7 +80,6 @@ const PLATFORM_ROLES: SystemRole[] = [
     desc: "Verwaltet die Plattform: Benutzerkonten, Workspaces, globale Rollen. Kein Zugriff auf Inhalte der Workspaces.",
     rank: 2,
     allow: PLATFORM_PERMS.filter((p) => p !== "tenant.access"),
-    deny: [],
   },
   {
     key: "platform_support",
@@ -87,7 +88,6 @@ const PLATFORM_ROLES: SystemRole[] = [
     desc: "Darf zur Fehlersuche in alle Workspaces sehen und dort handeln. Keine Verwaltung von Konten oder Rollen.",
     rank: 1,
     allow: ["platform.access", "tenant.access"],
-    deny: [],
   },
   {
     key: "platform_member",
@@ -96,95 +96,95 @@ const PLATFORM_ROLES: SystemRole[] = [
     desc: "Normaler Benutzer ohne Plattform-Rechte. Standard für jedes neue Konto.",
     rank: 0,
     allow: [],
-    deny: [],
   },
 ];
 
 // ─── Scope WORKSPACE ──────────────────────────────────────────────────────────
 //
-// Diese Rollen dürfen auch projektbezogene Permissions tragen — die gelten in
-// **allen** Projekten des Workspace, in denen die Person keine eigene Projektrolle
-// hat. Sobald sie eine hat, entscheidet diese (siehe `projectGrants`).
+// Diese Rollen tragen **nur** Workspace-Rechte: den Workspace selbst, seine
+// Konfiguration, Teams, workspaceweite Labels, Mitglieder und Rollen. Über die
+// Inhalte eines Projekts sagen sie nichts — dafür ist die Projektrolle da.
+//
+// Die Ausnahme sind die beiden Generalschlüssel. `project.admin.all` gibt volle
+// Rechte in jedem Projekt, `project.view.all` nur Lesezugriff. Sie sind der Weg,
+// die Leitung eines Workspace in ihren Projekten handlungsfähig zu halten, ohne
+// die Trennung der Ebenen aufzuweichen — und sie sind unabhängig davon, ob
+// jemand im Projekt eingetragen ist.
+//
+// `defaultProjectRoleKey` sagt, mit welcher Projektrolle ein Träger dieser Rolle
+// in ein Projekt aufgenommen wird. Für die Generalschlüssel-Träger ist das nur
+// noch Kosmetik in der Mitgliederliste; ihre Rechte hängen nicht daran.
 
 const WORKSPACE_ROLES: SystemRole[] = [
   {
     key: "owner",
     scope: "WORKSPACE",
     name: "Owner",
-    desc: "Workspace-Ersteller. Einziger mit dem Recht, den Workspace zu löschen.",
+    desc: "Workspace-Ersteller. Einziger mit dem Recht, den Workspace zu löschen. Hat in jedem Projekt alle Rechte.",
     rank: 6,
     allow: WORKSPACE_PERMS,
-    deny: [],
+    defaultProjectRoleKey: "project_admin",
   },
   {
     key: "admin",
     scope: "WORKSPACE",
     name: "Admin",
-    desc: "Vollzugriff. Verwaltet Rollen und Berechtigungen, aber löscht den Workspace nicht.",
+    desc: "Vollzugriff. Verwaltet Rollen und Berechtigungen und hat in jedem Projekt alle Rechte, aber löscht den Workspace nicht.",
     rank: 5,
     allow: WORKSPACE_PERMS.filter((p) => p !== "workspace.delete"),
-    deny: [],
+    defaultProjectRoleKey: "project_admin",
   },
   {
     key: "manager",
     scope: "WORKSPACE",
     name: "Manager",
-    desc: "Verwaltet Einstellungen, Mitglieder, Teams und Konfiguration. Keine Rollenverwaltung, kein Zugang zu privaten Projekten.",
+    desc: "Verwaltet Einstellungen, Mitglieder, Teams und Konfiguration. Keine Rollenverwaltung, kein Durchgriff in die Projekte.",
     rank: 4,
     allow: WORKSPACE_PERMS.filter(
       (p) =>
         p !== "workspace.delete" &&
         p !== "role.manage" &&
-        p !== "project.view.all",
+        p !== "project.view.all" &&
+        p !== "project.admin.all",
     ),
-    deny: [],
+    defaultProjectRoleKey: "project_admin",
   },
   {
     key: "project_lead",
     scope: "WORKSPACE",
     name: "Project Lead",
-    desc: "Voller Zugriff auf die Projekte des Workspace, inklusive deren Mitglieder. Keine Workspace-Verwaltung.",
+    desc: "Voller Zugriff auf alle Projekte des Workspace, inklusive deren Mitglieder und Inhalte. Keine Workspace-Verwaltung.",
     rank: 3,
     allow: [
       "project.create",
-      "project.view",
-      "project.update",
-      "project.delete",
+      "project.view.all",
+      "project.admin.all",
       "member.invite",
       "member.remove",
       "member.role.update",
       "label.create",
       "label.update",
       "label.delete",
-      "issue.create",
-      "issue.update.any",
-      "issue.update.own",
-      "issue.delete.any",
-      "issue.delete.own",
-      "issue.assign",
-      "comment.create",
-      "comment.delete.any",
-      "comment.delete.own",
     ],
-    deny: [],
+    defaultProjectRoleKey: "project_admin",
   },
   {
     key: "member",
     scope: "WORKSPACE",
     name: "Member",
-    desc: "Standardrolle. Erstellt Issues, bearbeitet die eigenen, kommentiert und legt Labels an.",
+    desc: "Standardrolle. Legt workspaceweite Labels an; was sie in einem Projekt darf, sagt die Projektrolle dort.",
     rank: 2,
-    allow: CONTRIBUTE,
-    deny: [],
+    allow: ["label.create", "label.update"],
+    defaultProjectRoleKey: "contributor",
   },
   {
     key: "viewer",
     scope: "WORKSPACE",
     name: "Viewer",
-    desc: "Lesezugriff auf den Workspace. Darf kommentieren, aber keine Issues erstellen.",
+    desc: "Lesezugriff auf den Workspace. Wird in Projekten als Leser aufgenommen.",
     rank: 1,
-    allow: READ_AND_COMMENT,
-    deny: [],
+    allow: [],
+    defaultProjectRoleKey: "project_viewer",
   },
   {
     key: "guest",
@@ -192,18 +192,21 @@ const WORKSPACE_ROLES: SystemRole[] = [
     name: "Guest",
     desc: "Von außen hinzugekommen. Sieht nur, wozu er ausdrücklich eingeladen wurde.",
     rank: 0,
-    allow: READ_AND_COMMENT,
-    deny: [],
+    allow: [],
+    defaultProjectRoleKey: "project_viewer",
   },
 ];
 
 // ─── Scope PROJECT ────────────────────────────────────────────────────────────
 //
-// `project_viewer`, `project_guest` und `blocked` verbieten erschöpfend alles,
-// was sie nicht erlauben. Das ist der Kern der Herabstufung: ohne DENY behielte
-// ein Workspace-`project_lead` in diesem Projekt vollen Zugriff. Nebeneffekt:
-// eine neu eingeführte Projekt-Permission ist für diese Rollen automatisch
-// gesperrt und muss bewusst freigeschaltet werden.
+// Diese Rollen sind im Projekt die ganze Wahrheit: was hier nicht steht, gilt
+// dort nicht. Eine neu eingeführte Projekt-Permission ist damit automatisch
+// gesperrt, ohne dass jemand eine Verbotsliste pflegen muss.
+//
+// Wirkungslos sind sie allein gegenüber den Generalschlüsseln des Workspace:
+// wer `project.admin.all` trägt, wird von `blocked` nicht ausgesperrt. Das ist
+// Absicht — sonst könnte ein Project Admin die Leitung des Workspace aus deren
+// eigenem Projekt aussperren, und niemand käme mehr an die Mitgliederverwaltung.
 
 const PROJECT_ROLES: SystemRole[] = [
   {
@@ -213,7 +216,6 @@ const PROJECT_ROLES: SystemRole[] = [
     desc: "Voller Zugriff auf dieses Projekt inklusive Einstellungen, Mitglieder und projekteigener Rollen.",
     rank: 4,
     allow: PROJECT_PERMS,
-    deny: [],
   },
   {
     key: "contributor",
@@ -222,16 +224,14 @@ const PROJECT_ROLES: SystemRole[] = [
     desc: "Arbeitet im Projekt mit: erstellt Issues, bearbeitet die eigenen, kommentiert.",
     rank: 3,
     allow: CONTRIBUTE,
-    deny: [],
   },
   {
     key: "project_viewer",
     scope: "PROJECT",
     name: "Viewer",
-    desc: "Liest mit und kommentiert. Alles Schreibende ist hier gesperrt — auch wenn die Workspace-Rolle mehr erlauben würde.",
+    desc: "Liest mit und kommentiert. Alles Schreibende ist in diesem Projekt gesperrt.",
     rank: 2,
     allow: READ_AND_COMMENT,
-    deny: complement(PROJECT_PERMS, READ_AND_COMMENT),
   },
   {
     key: "project_guest",
@@ -240,16 +240,14 @@ const PROJECT_ROLES: SystemRole[] = [
     desc: "Von außen zu genau diesem Projekt eingeladen. Rechte wie ein Viewer, ohne Workspace-Mitgliedschaft.",
     rank: 1,
     allow: READ_AND_COMMENT,
-    deny: complement(PROJECT_PERMS, READ_AND_COMMENT),
   },
   {
     key: "blocked",
     scope: "PROJECT",
     name: "Blocked",
-    desc: "Ausdrücklicher Ausschluss. Sperrt dieses Projekt auch für Mitglieder, die es über ihre Workspace-Rolle sehen dürften.",
+    desc: "Ausdrücklicher Ausschluss aus diesem Projekt. Wirkungslos gegen die Leitung des Workspace (project.admin.all).",
     rank: 0,
     allow: [],
-    deny: PROJECT_PERMS,
   },
 ];
 
@@ -263,6 +261,20 @@ export const SYSTEM_ROLES: SystemRole[] = [
 /** Die System-Rollen eines Scopes. */
 export function systemRolesIn(scope: RoleScope): SystemRole[] {
   return SYSTEM_ROLES.filter((r) => r.scope === scope);
+}
+
+/**
+ * Die Projektrolle, mit der eine System-Workspace-Rolle in ein Projekt
+ * aufgenommen wird — oder null für eine selbst angelegte Rolle, die hier
+ * naturgemäß nicht steht.
+ */
+export function defaultProjectRoleKeyOf(
+  workspaceRoleKey: string,
+): string | null {
+  const role = SYSTEM_ROLES.find(
+    (r) => r.scope === "WORKSPACE" && r.key === workspaceRoleKey,
+  );
+  return role?.defaultProjectRoleKey ?? null;
 }
 
 /** Rolle, die jedes neue Konto bekommt. */

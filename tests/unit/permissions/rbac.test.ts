@@ -58,15 +58,43 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
   });
 
   it("lässt dieselbe Permission in Workspace und Projekt gelten", () => {
-    // Das ist der Kern des Modells: der Scope der Rolle entscheidet, wo sie wirkt.
+    // Für Objekte, die es auf beiden Ebenen wirklich gibt: der Scope der Rolle
+    // entscheidet, welches der beiden gemeint ist.
     for (const key of [
       "label.create",
-      "issue.create",
-      "comment.create",
       "member.invite",
+      "role.manage",
     ] as Permission[]) {
       expect(isPermissionAllowedIn(key, "WORKSPACE")).toBe(true);
       expect(isPermissionAllowedIn(key, "PROJECT")).toBe(true);
+    }
+  });
+
+  it("hält rein projektbezogene Permissions aus dem Workspace heraus", () => {
+    // Sonst könnte eine Workspace-Rolle an der Projektrolle vorbei in jedes
+    // Projekt hineinregieren — genau das soll die Trennung verhindern.
+    for (const key of [
+      "issue.create",
+      "issue.update.any",
+      "comment.create",
+      "project.view",
+      "project.update",
+      "project.delete",
+    ] as Permission[]) {
+      expect(isPermissionAllowedIn(key, "WORKSPACE")).toBe(false);
+      expect(isPermissionAllowedIn(key, "PROJECT")).toBe(true);
+    }
+  });
+
+  it("hält die Generalschlüssel des Workspace aus den Projektrollen heraus", () => {
+    // Ein Projekt kann sich nicht selbst die Schlüssel zu allen anderen geben.
+    for (const key of [
+      "project.view.all",
+      "project.admin.all",
+    ] as Permission[]) {
+      expect(isPermissionAllowedIn(key, "WORKSPACE")).toBe(true);
+      expect(isPermissionAllowedIn(key, "PROJECT")).toBe(false);
+      expect(isPermissionAllowedIn(key, "PLATFORM")).toBe(false);
     }
   });
 
@@ -151,7 +179,7 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
 
       it("trägt nur Permissions, die in diesem Scope vergeben werden dürfen", () => {
         for (const r of roles) {
-          for (const p of [...r.allow, ...r.deny]) {
+          for (const p of r.allow) {
             expect(isPermissionAllowedIn(p, r.scope)).toBe(true);
           }
         }
@@ -161,16 +189,7 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
         const valid = new Set<string>(ALL_PERMISSIONS);
         for (const r of roles) {
           expect(new Set(r.allow).size).toBe(r.allow.length);
-          expect(new Set(r.deny).size).toBe(r.deny.length);
-          for (const p of [...r.allow, ...r.deny])
-            expect(valid.has(p)).toBe(true);
-        }
-      });
-
-      it("setzt eine Permission nie gleichzeitig auf ALLOW und DENY", () => {
-        for (const r of roles) {
-          const allowed = new Set<Permission>(r.allow);
-          for (const p of r.deny) expect(allowed.has(p)).toBe(false);
+          for (const p of r.allow) expect(valid.has(p)).toBe(true);
         }
       });
 
@@ -198,7 +217,6 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
     it("lässt die Nullrolle rechtelos", () => {
       const member = role("platform_member");
       expect(member.allow).toEqual([]);
-      expect(member.deny).toEqual([]);
     });
   });
 
@@ -222,17 +240,36 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
       expect(manager.allow).toContain("member.invite");
     });
 
-    it("gibt nur Owner und Admin Einblick in alle Projekte", () => {
-      const seesAll = systemRolesIn("WORKSPACE")
-        .filter((r) => r.allow.includes("project.view.all"))
+    it("gibt den Generalschlüssel nur der Leitung des Workspace", () => {
+      const opensAll = systemRolesIn("WORKSPACE")
+        .filter((r) => r.allow.includes("project.admin.all"))
         .map((r) => r.key);
-      expect(seesAll).toEqual(["owner", "admin"]);
+      expect(opensAll).toEqual(["owner", "admin", "project_lead"]);
+      // Wer durchgreifen darf, sieht auch alles — sonst wäre der Durchgriff auf
+      // Projekte beschränkt, die er ohnehin schon findet.
+      for (const key of opensAll) {
+        expect(role(key).allow).toContain("project.view.all");
+      }
     });
 
-    it("lässt den Member nur Eigenes bearbeiten", () => {
-      const member = role("member");
-      expect(member.allow).toContain("issue.update.own");
-      expect(member.allow).not.toContain("issue.update.any");
+    it("trägt in keiner Rolle Projektrechte", () => {
+      // Was im Projekt gilt, steht in der Projektrolle. Eine Workspace-Rolle,
+      // die Issue-Rechte trüge, wäre wirkungslos und damit irreführend.
+      for (const r of systemRolesIn("WORKSPACE")) {
+        for (const key of r.allow) {
+          expect(isPermissionAllowedIn(key, "WORKSPACE")).toBe(true);
+        }
+      }
+    });
+
+    it("nennt für jede Rolle die Projektrolle bei der Aufnahme", () => {
+      // Ohne diese Angabe müsste die Aufnahme aus Workspace-Rechten erraten,
+      // was jemand im Projekt darf — die stehen dort aber nicht mehr.
+      const projectKeys = systemRolesIn("PROJECT").map((r) => r.key);
+      for (const r of systemRolesIn("WORKSPACE")) {
+        expect(r.defaultProjectRoleKey).toBeDefined();
+        expect(projectKeys).toContain(r.defaultProjectRoleKey as string);
+      }
     });
   });
 
@@ -243,29 +280,25 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
       "comment.delete.own",
     ];
 
-    it("verbietet bei den einschränkenden Rollen erschöpfend", () => {
-      // Der Kern der Herabstufung: was nicht erlaubt ist, muss ausdrücklich
-      // verboten sein — sonst reicht die Workspace-Rolle die Rechte durch.
+    it("beschränkt die einschränkenden Rollen allein über ihre Liste", () => {
+      // Eine Rolle nennt nur, was sie erlaubt. Da im Projekt allein die
+      // Projektrolle zählt, ist „nicht aufgeführt" bereits das Verbot — und
+      // eine neu eingeführte Projekt-Permission damit automatisch gesperrt,
+      // ohne dass jemand eine Verbotsliste pflegt.
       for (const key of ["project_viewer", "project_guest"]) {
-        const r = role(key);
-        expect([...r.allow].sort()).toEqual([...READ_AND_COMMENT].sort());
-        expect(r.allow.length + r.deny.length).toBe(
-          permissionsFor("PROJECT").length,
+        expect([...role(key).allow].sort()).toEqual(
+          [...READ_AND_COMMENT].sort(),
         );
       }
     });
 
     it("sperrt mit `blocked` jeden Projektzugriff", () => {
-      const blocked = role("blocked");
-      expect(blocked.allow).toEqual([]);
-      expect([...blocked.deny].sort()).toEqual(
-        [...permissionsFor("PROJECT")].sort(),
-      );
-    });
-
-    it("lässt die additiven Rollen ohne Verbote", () => {
-      expect(role("project_admin").deny).toEqual([]);
-      expect(role("contributor").deny).toEqual([]);
+      // Die leere Liste ist der ganze Ausschluss. Was `blocked` von „gar keine
+      // Zeile in ProjectMember" unterscheidet, steht nicht hier, sondern in der
+      // Aufnahme: `enrollWorkspaceMembers` schreibt mit `skipDuplicates` und
+      // lässt eine bestehende Zeile in Ruhe. Wer entfernt wurde, kommt beim
+      // Umschalten auf öffentlich zurück; wer blockiert ist, bleibt draußen.
+      expect(role("blocked").allow).toEqual([]);
     });
 
     it("gibt project_admin alles seines Scopes", () => {

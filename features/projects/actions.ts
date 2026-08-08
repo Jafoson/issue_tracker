@@ -344,16 +344,17 @@ async function resolveAssignable(
 }
 
 /**
- * Wer jedes Projekt des Workspace sieht (Owner, Admin), lässt sich per
- * Projektrolle nicht herabstufen — `keepsProjectRights` in lib/permissions.ts
- * übergeht sie ohnehin. Die Zeile hier zu ändern hieße nur, in der Tabelle etwas
+ * Wer den Generalschlüssel des Workspace trägt (Owner, Admin, Project Lead),
+ * lässt sich per Projektrolle nicht herabstufen — der Resolver entscheidet für
+ * ihn, bevor die Projektrolle überhaupt geladen wird (Regel 3 in
+ * lib/permissions.ts). Die Zeile hier zu ändern hieße nur, in der Tabelle etwas
  * zu behaupten, was nicht gilt.
  */
 async function notDowngradable(
   guard: MemberGuard,
   userId: string,
 ): Promise<boolean> {
-  return can(userId, "project.view.all", { workspaceId: guard.workspaceId });
+  return can(userId, "project.admin.all", { workspaceId: guard.workspaceId });
 }
 
 /** Nimmt bestehende Workspace-Mitglieder mit einer eigenen Projektrolle auf. */
@@ -419,7 +420,9 @@ export async function setProjectMemberRole(
   if (target.role.rank > guard.actorRank)
     return { error: "You cannot change a member ranked above you." };
   if (await notDowngradable(guard, userId))
-    return { error: "This member sees every project of the workspace." };
+    return {
+      error: "This member has full access to every project of the workspace.",
+    };
 
   await db.projectMember.update({
     where: { projectId_userId: { projectId, userId } },
@@ -459,7 +462,9 @@ export async function removeProjectMember(
   if (target.role.rank > guard.actorRank)
     return { error: "You cannot remove a member ranked above you." };
   if (await notDowngradable(guard, userId))
-    return { error: "This member sees every project of the workspace." };
+    return {
+      error: "This member has full access to every project of the workspace.",
+    };
 
   await db.projectMember.delete({
     where: { projectId_userId: { projectId, userId } },

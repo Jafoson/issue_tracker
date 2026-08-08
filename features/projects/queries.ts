@@ -5,6 +5,7 @@ import type {
   ProjectSettingsView,
 } from "@/features/projects/types";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import {
   accessFor,
   assignmentCeiling,
@@ -130,7 +131,7 @@ const byName = [
  */
 const memberRoleSelect = {
   select: { id: true, key: true, name: true, rank: true },
-} as const;
+} as const satisfies Prisma.RoleDefaultArgs;
 
 export const getProjectMembersView = cache(
   async (projectId: string): Promise<ProjectMembersView | null> => {
@@ -174,18 +175,13 @@ export const getProjectMembersView = cache(
           },
           orderBy: { rank: "desc" },
         }),
-        // Welche Workspace-Rollen ihre Träger in jedes Projekt sehen lassen.
-        // Ersetzt die frühere Abfrage auf die Namen "owner" und "admin".
+        // Welche Workspace-Rollen ihre Träger in jedem Projekt durchgreifen
+        // lassen. Ersetzt die frühere Abfrage auf die Namen "owner" und "admin".
         db.role.findMany({
           where: {
             scope: "WORKSPACE",
             OR: [{ system: true }, { workspaceId }],
-            permissions: {
-              some: {
-                permissionKey: "project.view.all",
-                effect: "ALLOW",
-              },
-            },
+            permissions: { some: { permissionKey: "project.admin.all" } },
           },
           select: { id: true },
         }),
@@ -202,8 +198,9 @@ export const getProjectMembersView = cache(
       : Number.NEGATIVE_INFINITY;
 
     const viewAll = new Set(viewAllRoles.map((r) => r.id));
-    // Wer über seine Workspace-Rolle jedes Projekt sieht, lässt sich per
-    // Projektrolle nicht herabstufen (`keepsProjectRights` in lib/permissions.ts).
+    // Wer über seine Workspace-Rolle in jedem Projekt durchgreift, lässt sich
+    // per Projektrolle nicht herabstufen — der Resolver entscheidet für ihn
+    // schon vor der Projektrolle (Regel 3 in lib/permissions.ts).
     const privileged = new Set(
       workspaceMembers
         .filter((m) => viewAll.has(m.roleId))
@@ -241,14 +238,14 @@ export const getProjectMembersView = cache(
       if (hasOwnEntry.has(wm.userId)) continue;
 
       const user = toUser(wm.user, wm.pending);
-      // Wer ohnehin jedes Projekt sieht, braucht keinen Projekt-Eintrag — der
-      // wäre nur eine leere Geste.
+      // Wer ohnehin in jedem Projekt alles darf, braucht keinen Projekt-Eintrag
+      // — der wäre nur eine leere Geste.
       const isPrivileged = privileged.has(wm.userId);
       if (!isPrivileged) candidates.push(user);
 
       if (wm.pending) continue;
-      // Ohne Projektrolle gibt es keinen Zugriff — außer für die, die jedes
-      // Projekt sehen. Nur sie stehen hier ohne eigenen Eintrag in der Liste.
+      // Ohne Projektrolle gibt es keinen Zugriff — außer für die, die den
+      // Generalschlüssel tragen. Nur sie stehen hier ohne eigenen Eintrag.
       if (!isPrivileged) continue;
 
       rows.push({
@@ -259,9 +256,9 @@ export const getProjectMembersView = cache(
         source: "workspace",
         pending: false,
         you: wm.userId === actorId,
-        // Hier steht nur, wer ohnehin jedes Projekt sieht — an dieser Zeile gibt
-        // es nichts zu verwalten. Ein Projekt-Eintrag würde ihre Rechte nicht
-        // ändern (`keepsProjectRights`), ein Entzug erst recht nicht.
+        // Hier steht nur, wer ohnehin in jedem Projekt alles darf — an dieser
+        // Zeile gibt es nichts zu verwalten. Ein Projekt-Eintrag würde ihre
+        // Rechte nicht ändern, ein Entzug erst recht nicht.
         manageable: false,
       });
     }
