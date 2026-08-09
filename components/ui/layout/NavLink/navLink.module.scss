@@ -1,0 +1,17 @@
+/* Aussehen und Maße der Zeile kommen aus `components/ui/atoms/Button` — ein
+   Navigationseintrag ist ein Knopf, der ein Link ist. Hier steht nur, was die
+   Seitenleiste zusätzlich braucht: Sie ist schmal und ihre Beschriftungen sind
+   fremdbestimmt (Projektnamen, „Workspace Einstellungen"), also muss die Zeile
+   sagen, was nachgibt, wenn der Platz nicht reicht.
+
+   Nachgeben darf allein der Text. Er ist auch verkürzt noch zu lesen und der
+   ganze Name steht im `title`; ein gestauchtes Icon dagegen wäre schlicht ein
+   verzerrtes Zeichen. Dass das Icon seine Größe behält, steht bei den Knöpfen
+   selbst (`button.module.scss`), denn dort gilt es überall. */
+.label {
+  /* Ohne `min-width: 0` gilt für ein Flex-Element die Inhaltsbreite als
+     Untergrenze — es schrumpft nicht, und stattdessen weicht alles daneben. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
