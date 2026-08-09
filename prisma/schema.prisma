@@ -149,14 +149,16 @@ model Project {
   lastIssueKey Int               @default(0)
   visibility   ProjectVisibility @default(public)
 
-  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  issues      Issue[]
-  teams       TeamProject[]
-  labels      Label[]
-  members     ProjectMember[]
-  invitations Invitation[]
+  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues       Issue[]
+  teams        TeamProject[]
+  labels       Label[]
+  members      ProjectMember[]
+  invitations  Invitation[]
+  // Workspace-Labels, die in diesem Projekt nicht angeboten werden.
+  hiddenLabels ProjectHiddenLabel[]
   // Projektlokale Rollen (Role.scope = PROJECT mit gesetztem projectId).
-  roles       Role[]
+  roles        Role[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
@@ -385,12 +387,36 @@ model Label {
   slug        String
   color       String
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hiddenIn  ProjectHiddenLabel[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
   @@index([projectId])
+}
+
+// Ein Workspace-Label gilt in jedem Projekt. Wo es nicht passt, blendet das
+// Projekt es aus: eine Zeile hier heißt „dieses Label steht in diesem Projekt
+// nicht mehr zur Auswahl". Das Label selbst bleibt unangetastet — es gehört dem
+// Workspace, und in anderen Projekten wird es weiter vergeben.
+//
+// Ausblenden nimmt es nur aus der Auswahl, nicht von den Aufgaben, die es schon
+// tragen: sonst verschwände mit einem Klick eine Einteilung, die jemand bewusst
+// gesetzt hat — und zwar unwiederbringlich, denn `Issue.labels` ist ein Array
+// ohne Historie. Wieder eingeblendet, ist alles wie zuvor.
+//
+// Für Projekt-Labels ist die Tabelle ohne Bedeutung: die gelten ohnehin nur in
+// ihrem eigenen Projekt, dort wären sie zu löschen statt auszublenden.
+model ProjectHiddenLabel {
+  projectId String
+  labelId   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label   Label   @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, labelId])
+  @@index([labelId])
 }
 
 // ─── Issues ──────────────────────────────────────────────────────────────────

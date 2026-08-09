@@ -10,12 +10,6 @@
   gap: 20px;
 }
 
-.slug {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--on-surface-variant);
-}
-
 .usage {
   font-size: var(--text-sm);
   color: var(--on-surface-variant);
@@ -26,6 +20,18 @@
 .unused {
   font-size: var(--text-sm);
   color: var(--outline);
+}
+
+/* Ausgeblendet: die Zeile bleibt lesbar, tritt aber zurück. Das Label behält
+   seine Farbe — sie ist seine Kennung, und ein blasses Rot wäre ein anderes
+   Label; blass wird die ganze Fläche. */
+.hiddenLabel {
+  opacity: 0.45;
+}
+
+.hiddenNote {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
 }
 
 .rowActions {
@@ -40,12 +46,14 @@
   gap: 4px;
 }
 
-/* Wie in „Allgemein": Gruppenüberschrift über der Karte, nicht in ihr. */
+/* Wie in „Allgemein": Gruppenüberschrift über der Karte, nicht in ihr — und in
+   derselben Größe und Schriftfarbe, sonst wechselt beim Umschalten zwischen den
+   Bereichen die Gliederung mit. */
 .groupTitle {
   margin: 8px 0 0;
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   font-weight: 600;
-  color: var(--on-surface-variant);
+  color: var(--on-surface);
 }
 
 .groupDesc {

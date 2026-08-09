@@ -89,6 +89,10 @@ export const PROJECT_NAV: NavEntry[] = [
  */
 export const PROJECT_SETTINGS_NAV: NavEntry[] = [
   { section: "", icon: "lucide:settings", labelKey: "general" },
+  // Dieselbe Seite wie unter `…/project/<slug>/members`: wer Mitglieder sucht,
+  // sucht sie mal beim Projekt und mal in dessen Einstellungen — beides führt
+  // hin. Erst die Leute, dann ihre Rechte, dann die Labels.
+  { section: "members", icon: "lucide:users", labelKey: "members" },
   { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
   { section: "labels", icon: "lucide:tag", labelKey: "labels" },
 ];

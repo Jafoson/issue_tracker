@@ -21,6 +21,14 @@ export interface Label {
   slug: string;
   color: string;
   projectId?: string | null;
+  /**
+   * Projekte, in denen dieses Workspace-Label nicht angeboten wird.
+   *
+   * Ausgeblendet wird in den Label-Einstellungen des Projekts. Wer eine Auswahl
+   * baut, muss die Liste hier prüfen — an Aufgaben, die das Label schon tragen,
+   * bleibt es sichtbar.
+   */
+  hiddenIn?: string[];
 }
 
 export interface IssueType {

@@ -10,6 +10,7 @@
 // verschickt sie dieselbe URL — hier ändert sich dafür nichts.
 
 import { randomBytes } from "node:crypto";
+import { appUrl } from "@/lib/app-url";
 import type { Prisma } from "@/lib/generated/prisma/client";
 
 /** Passt auf den Prisma-Client wie auf einen Transaktions-Client. */
@@ -72,18 +73,11 @@ export function invitationPath(token: string): string {
 /**
  * Die absolute Einladungs-URL.
  *
- * Die Basis kommt aus der Umgebung — der Link wird kopiert und woanders geöffnet,
- * ein relativer Pfad taugt dafür nicht. `AUTH_URL` ist gesetzt, weil Auth.js sie
- * ohnehin braucht; `NEXTAUTH_URL` und ein lokaler Fallback stehen daneben, damit
- * die Funktion nirgends leer ausgeht.
+ * Woher die Basis kommt, steht in `lib/app-url` — dieselbe Quelle wie für jede
+ * andere Adresse, die die App zum Kopieren anbietet.
  */
 export function invitationUrl(token: string): string {
-  const base = (
-    process.env.AUTH_URL ??
-    process.env.NEXTAUTH_URL ??
-    "http://localhost:3000"
-  ).replace(/\/+$/, "");
-  return `${base}${invitationPath(token)}`;
+  return appUrl(invitationPath(token));
 }
 
 export interface OpenInvitation {

@@ -95,6 +95,11 @@ export interface ProjectLabelRow {
    * Löschen hier sichtbar verändern würde.
    */
   issueCount: number;
+  /**
+   * In diesem Projekt ausgeblendet — es steht dann an keiner Aufgabe mehr zur
+   * Auswahl. Nur für geerbte Labels von Belang; die eigenen löscht man.
+   */
+  hidden: boolean;
 }
 
 /** Alles, was die Label-Seite eines Projekts rendert. */
@@ -102,14 +107,16 @@ export interface ProjectLabelsView {
   /** Labels, die dem Projekt gehören. Nur sie lassen sich hier bearbeiten. */
   own: ProjectLabelRow[];
   /**
-   * Workspace-Labels: gelten in jedem Projekt und werden hier nur gezeigt.
-   * Geändert werden sie in den Workspace-Einstellungen — sonst würde eine
-   * Umbenennung hier in fremden Projekten auftauchen.
+   * Workspace-Labels: gelten in jedem Projekt und lassen sich hier weder
+   * umbenennen noch löschen — eine Umbenennung schlüge sonst in fremden
+   * Projekten durch. Was dieses Projekt entscheiden darf, ist, ob es sie
+   * überhaupt anbietet (`ProjectLabelRow.hidden`).
    */
   inherited: ProjectLabelRow[];
   /** `label.create` im Projekt-Scope. */
   canCreate: boolean;
-  /** `label.update` im Projekt-Scope. */
+  /** `label.update` im Projekt-Scope — bearbeitet die eigenen Labels und
+   * entscheidet über das Ausblenden der geerbten. */
   canUpdate: boolean;
   /** `label.delete` im Projekt-Scope. */
   canDelete: boolean;

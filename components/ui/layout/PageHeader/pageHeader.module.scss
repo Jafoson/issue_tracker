@@ -27,13 +27,6 @@
   color: var(--on-surface);
 }
 
-/* Tabellenziffern: der Zähler springt beim Aktualisieren sonst in der Breite. */
-.count {
-  color: var(--on-surface-variant);
-  font-size: var(--text-base);
-  font-variant-numeric: tabular-nums;
-}
-
 .actions {
   display: flex;
   align-items: center;

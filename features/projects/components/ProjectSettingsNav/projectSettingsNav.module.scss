@@ -1,6 +1,10 @@
 /* Zweite Navigationsebene, direkt neben der Seitenleiste. Etwas schmaler als
    diese, damit die Rangfolge auch ohne Beschriftung erkennbar bleibt: außen die
    App, dann das Projekt, dann der Inhalt. */
+/* Die Linie oben ist dieselbe, die rechts über der Kopfzeile des Bereichs steht
+   (`components/ui/layout/PageHeader`) — zusammen ergeben sie einen Strich über
+   die ganze Breite, der die Reiterleiste vom Inhalt trennt. Ohne sie bräche er
+   an der Kante der Leiste ab. */
 .nav {
   flex: none;
   width: 208px;
@@ -8,6 +12,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 16px 10px;
+  border-top: 1px solid var(--outline-variant);
   border-right: 1px solid var(--outline-variant);
   overflow-y: auto;
 }

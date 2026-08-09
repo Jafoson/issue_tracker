@@ -304,6 +304,63 @@ export async function deleteLabel(labelId: string): Promise<LabelResult> {
   return { ok: true };
 }
 
+/**
+ * Ein Workspace-Label in einem Projekt aus- oder wieder einblenden.
+ *
+ * Der Gegenentwurf zum Löschen: das Label bleibt, wo es hingehört, und gilt in
+ * allen anderen Projekten weiter — nur hier wird es nicht mehr angeboten. Damit
+ * lässt sich eine workspaceweite Sammlung nutzen, ohne dass jedes Projekt jedes
+ * Label mitschleppt.
+ *
+ * Entschieden wird im Projekt-Scope über `label.update`: es ist eine Aussage
+ * über dieses Projekt, nicht über das Label. Wer im Workspace nichts darf, darf
+ * hier trotzdem aufräumen — und ändert dabei für die anderen nichts.
+ *
+ * Für Projekt-Labels ist der Aufruf sinnlos und wird abgelehnt: sie gelten
+ * ohnehin nur hier, ausblenden hieße löschen. Das Label an Aufgaben, die es
+ * schon tragen, bleibt in beiden Richtungen unangetastet.
+ */
+export async function setLabelHidden(
+  projectId: string,
+  labelId: string,
+  hidden: boolean,
+): Promise<LabelResult> {
+  const label = await db.label.findUnique({
+    where: { id: labelId },
+    select: { workspaceId: true, projectId: true },
+  });
+  if (!label) return { error: "This label no longer exists." };
+  if (label.projectId)
+    return { error: "Only workspace labels can be hidden in a project." };
+
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: { workspaceId: true },
+  });
+  // Ein Label aus einem fremden Mandanten hat in diesem Projekt nichts zu
+  // suchen — auch nicht als ausgeblendete Zeile.
+  if (!project || project.workspaceId !== label.workspaceId)
+    return { error: "This label does not belong to this project." };
+
+  if (!(await hasPermission("label.update", { projectId })))
+    return { error: "You are not allowed to change the labels here." };
+
+  // Beide Richtungen vertragen einen zweiten Aufruf: zwei Klicks auf denselben
+  // Umschalter sollen keinen Fehler ergeben, sondern denselben Zustand.
+  if (hidden) {
+    await db.projectHiddenLabel.upsert({
+      where: { projectId_labelId: { projectId, labelId } },
+      create: { projectId, labelId },
+      update: {},
+    });
+  } else {
+    await db.projectHiddenLabel.deleteMany({ where: { projectId, labelId } });
+  }
+
+  await revalidate();
+  return { ok: true };
+}
+
 export async function deleteIssue(id: string) {
   const issue = await issueContext(id);
   await requirePermissionOr([

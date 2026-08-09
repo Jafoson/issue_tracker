@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { ProjectSettings } from "@/features/projects/components/ProjectSettings/ProjectSettings";
 import { getProjectSettingsView } from "@/features/projects/queries";
 import { getWorkspaceProjects } from "@/features/workspaces/queries";
+import { appUrl } from "@/lib/app-url";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
+import { projectPath } from "@/lib/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -29,5 +31,14 @@ export default async function ProjectSettingsPage({
   const view = await getProjectSettingsView(project.id);
   if (!view) notFound();
 
-  return <ProjectSettings {...view} workspaceId={workspace} />;
+  return (
+    <ProjectSettings
+      {...view}
+      workspaceId={workspace}
+      // Absolut, nicht als Pfad: die Adresse wird kopiert und woanders
+      // eingefügt. Zusammengesetzt wird sie hier, weil nur der Server weiß,
+      // unter welchem Host die App läuft (`AUTH_URL`).
+      projectUrl={appUrl(projectPath(workspace, project.slug, ""))}
+    />
+  );
 }

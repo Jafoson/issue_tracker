@@ -12,12 +12,17 @@
   flex-direction: column;
 }
 
+/* Die Linien oben und unten stehen so auch über den anderen Verwaltungsseiten
+   (`components/ui/layout/PageHeader`): sie setzen die Kopfzeile vom Umschalter
+   darüber und von der Matrix darunter ab — die scrollt, die Kopfzeile nicht. */
 .pageHeader {
   flex: none;
   display: flex;
   align-items: flex-start;
   gap: 8px;
   padding: 8px 24px 14px;
+  border-top: 1px solid var(--outline-variant);
+  border-bottom: 1px solid var(--outline-variant);
 }
 
 .headText {
@@ -49,13 +54,16 @@
   flex: none;
 }
 
+/* Der Abstand nach oben kam bisher aus dem Polster der Kopfzeile — jetzt liegt
+   dort eine Linie, und der Inhalt braucht ihn selbst. Dieselben 12px wie unter
+   den Kopfzeilen der übrigen Verwaltungsseiten. */
 .body {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 0 24px 24px;
+  padding: 12px 24px 24px;
 }
 
 .error {

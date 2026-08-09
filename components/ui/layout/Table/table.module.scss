@@ -147,9 +147,13 @@ tbody.group {
   transition: background 0.1s;
 
   /* Eine Stufe heller als das Band der Gruppe — sonst sähe eine überfahrene
-     Zeile aus wie ein Gruppenkopf. */
+     Zeile aus wie ein Gruppenkopf.
+
+     Listen, in denen die Zeile selbst nichts auslöst — Einstellungen etwa —
+     schalten die Rückmeldung mit `--table-hover: transparent` ab: dort
+     verspricht sie einen Klick, den es nicht gibt. */
   &:hover {
-    background: rgb(from var(--on-surface) r g b / 0.12);
+    background: var(--table-hover, rgb(from var(--on-surface) r g b / 0.12));
   }
 
   /* Tastaturfokus auf dem Zeilen-Link hebt die ganze Zeile hervor. */
@@ -362,10 +366,10 @@ tbody.group {
 /* Die Hülle gilt für beides — die Tabelle wie den Ersatzinhalt, der an ihrer
    Stelle steht. Sonst stünde ein leerer Zustand rahmenlos im Nichts.
 
-   Drei Stellschrauben stehen dem Aufrufer offen, falls eine Liste doch abweichen
+   Vier Stellschrauben stehen dem Aufrufer offen, falls eine Liste doch abweichen
    muss: `--table-surface` (Grundfläche), `--table-divider` (Trenner zwischen den
-   Zeilen) und `--table-row-height` (Zeilenhöhe). Alle drei erben, gesetzt werden
-   sie also auf dem Wrapper. */
+   Zeilen), `--table-row-height` (Zeilenhöhe) und `--table-hover` (Fläche unter
+   dem Zeiger). Alle vier erben, gesetzt werden sie also auf dem Wrapper. */
 .card {
   /* Beschneidet die Ecken der ersten und letzten Zeile am Rahmen. */
   overflow: hidden;

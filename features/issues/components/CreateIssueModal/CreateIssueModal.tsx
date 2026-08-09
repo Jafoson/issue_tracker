@@ -108,7 +108,8 @@ export function CreateIssueModal({
   /**
    * Labels können projektgebunden sein (`Label.projectId`). Beim Projektwechsel
    * fallen die des alten Projekts deshalb raus — workspace-weite Labels
-   * (`projectId: null`) bleiben erhalten. Ohne das Aufräumen würden Label-IDs
+   * (`projectId: null`) bleiben erhalten, sofern das neue Projekt sie nicht
+   * ausgeblendet hat (`hiddenIn`). Ohne das Aufräumen würden Label-IDs
    * abgeschickt, die im neuen Projekt gar nicht auswählbar sind.
    */
   const changeProject = (id: string) => {
@@ -116,7 +117,8 @@ export function CreateIssueModal({
     setLabels((cur) =>
       cur.filter((labelId) => {
         const label = combinedLabels.find((l) => l.id === labelId);
-        return !label?.projectId || label.projectId === id;
+        if (label?.projectId && label.projectId !== id) return false;
+        return !label?.hiddenIn?.includes(id);
       }),
     );
   };

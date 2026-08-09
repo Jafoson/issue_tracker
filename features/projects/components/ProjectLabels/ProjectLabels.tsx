@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
-import { deleteLabel } from "@/features/issues/actions";
+import { deleteLabel, setLabelHidden } from "@/features/issues/actions";
 import type {
   ProjectLabelRow,
   ProjectLabelsView,
@@ -88,6 +88,20 @@ export function ProjectLabels({
     });
   };
 
+  // Ausblenden ist folgenlos genug für einen Klick ohne Rückfrage: das Label
+  // bleibt dem Workspace, die Aufgaben behalten es, und derselbe Knopf holt es
+  // zurück. Deshalb hier keine Bestätigung wie beim Löschen.
+  const toggleHidden = (row: ProjectLabelRow) =>
+    startTransition(async () => {
+      const result = await setLabelHidden(projectId, row.id, !row.hidden);
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      setError("");
+      router.refresh();
+    });
+
   const newButton = canCreate && (
     <Button
       variant="primary"
@@ -98,15 +112,23 @@ export function ProjectLabels({
     </Button>
   );
 
-  const labelCell = (row: ProjectLabelRow) => (
-    <Label color={row.color} filled>
-      {row.name}
-    </Label>
-  );
-
-  const slugCell = (row: ProjectLabelRow) => (
-    <code className={styles.slug}>{row.slug}</code>
-  );
+  // Ein ausgeblendetes Label bleibt lesbar, tritt aber zurück — und sagt es
+  // dazu: die blasse Farbe allein wäre für sich genommen keine Auskunft.
+  const labelCell = (row: ProjectLabelRow) =>
+    row.hidden ? (
+      <>
+        <span className={styles.hiddenLabel}>
+          <Label color={row.color} filled>
+            {row.name}
+          </Label>
+        </span>
+        <span className={styles.hiddenNote}>{t("projectLabels.hidden")}</span>
+      </>
+    ) : (
+      <Label color={row.color} filled>
+        {row.name}
+      </Label>
+    );
 
   const usageCell = (row: ProjectLabelRow) =>
     row.issueCount === 0 ? (
@@ -117,9 +139,11 @@ export function ProjectLabels({
       </span>
     );
 
-  // Die geerbte Liste bekommt die Aktionsspalte gar nicht erst — eine leere
-  // Spalte wäre ein Versprechen, das die Zeilen nicht einlösen können.
-  const columns = (editable: boolean): TableColumn<ProjectLabelRow>[] => [
+  // Eine Aktionsspalte entsteht nur, wenn es in ihr etwas zu tun gibt — eine
+  // leere Spalte wäre ein Versprechen, das die Zeilen nicht einlösen können.
+  const columns = (
+    actions?: (row: ProjectLabelRow) => React.ReactNode,
+  ): TableColumn<ProjectLabelRow>[] => [
     {
       id: "label",
       header: t("projectLabels.colLabel"),
@@ -127,18 +151,12 @@ export function ProjectLabels({
       cell: labelCell,
     },
     {
-      id: "slug",
-      header: t("projectLabels.colSlug"),
-      width: "minmax(140px, max-content)",
-      cell: slugCell,
-    },
-    {
       id: "usage",
       header: t("projectLabels.colUsage"),
       width: "minmax(120px, max-content)",
       cell: usageCell,
     },
-    ...(editable
+    ...(actions
       ? [
           {
             id: "actions",
@@ -146,35 +164,56 @@ export function ProjectLabels({
             width: "84px",
             align: "end" as const,
             cell: (row: ProjectLabelRow) => (
-              <div className={styles.rowActions}>
-                {canUpdate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={<Icon icon="lucide:pencil" width={15} />}
-                    title={t("actions.edit")}
-                    aria-label={t("actions.edit")}
-                    disabled={isPending}
-                    onClick={() => openEditor(row)}
-                  />
-                )}
-                {canDelete && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={<Icon icon="lucide:trash-2" width={15} />}
-                    title={t("actions.delete")}
-                    aria-label={t("actions.delete")}
-                    disabled={isPending}
-                    onClick={() => remove(row)}
-                  />
-                )}
-              </div>
+              <div className={styles.rowActions}>{actions(row)}</div>
             ),
           },
         ]
       : []),
   ];
+
+  const ownActions = (row: ProjectLabelRow) => (
+    <>
+      {canUpdate && (
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Icon icon="lucide:pencil" width={15} />}
+          title={t("actions.edit")}
+          aria-label={t("actions.edit")}
+          disabled={isPending}
+          onClick={() => openEditor(row)}
+        />
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Icon icon="lucide:trash-2" width={15} />}
+          title={t("actions.delete")}
+          aria-label={t("actions.delete")}
+          disabled={isPending}
+          onClick={() => remove(row)}
+        />
+      )}
+    </>
+  );
+
+  // Das Auge zeigt den Zustand der Zeile: durchgestrichen heißt „ist
+  // ausgeblendet", offen heißt „wird angeboten". Was ein Klick daraus macht,
+  // steht im Tooltip — und was gilt, auch als Wort neben dem Label.
+  const inheritedActions = (row: ProjectLabelRow) => (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon={
+        <Icon icon={row.hidden ? "lucide:eye-off" : "lucide:eye"} width={15} />
+      }
+      title={t(row.hidden ? "projectLabels.show" : "projectLabels.hide")}
+      aria-label={t(row.hidden ? "projectLabels.show" : "projectLabels.hide")}
+      disabled={isPending}
+      onClick={() => toggleHidden(row)}
+    />
+  );
 
   return (
     <>
@@ -197,7 +236,7 @@ export function ProjectLabels({
         <Table
           variant="card"
           label={t("nav.labels")}
-          columns={columns(canUpdate || canDelete)}
+          columns={columns(canUpdate || canDelete ? ownActions : undefined)}
           rows={own}
           getRowKey={(row) => row.id}
           empty={
@@ -215,14 +254,11 @@ export function ProjectLabels({
             <h2 className={styles.groupTitle}>
               {t("projectLabels.inheritedTitle")}
             </h2>
-            <p className={styles.groupDesc}>
-              {t("projectLabels.inheritedDesc")}
-            </p>
 
             <Table
               variant="card"
               label={t("projectLabels.inheritedTitle")}
-              columns={columns(false)}
+              columns={columns(canUpdate ? inheritedActions : undefined)}
               rows={inherited}
               getRowKey={(row) => row.id}
             />

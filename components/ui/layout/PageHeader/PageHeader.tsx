@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import styles from "./pageHeader.module.scss";
 
 interface PageHeaderProps {
@@ -45,7 +46,9 @@ export function PageHeader({
       <div className={styles.titleRow}>
         {leading}
         <h1 className={styles.title}>{title}</h1>
-        {count !== undefined && <span className={styles.count}>{count}</span>}
+        {/* Dasselbe Zeichen wie im Kopf einer Board-Spalte: eine Zahl neben
+            einem Titel ist überall in der App ein Badge. */}
+        {count !== undefined && <Badge mono>{count}</Badge>}
         {actions && <div className={styles.actions}>{actions}</div>}
       </div>
 

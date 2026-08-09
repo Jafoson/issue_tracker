@@ -159,6 +159,10 @@ export const getLabels = cache(
         OR: [{ projectId: null }, { projectId: { in: [...visible] } }],
       },
       orderBy: { name: "asc" },
+      // Wo ein Workspace-Label ausgeblendet ist, gehört zum Label — die Auswahl
+      // an einem Issue kennt nur diese eine Liste und muss ihr ansehen können,
+      // was in ihrem Projekt gilt.
+      include: { hiddenIn: { select: { projectId: true } } },
     });
     return rows.map((l) => ({
       id: l.id,
@@ -166,6 +170,7 @@ export const getLabels = cache(
       slug: l.slug,
       color: l.color,
       projectId: l.projectId ?? null,
+      hiddenIn: l.hiddenIn.map((h) => h.projectId),
     }));
   },
 );

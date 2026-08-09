@@ -42,6 +42,9 @@ describe("getLabels()", () => {
         OR: [{ projectId: null }, { projectId: { in: ["p-1"] } }],
       },
       orderBy: { name: "asc" },
+      // Wo ein Label ausgeblendet ist, kommt mit — die Auswahl am Issue kennt
+      // nur diese eine Liste.
+      include: { hiddenIn: { select: { projectId: true } } },
     });
   });
 
@@ -64,6 +67,7 @@ describe("getLabels()", () => {
         color: "#ef4444",
         workspaceId: "ws-1",
         projectId: null,
+        hiddenIn: [{ projectId: "p-2" }],
       },
       {
         id: "l-2",
@@ -72,6 +76,7 @@ describe("getLabels()", () => {
         color: "#6366f1",
         workspaceId: "ws-1",
         projectId: "p-1",
+        hiddenIn: [],
       },
     ]);
 
@@ -84,6 +89,9 @@ describe("getLabels()", () => {
         slug: "bug",
         color: "#ef4444",
         projectId: null,
+        // Ein Workspace-Label, das p-2 für sich ausgeblendet hat: überall sonst
+        // steht es weiter zur Auswahl.
+        hiddenIn: ["p-2"],
       },
       {
         id: "l-2",
@@ -91,6 +99,7 @@ describe("getLabels()", () => {
         slug: "feature",
         color: "#6366f1",
         projectId: "p-1",
+        hiddenIn: [],
       },
     ]);
   });
@@ -104,6 +113,7 @@ describe("getLabels()", () => {
         color: "#ef4444",
         workspaceId: "ws-1",
         projectId: null,
+        hiddenIn: [],
       },
     ]);
 

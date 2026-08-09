@@ -316,7 +316,7 @@ export const getProjectLabelsView = cache(
     const access = await accessFor(await currentUserId(), { projectId });
     if (!access.has("project.view")) return null;
 
-    const [labels, tagged] = await Promise.all([
+    const [labels, tagged, hidden] = await Promise.all([
       db.label.findMany({
         where: {
           workspaceId: project.workspaceId,
@@ -328,6 +328,10 @@ export const getProjectLabelsView = cache(
       // sich nur, indem man die Arrays dieses Projekts einmal durchgeht. Es
       // wird bewusst nur diese eine Spalte geladen.
       db.issue.findMany({ where: { projectId }, select: { labels: true } }),
+      db.projectHiddenLabel.findMany({
+        where: { projectId },
+        select: { labelId: true },
+      }),
     ]);
 
     const used = new Map<string, number>();
@@ -335,12 +339,15 @@ export const getProjectLabelsView = cache(
       for (const id of issue.labels) used.set(id, (used.get(id) ?? 0) + 1);
     }
 
+    const hiddenIds = new Set(hidden.map((h) => h.labelId));
+
     const toRow = (l: (typeof labels)[number]): ProjectLabelRow => ({
       id: l.id,
       name: l.name,
       slug: l.slug,
       color: l.color,
       issueCount: used.get(l.id) ?? 0,
+      hidden: hiddenIds.has(l.id),
     });
 
     return {
