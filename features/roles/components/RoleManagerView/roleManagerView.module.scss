@@ -25,6 +25,15 @@
   border-bottom: 1px solid var(--outline-variant);
 }
 
+/* Auf Seiten mit Umschalter steht die obere Linie schon über ihm
+   (`rolesPage.module.scss`). Eine zweite hier würde ihn einkasten, statt ihn in
+   dieselbe Kopfzeile zu stellen — er ist der Titel dieses Bereichs, keine
+   eigene Leiste darüber. */
+.pageHeader.underSwitcher {
+  padding-top: 10px;
+  border-top: none;
+}
+
 .headText {
   min-width: 0;
 }

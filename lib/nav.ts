@@ -21,6 +21,7 @@ export type NavLabelKey =
   | "general"
   | "roles"
   | "labels"
+  | "preferences"
   | "workspaces";
 
 export interface NavEntry {
@@ -35,11 +36,17 @@ export const GLOBAL_NAV: NavEntry[] = [
   { section: "projects", icon: "lucide:folders", labelKey: "projects" },
 ];
 
-/** Sidebar "Workspace" group — workspace administration. */
+/**
+ * Sidebar "Workspace" group — workspace administration.
+ *
+ * Rollen stehen hier nicht mehr: sie sind eine Einrichtungsfrage und liegen in
+ * den Einstellungen (`WORKSPACE_SETTINGS_NAV`). Mitglieder und Teams bleiben,
+ * weil man sie im Alltag nachschlägt — beide sind zusätzlich in den
+ * Einstellungen erreichbar, dieselbe Ansicht in einem anderen Rahmen.
+ */
 export const WORKSPACE_NAV: NavEntry[] = [
   { section: "members", icon: "lucide:users", labelKey: "members" },
   { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
-  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
   { section: "settings", icon: "lucide:settings", labelKey: "settings" },
 ];
 
@@ -50,11 +57,23 @@ export const INBOX_NAV: NavEntry = {
   labelKey: "inbox",
 };
 
+/**
+ * Die Rollen-Seite gibt es weiter unter `/<workspaceId>/roles` — sie steht nur
+ * nicht mehr in der Seitenleiste. Der Eintrag bleibt, damit ein offener Reiter
+ * oder ein geteilter Link seinen Namen und sein Zeichen behält.
+ */
+export const ROLES_NAV: NavEntry = {
+  section: "roles",
+  icon: "lucide:shield-check",
+  labelKey: "roles",
+};
+
 /** All sections that live directly under `/<workspaceId>/…` — used by the TabBar to resolve any workspace-scoped tab. */
 export const WORKSPACE_SECTIONS: NavEntry[] = [
   ...GLOBAL_NAV,
   ...WORKSPACE_NAV,
   INBOX_NAV,
+  ROLES_NAV,
 ];
 
 /** Sidebar "Admin" group — `/admin` (empty section = root) or `/admin/<section>`. */
@@ -97,8 +116,39 @@ export const PROJECT_SETTINGS_NAV: NavEntry[] = [
   { section: "labels", icon: "lucide:tag", labelKey: "labels" },
 ];
 
+/**
+ * Die Bereiche der Workspace-Einstellungen — `/<workspaceId>/settings/<section>`,
+ * leere Sektion = Allgemein.
+ *
+ * Dieselbe zweite Ebene wie beim Projekt (`PROJECT_SETTINGS_NAV`), eine Stufe
+ * höher: hier steht, was für den ganzen Workspace gilt. Mitglieder und Teams
+ * sind zusätzlich direkt unter `/<workspaceId>/…` erreichbar — wer im Workspace
+ * arbeitet, schlägt sie dort nach, wer ihn einrichtet, findet sie hier neben
+ * Rollen und Labels. Geteilt wird die Komponente, nicht die Route.
+ */
+export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
+  { section: "", icon: "lucide:settings", labelKey: "general" },
+  { section: "projects", icon: "lucide:folders", labelKey: "projects" },
+  { section: "labels", icon: "lucide:tag", labelKey: "labels" },
+  { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
+  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
+  { section: "members", icon: "lucide:users", labelKey: "members" },
+  // Erscheinungsbild und Sprache gehören dem Benutzer, nicht dem Workspace —
+  // sie stehen deshalb am Ende, hinter allem, was für alle gilt.
+  { section: "preferences", icon: "lucide:palette", labelKey: "preferences" },
+];
+
 export function workspacePath(workspaceId: string, section: string): string {
   return section ? `/${workspaceId}/${section}` : `/${workspaceId}`;
+}
+
+/** Ein Bereich der Workspace-Einstellungen. Leere Sektion = Allgemein. */
+export function workspaceSettingsPath(
+  workspaceId: string,
+  section: string,
+): string {
+  const base = workspacePath(workspaceId, "settings");
+  return section ? `${base}/${section}` : base;
 }
 
 export function adminPath(section: string): string {

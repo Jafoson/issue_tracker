@@ -20,6 +20,13 @@
   &:active:not(:disabled) { transform: translateY(1px); }
   &:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; pointer-events: none; }
 
+  /* Ein Icon hat seine Größe, es hat keine Meinung dazu, wie viel Platz noch
+     übrig ist. Ohne diese Zeile ist es ein Flex-Element wie jedes andere und
+     wird gestaucht, sobald die Beschriftung daneben zu lang wird — das Zeichen
+     verliert dann seine Form, während der Text unversehrt bleibt. Enger wird
+     stattdessen der Text (siehe `navLink.module.scss`). */
+  & > svg { flex: none; }
+
   /* ── Sizes (base padding, no icon) ── */
   &.sm { height: 26px; padding: 0 8px;  font-size: var(--text-xs);   gap: 5px; }
   &.md { height: 32px; padding: 0 12px; font-size: var(--text-sm);   gap: 6px; }

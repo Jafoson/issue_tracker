@@ -19,7 +19,8 @@
     "backToProject": "Zurück zu {name}",
     "breadcrumb": "Pfad",
     "workspaces": "Workspaces",
-    "workspaceSettings": "Workspace Einstellungen"
+    "workspaceSettings": "Workspace Einstellungen",
+    "preferences": "Persönlich"
   },
   "actions": {
     "addLabel": "Label hinzufügen",
@@ -60,7 +61,8 @@
     "resizeSidebar": "Breite der Attributspalte ändern",
     "save": "Speichern",
     "saving": "Speichern …",
-    "signIn": "Anmelden"
+    "signIn": "Anmelden",
+    "remove": "Entfernen"
   },
   "a11y": {
     "reorderCancelled": "Verschieben abgebrochen. {name} bleibt, wo es war.",
@@ -457,5 +459,72 @@
     "tomorrow": "morgen",
     "toolbar": "Formatierung",
     "warningPanel": "Warnblock"
+  },
+  "workspaceSettings": {
+    "generalDesc": "Stammdaten dieses Workspace und was in ihm liegt.",
+    "nameDesc": "Steht in der Seitenleiste, im Workspace-Wechsler und in jeder Einladung.",
+    "colorDesc": "Die Marke des Workspace — im Wechsler und überall dort, wo er neben anderen steht.",
+    "url": "Workspace-Adresse",
+    "urlDesc": "Steht in jedem geteilten Link und in jeder Einladung. Sie ändert sich nicht mit dem Namen.",
+    "content": "Inhalt",
+    "projectsDesc": "Projekte in diesem Workspace, die du sehen darfst, verwaltest du unter „Projekte“.",
+    "membersDesc": "Personen mit Zugang zu diesem Workspace.",
+    "issuesDesc": "Aufgaben über alle Projekte hinweg.",
+    "deleteTitle": "Diesen Workspace löschen",
+    "deleteDesc": "{projects, plural, =0 {Kein Projekt} one {# Projekt} other {# Projekte}} und {issues, plural, =0 {keine Aufgabe} one {# Aufgabe} other {# Aufgaben}} werden mit gelöscht — dazu alle Teams, Labels und Rollen. Das lässt sich nicht zurücknehmen.",
+    "deleteConfirm": "Endgültig löschen"
+  },
+  "workspaceProjects": {
+    "subtitle": "Alle Projekte dieses Workspace. Ein Klick führt hinein, der Stift ändert die Stammdaten.",
+    "editTitle": "Projekt bearbeiten",
+    "deleteTitle": "„{name}“ löschen?",
+    "emptyTitle": "Noch keine Projekte",
+    "emptyDesc": "Ein Projekt bündelt zusammengehörige Aufgaben unter einem gemeinsamen Kürzel."
+  },
+  "workspaceLabels": {
+    "subtitle": "Labels, die in jedem Projekt dieses Workspace vergeben werden können.",
+    "colHidden": "Ausgeblendet",
+    "nowhere": "Überall sichtbar",
+    "hiddenIn": "{count, plural, one {in # Projekt} other {in # Projekten}}",
+    "deleteDesc": "{count, plural, =0 {Das Label hängt an keiner Aufgabe.} one {Das Label wird von # Aufgabe genommen.} other {Das Label wird von # Aufgaben genommen.}} Das gilt für alle Projekte und lässt sich nicht zurücknehmen.",
+    "emptyTitle": "Noch keine Workspace-Labels",
+    "emptyDesc": "Ein Workspace-Label gilt in jedem Projekt — für Einteilungen, die überall dieselbe Bedeutung haben.",
+    "fromProjectsTitle": "Aus den Projekten",
+    "fromProjectsDesc": "Diese Labels gehören einzelnen Projekten und gelten nur dort. Geändert werden sie in den Einstellungen des jeweiligen Projekts — die Zeile führt hin."
+  },
+  "workspaceTeams": {
+    "subtitle": "Teams bündeln Menschen und Projekte. Rechte vergeben sie keine — die stehen in den Rollen.",
+    "colTeam": "Team",
+    "colLead": "Lead",
+    "colOpen": "Offen",
+    "noMembers": "Niemand",
+    "noProjects": "Keine Projekte",
+    "newTitle": "Neues Team",
+    "editTitle": "Team bearbeiten",
+    "namePlaceholder": "z. B. Plattform",
+    "descPlaceholder": "Wofür ist dieses Team da? (optional)",
+    "key": "Kürzel",
+    "lead": "Lead",
+    "pickLead": "Person wählen",
+    "membersCount": "{count, plural, =0 {Mitglieder} one {Mitglieder (#)} other {Mitglieder (#)}}",
+    "projectsCount": "{count, plural, =0 {Projekte} one {Projekte (#)} other {Projekte (#)}}",
+    "deleteTitle": "„{name}“ löschen?",
+    "deleteDesc": "{count, plural, =0 {Im Team ist niemand.} one {# Person verliert die Zuordnung.} other {# Personen verlieren die Zuordnung.}} Konten, Projekte und Aufgaben bleiben unberührt.",
+    "emptyTitle": "Noch keine Teams",
+    "emptyDesc": "Ein Team fasst zusammen, wer an denselben Projekten arbeitet — praktisch, sobald der Workspace über eine Handvoll Personen hinauswächst."
+  },
+  "workspaceMembers": {
+    "subtitle": "Wer Zugang zu diesem Workspace hat. Die Rolle entscheidet, was jemand darf.",
+    "removeTitle": "{name} entfernen?",
+    "removeDesc": "Die Person verliert den Zugang zum Workspace und zu allen seinen Projekten. Ihr Konto bleibt bestehen, ihre Aufgaben und Kommentare auch.",
+    "removeFailed": "Die Person konnte nicht entfernt werden.",
+    "roleFailed": "Die Rolle konnte nicht geändert werden.",
+    "emptyTitle": "Noch niemand hier",
+    "emptyDesc": "Lade jemanden per E-Mail ein, um gemeinsam zu arbeiten."
+  },
+  "workspacePreferences": {
+    "subtitle": "Gilt nur für dich — auf diesem Gerät und in deinem Konto.",
+    "nameDesc": "So erscheinst du in Listen, an Aufgaben und in Kommentaren.",
+    "emailDesc": "Deine Anmeldeadresse."
   }
 }

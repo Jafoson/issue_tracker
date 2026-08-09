@@ -11,12 +11,12 @@ import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
 import { deleteLabel, setLabelHidden } from "@/features/issues/actions";
+import { LabelModal } from "@/features/issues/components/LabelModal/LabelModal";
 import type {
   ProjectLabelRow,
   ProjectLabelsView,
 } from "@/features/projects/types";
 import { useModal } from "@/lib/context";
-import { LabelModal } from "./components/LabelModal";
 import styles from "./projectLabels.module.scss";
 
 interface Props extends ProjectLabelsView {
@@ -53,8 +53,8 @@ export function ProjectLabels({
   const openEditor = (label?: ProjectLabelRow) =>
     openModal(({ close }) => (
       <LabelModal
-        projectId={projectId}
         workspaceId={workspaceId}
+        projectId={projectId}
         label={label}
         onDone={() => {
           setError("");

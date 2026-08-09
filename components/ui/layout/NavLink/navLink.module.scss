@@ -1,8 +1,8 @@
 /* Aussehen und Maße der Zeile kommen aus `components/ui/atoms/Button` — ein
-   Navigationseintrag ist ein Knopf, der ein Link ist. Hier steht nur, was die
-   Seitenleiste zusätzlich braucht: Sie ist schmal und ihre Beschriftungen sind
-   fremdbestimmt (Projektnamen, „Workspace Einstellungen"), also muss die Zeile
-   sagen, was nachgibt, wenn der Platz nicht reicht.
+   Navigationseintrag ist ein Knopf, der ein Link ist. Hier steht nur, was eine
+   Navigationsleiste zusätzlich braucht: Sie ist schmal und ihre Beschriftungen
+   sind fremdbestimmt (Projektnamen, „Workspace Einstellungen"), also muss die
+   Zeile sagen, was nachgibt, wenn der Platz nicht reicht.
 
    Nachgeben darf allein der Text. Er ist auch verkürzt noch zu lesen und der
    ganze Name steht im `title`; ein gestauchtes Icon dagegen wäre schlicht ein

@@ -5,6 +5,7 @@ import {
   PROJECT_NAV,
   PROJECT_SETTINGS_NAV,
   WORKSPACE_SECTIONS,
+  WORKSPACE_SETTINGS_NAV,
 } from "@/lib/nav";
 import type { Project } from "@/types";
 
@@ -55,6 +56,19 @@ function projectSection(path: string): string {
 function projectSettingsSection(path: string): string | null {
   const parts = path.split("/");
   return parts[4] === "settings" ? (parts[5] ?? "") : null;
+}
+
+/**
+ * Der Bereich innerhalb der Workspace-Einstellungen — `""` für Allgemein,
+ * `"projects"`, `"labels"`, `"teams"`, … `null`, wenn der Pfad gar nicht dort
+ * liegt. Dieselbe Unterscheidung wie beim Projekt, eine Ebene höher: ohne sie
+ * hießen alle Bereiche „Einstellungen" und wären nebeneinander nicht
+ * auseinanderzuhalten.
+ */
+function workspaceSettingsSection(path: string): string | null {
+  const parts = path.split("/");
+  if (parts[1] === "admin" || parts[2] !== "settings") return null;
+  return parts[3] ?? "";
 }
 
 /** Human title for a tab path (no query string). */
@@ -108,6 +122,16 @@ export function tabIcon(path: string): string {
     );
   }
 
+  // Wie beim Projekt: die Einstellungen haben eine zweite Ebene, und die trägt
+  // ihr eigenes Icon. Ohne diesen Zweig bekäme jeder Bereich das Zahnrad.
+  const workspaceSection = workspaceSettingsSection(path);
+  if (workspaceSection !== null) {
+    return (
+      findBySection(WORKSPACE_SETTINGS_NAV, workspaceSection)?.icon ??
+      "lucide:settings"
+    );
+  }
+
   return (
     findBySection(WORKSPACE_SECTIONS, section)?.icon ??
     "lucide:layout-dashboard"
@@ -150,11 +174,15 @@ export function tabMeta(
     const label =
       sub && sub.section ? t(`nav.${sub.labelKey}`) : t("nav.settings");
     title = `${title} (${label})`;
-  } else {
-    const entry = inProject
-      ? findBySection(PROJECT_NAV, projectSection(path))
-      : undefined;
+  } else if (inProject) {
+    const entry = findBySection(PROJECT_NAV, projectSection(path));
     if (entry?.section) title = `${title} (${t(`nav.${entry.labelKey}`)})`;
+  } else {
+    // Dieselbe Regel für den Workspace: der Kopf heißt „Einstellungen", die
+    // Bereiche darunter tragen ihren eigenen Namen.
+    const section = workspaceSettingsSection(path);
+    const sub = section ? findBySection(WORKSPACE_SETTINGS_NAV, section) : null;
+    if (sub) title = `${title} (${t(`nav.${sub.labelKey}`)})`;
   }
 
   return {

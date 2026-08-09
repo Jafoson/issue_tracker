@@ -190,7 +190,11 @@ export function RoleManagerView({
 
   return (
     <section className={styles.wrap}>
-      <header className={styles.pageHeader}>
+      {/* Ohne eigenen Titel steht über der Kopfzeile der Umschalter, und der
+          bringt die obere Linie schon mit — siehe `.underSwitcher`. */}
+      <header
+        className={`${styles.pageHeader} ${showTitle ? "" : styles.underSwitcher}`}
+      >
         <div className={styles.headText}>
           {/* Auf Seiten mit Umschalter steht der Titel schon auf dem Reiter. */}
           {showTitle && <h2 className={styles.pageTitle}>{title}</h2>}

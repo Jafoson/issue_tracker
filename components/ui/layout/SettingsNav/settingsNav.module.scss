@@ -1,6 +1,6 @@
 /* Zweite Navigationsebene, direkt neben der Seitenleiste. Etwas schmaler als
    diese, damit die Rangfolge auch ohne Beschriftung erkennbar bleibt: außen die
-   App, dann das Projekt, dann der Inhalt. */
+   App, dann der Gegenstand (Workspace oder Projekt), dann der Inhalt. */
 /* Die Linie oben ist dieselbe, die rechts über der Kopfzeile des Bereichs steht
    (`components/ui/layout/PageHeader`) — zusammen ergeben sie einen Strich über
    die ganze Breite, der die Reiterleiste vom Inhalt trennt. Ohne sie bräche er
@@ -17,8 +17,9 @@
   overflow-y: auto;
 }
 
-/* Sagt, welches Projekt eingestellt wird. Nötig, weil die Seitenleiste daneben
-   alle Projekte zeigt — ohne diese Zeile bliebe offen, welches gemeint ist. */
+/* Sagt, was hier eingestellt wird. Nötig, weil die Seitenleiste daneben alle
+   Workspaces und Projekte zeigt — ohne diese Zeile bliebe offen, welches
+   gemeint ist. */
 .head {
   display: flex;
   align-items: center;
@@ -34,7 +35,7 @@
   flex: none;
 }
 
-.project {
+.subject {
   font-size: var(--text-base);
   font-weight: 600;
   white-space: nowrap;
@@ -52,6 +53,8 @@
   color: var(--on-surface-variant);
 }
 
+/* Die Zeilen bringen ihr Aussehen selbst mit (`components/ui/layout/NavLink`) —
+   hier steht nur, wie sie gestapelt werden. */
 .list {
   list-style: none;
   margin: 0;
@@ -59,34 +62,4 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-}
-
-.link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: var(--row-h);
-  padding: 0 9px;
-  border-radius: var(--radius-sm);
-  color: var(--on-surface-variant);
-  font-size: var(--text-base);
-  text-decoration: none;
-  transition: background 0.12s, color 0.12s;
-
-  & svg {
-    flex: none;
-  }
-
-  &:hover {
-    background: var(--surface-container);
-    color: var(--on-surface);
-  }
-
-  /* Dieselbe Markierung wie in der Seitenleiste (`button.module.scss`) — zwei
-     Ebenen derselben Navigation sollen sich nicht unterschiedlich anfühlen. */
-  &[data-active="true"] {
-    background: var(--surface-container-high);
-    color: var(--on-surface);
-    font-weight: 600;
-  }
 }

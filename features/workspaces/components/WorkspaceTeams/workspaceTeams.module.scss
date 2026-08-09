@@ -1,0 +1,101 @@
+/* Dieselbe Aufteilung wie in den übrigen Bereichen der Einstellungen: die Seite
+   scrollt, die Tabelle darin nicht. Eine Teamzeile trägt Avatare und zwei
+   Textzeilen und bekommt deshalb mehr Luft als die einzeilige Vorgabe. */
+.content {
+  --table-row-height: 62px;
+  --table-divider: var(--outline-variant);
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+[data-density="compact"] .content {
+  --table-row-height: 52px;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Das Kürzel ist die Kennung des Teams — wie beim Projekt monospace und ruhig. */
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.lead {
+  font-size: var(--text-base);
+  color: var(--on-surface-variant);
+}
+
+.projects {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+/* Ab dem dritten Projekt nur noch die Zahl: die Spalte soll die Zeile nicht
+   aufspannen, und welche es genau sind, steht im Dialog. */
+.more {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface-variant);
+}
+
+.empty {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

@@ -9,10 +9,21 @@
   overflow: hidden;
 }
 
+/* Der Umschalter gehört in die Kopfzeile, nicht darüber: er stellt den Titel
+   des Bereichs (deshalb `showTitle={false}` am `RoleManager`). Die Linie oben
+   ist dieselbe, die links über der Bereichsleiste steht — zusammen ergeben sie
+   einen durchgehenden Strich. Stünde der Umschalter darüber, bräche er ihn auf,
+   und die Kopfzeile brächte eine zweite Linie mit.
+
+   Nach unten grenzt die Kopfzeile des Rollen-Topfes an, die ihre eigene Linie
+   erst unter der Beschreibung zieht (`roleManagerView.module.scss`) — der
+   Umschalter steht damit zwischen den beiden Linien, im selben Band wie der
+   Text, den er erklärt. */
 .switcher {
   flex: none;
   display: flex;
-  padding: 12px 24px 0;
+  padding: 10px 24px 0;
+  border-top: 1px solid var(--outline-variant);
 }
 
 .section {

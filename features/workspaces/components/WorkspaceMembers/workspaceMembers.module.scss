@@ -1,0 +1,88 @@
+/* Die Karte darunter hat ihre eigene Höhe — gescrollt wird die Seite, nicht
+   die Tabelle. Eine Mitgliederzeile trägt zwei Textzeilen neben dem Avatar und
+   bekommt deshalb deutlich mehr Luft als die einzeilige Vorgabe der Tabelle. */
+.content {
+  --table-row-height: 64px;
+  --table-divider: var(--outline-variant);
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+[data-density="compact"] .content {
+  --table-row-height: 52px;
+}
+
+/* Auslöser des Rollen-Menüs: der Pfeil steht neben der Rolle, nicht in ihr —
+   die Farbfläche gehört der Rolle, das Aufklappen ist eine eigene Geste. */
+.roleTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 0;
+  border-radius: var(--radius-sm);
+  color: var(--outline);
+  transition: color 0.12s;
+
+  &:hover {
+    color: var(--on-surface);
+  }
+}
+
+.you {
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.teams {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.noTeams {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
+.status {
+  color: var(--on-surface-variant);
+  font-size: var(--text-base);
+}
+
+/* Eine offene Einladung ist ein Zwischenzustand, kein aktiver Zugang — deshalb
+   die gleiche Warnfarbe wie andere „noch nicht fertig"-Marker. */
+.statusInvited {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--amber);
+  font-size: var(--text-base);
+
+  &::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentcolor;
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

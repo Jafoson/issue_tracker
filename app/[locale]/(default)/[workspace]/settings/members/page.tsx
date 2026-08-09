@@ -6,13 +6,13 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Mitglieder des Workspace, einen Klick von der Seitenleiste entfernt.
+ * Die Mitglieder des Workspace — hier im Rahmen der Einstellungen.
  *
- * Dieselbe Komponente wie unter `…/settings/members` — wer im Workspace
- * arbeitet, schlägt hier nach, wen er ansprechen kann; wer ihn einrichtet,
- * findet dieselbe Liste in den Einstellungen neben Rollen und Teams.
+ * Dieselbe Ansicht wie unter `/<workspace>/members`; geteilt wird die
+ * Komponente, nicht die Route. Dadurch bringt jede Adresse den Rahmen mit, in
+ * den sie gehört, und die Rechte prüft ohnehin die Abfrage.
  */
-export default async function MembersPage({
+export default async function WorkspaceSettingsMembersPage({
   params,
 }: {
   params: Promise<{ workspace: string }>;

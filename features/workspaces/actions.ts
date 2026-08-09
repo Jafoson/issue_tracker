@@ -24,6 +24,7 @@ import {
 } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
+import { uid } from "@/lib/utils/id";
 import {
   DEFAULT_ISSUE_TYPES,
   DEFAULT_PRIORITIES,
@@ -176,6 +177,262 @@ export async function createWorkspace(
 
   // Locale-freier Pfad – der Client navigiert über next-intl (auto-Präfix).
   return { redirectTo: `/${finalSlug}` };
+}
+
+// ─── Workspace ändern und löschen ─────────────────────────────────────────────
+//
+// Diese beiden geben Fehler zurück statt zu werfen: sie hängen an der
+// Einstellungsseite, die den Grund anzeigen soll.
+
+type SettingsResult = { ok: true } | { error: string };
+
+/**
+ * Name und Farbe des Workspace.
+ *
+ * Der Slug bleibt, wie er ist — er ist zugleich die Id des Workspace und steht
+ * damit in jeder Adresse, in jedem offenen Reiter und in jeder verschickten
+ * Einladung. Ihn zu ändern hieße, alles davon ins Leere laufen zu lassen; die
+ * Seite zeigt ihn deshalb zum Nachlesen statt als Feld.
+ */
+export async function updateWorkspace(
+  workspaceId: string,
+  data: { name?: string; color?: string },
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.update", { workspaceId })))
+    return { error: "You are not allowed to change this workspace." };
+
+  const name = data.name?.trim();
+  if (name !== undefined && !name) return { error: "Name is required." };
+
+  await db.workspace.update({
+    where: { id: workspaceId },
+    data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(data.color !== undefined ? { color: data.color } : {}),
+    },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Löscht den Workspace mit allem, was darin liegt.
+ *
+ * Die Issues gehen zuerst: ihr Fremdschlüssel auf das Projekt steht auf
+ * `Restrict`, die Projekte ließen sich sonst gar nicht löschen. Alles Übrige —
+ * Projekte, Mitglieder, Teams, Labels, Rollen, Einladungen — kaskadiert vom
+ * Workspace aus.
+ */
+export async function deleteWorkspace(
+  workspaceId: string,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.delete", { workspaceId })))
+    return { error: "You are not allowed to delete this workspace." };
+
+  await db.$transaction(async (tx) => {
+    await tx.issue.deleteMany({ where: { project: { workspaceId } } });
+    await tx.workspace.delete({ where: { id: workspaceId } });
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// ─── Teams ────────────────────────────────────────────────────────────────────
+//
+// Ein Team gruppiert Menschen und Projekte, es vergibt keine Rechte. Deshalb
+// hängt es an eigenen Permissions (`team.*`) und nicht an `member.*`: wer Teams
+// zusammenstellt, entscheidet damit über keinen einzigen Zugriff.
+//
+// Mitglieder und Projekte kommen als vollständige Liste herein und werden als
+// Ganzes gesetzt. Der Dialog zeigt beide Mengen ohnehin komplett; ein Diff aus
+// Einzelaufrufen wäre derselbe Vorgang in mehreren Runden — mit dem Risiko,
+// zwischendrin steckenzubleiben.
+
+interface TeamInput {
+  name: string;
+  key: string;
+  color: string;
+  desc?: string;
+  leadId: string;
+  memberIds: string[];
+  projectIds: string[];
+}
+
+/** Kürzel wie beim Projekt: bis zu vier Zeichen, Buchstaben und Ziffern. */
+function teamKey(value: string): string {
+  return value
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 4);
+}
+
+/**
+ * Prüft die Eingaben gegen den Workspace: Kürzel frei, Lead und Mitglieder
+ * gehören dazu, Projekte auch. Ohne diese Runde ließe sich über die Ids eines
+ * fremden Mandanten ein Team zusammenstellen, das ihn quer aufspannt.
+ */
+async function checkTeamInput(
+  workspaceId: string,
+  data: TeamInput,
+  teamId?: string,
+): Promise<{ error: string } | { key: string; memberIds: string[] }> {
+  const name = data.name.trim();
+  if (!name) return { error: "Name is required." };
+
+  const key = teamKey(data.key) || teamKey(name);
+  if (!key) return { error: "The identifier cannot be empty." };
+
+  const taken = await db.team.findUnique({
+    where: { workspaceId_key: { workspaceId, key } },
+    select: { id: true },
+  });
+  if (taken && taken.id !== teamId)
+    return { error: "Another team in this workspace uses that identifier." };
+
+  // Der Lead führt das Team und muss deshalb selbst darin stehen — sonst hätte
+  // die Zeile einen Verantwortlichen, der nicht dazugehört.
+  const memberIds = [...new Set([data.leadId, ...data.memberIds])];
+
+  const known = await db.workspaceMember.count({
+    where: { workspaceId, userId: { in: memberIds } },
+  });
+  if (known !== memberIds.length)
+    return { error: "Only workspace members can be part of a team." };
+
+  if (data.projectIds.length > 0) {
+    const projects = await db.project.count({
+      where: { workspaceId, id: { in: data.projectIds } },
+    });
+    if (projects !== data.projectIds.length)
+      return { error: "Only projects of this workspace can be assigned." };
+  }
+
+  return { key, memberIds };
+}
+
+export async function createTeam(
+  workspaceId: string,
+  data: TeamInput,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "team.create", { workspaceId })))
+    return { error: "You are not allowed to create teams here." };
+
+  const checked = await checkTeamInput(workspaceId, data);
+  if ("error" in checked) return checked;
+
+  await db.team.create({
+    data: {
+      id: uid("t"),
+      workspaceId,
+      name: data.name.trim(),
+      key: checked.key,
+      color: data.color,
+      desc: data.desc?.trim() ?? "",
+      leadId: data.leadId,
+      members: { create: checked.memberIds.map((userId) => ({ userId })) },
+      projects: {
+        create: data.projectIds.map((projectId) => ({ projectId })),
+      },
+    },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Ein Team ändern — Stammdaten, Mitglieder und Projekte in einem Zug.
+ *
+ * Die drei Teile hängen an drei Rechten (`team.update`, `team.member.manage`,
+ * `team.project.manage`). Wer nur eines davon hat, ändert nur seinen Teil: die
+ * übrigen Angaben werden übergangen statt abgelehnt, weil der Dialog sie ohnehin
+ * nur anzeigt, wenn sie bedienbar sind.
+ */
+export async function updateTeam(
+  teamId: string,
+  data: TeamInput,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    select: { workspaceId: true },
+  });
+  if (!team) return { error: "This team no longer exists." };
+  const { workspaceId } = team;
+
+  const [canUpdate, canMembers, canProjects] = await Promise.all([
+    can(actorId, "team.update", { workspaceId }),
+    can(actorId, "team.member.manage", { workspaceId }),
+    can(actorId, "team.project.manage", { workspaceId }),
+  ]);
+  if (!canUpdate && !canMembers && !canProjects)
+    return { error: "You are not allowed to change this team." };
+
+  const checked = await checkTeamInput(workspaceId, data, teamId);
+  if ("error" in checked) return checked;
+
+  await db.$transaction(async (tx) => {
+    if (canUpdate) {
+      await tx.team.update({
+        where: { id: teamId },
+        data: {
+          name: data.name.trim(),
+          key: checked.key,
+          color: data.color,
+          desc: data.desc?.trim() ?? "",
+          leadId: data.leadId,
+        },
+      });
+    }
+
+    if (canMembers) {
+      await tx.teamMember.deleteMany({ where: { teamId } });
+      await tx.teamMember.createMany({
+        data: checked.memberIds.map((userId) => ({ teamId, userId })),
+      });
+    }
+
+    if (canProjects) {
+      await tx.teamProject.deleteMany({ where: { teamId } });
+      await tx.teamProject.createMany({
+        data: data.projectIds.map((projectId) => ({ teamId, projectId })),
+      });
+    }
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function deleteTeam(teamId: string): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    select: { workspaceId: true },
+  });
+  if (!team) return { error: "This team no longer exists." };
+
+  if (!(await can(actorId, "team.delete", { workspaceId: team.workspaceId })))
+    return { error: "You are not allowed to delete this team." };
+
+  // Mitgliedschaften und Projektzuordnungen kaskadieren vom Team aus; an den
+  // Aufgaben hängt ein Team nicht, es bleibt also nichts zurück.
+  await db.team.delete({ where: { id: teamId } });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 // ─── Mitglieder des Workspace ─────────────────────────────────────────────────

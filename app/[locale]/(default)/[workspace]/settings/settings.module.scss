@@ -1,0 +1,20 @@
+/* Zwei Spalten, eine Höhe: die Leiste steht, der Bereich daneben scrollt. Beide
+   bekommen `min-height: 0`, sonst wächst der Inhalt die Zeile auf und die Seite
+   scrollt als Ganzes — genau das, was die Spalten-Aufteilung verhindern soll. */
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Der Bereich bringt seine eigene Kopfzeile mit (`PageHeader`) und regelt sein
+   Scrollen selbst — deshalb hier nur die Spalte, kein Polster. */
+.panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

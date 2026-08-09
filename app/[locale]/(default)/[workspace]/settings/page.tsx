@@ -1,11 +1,19 @@
 import { notFound } from "next/navigation";
-import { Settings } from "@/features/admin/components/Settings/Settings";
-import { getMe, getWorkspaceProjects } from "@/features/workspaces/queries";
+import { WorkspaceSettings } from "@/features/workspaces/components/WorkspaceSettings/WorkspaceSettings";
+import { getWorkspaceSettingsView } from "@/features/workspaces/queries";
+import { appUrl } from "@/lib/app-url";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
+import { workspacePath } from "@/lib/nav";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage({
+/**
+ * Stammdaten des Workspace, seine Zahlen und das Löschen.
+ *
+ * Geprüft wird in `getWorkspaceSettingsView` und noch einmal in den Actions —
+ * `null` heißt hier wie überall „gibt es für dich nicht".
+ */
+export default async function WorkspaceSettingsPage({
   params,
 }: {
   params: Promise<{ workspace: string }>;
@@ -13,8 +21,16 @@ export default async function SettingsPage({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const [me, projects] = await Promise.all([getMe(), getWorkspaceProjects()]);
-  if (!me) notFound();
+  const view = await getWorkspaceSettingsView();
+  if (!view) notFound();
 
-  return <Settings me={me} projects={projects} />;
+  return (
+    <WorkspaceSettings
+      {...view}
+      // Absolut, nicht als Pfad: die Adresse wird kopiert und woanders
+      // eingefügt. Zusammengesetzt wird sie hier, weil nur der Server weiß,
+      // unter welchem Host die App läuft (`AUTH_URL`).
+      workspaceUrl={appUrl(workspacePath(workspace, ""))}
+    />
+  );
 }

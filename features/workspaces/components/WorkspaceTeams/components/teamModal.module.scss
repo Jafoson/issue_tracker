@@ -1,0 +1,145 @@
+/* Panel, Header und Footer kommen aus components/ui/layout/Modal —
+   hier stehen nur die Felder und die beiden Auswahllisten. */
+
+.headerIcon {
+  color: var(--on-surface-variant);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px var(--modal-pad-x);
+}
+
+/* Name und Kürzel gehören zusammen und stehen deshalb in einer Zeile: das
+   Kürzel wird aus dem Namen vorgeschlagen, das sieht man so beim Tippen. */
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Vier Zeichen brauchen kein volles Feld. */
+.keyInput {
+  width: 96px;
+  flex: none;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface-variant);
+}
+
+/* Feste Höhe: der Dialog soll beim Tippen im Suchfeld nicht springen, während
+   die Trefferliste schrumpft. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  height: 200px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surface-container-high);
+  }
+
+  /* Ausgewählt heißt: bleibt hervorgehoben, auch ohne Zeiger darüber. */
+  &[aria-pressed="true"] {
+    background: var(--surface-container-high);
+  }
+}
+
+.check {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--outline);
+
+  .option[aria-pressed="true"] & {
+    color: var(--primary);
+  }
+}
+
+.noResults {
+  padding: 10px 8px;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+}
+
+/* Projekte sind kurz und wenige — als Chips lassen sie sich in einem Blick
+   überschauen, wo eine zweite Liste den Dialog auf doppelte Höhe brächte. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+
+  &:hover {
+    background: var(--surface-container);
+    color: var(--on-surface);
+  }
+
+  &[data-picked="true"] {
+    border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+    background: color-mix(in oklab, var(--primary) 14%, transparent);
+    color: var(--on-surface);
+  }
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--error);
+  font-size: var(--text-sm);
+}

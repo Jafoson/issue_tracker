@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import styles from "@/components/ui/atoms/Button/button.module.scss";
 import { Link, usePathname } from "@/i18n/navigation";
 import { isNavActive } from "@/lib/nav";
+import navStyles from "./navLink.module.scss";
 
 export interface NavLinkProps {
   href: string;
@@ -15,6 +16,16 @@ export interface NavLinkProps {
   color?: string;
   onClick?: () => void;
 }
+
+/**
+ * Eine Zeile in einer Navigation — der gemeinsame Baustein der Seitenleiste und
+ * der Einstellungsleisten daneben.
+ *
+ * Aussehen und Maße kommen vom Knopf (`components/ui/atoms/Button`), markiert
+ * wird über `isNavActive` und damit nach derselben Regel wie überall sonst.
+ * Zwei Ebenen derselben Navigation sollen sich nicht unterschiedlich anfühlen —
+ * deshalb steht diese Zeile hier und nicht in der Seitenleiste.
+ */
 
 export function NavLink({
   href,
@@ -47,7 +58,10 @@ export function NavLink({
       onClick={onClick}
     >
       <LeadingIcon />
-      <span>{label}</span>
+      {/* Der ganze Name bleibt im `title` — die Zeile kürzt ihn nur fürs Auge. */}
+      <span className={navStyles.label} title={label}>
+        {label}
+      </span>
       {badge && <Badge style={{ marginLeft: "auto" }}>{badge}</Badge>}
     </Link>
   );

@@ -19,7 +19,8 @@
     "backToProject": "Back to {name}",
     "breadcrumb": "Breadcrumb",
     "workspaces": "Workspaces",
-    "workspaceSettings": "Workspace Settings"
+    "workspaceSettings": "Workspace Settings",
+    "preferences": "Personal"
   },
   "actions": {
     "addLabel": "Add label",
@@ -60,7 +61,8 @@
     "resizeSidebar": "Resize attribute column",
     "save": "Save",
     "saving": "Saving …",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "remove": "Remove"
   },
   "a11y": {
     "reorderCancelled": "Move cancelled. {name} stays where it was.",
@@ -457,5 +459,72 @@
     "tomorrow": "tomorrow",
     "toolbar": "Formatting",
     "warningPanel": "Warning panel"
+  },
+  "workspaceSettings": {
+    "generalDesc": "Core details of this workspace and what lives in it.",
+    "nameDesc": "Shown in the sidebar, in the workspace switcher and in every invitation.",
+    "colorDesc": "The workspace's mark — in the switcher and wherever it stands next to others.",
+    "url": "Workspace address",
+    "urlDesc": "Part of every shared link and every invitation. It does not change with the name.",
+    "content": "Content",
+    "projectsDesc": "Projects in this workspace you are allowed to see; manage them under “Projects”.",
+    "membersDesc": "People with access to this workspace.",
+    "issuesDesc": "Issues across all projects.",
+    "deleteTitle": "Delete this workspace",
+    "deleteDesc": "{projects, plural, =0 {No project} one {# project} other {# projects}} and {issues, plural, =0 {no issue} one {# issue} other {# issues}} go with it — along with every team, label and role. This cannot be undone.",
+    "deleteConfirm": "Delete permanently"
+  },
+  "workspaceProjects": {
+    "subtitle": "Every project in this workspace. A click opens it, the pencil edits its details.",
+    "editTitle": "Edit project",
+    "deleteTitle": "Delete “{name}”?",
+    "emptyTitle": "No projects yet",
+    "emptyDesc": "A project groups related issues under one shared identifier."
+  },
+  "workspaceLabels": {
+    "subtitle": "Labels that can be applied in every project of this workspace.",
+    "colHidden": "Hidden",
+    "nowhere": "Visible everywhere",
+    "hiddenIn": "{count, plural, one {in # project} other {in # projects}}",
+    "deleteDesc": "{count, plural, =0 {The label is not on any issue.} one {The label is removed from # issue.} other {The label is removed from # issues.}} This applies to every project and cannot be undone.",
+    "emptyTitle": "No workspace labels yet",
+    "emptyDesc": "A workspace label applies in every project — for distinctions that mean the same thing everywhere.",
+    "fromProjectsTitle": "From the projects",
+    "fromProjectsDesc": "These labels belong to individual projects and apply only there. They are edited in that project's settings — the row takes you there."
+  },
+  "workspaceTeams": {
+    "subtitle": "Teams group people and projects. They grant no permissions — those live in the roles.",
+    "colTeam": "Team",
+    "colLead": "Lead",
+    "colOpen": "Open",
+    "noMembers": "Nobody",
+    "noProjects": "No projects",
+    "newTitle": "New team",
+    "editTitle": "Edit team",
+    "namePlaceholder": "e.g. Platform",
+    "descPlaceholder": "What is this team for? (optional)",
+    "key": "Identifier",
+    "lead": "Lead",
+    "pickLead": "Pick a person",
+    "membersCount": "{count, plural, =0 {Members} one {Members (#)} other {Members (#)}}",
+    "projectsCount": "{count, plural, =0 {Projects} one {Projects (#)} other {Projects (#)}}",
+    "deleteTitle": "Delete “{name}”?",
+    "deleteDesc": "{count, plural, =0 {The team has no members.} one {# person loses the grouping.} other {# people lose the grouping.}} Accounts, projects and issues stay untouched.",
+    "emptyTitle": "No teams yet",
+    "emptyDesc": "A team captures who works on the same projects — useful as soon as the workspace grows past a handful of people."
+  },
+  "workspaceMembers": {
+    "subtitle": "Who has access to this workspace. The role decides what they may do.",
+    "removeTitle": "Remove {name}?",
+    "removeDesc": "They lose access to the workspace and all of its projects. Their account stays, and so do their issues and comments.",
+    "removeFailed": "That person could not be removed.",
+    "roleFailed": "The role could not be changed.",
+    "emptyTitle": "Nobody here yet",
+    "emptyDesc": "Invite someone by email to start working together."
+  },
+  "workspacePreferences": {
+    "subtitle": "Applies to you only — on this device and in your account.",
+    "nameDesc": "How you appear in lists, on issues and in comments.",
+    "emailDesc": "The address you sign in with."
   }
 }

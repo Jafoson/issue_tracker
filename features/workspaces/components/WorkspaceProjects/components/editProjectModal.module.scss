@@ -1,0 +1,41 @@
+/* Panel, Header und Footer kommen aus components/ui/layout/Modal —
+   hier stehen nur die Formularfelder. Dieselben Maße wie im Anlege-Dialog
+   (`CreateProjectModal`): es sind dieselben Felder, nur mit Inhalt. */
+
+.body {
+  gap: 18px;
+  padding: 18px var(--modal-pad-x);
+}
+
+.headerIcon {
+  color: var(--on-surface-variant);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface-variant);
+}
+
+/* Erklärt die Folge der Auswahl darüber — dieselbe Rolle wie `hint` am Input,
+   deshalb auch dessen Ton. */
+.hint {
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+  line-height: 1.4;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--error);
+}

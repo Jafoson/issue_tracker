@@ -1,0 +1,142 @@
+/* Dieselbe Aufteilung wie in den Projekteinstellungen: die Seite scrollt, die
+   Karten darin nicht — und beide nehmen die volle Breite. Das Aussehen der
+   Listen kommt aus `components/ui/layout/Table` (Variante `card`); hier steht
+   nur, was die Zellen füllt.
+
+   Drei Werte weichen von der Vorgabe der Tabelle ab. Eine Einstellung ist keine
+   Liste gleichartiger Datensätze, sondern ein Formular: die Zeile trägt zwei
+   Textzeilen und ein Bedienelement, also braucht sie Höhe; sie ist von der
+   nächsten getrennt, weil hier jede Zeile für sich steht; und sie leuchtet
+   nicht auf, wenn der Zeiger sie überfährt — anzuklicken gibt es nur das
+   Bedienelement rechts. */
+.content {
+  --table-row-height: 62px;
+  --table-divider: var(--outline-variant);
+  --table-hover: transparent;
+
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+[data-density="compact"] .content {
+  --table-row-height: 52px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.dangerTitle {
+  color: var(--error);
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  padding-block: 10px;
+}
+
+.label {
+  font-size: var(--text-md);
+  font-weight: 550;
+  line-height: var(--leading-tight);
+}
+
+.desc {
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+/* Alle Eingabefelder gleich breit, damit ihre rechten Kanten eine Linie bilden.
+   `flex: none`, weil die Zelle der Tabelle ein Flex-Container ist und das Feld
+   sonst auf die Breite der Farbpalette mitwüchse. */
+.control {
+  flex: none;
+  width: 280px;
+  max-width: 100%;
+}
+
+/* Die einzige Ausnahme: hier steht eine ganze Adresse samt Host, und die soll
+   lesbar sein und nicht im eigenen Kasten scrollen. */
+.urlControl {
+  width: 460px;
+}
+
+.colorProof {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+}
+
+/* Eine Zahl statt eines Bedienelements — sie steht an derselben Kante wie die
+   Felder darüber und wird in derselben Größe gelesen wie eine Überschrift, weil
+   sie hier die eigentliche Auskunft ist. */
+.stat {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green);
+  font-size: var(--text-sm);
+}
+
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Löschen ist nicht rückholbar, also trägt die Karte die Warnfarbe schon im
+   Rahmen. Doppelt benannt, um die Spezifität zu heben: der Rahmen kommt aus
+   `table.module.scss`, und bei gleicher Spezifität entschiede die Reihenfolge
+   der Stylesheets. */
+.dangerCard.dangerCard {
+  --table-surface: var(--surface);
+
+  border-color: color-mix(in oklab, var(--error) 40%, var(--outline-variant));
+}
+
+.deleteButton {
+  border-color: color-mix(in oklab, var(--error) 55%, transparent);
+  color: var(--error);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--error) 12%, transparent);
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

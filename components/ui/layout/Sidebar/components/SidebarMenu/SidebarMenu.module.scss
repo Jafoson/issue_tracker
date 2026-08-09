@@ -1,4 +1,9 @@
+/* Der Name kommt von außen und kann beliebig lang sein. Kürzen darf ihn nur
+   dieser Text: `min-width: 0` nimmt ihm die Inhaltsbreite als Untergrenze,
+   sonst gäbe stattdessen alles daneben nach — bei einem Flex-Element ist das
+   die Voraussetzung dafür, dass `text-overflow` überhaupt greift. */
 .title{
+    min-width: 0;
     font-Weight: 600;
     font-size: var(--text-base);
     white-space: nowrap;

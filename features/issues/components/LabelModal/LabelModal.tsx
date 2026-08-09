@@ -13,15 +13,26 @@ import {
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
 import { createLabel, updateLabel } from "@/features/issues/actions";
-import type { ProjectLabelRow } from "@/features/projects/types";
 import { PALETTE } from "@/lib/utils";
 import styles from "./labelModal.module.scss";
 
+/** Was der Dialog von einem bestehenden Label braucht — Projekt wie Workspace. */
+interface EditableLabel {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface Props {
-  projectId: string;
   workspaceId: string;
+  /**
+   * Das Projekt, dem das neue Label gehören soll. Ohne es entsteht ein Label
+   * des Workspace, das in jedem seiner Projekte gilt — derselbe Dialog, eine
+   * Ebene höher. Beim Bearbeiten ist die Zugehörigkeit ohnehin entschieden.
+   */
+  projectId?: string | null;
   /** Gesetzt = bearbeiten, offen = anlegen. */
-  label?: ProjectLabelRow;
+  label?: EditableLabel;
   onDone: () => void;
   close: () => void;
 }
@@ -35,8 +46,8 @@ interface Props {
  * beantwortet — die Liste zeigt den Slug daneben.
  */
 export function LabelModal({
-  projectId,
   workspaceId,
+  projectId,
   label,
   onDone,
   close,
@@ -65,7 +76,12 @@ export function LabelModal({
             return;
           }
         } else {
-          await createLabel({ name: trimmed, color, workspaceId, projectId });
+          await createLabel({
+            name: trimmed,
+            color,
+            workspaceId,
+            projectId: projectId ?? null,
+          });
         }
         onDone();
         close();

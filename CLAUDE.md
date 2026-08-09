@@ -266,6 +266,8 @@ tests/
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
       inviteWorkspaceMember.test.ts ← Mitglied einladen (Konto oder Link)
+      workspaceSettings.test.ts   ← updateWorkspace / deleteWorkspace
+      teams.test.ts               ← Teams anlegen, ändern, löschen
     projects/
       createProject.test.ts       ← createProject() Server Action
       projectMembers.test.ts      ← Projektrollen verwalten
