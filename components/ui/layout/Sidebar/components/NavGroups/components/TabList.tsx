@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { usePathname } from "@/i18n/navigation";
+import { isNavActive } from "@/lib/nav";
 import { NavLink, type NavLinkProps } from "../../NavLink";
 import styles from "./tabList.module.scss";
 
@@ -17,7 +18,7 @@ interface TabListProps {
 
 function containsActive(tabs: TabGroup[], pathname: string): boolean {
   return tabs.some((tab) => {
-    if (pathname === (tab.activeHref ?? tab.href)) return true;
+    if (isNavActive(pathname, tab.href, tab.activeHref)) return true;
     return tab.group ? containsActive(tab.group, pathname) : false;
   });
 }

@@ -1,0 +1,69 @@
+/* Dieselbe Aufteilung wie in den übrigen Bereichen der Einstellungen: die Seite
+   scrollt, die Tabellen darin nicht — und beide nehmen die volle Breite. */
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.slug {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.usage {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+/* Ein unbenutztes Label ist kein Fehler, nur eine Randnotiz — vor allem beim
+   Aufräumen. Es bleibt deshalb blasser als eine echte Zahl. */
+.unused {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.inherited {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Wie in „Allgemein": Gruppenüberschrift über der Karte, nicht in ihr. */
+.groupTitle {
+  margin: 8px 0 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.groupDesc {
+  margin: 0 0 8px;
+  max-width: 60ch;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--on-surface-variant);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

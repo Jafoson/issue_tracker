@@ -20,6 +20,7 @@ export type NavLabelKey =
   | "projects"
   | "general"
   | "roles"
+  | "labels"
   | "workspaces";
 
 export interface NavEntry {
@@ -63,13 +64,33 @@ export const ADMIN_NAV: NavEntry[] = [
   { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
 ];
 
-/** Per-project sub-nav — `/<workspaceId>/project/<slug>` (empty section = board) or `/<workspaceId>/project/<slug>/<section>`. */
+/**
+ * Per-project sub-nav — `/<workspaceId>/project/<slug>` (empty section = board)
+ * or `/<workspaceId>/project/<slug>/<section>`.
+ *
+ * Mitglieder stehen hier und nicht in den Einstellungen: wer im Projekt
+ * arbeitet, schlägt dort nach, wen er ansprechen kann — das ist eine Frage des
+ * Alltags, keine Einstellung. Rollen und Labels sind es, und sie hängen deshalb
+ * unter `settings` (`PROJECT_SETTINGS_NAV`).
+ */
 export const PROJECT_NAV: NavEntry[] = [
   { section: "", icon: "lucide:layout-dashboard", labelKey: "board" },
   { section: "list", icon: "lucide:list", labelKey: "issues" },
   { section: "members", icon: "lucide:users", labelKey: "members" },
-  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
   { section: "settings", icon: "lucide:settings", labelKey: "settings" },
+];
+
+/**
+ * Die Bereiche der Projekteinstellungen — `…/project/<slug>/settings/<section>`,
+ * leere Sektion = Allgemein.
+ *
+ * Gerendert wird die Leiste von `ProjectSettingsNav`, die Sichtbarkeit einzelner
+ * Einträge entscheidet das Layout anhand der Rechte.
+ */
+export const PROJECT_SETTINGS_NAV: NavEntry[] = [
+  { section: "", icon: "lucide:settings", labelKey: "general" },
+  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
+  { section: "labels", icon: "lucide:tag", labelKey: "labels" },
 ];
 
 export function workspacePath(workspaceId: string, section: string): string {
@@ -87,6 +108,40 @@ export function projectPath(
 ): string {
   const base = `/${workspaceId}/project/${slug}`;
   return section ? `${base}/${section}` : base;
+}
+
+/** Ein Bereich der Projekteinstellungen. Leere Sektion = Allgemein. */
+export function projectSettingsPath(
+  workspaceId: string,
+  slug: string,
+  section: string,
+): string {
+  const base = projectPath(workspaceId, slug, "settings");
+  return section ? `${base}/${section}` : base;
+}
+
+/**
+ * Ist `pathname` der Eintrag, den `pattern` meint?
+ *
+ * Normalerweise exakt — ein Eintrag ist aktiv, wenn man auf ihm steht. Endet
+ * das Muster auf `/*`, gilt auch alles darunter: die „Einstellungen" bleiben
+ * markiert, während man in ihren Bereichen blättert, und die Seitenleiste
+ * klappt den Zweig nicht unter einem zu.
+ *
+ * Steht hier statt in der Seitenleiste, weil `NavLink` (Markierung) und
+ * `TabList` (Aufklappen) dieselbe Antwort brauchen — zwei Auslegungen desselben
+ * Musters wären genau der Fehler, den man erst spät bemerkt.
+ */
+export function isNavActive(
+  pathname: string,
+  href: string,
+  activeHref?: string,
+): boolean {
+  const pattern = activeHref ?? href;
+  if (!pattern.endsWith("/*")) return pathname === pattern;
+
+  const base = pattern.slice(0, -2);
+  return pathname === base || pathname.startsWith(`${base}/`);
 }
 
 export function findBySection(

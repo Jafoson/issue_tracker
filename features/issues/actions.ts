@@ -5,6 +5,7 @@ import type { IssuePatch } from "@/features/issues/types";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
+  hasPermission,
   PermissionError,
   requirePermission,
   requirePermissionOr,
@@ -202,6 +203,105 @@ export async function createLabel(data: {
     color: label.color,
     projectId: label.projectId,
   };
+}
+
+/**
+ * Anders als `createLabel` werfen Ändern und Löschen nicht, sondern melden den
+ * Grund zurück — sie werden von der Verwaltungsseite aufgerufen, und die zeigt
+ * den Satz an, statt in eine Fehlergrenze zu laufen.
+ */
+type LabelResult = { ok: true } | { error: string };
+
+/**
+ * In welchem Scope über ein Label entschieden wird.
+ *
+ * Ein Projekt-Label gehört seinem Projekt, ein Label ohne `projectId` dem
+ * ganzen Workspace. Derselbe Permission-Key, zwei Ebenen — genau die
+ * Unterscheidung, für die `WORKSPACE_AND_PROJECT` in der Registry steht. Ein
+ * Workspace-Label lässt sich deshalb nicht aus den Einstellungen eines
+ * einzelnen Projekts heraus ändern: es gilt auch in allen anderen.
+ */
+async function labelScope(labelId: string) {
+  const label = await db.label.findUnique({
+    where: { id: labelId },
+    select: { id: true, workspaceId: true, projectId: true },
+  });
+  if (!label) return null;
+
+  return {
+    label,
+    ctx: label.projectId
+      ? ({ projectId: label.projectId } as const)
+      : ({ workspaceId: label.workspaceId } as const),
+  };
+}
+
+/**
+ * Namen und Farbe eines Labels ändern.
+ *
+ * Der Slug bleibt, wie er ist. Er steht in gespeicherten Filtern und in den
+ * URLs offener Reiter (`?label=…`) — ein Umbenennen soll die nicht ins Leere
+ * laufen lassen. Wer wirklich einen neuen Slug braucht, legt ein neues Label an.
+ */
+export async function updateLabel(
+  labelId: string,
+  data: { name?: string; color?: string },
+): Promise<LabelResult> {
+  const scoped = await labelScope(labelId);
+  if (!scoped) return { error: "This label no longer exists." };
+
+  if (!(await hasPermission("label.update", scoped.ctx)))
+    return { error: "You are not allowed to edit this label." };
+
+  const name = data.name?.trim();
+  if (name !== undefined && !name) return { error: "Name is required." };
+
+  await db.label.update({
+    where: { id: labelId },
+    data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(data.color !== undefined ? { color: data.color } : {}),
+    },
+  });
+  await revalidate();
+  return { ok: true };
+}
+
+/**
+ * Label löschen und aus allen Issues nehmen, an denen es hängt.
+ *
+ * `Issue.labels` ist ein Array aus IDs ohne Fremdschlüssel — die Datenbank
+ * räumt hier nichts hinterher. Ohne den zweiten Schritt bliebe in jedem
+ * betroffenen Issue eine ID stehen, die auf nichts mehr zeigt: die Anzeige
+ * verschwiegen sie stillschweigend, die Filter aber zählten sie mit.
+ *
+ * Beides in einer Transaktion, damit es kein Dazwischen gibt, in dem das Label
+ * schon weg und die Verweise noch da sind.
+ */
+export async function deleteLabel(labelId: string): Promise<LabelResult> {
+  const scoped = await labelScope(labelId);
+  if (!scoped) return { error: "This label no longer exists." };
+
+  if (!(await hasPermission("label.delete", scoped.ctx)))
+    return { error: "You are not allowed to delete this label." };
+
+  const tagged = await db.issue.findMany({
+    where: { labels: { has: labelId } },
+    select: { id: true, labels: true },
+  });
+
+  await db.$transaction([
+    ...tagged.map((issue) =>
+      db.issue.update({
+        where: { id: issue.id },
+        data: { labels: issue.labels.filter((id) => id !== labelId) },
+      }),
+    ),
+    db.label.delete({ where: { id: labelId } }),
+  ]);
+
+  await revalidate();
+  return { ok: true };
 }
 
 export async function deleteIssue(id: string) {

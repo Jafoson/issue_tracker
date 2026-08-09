@@ -44,6 +44,7 @@ const dict: Record<string, string> = {
   "nav.projects": "Projekte",
   "nav.general": "Allgemein",
   "nav.roles": "Rollen & Rechte",
+  "nav.labels": "Labels",
 };
 const t = ((key: string) => dict[key] ?? key) as unknown as Translator;
 
@@ -83,6 +84,25 @@ describe("tabIcon()", () => {
 
   it("nutzt das Mitglieder-Icon für die Mitglieder-Ansicht eines Projekts", () => {
     expect(tabIcon(`${BASE}/project/fuchsly/members`)).toBe("lucide:users");
+  });
+
+  it("nutzt das Zahnrad für den Kopf der Projekteinstellungen", () => {
+    expect(tabIcon(`${BASE}/project/fuchsly/settings`)).toBe("lucide:settings");
+  });
+
+  it("nutzt das Icon des jeweiligen Einstellungs-Bereichs", () => {
+    expect(tabIcon(`${BASE}/project/fuchsly/settings/roles`)).toBe(
+      "lucide:shield-check",
+    );
+    expect(tabIcon(`${BASE}/project/fuchsly/settings/labels`)).toBe(
+      "lucide:tag",
+    );
+  });
+
+  it("fällt für unbekannte Einstellungs-Bereiche aufs Zahnrad zurück", () => {
+    expect(tabIcon(`${BASE}/project/fuchsly/settings/gibtsnicht`)).toBe(
+      "lucide:settings",
+    );
   });
 
   it("fällt für unbekannte Unterseiten aufs Board-Icon zurück", () => {
@@ -143,6 +163,29 @@ describe("tabMeta()", () => {
     expect(tabMeta(`${BASE}/project/fuchsly/members`, projects, t).title).toBe(
       "Fuchsly (Mitglieder)",
     );
+  });
+
+  it("hängt (Einstellungen) an den Kopf der Projekteinstellungen an", () => {
+    expect(tabMeta(`${BASE}/project/fuchsly/settings`, projects, t).title).toBe(
+      "Fuchsly (Einstellungen)",
+    );
+  });
+
+  // Beide Bereiche liegen unter /settings. Trügen sie dasselbe Suffix, wären
+  // nebeneinander liegende Reiter nicht auseinanderzuhalten.
+  it("nennt den Bereich statt (Einstellungen), sobald es einen gibt", () => {
+    expect(
+      tabMeta(`${BASE}/project/fuchsly/settings/roles`, projects, t).title,
+    ).toBe("Fuchsly (Rollen & Rechte)");
+    expect(
+      tabMeta(`${BASE}/project/fuchsly/settings/labels`, projects, t).title,
+    ).toBe("Fuchsly (Labels)");
+  });
+
+  it("fällt für einen unbekannten Bereich auf (Einstellungen) zurück", () => {
+    expect(
+      tabMeta(`${BASE}/project/fuchsly/settings/gibtsnicht`, projects, t).title,
+    ).toBe("Fuchsly (Einstellungen)");
   });
 
   it("hängt KEIN Suffix bei der Board-Ansicht an", () => {

@@ -1,5 +1,7 @@
 import { cache } from "react";
 import type {
+  ProjectLabelRow,
+  ProjectLabelsView,
   ProjectMemberRow,
   ProjectMembersView,
   ProjectSettingsView,
@@ -288,6 +290,65 @@ export const getProjectMembersView = cache(
       canSetRole,
       canRemove,
       canInvite: canAdd,
+    };
+  },
+);
+
+// ── Labels ────────────────────────────────────────────────────────────────────
+
+/**
+ * Die Labels, die in einem Projekt gelten — getrennt nach denen, die ihm
+ * gehören, und denen, die es vom Workspace erbt.
+ *
+ * Die Trennung ist keine Kosmetik: die drei `label.*`-Rechte werden hier im
+ * Projekt-Scope aufgelöst und reichen deshalb nur für die eigenen. Ein
+ * Workspace-Label steht mit in der Liste, weil es an jedem Issue dieses
+ * Projekts auftauchen kann — anfassen lässt es sich nur dort, wo es hingehört.
+ */
+export const getProjectLabelsView = cache(
+  async (projectId: string): Promise<ProjectLabelsView | null> => {
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: { workspaceId: true },
+    });
+    if (!project) return null;
+
+    const access = await accessFor(await currentUserId(), { projectId });
+    if (!access.has("project.view")) return null;
+
+    const [labels, tagged] = await Promise.all([
+      db.label.findMany({
+        where: {
+          workspaceId: project.workspaceId,
+          OR: [{ projectId: null }, { projectId }],
+        },
+        orderBy: { name: "asc" },
+      }),
+      // `Issue.labels` ist ein ID-Array ohne Fremdschlüssel — zählen lässt es
+      // sich nur, indem man die Arrays dieses Projekts einmal durchgeht. Es
+      // wird bewusst nur diese eine Spalte geladen.
+      db.issue.findMany({ where: { projectId }, select: { labels: true } }),
+    ]);
+
+    const used = new Map<string, number>();
+    for (const issue of tagged) {
+      for (const id of issue.labels) used.set(id, (used.get(id) ?? 0) + 1);
+    }
+
+    const toRow = (l: (typeof labels)[number]): ProjectLabelRow => ({
+      id: l.id,
+      name: l.name,
+      slug: l.slug,
+      color: l.color,
+      issueCount: used.get(l.id) ?? 0,
+    });
+
+    return {
+      own: labels.filter((l) => l.projectId).map(toRow),
+      inherited: labels.filter((l) => !l.projectId).map(toRow),
+      canCreate: access.has("label.create"),
+      canUpdate: access.has("label.update"),
+      canDelete: access.has("label.delete"),
     };
   },
 );

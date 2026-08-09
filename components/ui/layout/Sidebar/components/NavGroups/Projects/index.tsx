@@ -15,7 +15,8 @@ export default async function NavGroupProjects() {
 
   const projects = await getWorkspaceProjects();
 
-  //TODO implement project dashboard tab is active
+  // Die Projektzeile trägt `/*` und ist damit markiert, solange man irgendwo im
+  // Projekt steht — ausgewertet wird das Muster in `lib/nav.ts` (`isNavActive`).
   const projectTabs: TabGroup[] = projects.map((p) => {
     const projPath = projectPath(workspace.id, p.slug, "");
     return {
@@ -24,11 +25,20 @@ export default async function NavGroupProjects() {
       label: p.name,
       color: p.color,
       group: [
-        ...PROJECT_NAV.map((entry) => ({
-          href: projectPath(workspace.id, p.slug, entry.section),
-          label: t(`nav.${entry.labelKey}`),
-          icon: entry.icon,
-        })),
+        ...PROJECT_NAV.map((entry) => {
+          const href = projectPath(workspace.id, p.slug, entry.section);
+          return {
+            href,
+            label: t(`nav.${entry.labelKey}`),
+            icon: entry.icon,
+            // Die Einstellungen haben eine zweite Ebene (Rollen, Labels). Ohne
+            // den Bereich darunter verlöre der Eintrag seine Markierung, sobald
+            // man dort etwas anklickt — und der Zweig klappte zu.
+            ...(entry.section === "settings"
+              ? { activeHref: `${href}/*` }
+              : {}),
+          };
+        }),
       ],
     };
   });

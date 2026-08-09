@@ -14,6 +14,7 @@
     "adminSettings": "Admin Settings",
     "general": "General",
     "roles": "Roles & Permissions",
+    "labels": "Labels",
     "backToWorkspace": "Back to workspace",
     "backToProject": "Back to {name}",
     "breadcrumb": "Breadcrumb",
@@ -185,8 +186,6 @@
     "toInvite": "to invite"
   },
   "projectSettings": {
-    "subtitle": "Prefix {prefix} · path /{slug}",
-    "general": "General",
     "saved": "Saved",
     "visibility": "Visibility",
     "public": "Public",
@@ -200,7 +199,33 @@
     "dangerZone": "Danger zone",
     "deleteTitle": "Delete this project",
     "deleteDesc": "{count, plural, =0 {The project has no issues.} one {# issue will be deleted with it.} other {# issues will be deleted with it.}} This cannot be undone.",
-    "deleteConfirm": "Delete permanently"
+    "deleteConfirm": "Delete permanently",
+    "generalDesc": "Core details and visibility of this project.",
+    "nameDesc": "Shown in the sidebar, in lists and in every invitation.",
+    "colorDesc": "The project's mark — on the board, in tabs and in the sidebar.",
+    "url": "Project path",
+    "urlDesc": "Part of every shared link; it does not change with the name."
+  },
+  "projectLabels": {
+    "subtitle": "Labels that can be applied in {project}.",
+    "newLabel": "New label",
+    "colLabel": "Label",
+    "colSlug": "Slug",
+    "colUsage": "Usage",
+    "usage": "{count, plural, one {# issue} other {# issues}}",
+    "unused": "Not in use",
+    "emptyTitle": "No project labels yet",
+    "emptyDesc": "A label groups issues across status and priority. Labels of this project apply only here.",
+    "inheritedTitle": "From the workspace",
+    "inheritedDesc": "These labels apply in every project and are managed in the workspace settings.",
+    "newTitle": "New label",
+    "editTitle": "Edit label",
+    "namePlaceholder": "e.g. Bug",
+    "preview": "Preview",
+    "pickColor": "Pick colour {color}",
+    "deleteTitle": "Delete “{name}”?",
+    "deleteDesc": "{count, plural, =0 {The label is not on any issue of this project.} one {The label will be removed from # issue.} other {The label will be removed from # issues.}} This cannot be undone.",
+    "saveFailed": "The label could not be saved."
   },
   "teams": {
     "title": "Teams",

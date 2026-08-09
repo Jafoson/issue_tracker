@@ -81,3 +81,36 @@ export interface ProjectMembersView {
   /** Darf per E-Mail einladen. Hängt am selben Recht wie `canAdd`. */
   canInvite: boolean;
 }
+
+/** Ein Label, wie die Verwaltungsseite eines Projekts es zeigt. */
+export interface ProjectLabelRow {
+  id: string;
+  name: string;
+  /** Steht so in den Filter-URLs (`?label=…`) und bleibt beim Umbenennen. */
+  slug: string;
+  color: string;
+  /**
+   * Wie oft das Label in **diesem** Projekt an einem Issue hängt. Ein
+   * Workspace-Label kann anderswo weiterlaufen — die Zahl sagt nur, was ein
+   * Löschen hier sichtbar verändern würde.
+   */
+  issueCount: number;
+}
+
+/** Alles, was die Label-Seite eines Projekts rendert. */
+export interface ProjectLabelsView {
+  /** Labels, die dem Projekt gehören. Nur sie lassen sich hier bearbeiten. */
+  own: ProjectLabelRow[];
+  /**
+   * Workspace-Labels: gelten in jedem Projekt und werden hier nur gezeigt.
+   * Geändert werden sie in den Workspace-Einstellungen — sonst würde eine
+   * Umbenennung hier in fremden Projekten auftauchen.
+   */
+  inherited: ProjectLabelRow[];
+  /** `label.create` im Projekt-Scope. */
+  canCreate: boolean;
+  /** `label.update` im Projekt-Scope. */
+  canUpdate: boolean;
+  /** `label.delete` im Projekt-Scope. */
+  canDelete: boolean;
+}

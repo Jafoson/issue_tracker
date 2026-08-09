@@ -3,6 +3,7 @@ import {
   ADMIN_NAV,
   findBySection,
   PROJECT_NAV,
+  PROJECT_SETTINGS_NAV,
   WORKSPACE_SECTIONS,
 } from "@/lib/nav";
 import type { Project } from "@/types";
@@ -43,6 +44,19 @@ function projectSection(path: string): string {
   return path.split("/")[4] ?? "";
 }
 
+/**
+ * Der Bereich innerhalb der Projekteinstellungen — `""` für Allgemein,
+ * `"members"`, `"roles"`, `"labels"`. `null`, wenn der Pfad gar nicht in den
+ * Einstellungen liegt.
+ *
+ * Ohne diese Unterscheidung hießen alle vier Reiter „Projekt (Einstellungen)"
+ * und wären nebeneinander nicht auseinanderzuhalten.
+ */
+function projectSettingsSection(path: string): string | null {
+  const parts = path.split("/");
+  return parts[4] === "settings" ? (parts[5] ?? "") : null;
+}
+
 /** Human title for a tab path (no query string). */
 export function tabTitle(
   path: string,
@@ -78,6 +92,16 @@ export function tabIcon(path: string): string {
   }
 
   if (section === "project") {
+    // Wie beim Titel: die Einstellungen haben eine zweite Ebene, und die trägt
+    // ihr eigenes Icon. Ohne diesen Zweig bekämen alle vier das Zahnrad.
+    const settingsSection = projectSettingsSection(path);
+    if (settingsSection !== null) {
+      return (
+        findBySection(PROJECT_SETTINGS_NAV, settingsSection)?.icon ??
+        "lucide:settings"
+      );
+    }
+
     return (
       findBySection(PROJECT_NAV, projectSection(path))?.icon ??
       "lucide:layout-dashboard"
@@ -115,10 +139,23 @@ export function tabMeta(
   let title = tabTitle(path, projects, t);
   // Das Board ist die Hauptansicht und trägt den Projektnamen unverändert —
   // jede Unterseite sagt im Suffix, welche sie ist.
-  const entry = path.includes("/project/")
-    ? findBySection(PROJECT_NAV, projectSection(path))
-    : undefined;
-  if (entry?.section) title = `${title} (${t(`nav.${entry.labelKey}`)})`;
+  const inProject = path.includes("/project/");
+  const settingsSection = inProject ? projectSettingsSection(path) : null;
+
+  if (settingsSection !== null) {
+    // Die Einstellungen haben eine zweite Ebene. Ihr Kopf heißt im Reiter
+    // „Einstellungen", die Bereiche darunter tragen ihren eigenen Namen —
+    // „Mitglieder" sagt mehr als „Einstellungen" und ist ebenso eindeutig.
+    const sub = findBySection(PROJECT_SETTINGS_NAV, settingsSection);
+    const label =
+      sub && sub.section ? t(`nav.${sub.labelKey}`) : t("nav.settings");
+    title = `${title} (${label})`;
+  } else {
+    const entry = inProject
+      ? findBySection(PROJECT_NAV, projectSection(path))
+      : undefined;
+    if (entry?.section) title = `${title} (${t(`nav.${entry.labelKey}`)})`;
+  }
 
   return {
     title,

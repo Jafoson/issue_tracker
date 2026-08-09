@@ -1,72 +1,81 @@
 /* Gescrollt wird die Seite, nicht der Abschnitt — dieselbe Aufteilung wie in der
-   Mitgliederliste, damit beide Unterseiten eines Projekts gleich sitzen. */
+   Mitgliederliste, damit alle Bereiche der Einstellungen gleich sitzen. */
+/* Nimmt die volle Breite des Bereichs ein — die Zeilen leben davon, dass
+   Erklärung und Steuerung weit auseinander stehen. */
 .content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px 24px 24px;
+  padding: 12px 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 680px;
+  gap: 10px;
 }
 
-/* Der Farbpunkt des Projekts im Seitenkopf — dieselbe Marke wie in der
-   Seitenleiste, damit erkennbar bleibt, welches Projekt gemeint ist. */
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+/* Überschrift über einer Karte, nicht in ihr. Sie benennt eine Gruppe von
+   Einstellungen; die Karte darunter zeigt sie. Zwei Kanten weniger als ein
+   Kartenkopf, und die rote Warnung vor der Gefahrenzone steht damit frei. */
+.groupTitle {
+  margin: 14px 0 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--on-surface-variant);
 }
 
-.section {
-  padding: 16px;
+.dangerTitle {
+  color: var(--error);
+}
+
+/* Die Karte trennt ihre Zeilen selbst — deshalb kein Polster außen und die
+   Linien innen zwischen den Kindern. */
+.card {
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius);
   background: var(--surface);
+  overflow: hidden;
 }
 
-.sectionTitle {
-  margin: 0 0 14px;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--on-surface-variant);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+/* Zeile mit Erklärung links und Steuerung rechts.
 
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+   Die Trennlinie liegt als `::after` innerhalb der Polsterung statt als
+   `border-bottom` an der Kante: so endet sie dort, wo der Inhalt endet, und die
+   Karte wirkt als ein Block statt als Stapel gerahmter Streifen.
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.label {
-  font-size: var(--text-sm);
-  color: var(--on-surface-variant);
-}
-
-/* Zeile mit Erklärung links und Steuerung rechts. Die Erklärung darf umbrechen,
-   die Steuerung nicht — sonst rutscht der Schalter unter seinen eigenen Text. */
+   Umbrechen darf die Zeile, wenn es eng wird — dann rutscht die Steuerung unter
+   den Text. Die Alternative wäre, den Text zu quetschen, und daran scheitert
+   vor allem die Farbpalette: sie ist rund 550px breit und schrumpft nicht. */
 .row {
+  position: relative;
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px 24px;
+  padding: 16px 20px;
+
+  &:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    inset: auto 20px 0;
+    height: 1px;
+    background: var(--outline-variant);
+  }
 
   & > :last-child {
     flex-shrink: 0;
   }
 }
 
+/* Wächst in die freie Breite, gibt aber nie unter 320px nach — darunter
+   zerfiele die Erklärung in Wortstapel. */
+.rowText {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
 .rowLabel {
   font-size: var(--text-base);
+  font-weight: 500;
   margin-bottom: 3px;
 }
 
@@ -78,12 +87,31 @@
   line-height: 1.45;
 }
 
+/* Alle Eingabefelder der Seite gleich breit, damit ihre rechten Kanten eine
+   Linie bilden — untereinander stehende Felder unterschiedlicher Breite lesen
+   sich als Unordnung, obwohl sie gleichrangig sind. */
+.control {
+  width: 260px;
+}
+
+/* Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe. */
+.colorProof {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+}
+
+/* Speichern steht am Fuß der Karte, nicht in einer eigenen Zeile mit Rahmen:
+   der Knopf gehört zu allen Feldern darüber, nicht zu einem davon. */
 .actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 16px;
+  padding: 12px 20px;
+  background: var(--surface-container-low);
+  border-top: 1px solid var(--outline-variant);
 }
 
 /* Bestätigung des Speicherns. Verschwindet, sobald wieder etwas geändert wird —
@@ -102,9 +130,10 @@
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  margin: 14px 0 0;
-  padding-top: 12px;
+  margin: 0;
+  padding: 12px 20px;
   border-top: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
   color: var(--on-surface-variant);
   font-size: var(--text-sm);
   line-height: 1.45;
@@ -115,14 +144,10 @@
   }
 }
 
-/* Löschen ist nicht rückholbar, also trägt der Abschnitt die Warnfarbe schon im
+/* Löschen ist nicht rückholbar, also trägt die Karte die Warnfarbe schon im
    Rahmen — bevor jemand den Knopf sucht. */
 .danger {
   border-color: color-mix(in oklab, var(--error) 40%, var(--outline-variant));
-
-  & .sectionTitle {
-    color: var(--error);
-  }
 }
 
 .confirm {
@@ -132,8 +157,12 @@
 }
 
 .deleteButton {
-  border-color: var(--error);
+  border-color: color-mix(in oklab, var(--error) 55%, transparent);
   color: var(--error);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--error) 12%, transparent);
+  }
 }
 
 .error {

@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import styles from "@/components/ui/atoms/Button/button.module.scss";
 import { Link, usePathname } from "@/i18n/navigation";
+import { isNavActive } from "@/lib/nav";
 
 export interface NavLinkProps {
   href: string;
@@ -27,10 +28,7 @@ export function NavLink({
   const pathname = usePathname();
 
   function isActive() {
-    if (activeHref) {
-      return pathname === activeHref;
-    }
-    return pathname === href;
+    return isNavActive(pathname, href, activeHref);
   }
   function LeadingIcon() {
     if (!icon) {

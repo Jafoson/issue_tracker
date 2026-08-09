@@ -14,6 +14,7 @@
     "adminSettings": "Admin Einstellungen",
     "general": "Allgemein",
     "roles": "Rollen & Rechte",
+    "labels": "Labels",
     "backToWorkspace": "Zurück zum Workspace",
     "backToProject": "Zurück zu {name}",
     "breadcrumb": "Pfad",
@@ -185,8 +186,6 @@
     "toInvite": "zum Einladen"
   },
   "projectSettings": {
-    "subtitle": "Kürzel {prefix} · Adresse /{slug}",
-    "general": "Allgemein",
     "saved": "Gespeichert",
     "visibility": "Sichtbarkeit",
     "public": "Öffentlich",
@@ -200,7 +199,33 @@
     "dangerZone": "Gefahrenzone",
     "deleteTitle": "Dieses Projekt löschen",
     "deleteDesc": "{count, plural, =0 {Das Projekt hat keine Aufgaben.} one {# Aufgabe wird mit gelöscht.} other {# Aufgaben werden mit gelöscht.}} Das lässt sich nicht zurücknehmen.",
-    "deleteConfirm": "Endgültig löschen"
+    "deleteConfirm": "Endgültig löschen",
+    "generalDesc": "Stammdaten und Sichtbarkeit dieses Projekts.",
+    "nameDesc": "Steht in der Seitenleiste, in Listen und in jeder Einladung.",
+    "colorDesc": "Die Marke des Projekts — im Board, in den Reitern und in der Seitenleiste.",
+    "url": "Projekt-Adresse",
+    "urlDesc": "Steht in jedem geteilten Link und ändert sich nicht mit dem Namen."
+  },
+  "projectLabels": {
+    "subtitle": "Labels, die in {project} vergeben werden können.",
+    "newLabel": "Neues Label",
+    "colLabel": "Label",
+    "colSlug": "Slug",
+    "colUsage": "Verwendung",
+    "usage": "{count, plural, one {# Aufgabe} other {# Aufgaben}}",
+    "unused": "Nicht vergeben",
+    "emptyTitle": "Noch keine eigenen Labels",
+    "emptyDesc": "Ein Label ordnet Aufgaben quer zu Status und Priorität ein. Labels dieses Projekts gelten nur hier.",
+    "inheritedTitle": "Aus dem Workspace",
+    "inheritedDesc": "Diese Labels gelten in jedem Projekt und werden in den Workspace-Einstellungen gepflegt.",
+    "newTitle": "Neues Label",
+    "editTitle": "Label bearbeiten",
+    "namePlaceholder": "z. B. Fehler",
+    "preview": "Vorschau",
+    "pickColor": "Farbe {color} wählen",
+    "deleteTitle": "„{name}“ löschen?",
+    "deleteDesc": "{count, plural, =0 {Das Label hängt an keiner Aufgabe dieses Projekts.} one {Das Label wird von # Aufgabe genommen.} other {Das Label wird von # Aufgaben genommen.}} Das lässt sich nicht zurücknehmen.",
+    "saveFailed": "Das Label konnte nicht gespeichert werden."
   },
   "teams": {
     "title": "Teams",

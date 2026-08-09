@@ -1,0 +1,87 @@
+/* Zweite Navigationsebene, direkt neben der Seitenleiste. Etwas schmaler als
+   diese, damit die Rangfolge auch ohne Beschriftung erkennbar bleibt: außen die
+   App, dann das Projekt, dann der Inhalt. */
+.nav {
+  flex: none;
+  width: 208px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 10px;
+  border-right: 1px solid var(--outline-variant);
+  overflow-y: auto;
+}
+
+/* Sagt, welches Projekt eingestellt wird. Nötig, weil die Seitenleiste daneben
+   alle Projekte zeigt — ohne diese Zeile bliebe offen, welches gemeint ist. */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.project {
+  font-size: var(--text-base);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title {
+  margin: 2px 0 10px;
+  padding: 0 8px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-variant);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--row-h);
+  padding: 0 9px;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  font-size: var(--text-base);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+
+  & svg {
+    flex: none;
+  }
+
+  &:hover {
+    background: var(--surface-container);
+    color: var(--on-surface);
+  }
+
+  /* Dieselbe Markierung wie in der Seitenleiste (`button.module.scss`) — zwei
+     Ebenen derselben Navigation sollen sich nicht unterschiedlich anfühlen. */
+  &[data-active="true"] {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+    font-weight: 600;
+  }
+}
