@@ -47,6 +47,46 @@
   color: var(--outline);
 }
 
+/* Öffentlich und privat als zwei Abschnitte — dieselbe Gliederung wie auf der
+   Label-Seite (`workspaceLabels.module.scss`): Überschrift über der Karte, nicht
+   in ihr. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.groupIcon {
+  flex: none;
+  color: var(--on-surface-variant);
+}
+
+/* Die Zahl gehört zur Überschrift, ist aber nicht Teil des Titels — deshalb
+   leiser und in der Ziffernschrift. */
+.groupCount {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--on-surface-variant);
+}
+
+.groupDesc {
+  margin: 0 0 8px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--on-surface-variant);
+}
+
 .count {
   font-variant-numeric: tabular-nums;
   color: var(--on-surface-variant);

@@ -12,6 +12,7 @@ import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import {
   addProjectMembers,
   removeProjectMember,
@@ -208,6 +209,7 @@ export function ProjectMembers({
       id: "member",
       header: t("projectMembers.colMember"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => fullName(row.user),
       cell: (row) => (
         <UserCell
           avatar={row.user}
@@ -226,12 +228,15 @@ export function ProjectMembers({
       id: "role",
       header: t("fields.role"),
       width: "minmax(150px, max-content)",
+      // Nach Rang: „Admin vor Member" ist die Ordnung, die eine Rolle hat.
+      sortValue: (row) => row.roleRank,
       cell: roleCell,
     },
     {
       id: "status",
       header: t("projectMembers.colStatus"),
       width: "minmax(140px, max-content)",
+      sortValue: (row) => (row.pending ? 1 : 0),
       cell: statusCell,
     },
     {
@@ -242,6 +247,8 @@ export function ProjectMembers({
       cell: actionCell,
     },
   ];
+
+  const { sort, sortRows } = useTableSort(columns);
 
   return (
     <>
@@ -267,7 +274,8 @@ export function ProjectMembers({
           variant="card"
           label={t("nav.members")}
           columns={columns}
-          rows={rows}
+          rows={sortRows(rows)}
+          sort={sort}
           getRowKey={(row) => `${row.source}:${row.user.id}`}
           empty={
             <EmptyState

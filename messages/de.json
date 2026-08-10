@@ -477,6 +477,10 @@
   "workspaceProjects": {
     "subtitle": "Alle Projekte dieses Workspace. Ein Klick führt hinein, der Stift ändert die Stammdaten.",
     "editTitle": "Projekt bearbeiten",
+    "publicGroup": "Öffentliche Projekte",
+    "publicDesc": "Jedes Mitglied des Workspace kann sie öffnen und darin mitarbeiten.",
+    "privateGroup": "Private Projekte",
+    "privateDesc": "Nur wer im Projekt steht, sieht sie. Hier stehen sie, weil du jedes Projekt dieses Workspace sehen darfst.",
     "deleteTitle": "„{name}“ löschen?",
     "emptyTitle": "Noch keine Projekte",
     "emptyDesc": "Ein Projekt bündelt zusammengehörige Aufgaben unter einem gemeinsamen Kürzel."

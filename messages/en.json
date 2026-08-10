@@ -477,6 +477,10 @@
   "workspaceProjects": {
     "subtitle": "Every project in this workspace. A click opens it, the pencil edits its details.",
     "editTitle": "Edit project",
+    "publicGroup": "Public projects",
+    "publicDesc": "Every member of the workspace can open them and work in them.",
+    "privateGroup": "Private projects",
+    "privateDesc": "Only people in the project can see them. They are listed here because you may see every project of this workspace.",
     "deleteTitle": "Delete “{name}”?",
     "emptyTitle": "No projects yet",
     "emptyDesc": "A project groups related issues under one shared identifier."

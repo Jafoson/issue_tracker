@@ -28,7 +28,28 @@ export interface TableColumn<T> {
   width?: string;
   align?: TableAlign;
   cell: (row: T) => ReactNode;
+  /**
+   * Macht die Spalte sortierbar — und zwar über den Wert, nicht über die Zelle:
+   * gerendert wird dort ein Avatar, ein Label oder eine Plakette, und keines
+   * davon lässt sich vergleichen.
+   *
+   * Erst zusammen mit `useTableSort` entsteht daraus ein Kopf zum Anklicken.
+   * Eine Spalte ohne diese Funktion bleibt eine Überschrift — was sich nicht
+   * sinnvoll ordnen lässt (Aktionen, Avatare, freie Textwolken), soll auch
+   * nicht so aussehen.
+   */
+  sortValue?: (row: T) => TableSortValue;
 }
+
+/**
+ * Woran sortiert wird. `Date` und Zahlen vergleicht die Größe, Strings die
+ * Sprache des Browsers; leer (`null`, `undefined`, `""`) landet immer unten —
+ * in beiden Richtungen, denn "nichts" ist kein kleiner Wert, sondern ein
+ * fehlender.
+ */
+export type TableSortValue = string | number | Date | null | undefined;
+
+export type TableSortDirection = "asc" | "desc";
 
 export interface TableGroup<T> {
   id: string;

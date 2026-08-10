@@ -7,8 +7,14 @@ import {
 import styles from "./table.module.scss";
 import { FLAT_GROUP_ID, type TableColumn, type TableGroup } from "./types";
 import type { TableDnd } from "./useTableDnd";
+import type { TableSort } from "./useTableSort";
 
-export type { TableAlign, TableColumn, TableGroup } from "./types";
+export type {
+  TableAlign,
+  TableColumn,
+  TableGroup,
+  TableSortValue,
+} from "./types";
 
 interface TableBaseProps<T> {
   columns: TableColumn<T>[];
@@ -42,6 +48,13 @@ interface TableBaseProps<T> {
    * eine Server Component rendern kann.
    */
   dnd?: TableDnd<T>;
+  /**
+   * Macht die Köpfe sortierbarer Spalten anklickbar — das Ergebnis von
+   * `useTableSort`. Wie bei `dnd` bleibt die Tabelle selbst zustandslos: sie
+   * zeichnet, wonach gerade geordnet ist, und meldet den Klick zurück. Sortiert
+   * werden die Zeilen beim Aufrufer, bevor sie hier ankommen.
+   */
+  sort?: TableSort;
   className?: string;
 }
 
@@ -53,6 +66,21 @@ export type TableProps<T> = TableBaseProps<T> &
   ({ rows: T[]; groups?: never } | { groups: TableGroup<T>[]; rows?: never });
 
 const DEFAULT_WIDTH = "auto";
+
+/**
+ * Die Winkel der Sortiermarke, alle im selben Feld (10×14).
+ *
+ * Ungewählt stehen `UP` und `DOWN` zusammen als Paar — das gewohnte Zeichen für
+ * "hier lässt sich ordnen". Sortiert steht nur noch der geltende, dann aber in
+ * der Mitte des Feldes: eine Richtung wird gezeigt, nicht eine von zweien
+ * betont.
+ */
+const SORT_MARK = {
+  up: "M2 5.5 5 2.5l3 3",
+  down: "M2 8.5 5 11.5l3-3",
+  asc: "M2 8.5 5 5.5l3 3",
+  desc: "M2 5.5 5 8.5l3-3",
+};
 
 /** Sechs Punkte — das gewohnte Zeichen für "hier anfassen". */
 const GRIP_DOTS = [
@@ -98,6 +126,7 @@ export function Table<T>({
   fill,
   variant = "plain",
   dnd,
+  sort,
   className,
   rows,
   groups,
@@ -186,16 +215,69 @@ export function Table<T>({
       {showHead && (
         <thead className={styles.group} role="rowgroup">
           <tr className={styles.headRow} role="row">
-            {columns.map((column) => (
-              <th
-                key={column.id}
-                className={cellClass(column)}
-                role="columnheader"
-                scope="col"
-              >
-                {column.header}
-              </th>
-            ))}
+            {columns.map((column) => {
+              const sortable = Boolean(sort && column.sortValue);
+              const active = sortable && sort?.columnId === column.id;
+              return (
+                <th
+                  key={column.id}
+                  className={cellClass(column)}
+                  role="columnheader"
+                  scope="col"
+                  // `none` sagt "sortierbar, aber gerade nicht sortiert" —
+                  // ohne das Attribut wäre die Spalte für einen Screenreader
+                  // gar nicht erst als Griff erkennbar.
+                  aria-sort={
+                    active
+                      ? sort?.direction === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : sortable
+                        ? "none"
+                        : undefined
+                  }
+                >
+                  {sortable ? (
+                    <button
+                      type="button"
+                      className={styles.sortButton}
+                      data-active={active || undefined}
+                      onClick={() => sort?.toggle(column.id)}
+                    >
+                      {column.header}
+                      {/* Die Marke steht immer da, auch ungewählt: eine
+                          Sortierung, die man erst beim Überfahren entdeckt,
+                          gibt es auf einem Tastfeld gar nicht. Das Feld behält
+                          dabei seine Größe — beim Klicken springt nichts. */}
+                      <svg
+                        className={styles.sortArrow}
+                        data-direction={active ? sort?.direction : undefined}
+                        viewBox="0 0 10 14"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        {(active && sort
+                          ? [SORT_MARK[sort.direction]]
+                          : [SORT_MARK.up, SORT_MARK.down]
+                        ).map((d) => (
+                          <path
+                            key={d}
+                            d={d}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        ))}
+                      </svg>
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
       )}

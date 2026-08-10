@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteProject } from "@/features/projects/actions";
 import { CreateProjectModal } from "@/features/projects/components/CreateProjectModal/CreateProjectModal";
 import type {
@@ -38,8 +39,24 @@ interface Props extends WorkspaceProjectsView {
  * `canUpdate` und `canDelete` stehen an jeder Zeile, nicht an der Seite: die
  * beiden Rechte gelten im Projekt. Wer eines leitet, sieht seine Knöpfe genau
  * dort — und an den übrigen Zeilen keine.
+ *
+ * Wer jedes Projekt des Workspace sieht (`seesAllProjects`), bekommt sie in zwei
+ * Abschnitten: offen und privat, jeder mit eigener Überschrift, eigenem
+ * Vorspann und eigener Tabelle. Dieselbe Gliederung wie auf der Label-Seite —
+ * dort stehen die eigenen Labels über den geerbten. Zwei Listen mit einem Satz
+ * dazu sagen mehr als eine Liste mit einer Spalte „Sichtbarkeit": sie erklären
+ * auch, was der Unterschied bedeutet. Die Spalte entfällt dafür.
+ *
+ * Für alle anderen bleibt es bei einer Liste samt Spalte: sie sehen ohnehin nur
+ * ihren Ausschnitt, und eine Überschrift „Privat" über drei von zwölf Projekten
+ * führte in die Irre.
  */
-export function WorkspaceProjects({ rows, canCreate, workspaceId }: Props) {
+export function WorkspaceProjects({
+  rows,
+  canCreate,
+  seesAllProjects,
+  workspaceId,
+}: Props) {
   const t = useTranslations();
   const router = useRouter();
   const confirm = useConfirm();
@@ -99,6 +116,7 @@ export function WorkspaceProjects({ rows, canCreate, workspaceId }: Props) {
       id: "project",
       header: t("fields.project"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => row.name,
       cell: (row) => (
         <span className={styles.project}>
           <span
@@ -111,23 +129,31 @@ export function WorkspaceProjects({ rows, canCreate, workspaceId }: Props) {
         </span>
       ),
     },
-    {
-      id: "visibility",
-      header: t("projectSettings.visibility"),
-      width: "minmax(110px, max-content)",
-      cell: (row) => (
-        <Badge mono={false}>
-          {row.visibility === "public"
-            ? t("projectSettings.public")
-            : t("projectSettings.private")}
-        </Badge>
-      ),
-    },
+    // Gruppiert steht die Sichtbarkeit im Bandkopf — zweimal dasselbe in einer
+    // Zeile wäre nur breiter, nicht klarer.
+    ...(seesAllProjects
+      ? []
+      : [
+          {
+            id: "visibility",
+            header: t("projectSettings.visibility"),
+            width: "minmax(110px, max-content)",
+            sortValue: (row: WorkspaceProjectRow) => row.visibility,
+            cell: (row: WorkspaceProjectRow) => (
+              <Badge mono={false}>
+                {row.visibility === "public"
+                  ? t("projectSettings.public")
+                  : t("projectSettings.private")}
+              </Badge>
+            ),
+          },
+        ]),
     {
       id: "members",
       header: t("nav.members"),
       width: "minmax(90px, max-content)",
       align: "end",
+      sortValue: (row) => row.memberCount,
       cell: (row) => <span className={styles.count}>{row.memberCount}</span>,
     },
     {
@@ -135,6 +161,7 @@ export function WorkspaceProjects({ rows, canCreate, workspaceId }: Props) {
       header: t("nav.issues"),
       width: "minmax(90px, max-content)",
       align: "end",
+      sortValue: (row) => row.issueCount,
       cell: (row) => <span className={styles.count}>{row.issueCount}</span>,
     },
     {
@@ -171,6 +198,48 @@ export function WorkspaceProjects({ rows, canCreate, workspaceId }: Props) {
     },
   ];
 
+  // Zwei Tabellen, zwei Sortierungen — wie bei den Labels: die Listen stehen
+  // nebeneinander und sollen sich einzeln ordnen lassen. Ungruppiert trägt die
+  // erste die ganze Liste, die zweite entfällt.
+  const openList = useTableSort(columns);
+  const privateList = useTableSort(columns);
+
+  // Offen zuerst: das ist der Normalfall eines Workspace und die längere Liste.
+  // Eine leere Hälfte fällt weg — eine Überschrift ohne Zeilen darunter
+  // behauptet eine Aufteilung, die es gerade nicht gibt.
+  const sections = seesAllProjects
+    ? [
+        {
+          id: "public",
+          heading: {
+            icon: "lucide:globe",
+            title: t("workspaceProjects.publicGroup"),
+            desc: t("workspaceProjects.publicDesc"),
+          },
+          rows: rows.filter((row) => row.visibility === "public"),
+          list: openList,
+        },
+        {
+          id: "private",
+          heading: {
+            icon: "lucide:lock",
+            title: t("workspaceProjects.privateGroup"),
+            desc: t("workspaceProjects.privateDesc"),
+          },
+          rows: rows.filter((row) => row.visibility === "private"),
+          list: privateList,
+        },
+      ].filter((section) => section.rows.length > 0)
+    : // Ohne Aufteilung bleibt es die eine Liste, die sie vorher war: keine
+      // Überschrift, kein Vorspann.
+      [{ id: "all", heading: null, rows, list: openList }];
+
+  // Die Zeile führt ins Projekt — als Link, damit Tastatur, Mittelklick und
+  // „in neuem Tab öffnen" mitkommen. Beide Tabellen benutzen denselben.
+  const rowOverlay = (row: WorkspaceProjectRow) => (
+    <Link href={projectPath(workspaceId, row.slug, "")} aria-label={row.name} />
+  );
+
   return (
     <>
       <PageHeader
@@ -189,29 +258,60 @@ export function WorkspaceProjects({ rows, canCreate, workspaceId }: Props) {
           </p>
         )}
 
-        <Table
-          variant="card"
-          label={t("nav.projects")}
-          columns={columns}
-          rows={rows}
-          getRowKey={(row) => row.id}
-          // Die ganze Zeile führt ins Projekt — als Link, damit Tastatur,
-          // Mittelklick und „in neuem Tab öffnen" mitkommen.
-          rowOverlay={(row) => (
-            <Link
-              href={projectPath(workspaceId, row.slug, "")}
-              aria-label={row.name}
-            />
-          )}
-          empty={
-            <EmptyState
-              icon={<Icon icon="lucide:folders" width={32} />}
-              title={t("workspaceProjects.emptyTitle")}
-              description={t("workspaceProjects.emptyDesc")}
-              action={newButton}
-            />
-          }
-        />
+        {/* Gibt es gar kein Projekt, bleibt eine Tabelle stehen — die leere
+            Seite gehört ihr, und zwei Überschriften über nichts wären zwei zu
+            viel. */}
+        {rows.length === 0 ? (
+          <Table
+            variant="card"
+            label={t("nav.projects")}
+            columns={columns}
+            rows={rows}
+            getRowKey={(row) => row.id}
+            empty={
+              <EmptyState
+                icon={<Icon icon="lucide:folders" width={32} />}
+                title={t("workspaceProjects.emptyTitle")}
+                description={t("workspaceProjects.emptyDesc")}
+                action={newButton}
+              />
+            }
+          />
+        ) : (
+          sections.map((section) => (
+            <section key={section.id} className={styles.group}>
+              {section.heading && (
+                <>
+                  {/* Das Schloss bzw. die Weltkugel steht dabei, weil „privat"
+                      ein Zustand ist und kein Titel. */}
+                  <h2 className={styles.groupTitle}>
+                    <Icon
+                      icon={section.heading.icon}
+                      width={15}
+                      className={styles.groupIcon}
+                      aria-hidden
+                    />
+                    {section.heading.title}
+                    <span className={styles.groupCount}>
+                      {section.rows.length}
+                    </span>
+                  </h2>
+                  <p className={styles.groupDesc}>{section.heading.desc}</p>
+                </>
+              )}
+
+              <Table
+                variant="card"
+                label={section.heading?.title ?? t("nav.projects")}
+                columns={columns}
+                rows={section.list.sortRows(section.rows)}
+                sort={section.list.sort}
+                getRowKey={(row) => row.id}
+                rowOverlay={rowOverlay}
+              />
+            </section>
+          ))
+        )}
       </div>
     </>
   );

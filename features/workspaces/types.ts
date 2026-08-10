@@ -46,6 +46,15 @@ export interface WorkspaceProjectsView {
   rows: WorkspaceProjectRow[];
   /** `project.create` — ein neues Projekt im Workspace anlegen. */
   canCreate: boolean;
+  /**
+   * Der Handelnde sieht jedes Projekt des Workspace — per Generalschlüssel
+   * (`project.view.all`, `project.admin.all`) oder als Support.
+   *
+   * Erst dann darf die Liste nach Sichtbarkeit gruppieren: sonst wäre „Privat"
+   * nicht die Menge der privaten Projekte, sondern nur die Auswahl, in der er
+   * zufällig Mitglied ist — eine Überschrift, die mehr verspricht als sie hält.
+   */
+  seesAllProjects: boolean;
 }
 
 /** Ein Label, wie die Verwaltungsseite des Workspace es zeigt. */

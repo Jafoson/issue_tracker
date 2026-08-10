@@ -261,7 +261,16 @@ export const getWorkspaceProjectsView = cache(
     );
 
     const access = await accessFor(userId, { workspaceId });
-    return { rows, canCreate: access.has("project.create") };
+    return {
+      rows,
+      canCreate: access.has("project.create"),
+      // Dieselben Generalschlüssel, die `accessibleProjectIds` alle Projekte
+      // aufschließen — nur hier im Workspace-Scope gefragt, wo Support ohnehin
+      // jedes Recht trägt. Wer sie hat, hat oben die vollständige Liste bekommen
+      // und darf sie deshalb nach Sichtbarkeit trennen.
+      seesAllProjects:
+        access.has("project.view.all") || access.has("project.admin.all"),
+    };
   },
 );
 

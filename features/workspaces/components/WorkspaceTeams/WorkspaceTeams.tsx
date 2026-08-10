@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteTeam } from "@/features/workspaces/actions";
 import type {
   WorkspaceTeamRow,
@@ -112,6 +113,7 @@ export function WorkspaceTeams({
       id: "team",
       header: t("workspaceTeams.colTeam"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => row.name,
       cell: (row) => (
         <span className={styles.team}>
           <span
@@ -130,6 +132,8 @@ export function WorkspaceTeams({
       id: "lead",
       header: t("workspaceTeams.colLead"),
       width: "minmax(150px, max-content)",
+      // Teams ohne Lead ans Ende — das erledigt die leere Angabe von selbst.
+      sortValue: (row) => (row.lead ? fullName(row.lead) : null),
       cell: (row) => (
         <span className={styles.lead}>
           {row.lead ? fullName(row.lead) : t("fields.none")}
@@ -140,6 +144,7 @@ export function WorkspaceTeams({
       id: "members",
       header: t("nav.members"),
       width: "minmax(130px, max-content)",
+      sortValue: (row) => row.members.length,
       cell: (row) =>
         row.members.length === 0 ? (
           <span className={styles.empty}>{t("workspaceTeams.noMembers")}</span>
@@ -156,6 +161,7 @@ export function WorkspaceTeams({
       id: "projects",
       header: t("nav.projects"),
       width: "minmax(180px, max-content)",
+      sortValue: (row) => row.projects.length,
       cell: (row) =>
         row.projects.length === 0 ? (
           <span className={styles.empty}>{t("workspaceTeams.noProjects")}</span>
@@ -179,6 +185,7 @@ export function WorkspaceTeams({
       header: t("workspaceTeams.colOpen"),
       width: "minmax(90px, max-content)",
       align: "end",
+      sortValue: (row) => row.openIssues,
       cell: (row) => <span className={styles.count}>{row.openIssues}</span>,
     },
     {
@@ -215,6 +222,8 @@ export function WorkspaceTeams({
     },
   ];
 
+  const { sort, sortRows } = useTableSort(columns);
+
   return (
     <>
       <PageHeader
@@ -237,7 +246,8 @@ export function WorkspaceTeams({
           variant="card"
           label={t("nav.teams")}
           columns={columns}
-          rows={rows}
+          rows={sortRows(rows)}
+          sort={sort}
           getRowKey={(row) => row.id}
           empty={
             <EmptyState

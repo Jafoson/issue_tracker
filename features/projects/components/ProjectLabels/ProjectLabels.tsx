@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteLabel, setLabelHidden } from "@/features/issues/actions";
 import { LabelModal } from "@/features/issues/components/LabelModal/LabelModal";
 import type {
@@ -148,12 +149,14 @@ export function ProjectLabels({
       id: "label",
       header: t("projectLabels.colLabel"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => row.name,
       cell: labelCell,
     },
     {
       id: "usage",
       header: t("projectLabels.colUsage"),
       width: "minmax(120px, max-content)",
+      sortValue: (row) => row.issueCount,
       cell: usageCell,
     },
     ...(actions
@@ -215,6 +218,13 @@ export function ProjectLabels({
     />
   );
 
+  // Zwei Tabellen, zwei Sortierungen: die eigenen Labels und die geerbten sind
+  // getrennte Listen und sollen sich auch getrennt ordnen lassen.
+  const ownColumns = columns(canUpdate || canDelete ? ownActions : undefined);
+  const inheritedColumns = columns(canUpdate ? inheritedActions : undefined);
+  const ownSort = useTableSort(ownColumns);
+  const inheritedSort = useTableSort(inheritedColumns);
+
   return (
     <>
       <PageHeader
@@ -236,8 +246,9 @@ export function ProjectLabels({
         <Table
           variant="card"
           label={t("nav.labels")}
-          columns={columns(canUpdate || canDelete ? ownActions : undefined)}
-          rows={own}
+          columns={ownColumns}
+          rows={ownSort.sortRows(own)}
+          sort={ownSort.sort}
           getRowKey={(row) => row.id}
           empty={
             <EmptyState
@@ -258,8 +269,9 @@ export function ProjectLabels({
             <Table
               variant="card"
               label={t("projectLabels.inheritedTitle")}
-              columns={columns(canUpdate ? inheritedActions : undefined)}
-              rows={inherited}
+              columns={inheritedColumns}
+              rows={inheritedSort.sortRows(inherited)}
+              sort={inheritedSort.sort}
               getRowKey={(row) => row.id}
             />
           </section>

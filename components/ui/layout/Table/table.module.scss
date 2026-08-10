@@ -96,6 +96,64 @@ tbody.group {
   color: var(--on-surface-variant);
 }
 
+/* Der Kopf einer sortierbaren Spalte. Er sieht aus wie der Titel daneben und
+   verrät sich erst unter dem Zeiger — eine Kopfzeile voller Knöpfe wäre lauter
+   als die Liste darunter, um die es geht. Die Schrift erbt er vom <th>, sonst
+   stünde er in Größe und Laufweite aus der Reihe. */
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Etwas höher als die Schrift, ohne die Kopfzeile zu dehnen: ein Ziel von
+     knapp 30px trifft man auch mit dem Trackpad. */
+  margin-block: -7px;
+  padding-block: 7px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: color 0.12s;
+
+  &:hover,
+  &:focus-visible,
+  &[data-active] {
+    color: var(--on-surface);
+  }
+}
+
+/* Rechtsbündige Spalten (Zahlen) tragen den Pfeil links vom Wort — außen bleibt
+   die Kante, an der die Ziffern darunter ausgerichtet sind. */
+.end .sortButton {
+  flex-direction: row-reverse;
+}
+
+/* Die Marke steht von Anfang an da. Eine Sortierung, die man erst beim
+   Überfahren entdeckt, gibt es für alle nicht, die nicht zufällig dort
+   entlangfahren — und auf einem Tastfeld gibt es kein „darüber". Sie ist
+   deshalb dauerhaft sichtbar, nur zurückgenommen genug, um die Kopfzeile nicht
+   lauter zu machen als die Liste darunter. */
+.sortArrow {
+  width: 10px;
+  height: 14px;
+  flex: none;
+  /* Zurückgenommen, solange sie nur die Möglichkeit anzeigt — die Kopfzeile
+     soll nicht lauter werden als die Liste darunter. */
+  opacity: 0.32;
+  transition: opacity 0.12s;
+
+  .sortButton:hover &,
+  .sortButton:focus-visible & {
+    opacity: 0.55;
+  }
+
+  /* Sortiert: ein Pfeil, voll sichtbar. Welche Richtung gilt, ist eine Aussage
+     über die Liste und keine Andeutung. */
+  &[data-direction] {
+    opacity: 1;
+  }
+}
+
 .groupRow {
   grid-column: 1 / -1;
   position: sticky;
@@ -184,9 +242,15 @@ tbody.group {
   text-align: start;
 
   /* Bedienbare Zellinhalte liegen über dem Zeilen-Overlay — sonst würde der
-     Link jeden Klick abfangen. Gilt bewusst nur für direkte Kinder: das
-     Overlay selbst steckt eine Ebene tiefer. */
-  > :is(button, a, input, select, [role="button"]) {
+     Link jeden Klick abfangen. Auch verschachtelte: Aktionsknöpfe stehen fast
+     immer zu zweit in einem Wrapper, und der darf ihnen das Ziel nicht nehmen.
+
+     Ausgenommen ist der Link des Overlays selbst — er soll unten bleiben. Er
+     müsste es zwar auch so: das Overlay ist positioniert und hat einen
+     z-index, bildet also einen eigenen Stapelkontext, aus dem sein Kind nicht
+     herauskommt. Die Ausnahme steht trotzdem da, weil die Regel sonst von
+     einer Eigenschaft abhinge, die man ihr nicht ansieht. */
+  :is(button, a, input, select, [role="button"]):not(.overlay *) {
     position: relative;
     z-index: 2;
   }

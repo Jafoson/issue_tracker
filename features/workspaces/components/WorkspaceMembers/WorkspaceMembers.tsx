@@ -13,6 +13,7 @@ import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { removeMember, setMemberRole } from "@/features/workspaces/actions";
 import type {
   WorkspaceMemberRow,
@@ -153,6 +154,7 @@ export function WorkspaceMembers({
       id: "member",
       header: t("members.colUser"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => fullName(row.user),
       cell: (row) => (
         <UserCell
           avatar={row.user}
@@ -171,12 +173,16 @@ export function WorkspaceMembers({
       id: "role",
       header: t("fields.role"),
       width: "minmax(150px, max-content)",
+      // Nach Rang, nicht nach Namen: die Rollen stehen in einer Ordnung,
+      // und „Owner vor Member" ist die, die jemand hier sucht.
+      sortValue: (row) => row.roleRank,
       cell: roleCell,
     },
     {
       id: "teams",
       header: t("members.colTeams"),
       width: "minmax(160px, max-content)",
+      sortValue: (row) => row.teams.length,
       cell: (row) =>
         row.teams.length === 0 ? (
           <span className={styles.noTeams}>{t("members.noTeams")}</span>
@@ -194,6 +200,7 @@ export function WorkspaceMembers({
       id: "status",
       header: t("projectMembers.colStatus"),
       width: "minmax(130px, max-content)",
+      sortValue: (row) => (row.pending ? 1 : 0),
       cell: (row) =>
         row.pending ? (
           <span className={styles.statusInvited}>
@@ -226,6 +233,8 @@ export function WorkspaceMembers({
     },
   ];
 
+  const { sort, sortRows } = useTableSort(columns);
+
   return (
     <>
       <PageHeader
@@ -248,7 +257,8 @@ export function WorkspaceMembers({
           variant="card"
           label={t("nav.members")}
           columns={columns}
-          rows={rows}
+          rows={sortRows(rows)}
+          sort={sort}
           getRowKey={(row) => row.user.id}
           empty={
             <EmptyState

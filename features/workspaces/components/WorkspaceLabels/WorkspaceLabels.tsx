@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteLabel } from "@/features/issues/actions";
 import { LabelModal } from "@/features/issues/components/LabelModal/LabelModal";
 import type {
@@ -117,12 +118,14 @@ export function WorkspaceLabels({
       id: "label",
       header: t("projectLabels.colLabel"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => row.name,
       cell: labelCell,
     },
     {
       id: "usage",
       header: t("projectLabels.colUsage"),
       width: "minmax(120px, max-content)",
+      sortValue: (row) => row.issueCount,
       cell: usageCell,
     },
     {
@@ -132,6 +135,7 @@ export function WorkspaceLabels({
       id: "hidden",
       header: t("workspaceLabels.colHidden"),
       width: "minmax(140px, max-content)",
+      sortValue: (row) => row.hiddenIn,
       cell: (row) =>
         row.hiddenIn === 0 ? (
           <span className={styles.unused}>{t("workspaceLabels.nowhere")}</span>
@@ -184,21 +188,29 @@ export function WorkspaceLabels({
       id: "label",
       header: t("projectLabels.colLabel"),
       width: "minmax(0, 1fr)",
+      sortValue: (row) => row.name,
       cell: labelCell,
     },
     {
       id: "project",
       header: t("fields.project"),
       width: "minmax(160px, max-content)",
+      sortValue: (row) => row.projectName,
       cell: (row) => <span className={styles.owner}>{row.projectName}</span>,
     },
     {
       id: "usage",
       header: t("projectLabels.colUsage"),
       width: "minmax(120px, max-content)",
+      sortValue: (row) => row.issueCount,
       cell: usageCell,
     },
   ];
+
+  // Zwei Listen, zwei Sortierungen — die geerbten Projekt-Labels sind eine
+  // eigene Tabelle und sollen sich nicht mitdrehen.
+  const ownSort = useTableSort(ownColumns);
+  const projectSort = useTableSort(projectColumns);
 
   return (
     <>
@@ -222,7 +234,8 @@ export function WorkspaceLabels({
           variant="card"
           label={t("nav.labels")}
           columns={ownColumns}
-          rows={own}
+          rows={ownSort.sortRows(own)}
+          sort={ownSort.sort}
           getRowKey={(row) => row.id}
           empty={
             <EmptyState
@@ -247,7 +260,8 @@ export function WorkspaceLabels({
               variant="card"
               label={t("workspaceLabels.fromProjectsTitle")}
               columns={projectColumns}
-              rows={fromProjects}
+              rows={projectSort.sortRows(fromProjects)}
+              sort={projectSort.sort}
               getRowKey={(row) => row.id}
               // Geändert wird ein Projekt-Label dort, wo es hingehört — die
               // Zeile bringt einen hin, statt den Weg nur zu behaupten.
