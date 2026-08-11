@@ -119,6 +119,74 @@
   .iconRight button { width: 22px; height: 22px; }
 }
 
+/* ── Ausprägung: gerahmtes Feld mit festem Vorsatz ──
+
+   Derselbe Kasten wie `.boxed`, nur eine Ebene höher: der Rahmen sitzt auf der
+   Hülle, damit Vorsatz und Eingabe darin nebeneinander stehen. Der Zustand
+   kommt entsprechend von innen — `:focus-within` statt `:focus`, und der Fehler
+   über das `<input>`, das ihn trägt. */
+.framed {
+  height: var(--control-h);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  cursor: text;
+  transition: border-color 0.12s, box-shadow 0.12s;
+
+  /* Das Polster liegt bewusst *in* den Kindern (`.prefix` links, `.bare`
+     rechts) statt am Rahmen: beide führen bei einem Klick in die Eingabe, der
+     Rahmen selbst täte nichts. Am Rahmen wäre der Rand des Feldes tot. */
+
+  &:focus-within { border-color: var(--tertiary); }
+
+  &:has(.hasError) {
+    border-color: var(--error);
+    &:focus-within { box-shadow: 0 0 0 3px color-mix(in oklab, var(--error) 18%, transparent); }
+  }
+
+  /* Die Marke rechts liegt über dem Feld — dann endet die Eingabe davor. */
+  &:has(> .iconRight) .input.bare { padding-right: 34px; }
+}
+
+/* Der Vorsatz gehört zum Wert, ist aber nichts, was man ändern könnte:
+   zurückgenommen in der Farbe, nicht markierbar — und ohne eigenen Abstand,
+   damit `@` und Name als ein Wort gelesen werden. */
+.prefix {
+  flex: none;
+  padding-left: 11px;
+  color: var(--on-surface-variant);
+  font-size: var(--text-base);
+  cursor: text;
+  user-select: none;
+}
+
+/* Das Feld im Rahmen: alles, was den Kasten ausmacht, liegt eine Ebene höher.
+   Steht nach `.sm`, weil `.sm .input` dieselbe Spezifität hat — bei Gleichstand
+   entscheidet die Reihenfolge. */
+.input.bare {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 11px 0 0;
+  border: none;
+  background: none;
+  font-size: var(--text-base);
+
+  &::placeholder { color: var(--on-surface-variant); }
+  &::-ms-reveal,
+  &::-ms-clear { display: none; }
+}
+
+.sm {
+  .framed { height: var(--control-h-sm); }
+
+  .prefix { padding-left: 9px; }
+  .input.bare { padding-right: 9px; }
+
+  .input.bare,
+  .prefix { font-size: var(--text-sm); }
+}
+
 /* ── Icons ── */
 .iconLeft,
 .iconRight {

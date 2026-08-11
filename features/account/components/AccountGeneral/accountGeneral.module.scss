@@ -10,13 +10,6 @@
   max-width: 100%;
 }
 
-/* Das Zeichen gehört zum Benutzernamen, nicht zur Eingabe: es steht im Feld,
-   lässt sich aber nicht löschen und nicht doppelt tippen. */
-.at {
-  color: var(--on-surface-variant);
-  font-size: var(--text-base);
-}
-
 /* Eine Angabe ohne Bedienelement — an derselben Kante wie die Felder darüber,
    aber zurückgenommen: es gibt nichts zu tun. */
 .value {

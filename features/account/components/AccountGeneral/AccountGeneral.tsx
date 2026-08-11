@@ -23,6 +23,22 @@ interface Props {
 }
 
 /**
+ * Der Benutzername entsteht so, wie er gespeichert wird.
+ *
+ * `updateProfile` prüft gegen `^[a-z0-9][a-z0-9-]{1,29}$` und antwortet sonst
+ * mit einem Fehler oben auf der Seite — weit weg vom Feld und erst nach dem
+ * Speichern. Wer stattdessen gar nichts Unerlaubtes eintippen kann, bekommt die
+ * Regel im Moment der Eingabe zu sehen: Großbuchstaben werden klein, Leer- und
+ * Trennzeichen zu Bindestrichen, alles Übrige fällt weg.
+ */
+const toHandle = (raw: string) =>
+  raw
+    .toLowerCase()
+    .replace(/[\s._]+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 30);
+
+/**
  * Wer man ist: Name, Benutzername, Farbe — und die Adresse, unter der man sich
  * anmeldet.
  *
@@ -122,9 +138,16 @@ export function AccountGeneral({ profile }: Props) {
             aria-label={t("account.handle")}
             value={handle}
             disabled={isPending}
-            iconLeft={<span className={styles.at}>@</span>}
+            // Kein Symbol, sondern ein Vorsatz: das `@` steht unmittelbar vor
+            // dem Namen und wird mit ihm als ein Wort gelesen.
+            prefix="@"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={30}
             onChange={(e) => {
-              setHandle(e.target.value);
+              setHandle(toHandle(e.target.value));
               touch();
             }}
           />
