@@ -1,12 +1,22 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { SettingsHeader } from "@/components/ui/layout/SettingsHeader/SettingsHeader";
 import {
   SettingsNav,
   type SettingsNavItem,
+  type SettingsNavSubject,
 } from "@/components/ui/layout/SettingsNav/SettingsNav";
-import { getCurrentWorkspace } from "@/features/workspaces/queries";
+import {
+  getCurrentWorkspace,
+  getMyWorkspaces,
+  getWorkspaceProjects,
+} from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
-import { WORKSPACE_SETTINGS_NAV, workspaceSettingsPath } from "@/lib/nav";
+import {
+  settingsScopeItems,
+  WORKSPACE_SETTINGS_NAV,
+  workspaceSettingsPath,
+} from "@/lib/nav";
 import { getAccess } from "@/lib/permissions";
 import styles from "./settings.module.scss";
 
@@ -31,12 +41,39 @@ export default async function WorkspaceSettingsLayout({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const [t, current, access] = await Promise.all([
+  const [t, current, access, projects, myWorkspaces] = await Promise.all([
     getTranslations(),
     getCurrentWorkspace(),
     getAccess({ workspaceId: workspace }),
+    // Nur für den Umschalter: von hier führt kein Projekt-Kontext weiter, also
+    // öffnet „Projekt" das erste sichtbare (die Liste ist nach Namen sortiert).
+    // Sieht man keines, bleibt der Knopf stumpf.
+    getWorkspaceProjects(),
+    // Für den Wechsler im Kopf der Leiste — dieselbe Liste, die auch der
+    // Wechsler der Seitenleiste zeigt.
+    getMyWorkspaces(),
   ]);
   if (!current) notFound();
+
+  // Der Kopf wechselt den Workspace und bleibt dabei in den Einstellungen. Wer
+  // dort kein Zutrittsrecht hat, sieht die Seite nicht — geprüft wird das in
+  // `getWorkspaceSettingsView` je Unterseite, nicht an dieser Zeile.
+  const siblings: SettingsNavSubject[] = myWorkspaces.map((ws) => ({
+    id: ws.id,
+    name: ws.name,
+    color: ws.color,
+    href: workspaceSettingsPath(ws.id, ""),
+  }));
+
+  const scope = settingsScopeItems({
+    workspaceId: workspace,
+    projectSlug: projects[0]?.slug,
+    labels: {
+      workspace: t("settings.scopeWorkspace"),
+      project: t("settings.scopeProject"),
+      account: t("settings.scopeAccount"),
+    },
+  });
 
   // Rollen sind der einzige Bereich mit eigener Hürde: dort stehen die Regeln,
   // nach denen alles andere entschieden wird. Die übrigen bleiben auch ohne
@@ -51,13 +88,23 @@ export default async function WorkspaceSettingsLayout({
 
   return (
     <div className={styles.shell}>
-      <SettingsNav
-        subject={current.name}
-        color={current.color}
-        title={t("nav.settings")}
-        items={items}
+      <SettingsHeader
+        items={scope}
+        active="workspace"
+        label={t("settings.scopeLabel")}
+        unavailableHint={t("settings.scopeNoProject")}
       />
-      <div className={styles.panel}>{children}</div>
+      <div className={styles.body}>
+        <SettingsNav
+          subject={current.name}
+          color={current.color}
+          siblings={siblings}
+          siblingsLabel={t("settings.scopeWorkspace")}
+          title={t("nav.settings")}
+          items={items}
+        />
+        <div className={styles.panel}>{children}</div>
+      </div>
     </div>
   );
 }

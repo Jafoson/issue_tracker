@@ -1,0 +1,162 @@
+/* Die oberste Zeile der Einstellungen — sie trägt nur den Bereichsumschalter.
+
+   Ohne Kante nach unten und ohne eigenen Grund: der Strich darunter kommt aus
+   den Oberkanten der beiden Spalten (`SettingsNav`, `PageHeader`), eine zweite
+   Kante hier ergäbe einen doppelten Strich. Die Zeile ist also kein Kasten,
+   sondern eine Bank — was in ihr steht, muss sich selbst abheben.
+
+   Nach oben trennt sie dagegen selbst. Überall sonst in der App schließt die
+   Reiterleiste mit genau diesem Strich ab — nur legt ihn dort das, was folgt
+   (`PageHeader`, `Topbar`), mit seiner Oberkante. Hier folgt zuerst diese Zeile,
+   also muss sie ihn mitbringen; sonst verschmölzen Reiter und Umschalter zu
+   einem doppelt hohen Band. Der Strich sitzt deshalb hier und nicht an der
+   `TabBar` selbst: dort stünde er auf jeder Seite ein zweites Mal. */
+.bar {
+  /* Zwei Stellschrauben, beide hier: wie hoch der Umschalter ist und wieviel
+     Luft um ihn steht. Die Höhe der Zeile fällt aus beiden — so bleibt sie
+     mittig, ohne dass drei Zahlen zueinander passen müssen. */
+  --scope-h: 32px;
+  --scope-air: 22px;
+
+  flex: none;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--outline-variant);
+  /* Eine Spur höher als die Reiterleiste darüber und nicht gleich hoch: zwei
+     exakt gleiche Bänder übereinander lesen sich als eines. Der Unterschied
+     sagt, welches von beiden zur Seite gehört. */
+  height: calc(var(--scope-h) + var(--scope-air));
+  /* Links bündig mit den Zeilen der Leiste darunter: 10px Polster der Leiste
+     plus die 3px Wanne hier ergeben denselben Anschlag wie deren Knöpfe. */
+  padding: 0 13px;
+  /* „Workspace", „Projekt", „Persönlich" sind zu kurz, um sie zu kürzen — von
+     „Persö…" bliebe kein Wort übrig. Wird das Fenster schmaler als die drei,
+     scrollt die Zeile deshalb in sich, statt sie zu stauchen oder das dritte
+     Feld abzuschneiden. Genau das tut die Reiterleiste darüber mit ihren Reitern
+     (`TabBar .strip`), Balken inklusive: er würde die Zeile höher machen als das
+     Band daneben. */
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Wanne und erhabenes Feld wie beim `SegmentedControl` unter den Atomen. Er ist
+   trotzdem eine eigene Sache und kein Aufruf von jenem: der hier schaltet keinen
+   Zustand, sondern navigiert, und drei Links verhalten sich anders als drei
+   Knöpfe (Mittelklick, Kontextmenü, Vorabruf).
+
+   Die Wanne ruht auf `--surface-container-low` und damit tiefer als die Fläche
+   ringsum; das offene Feld liegt mit `--surface-container-high` darüber.
+   Dieselbe Stufe markiert in der Seitenleiste die offene Zeile — der Umschalter
+   fügt der App also keine neue Farbe hinzu, nur eine bekannte an neuer Stelle. */
+.scope {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+}
+
+.segment {
+  position: relative;
+  /* Jedes Feld so breit wie sein Wort. Gleiche Breiten hätten „Projekt" auf die
+     Länge von „Persönlich" gedehnt — der Umschalter sähe dann aus, als fehlte
+     dort etwas. */
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: var(--scope-h);
+  padding: 0 14px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+
+  /* Der Schleier über dem Feld statt einer zweiten Hintergrundfarbe: so hellt
+     dieselbe Regel das ruhende wie das offene Feld auf, ohne dessen Farbe zu
+     kennen. Gleiches Vorgehen wie bei den Knöpfen. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--on-surface);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    pointer-events: none;
+  }
+
+  &:hover {
+    color: var(--on-surface);
+  }
+
+  &:hover::after {
+    opacity: var(--opacity-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -1px;
+  }
+}
+
+/* Das Zeichen bleibt zurückhaltender als das Wort — es soll den Bereich
+   wiedererkennbar machen, nicht ihn ausrufen. Im offenen Feld zieht es mit. */
+.icon {
+  flex: none;
+  opacity: 0.75;
+}
+
+/* Der offene Bereich. Er hebt sich ab, statt zu leuchten: darunter ist ohnehin
+   eine Zeile der Leiste markiert — zwei kräftige Marken übereinander stritten
+   um denselben Blick. */
+.segment[data-active] {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+
+  .icon {
+    opacity: 1;
+    color: var(--primary);
+  }
+
+  /* Man steht schon darauf; der Schleier bestätigt nur die Trefferfläche. */
+  &:hover::after {
+    opacity: var(--opacity-selected);
+  }
+}
+
+/* Kein Ziel — etwa „Projekt" in einem Workspace ohne sichtbares Projekt. Der
+   Platz bleibt, die Einladung fällt weg. */
+.dead {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+
+  &::after {
+    display: none;
+  }
+
+  &:hover {
+    color: var(--on-surface-variant);
+  }
+}
+
+/* „Kompakt" nimmt der Zeile die Luft, nicht den Umschalter: kleiner werden darf
+   der Abstand, das Bedienelement bleibt greifbar. */
+[data-density="compact"] .bar {
+  --scope-h: 28px;
+  --scope-air: 12px;
+}

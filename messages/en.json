@@ -20,7 +20,6 @@
     "breadcrumb": "Breadcrumb",
     "workspaces": "Workspaces",
     "workspaceSettings": "Workspace Settings",
-    "preferences": "Personal",
     "account": "Account",
     "appearance": "Appearance",
     "notifications": "Notifications",
@@ -150,7 +149,12 @@
     "workspace": "Workspace",
     "workspaceName": "Workspace name",
     "projects": "Projects",
-    "profile": "Profile"
+    "profile": "Profile",
+    "scopeLabel": "Settings area",
+    "scopeWorkspace": "Workspace",
+    "scopeProject": "Project",
+    "scopeAccount": "Personal",
+    "scopeNoProject": "No visible project"
   },
   "members": {
     "title": "Members",
@@ -530,11 +534,6 @@
     "roleFailed": "The role could not be changed.",
     "emptyTitle": "Nobody here yet",
     "emptyDesc": "Invite someone by email to start working together."
-  },
-  "workspacePreferences": {
-    "subtitle": "Applies to you only — on this device and in your account.",
-    "nameDesc": "How you appear in lists, on issues and in comments.",
-    "emailDesc": "The address you sign in with."
   },
   "account": {
     "generalDesc": "How you appear in Orbit — in lists, on issues and in comments.",

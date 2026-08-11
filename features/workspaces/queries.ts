@@ -14,6 +14,7 @@ import {
 } from "@/features/issues/queries";
 import type { ProjectVisibility } from "@/features/projects/types";
 import type {
+  ProjectWithWorkspace,
   WorkspaceLabelRow,
   WorkspaceLabelsView,
   WorkspaceMemberRow,
@@ -78,6 +79,34 @@ export const getMyWorkspaces = cache(async (): Promise<Workspace[]> => {
   const session = await getSession();
   return session ? getUserWorkspaces(session.userId) : [];
 });
+
+/**
+ * Jedes Projekt, das der eingeloggte User sehen darf — über alle seine
+ * Workspaces hinweg, nicht nur den offenen.
+ *
+ * Gedacht für Navigationen, die über die Grenze eines Workspace hinausreichen
+ * (der Projektwechsler in den Einstellungen). `getProjects` bringt die
+ * Sichtbarkeitsregel schon mit: was es liefert, sind genau die Projekte mit
+ * `project.view` — dieselbe Hürde, an der die Projekteinstellungen hängen. Was
+ * hier steht, ist also auch erreichbar.
+ *
+ * Kostet eine Auflösung je Workspace (`accessibleProjectIds`), nicht je Projekt.
+ * Wer in vielen Workspaces ist, zahlt das entsprechend oft — beides ist `cache`d
+ * und fällt pro Anfrage nur einmal an.
+ */
+export const getMyProjects = cache(
+  async (): Promise<ProjectWithWorkspace[]> => {
+    const workspaces = await getMyWorkspaces();
+    const lists = await Promise.all(workspaces.map((ws) => getProjects(ws.id)));
+    return workspaces.flatMap((ws, i) =>
+      (lists[i] ?? []).map((project) => ({
+        ...project,
+        workspaceId: ws.id,
+        workspaceName: ws.name,
+      })),
+    );
+  },
+);
 
 /**
  * Der eingeloggte User als Mitglied des aktiven Workspace.

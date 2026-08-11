@@ -20,7 +20,6 @@
     "breadcrumb": "Pfad",
     "workspaces": "Workspaces",
     "workspaceSettings": "Workspace Einstellungen",
-    "preferences": "Persönlich",
     "account": "Konto",
     "appearance": "Aussehen",
     "notifications": "Benachrichtigungen",
@@ -150,7 +149,12 @@
     "workspace": "Workspace",
     "workspaceName": "Workspace-Name",
     "projects": "Projekte",
-    "profile": "Profil"
+    "profile": "Profil",
+    "scopeLabel": "Einstellungsbereich",
+    "scopeWorkspace": "Workspace",
+    "scopeProject": "Projekt",
+    "scopeAccount": "Persönlich",
+    "scopeNoProject": "Kein sichtbares Projekt"
   },
   "members": {
     "title": "Mitglieder",
@@ -530,11 +534,6 @@
     "roleFailed": "Die Rolle konnte nicht geändert werden.",
     "emptyTitle": "Noch niemand hier",
     "emptyDesc": "Lade jemanden per E-Mail ein, um gemeinsam zu arbeiten."
-  },
-  "workspacePreferences": {
-    "subtitle": "Gilt nur für dich — auf diesem Gerät und in deinem Konto.",
-    "nameDesc": "So erscheinst du in Listen, an Aufgaben und in Kommentaren.",
-    "emailDesc": "Deine Anmeldeadresse."
   },
   "account": {
     "generalDesc": "Wie du in Orbit erscheinst — in Listen, an Aufgaben und in Kommentaren.",

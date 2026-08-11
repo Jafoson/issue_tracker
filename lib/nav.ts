@@ -21,7 +21,6 @@ export type NavLabelKey =
   | "general"
   | "roles"
   | "labels"
-  | "preferences"
   | "workspaces"
   | "account"
   | "appearance"
@@ -158,9 +157,6 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
   { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
   { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
   { section: "members", icon: "lucide:users", labelKey: "members" },
-  // Erscheinungsbild und Sprache gehören dem Benutzer, nicht dem Workspace —
-  // sie stehen deshalb am Ende, hinter allem, was für alle gilt.
-  { section: "preferences", icon: "lucide:palette", labelKey: "preferences" },
 ];
 
 /**
@@ -198,6 +194,74 @@ export function workspaceSettingsPath(
 export function accountPath(workspaceId: string, section: string): string {
   const base = workspacePath(workspaceId, "account");
   return section ? `${base}/${section}` : base;
+}
+
+/**
+ * Die drei Bereiche, in die sich die Einstellungen teilen: was für alle im
+ * Workspace gilt, was für ein Projekt gilt, und was nur einen selbst betrifft.
+ */
+export type SettingsScopeKey = "workspace" | "project" | "account";
+
+export interface SettingsScopeEntry {
+  key: SettingsScopeKey;
+  label: string;
+  icon: string;
+  /**
+   * Wohin der Bereich führt. Fehlt die Adresse, gibt es dort nichts zu sehen —
+   * der Umschalter zeigt den Bereich dann stumpf, statt ihn zu verschweigen:
+   * eine Lücke im Dreiklang wäre schwerer zu deuten als ein toter Knopf.
+   */
+  href?: string;
+}
+
+/**
+ * Die Ziele des Bereichsumschalters — jeweils die Allgemein-Seite des Bereichs.
+ *
+ * Bewusst hier und nicht in den drei Layouts: die Adressen sind dieselben, egal
+ * aus welchem Bereich man umschaltet, und drei Kopien davon wären drei Orte, an
+ * denen eine Route veralten kann. Beschriftungen kommen von außen herein, damit
+ * diese Datei ohne i18n auskommt.
+ */
+export function settingsScopeItems({
+  workspaceId,
+  projectSlug,
+  labels,
+}: {
+  workspaceId: string;
+  /** Das Projekt, das der mittlere Bereich öffnet. Ohne eines bleibt er stumpf. */
+  projectSlug?: string;
+  labels: Record<SettingsScopeKey, string>;
+}): SettingsScopeEntry[] {
+  // Von innen nach außen: erst was nur einen selbst angeht, dann das Projekt,
+  // zuletzt der ganze Workspace. Das ist zugleich die Reihenfolge, in der man
+  // sie braucht — an den eigenen Einstellungen dreht jeder, am Workspace die
+  // wenigsten.
+  //
+  // Die Zeichen sind dieselben, mit denen die Seitenleiste diese Dinge schon
+  // meint (`GLOBAL_NAV`, `ACCOUNT_NAV`) — ein Bereich soll nicht davon abhängen,
+  // durch welche Tür man ihn betritt.
+  return [
+    {
+      key: "account",
+      label: labels.account,
+      icon: "lucide:circle-user",
+      href: accountPath(workspaceId, ""),
+    },
+    {
+      key: "project",
+      label: labels.project,
+      icon: "lucide:folders",
+      href: projectSlug
+        ? projectSettingsPath(workspaceId, projectSlug, "")
+        : undefined,
+    },
+    {
+      key: "workspace",
+      label: labels.workspace,
+      icon: "lucide:building-2",
+      href: workspaceSettingsPath(workspaceId, ""),
+    },
+  ];
 }
 
 export function adminPath(section: string): string {

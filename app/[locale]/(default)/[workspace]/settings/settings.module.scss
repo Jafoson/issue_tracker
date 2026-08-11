@@ -1,7 +1,17 @@
+/* Oben die Kopfzeile mit dem Bereichsumschalter, darunter zwei Spalten. Die
+   Kopfzeile liegt quer über beiden, weil sie beide auf einmal austauscht. */
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Zwei Spalten, eine Höhe: die Leiste steht, der Bereich daneben scrollt. Beide
    bekommen `min-height: 0`, sonst wächst der Inhalt die Zeile auf und die Seite
    scrollt als Ganzes — genau das, was die Spalten-Aufteilung verhindern soll. */
-.shell {
+.body {
   flex: 1;
   min-height: 0;
   display: flex;

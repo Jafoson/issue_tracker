@@ -1,12 +1,18 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { SettingsHeader } from "@/components/ui/layout/SettingsHeader/SettingsHeader";
 import {
   SettingsNav,
   type SettingsNavItem,
 } from "@/components/ui/layout/SettingsNav/SettingsNav";
 import { getMyProfile } from "@/features/account/queries";
+import { getWorkspaceProjects } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
-import { ACCOUNT_SETTINGS_NAV, accountPath } from "@/lib/nav";
+import {
+  ACCOUNT_SETTINGS_NAV,
+  accountPath,
+  settingsScopeItems,
+} from "@/lib/nav";
 import { fullName } from "@/lib/utils/string";
 import styles from "./account.module.scss";
 
@@ -35,8 +41,24 @@ export default async function AccountLayout({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const [t, profile] = await Promise.all([getTranslations(), getMyProfile()]);
+  const [t, profile, projects] = await Promise.all([
+    getTranslations(),
+    getMyProfile(),
+    // Nur für den Umschalter, siehe Workspace-Layout: „Projekt" öffnet das erste
+    // sichtbare, und ohne eines bleibt der Knopf stumpf.
+    getWorkspaceProjects(),
+  ]);
   if (!profile) notFound();
+
+  const scope = settingsScopeItems({
+    workspaceId: workspace,
+    projectSlug: projects[0]?.slug,
+    labels: {
+      workspace: t("settings.scopeWorkspace"),
+      project: t("settings.scopeProject"),
+      account: t("settings.scopeAccount"),
+    },
+  });
 
   const items: SettingsNavItem[] = ACCOUNT_SETTINGS_NAV.map((entry) => ({
     href: accountPath(workspace, entry.section),
@@ -46,13 +68,21 @@ export default async function AccountLayout({
 
   return (
     <div className={styles.shell}>
-      <SettingsNav
-        subject={fullName(profile)}
-        color={profile.color}
-        title={t("nav.account")}
-        items={items}
+      <SettingsHeader
+        items={scope}
+        active="account"
+        label={t("settings.scopeLabel")}
+        unavailableHint={t("settings.scopeNoProject")}
       />
-      <div className={styles.panel}>{children}</div>
+      <div className={styles.body}>
+        <SettingsNav
+          subject={fullName(profile)}
+          color={profile.color}
+          title={t("nav.account")}
+          items={items}
+        />
+        <div className={styles.panel}>{children}</div>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { ProjectVisibility } from "@/features/projects/types";
-import type { Role, User } from "@/types";
+import type { Project, Role, User } from "@/types";
 
 // Die Ansichten der Workspace-Einstellungen. Jede ist das, was genau eine Seite
 // rendert: fertige Zeilen plus die Frage, was der Handelnde damit darf. Die
@@ -20,6 +20,18 @@ export interface WorkspaceSettingsView {
   canUpdate: boolean;
   /** `workspace.delete` — den Workspace mit allem darin löschen. */
   canDelete: boolean;
+}
+
+/**
+ * Ein Projekt mitsamt dem Workspace, in dem es liegt.
+ *
+ * Braucht, wer Projekte über Workspace-Grenzen hinweg auflistet: der Name allein
+ * sagt dann nicht mehr, welches gemeint ist, und ohne die Workspace-Id lässt
+ * sich auch keine Adresse dafür bauen (`/<workspaceId>/project/<slug>/…`).
+ */
+export interface ProjectWithWorkspace extends Project {
+  workspaceId: string;
+  workspaceName: string;
 }
 
 /** Ein Projekt, wie die Übersicht des Workspace es zeigt. */

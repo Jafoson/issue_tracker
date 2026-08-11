@@ -6,8 +6,24 @@
    die ganze Breite, der die Reiterleiste vom Inhalt trennt. Ohne sie bräche er
    an der Kante der Leiste ab. */
 .nav {
-  flex: none;
-  width: 208px;
+  /* 208px als Wunsch, nicht als Forderung: `flex: none` nahm sich die Breite
+     auch dann, wenn daneben nichts mehr übrig war — in einem schmalen Fenster
+     schnitt die Leiste dann den Bereich ab, der ihr Zweck ist. Der Bereich
+     daneben hat `flex-basis: 0` und trägt an einer Verknappung nichts bei, also
+     landet das Nachgeben vollständig hier, und zwar erst, wenn es nicht anders
+     geht.
+
+     `min-width: 0` ist dafür die Bedingung: sonst gilt für ein Flex-Element die
+     Inhaltsbreite als Untergrenze. Die Zeilen darunter kürzen ihren Text schon
+     selbst (`NavLink`), es geht also nichts verloren außer Buchstaben. */
+  flex: 0 1 208px;
+  min-width: 0;
+  /* Und eine Obergrenze für den entgegengesetzten Fall: weil der Bereich daneben
+     an der Verknappung nichts beiträgt, bekäme diese Spalte unter 208px sonst
+     den ganzen Rest und drückte ihn auf null. Sie darf nie mehr als die Hälfte
+     nehmen — eine Navigation, die den Inhalt verdrängt, den sie erschließt, hat
+     ihren Zweck verfehlt. */
+  max-width: 50%;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -15,6 +31,10 @@
   border-top: 1px solid var(--outline-variant);
   border-right: 1px solid var(--outline-variant);
   overflow-y: auto;
+  /* Quer wird nichts gescrollt — was nicht passt, wird gekürzt. Ohne diese
+     Zeile machte der Browser aus `overflow-y: auto` auch quer ein `auto` und
+     legte beim Schrumpfen einen zweiten Balken darunter. */
+  overflow-x: hidden;
 }
 
 /* Sagt, was hier eingestellt wird. Nötig, weil die Seitenleiste daneben alle
@@ -26,6 +46,63 @@
   gap: 8px;
   padding: 0 8px;
   min-width: 0;
+}
+
+/* Derselbe Kopf, nur aufklappbar (`SettingsSubjectMenu`). Er darf die Zeile
+   nicht breiter machen als die Bereiche darunter, also nimmt der Knopf deren
+   Polster an — sonst spränge der Name beim Wechsel zwischen Konto (fester Kopf)
+   und Projekt (Wechsler) um ein paar Pixel. */
+.switcher {
+  margin: -4px 0 0 -8px;
+  width: calc(100% + 16px);
+}
+
+.trigger {
+  gap: 8px;
+  padding: 0 8px;
+}
+
+/* Zeigt an, dass hier etwas aufgeht, ohne es auszurufen — erst unter dem Zeiger
+   nimmt es die volle Farbe an. Gleiches Verhalten wie im Wechsler der
+   Seitenleiste. */
+.chevron {
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--outline);
+
+  .trigger:hover & {
+    color: var(--on-surface-variant);
+  }
+}
+
+/* Über alle Workspaces hinweg kann die Auswahl beliebig lang werden. Sie scrollt
+   dann in sich, statt das Menü über den Bildschirmrand hinauswachsen zu lassen —
+   `min()` deckelt sie zusätzlich absolut, damit sie auf einem hohen Bildschirm
+   nicht zur halben Seite wird. */
+.menuList {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+/* Sagt, wovon die Liste darunter die Auswahl ist — „Projekt", „Workspace" oder,
+   wenn die Auswahl über Workspaces hinausreicht, der Name des Workspace. Ab der
+   zweiten Überschrift steht Luft davor: sie trennt dann Gruppen, statt nur die
+   Liste zu benennen. */
+.menuLabel {
+  margin: 0 0 6px;
+  padding: 0 8px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  div:not(:first-child) > & {
+    margin-top: 10px;
+  }
 }
 
 .dot {

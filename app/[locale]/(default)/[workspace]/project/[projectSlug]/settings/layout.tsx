@@ -1,12 +1,21 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { SettingsHeader } from "@/components/ui/layout/SettingsHeader/SettingsHeader";
 import {
   SettingsNav,
   type SettingsNavItem,
+  type SettingsNavSubject,
 } from "@/components/ui/layout/SettingsNav/SettingsNav";
-import { getWorkspaceProjects } from "@/features/workspaces/queries";
+import {
+  getMyProjects,
+  getWorkspaceProjects,
+} from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
-import { PROJECT_SETTINGS_NAV, projectSettingsPath } from "@/lib/nav";
+import {
+  PROJECT_SETTINGS_NAV,
+  projectSettingsPath,
+  settingsScopeItems,
+} from "@/lib/nav";
 import { getAccess } from "@/lib/permissions";
 import styles from "./settings.module.scss";
 
@@ -40,6 +49,31 @@ export default async function ProjectSettingsLayout({
   ]);
   if (!access.has("project.view")) notFound();
 
+  // Hier ist das Projekt bekannt — der Umschalter führt zurück auf genau das,
+  // in dem man gerade steht, und nicht auf ein beliebiges anderes.
+  const scope = settingsScopeItems({
+    workspaceId: workspace,
+    projectSlug,
+    labels: {
+      workspace: t("settings.scopeWorkspace"),
+      project: t("settings.scopeProject"),
+      account: t("settings.scopeAccount"),
+    },
+  });
+
+  // Der Kopf der Leiste wechselt das Projekt und bleibt dabei in den
+  // Einstellungen — über Workspace-Grenzen hinweg, denn ein Projekt sucht man
+  // nach seinem Namen und nicht danach, wo es hängt. `getMyProjects` liefert
+  // genau die mit `project.view`, also dieselbe Hürde, die dieses Layout
+  // gleich prüft: was hier steht, öffnet sich auch.
+  const siblings: SettingsNavSubject[] = (await getMyProjects()).map((p) => ({
+    id: p.id,
+    name: p.name,
+    color: p.color,
+    href: projectSettingsPath(p.workspaceId, p.slug, ""),
+    group: p.workspaceName,
+  }));
+
   // Rollen sind der einzige Bereich mit eigener Hürde: dort stehen die Regeln,
   // nach denen alles andere entschieden wird. Allgemein und Labels bleiben auch
   // ohne Schreibrecht sichtbar — sie zeigen dann, was gilt, nur unveränderlich.
@@ -53,13 +87,22 @@ export default async function ProjectSettingsLayout({
 
   return (
     <div className={styles.shell}>
-      <SettingsNav
-        subject={project.name}
-        color={project.color}
-        title={t("nav.settings")}
-        items={items}
+      <SettingsHeader
+        items={scope}
+        active="project"
+        label={t("settings.scopeLabel")}
       />
-      <div className={styles.panel}>{children}</div>
+      <div className={styles.body}>
+        <SettingsNav
+          subject={project.name}
+          color={project.color}
+          siblings={siblings}
+          siblingsLabel={t("settings.scopeProject")}
+          title={t("nav.settings")}
+          items={items}
+        />
+        <div className={styles.panel}>{children}</div>
+      </div>
     </div>
   );
 }

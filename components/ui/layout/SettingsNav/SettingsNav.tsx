@@ -1,5 +1,11 @@
 import { NavLink } from "@/components/ui/layout/NavLink/NavLink";
+import {
+  type SettingsNavSubject,
+  SettingsSubjectMenu,
+} from "./SettingsSubjectMenu";
 import styles from "./settingsNav.module.scss";
+
+export type { SettingsNavSubject };
 
 export interface SettingsNavItem {
   href: string;
@@ -12,6 +18,14 @@ interface Props {
   subject: string;
   /** Farbpunkt vor dem Namen. Ohne ihn steht der Name allein. */
   color?: string;
+  /**
+   * Macht den Kopf zum Wechsler: Geschwister, zu deren gleichem Bereich man von
+   * hier springen kann. Bei weniger als zwei Einträgen bleibt der Name stehen —
+   * ein Auslöser ohne Ziel wäre ein Versprechen, das die Liste nicht hält.
+   */
+  siblings?: SettingsNavSubject[];
+  /** Überschrift über der Wechselliste, z. B. „Projekt". */
+  siblingsLabel?: string;
   /** Überschrift der Leiste, z. B. „Einstellungen". */
   title: string;
   /**
@@ -22,8 +36,12 @@ interface Props {
 }
 
 /**
- * Die zweite Navigationsebene der Einstellungen — für den Workspace wie für ein
- * Projekt.
+ * Die zweite Navigationsebene der Einstellungen — für den Workspace, für ein
+ * Projekt und für das eigene Konto.
+ *
+ * Zwischen diesen dreien wechselt man eine Ebene höher, in der Kopfzeile
+ * darüber (`components/ui/layout/SettingsHeader`) — der Umschalter tauscht auch
+ * diese Leiste aus und kann deshalb nicht in ihr stehen.
  *
  * Sie sitzt neben der Seitenleiste, nicht in ihr: Allgemein, Mitglieder, Rollen
  * und Labels gehören zusammen und würden die Liste daneben sonst um eine
@@ -35,21 +53,42 @@ interface Props {
  * der ganze Pfad und nicht sein Anfang). Dadurch bleibt diese Komponente eine
  * Server Component: den Pfad liest die Zeile selbst.
  */
-export function SettingsNav({ subject, color, title, items }: Props) {
+export function SettingsNav({
+  subject,
+  color,
+  siblings,
+  siblingsLabel,
+  title,
+  items,
+}: Props) {
+  // Der Kopf wird nur zum Wechsler, wenn es etwas zu wechseln gibt: das eigene
+  // Konto hat keine Geschwister, und ein einzelnes Projekt ist keine Auswahl.
+  const switchable =
+    siblingsLabel && color && siblings && siblings.length > 1 ? siblings : null;
+
   return (
     <nav className={styles.nav} aria-label={title}>
-      <div className={styles.head}>
-        {color && (
-          <span
-            className={styles.dot}
-            style={{ background: color }}
-            aria-hidden
-          />
-        )}
-        <span className={styles.subject} title={subject}>
-          {subject}
-        </span>
-      </div>
+      {switchable && color && siblingsLabel ? (
+        <SettingsSubjectMenu
+          name={subject}
+          color={color}
+          siblings={switchable}
+          label={siblingsLabel}
+        />
+      ) : (
+        <div className={styles.head}>
+          {color && (
+            <span
+              className={styles.dot}
+              style={{ background: color }}
+              aria-hidden
+            />
+          )}
+          <span className={styles.subject} title={subject}>
+            {subject}
+          </span>
+        </div>
+      )}
       <p className={styles.title}>{title}</p>
 
       <ul className={styles.list}>

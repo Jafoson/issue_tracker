@@ -1,8 +1,17 @@
-/* Dieselbe Aufteilung wie in den Workspace-Einstellungen: zwei Spalten, eine
-   Höhe — die Leiste steht, der Bereich daneben scrollt. Beide bekommen
-   `min-height: 0`, sonst wächst der Inhalt die Zeile auf und die Seite scrollt
-   als Ganzes. */
+/* Dieselbe Aufteilung wie in den Workspace-Einstellungen: oben die Kopfzeile mit
+   dem Bereichsumschalter, darunter zwei Spalten. */
 .shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Zwei Spalten, eine Höhe — die Leiste steht, der Bereich daneben scrollt. Beide
+   bekommen `min-height: 0`, sonst wächst der Inhalt die Zeile auf und die Seite
+   scrollt als Ganzes. */
+.body {
   flex: 1;
   min-height: 0;
   display: flex;
