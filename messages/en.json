@@ -547,13 +547,12 @@
     "handle": "Username",
     "handleDesc": "Appears in filter URLs (?assignee=@name) and is unique — lowercase letters, digits and hyphens.",
     "colorDesc": "Your avatar colour, wherever no picture is set.",
-    "emailDesc": "The address you sign in with. As long as there is no mail delivery, it cannot be changed.",
+    "emailDesc": "The address you sign in with.",
     "appearanceDesc": "How the interface looks and which language it speaks.",
     "language": "Language",
     "system": "System",
     "appearanceNote": "Your choice applies at once and is stored with your account — on every device you sign in on.",
     "notificationsDesc": "What you want to hear about — and how it reaches you.",
-    "mailNote": "There is no mail delivery yet. Your choice is kept and applies as soon as it is set up.",
     "channel": {
       "InApp": "In the app",
       "Email": "By email"
@@ -583,7 +582,7 @@
     "passwordHint": "At least 8 characters.",
     "passwordMismatch": "The two entries do not match.",
     "passwordChanged": "Password changed",
-    "emailLoginDesc": "Your sign-in name. Without mail delivery, a new address cannot be verified yet.",
+    "emailLoginDesc": "Your sign-in name.",
     "emailVerified": "Verified",
     "emailUnverified": "Not verified",
     "providersDesc": "Providers you can sign in with.",

@@ -547,13 +547,12 @@
     "handle": "Benutzername",
     "handleDesc": "Steht in den Filter-Adressen (?assignee=@name) und ist einmalig — Kleinbuchstaben, Ziffern und Bindestriche.",
     "colorDesc": "Deine Farbe im Avatar, überall dort, wo kein Bild hinterlegt ist.",
-    "emailDesc": "Damit meldest du dich an. Solange es keinen Mailversand gibt, lässt sie sich nicht ändern.",
+    "emailDesc": "Damit meldest du dich an.",
     "appearanceDesc": "Wie die Oberfläche aussieht und in welcher Sprache sie spricht.",
     "language": "Sprache",
     "system": "System",
     "appearanceNote": "Die Wahl gilt sofort und wird zu deinem Konto gespeichert — auf jedem Gerät, an dem du dich anmeldest.",
     "notificationsDesc": "Wovon du erfahren möchtest — und auf welchem Weg.",
-    "mailNote": "Es gibt noch keinen Mailversand. Deine Wahl steht fest und gilt, sobald er eingerichtet ist.",
     "channel": {
       "InApp": "In der App",
       "Email": "Per E-Mail"
@@ -583,7 +582,7 @@
     "passwordHint": "Mindestens 8 Zeichen.",
     "passwordMismatch": "Die beiden Eingaben stimmen nicht überein.",
     "passwordChanged": "Passwort geändert",
-    "emailLoginDesc": "Dein Anmeldename. Ohne Mailversand lässt sich noch keine neue Adresse bestätigen.",
+    "emailLoginDesc": "Dein Anmeldename.",
     "emailVerified": "Bestätigt",
     "emailUnverified": "Nicht bestätigt",
     "providersDesc": "Anbieter, über die du dich anmelden kannst.",

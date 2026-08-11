@@ -104,14 +104,6 @@ export function AccountNotifications({ settings }: Props) {
             { id: "email", header: t("account.channel.Email") },
           ]}
         />
-
-        {/* Es gibt noch keinen Mailversand. Das gehört an die Stelle, an der
-            jemand gerade einen Haken für Mail setzt — nicht in eine Fußnote,
-            die niemand liest. */}
-        <p className={styles.note}>
-          <Icon icon="lucide:info" width={14} />
-          {t("account.mailNote")}
-        </p>
       </SettingsBody>
     </>
   );
