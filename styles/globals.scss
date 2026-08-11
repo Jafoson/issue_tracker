@@ -177,12 +177,6 @@ body:has([data-resizing]) {
   animation: toastIn .22s cubic-bezier(.22, .61, .36, 1);
 }
 
-/* ---------- Density overrides ---------- */
-[data-density="compact"] {
-  .orbit-row  { height: 38px; }
-  .orbit-nav  { height: 30px; }
-}
-
 /* ---------- Animations ---------- */
 @keyframes fadeIn  { from { opacity: .35; } }
 @keyframes pop     { from { opacity: .2; transform: translateY(-4px) scale(.985); } }

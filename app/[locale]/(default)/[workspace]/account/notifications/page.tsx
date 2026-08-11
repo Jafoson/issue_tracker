@@ -18,11 +18,7 @@ export default async function AccountNotificationsPage({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const {
-    theme: _theme,
-    density: _density,
-    ...settings
-  } = await getMyPreferences();
+  const { theme: _theme, ...settings } = await getMyPreferences();
 
   return <AccountNotifications settings={settings} />;
 }

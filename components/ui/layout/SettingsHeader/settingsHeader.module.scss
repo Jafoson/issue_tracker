@@ -154,9 +154,3 @@
   }
 }
 
-/* „Kompakt" nimmt der Zeile die Luft, nicht den Umschalter: kleiner werden darf
-   der Abstand, das Bedienelement bleibt greifbar. */
-[data-density="compact"] .bar {
-  --scope-h: 28px;
-  --scope-air: 12px;
-}

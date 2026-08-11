@@ -1,6 +1,6 @@
 .card {
-  /* Padding und vertikaler Rhythmus liegen in Custom Properties, damit der
-     Density-Switch nur zwei Werte tauscht statt das Layout zu wiederholen. */
+  /* Padding und vertikaler Rhythmus liegen in Custom Properties: zwei Griffe
+     statt derselben Zahl an einem halben Dutzend Stellen. */
   --pad: 14px;
   --gap: 9px;
 
@@ -35,10 +35,6 @@
     box-shadow: var(--shadow-card), 0 0 0 1px var(--tertiary);
   }
 
-  :global([data-density="compact"]) & {
-    --pad: 10px;
-    --gap: 7px;
-  }
 }
 
 .dragging {

@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { unstable_update } from "@/auth";
 import {
-  type Density,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_EVENTS,
   type NotificationKey,
@@ -25,7 +24,6 @@ type Result = { ok: true } | { error: string };
 const NOT_LOGGED_IN = "You must be logged in.";
 
 const THEMES: Theme[] = ["dark", "light", "system"];
-const DENSITIES: Density[] = ["airy", "compact"];
 
 /** Alle gültigen Spaltennamen der Benachrichtigungen — Schutz vor allem, was
  *  sonst noch als String hereinkäme. */
@@ -108,15 +106,14 @@ export async function updateProfile(data: {
 }
 
 /**
- * Design und Dichte.
+ * Das Design.
  *
- * Beides wirkt sofort im Browser (`AppearanceSync` setzt die Attribute am
- * Dokument) — hier wird nur festgehalten, was gelten soll, damit es beim
- * nächsten Mal und auf dem nächsten Gerät wieder so ist.
+ * Es wirkt sofort im Browser (`Appearance` setzt das Attribut am Dokument) —
+ * hier wird nur festgehalten, was gelten soll, damit es beim nächsten Mal und
+ * auf dem nächsten Gerät wieder so ist.
  */
 export async function updateAppearance(data: {
   theme?: Theme;
-  density?: Density;
 }): Promise<Result> {
   const session = await getSession();
   if (!session) return { error: NOT_LOGGED_IN };
@@ -124,13 +121,9 @@ export async function updateAppearance(data: {
   if (data.theme !== undefined && !THEMES.includes(data.theme)) {
     return { error: "Unknown theme." };
   }
-  if (data.density !== undefined && !DENSITIES.includes(data.density)) {
-    return { error: "Unknown density." };
-  }
 
   await writePreferences(session.userId, {
     ...(data.theme !== undefined ? { theme: data.theme } : {}),
-    ...(data.density !== undefined ? { density: data.density } : {}),
   });
 
   revalidatePath("/", "layout");

@@ -11,13 +11,12 @@ import {
   type SettingsRow,
 } from "@/components/ui/layout/SettingsList/SettingsList";
 import { updateAppearance } from "@/features/account/actions";
-import type { Density, Theme } from "@/features/account/types";
+import type { Theme } from "@/features/account/types";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import styles from "./accountAppearance.module.scss";
 
 interface Props {
   theme: Theme;
-  density: Density;
 }
 
 /**
@@ -33,7 +32,7 @@ interface Props {
  * Cookie. Zwei Orte für dieselbe Angabe wären zwei Wahrheiten, die
  * auseinanderlaufen können.
  */
-export function AccountAppearance({ theme, density }: Props) {
+export function AccountAppearance({ theme }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -41,7 +40,6 @@ export function AccountAppearance({ theme, density }: Props) {
   const [, startTransition] = useTransition();
 
   const [currentTheme, setCurrentTheme] = useState<Theme>(theme);
-  const [currentDensity, setCurrentDensity] = useState<Density>(density);
 
   /** Das gewählte Design am Dokument — „System" fragt dafür das Gerät. */
   const applyTheme = (value: Theme) => {
@@ -54,14 +52,6 @@ export function AccountAppearance({ theme, density }: Props) {
         : value;
     startTransition(() => {
       updateAppearance({ theme: value });
-    });
-  };
-
-  const applyDensity = (value: Density) => {
-    setCurrentDensity(value);
-    document.documentElement.dataset.density = value;
-    startTransition(() => {
-      updateAppearance({ density: value });
     });
   };
 
@@ -91,21 +81,6 @@ export function AccountAppearance({ theme, density }: Props) {
           ]}
           value={currentTheme}
           onChange={(v) => applyTheme(v as Theme)}
-        />
-      ),
-    },
-    {
-      id: "density",
-      label: t("settings.density"),
-      desc: t("settings.densityDesc"),
-      control: (
-        <SegmentedControl
-          items={[
-            { value: "airy", label: t("settings.airy") },
-            { value: "compact", label: t("settings.compact") },
-          ]}
-          value={currentDensity}
-          onChange={(v) => applyDensity(v as Density)}
         />
       ),
     },

@@ -6,9 +6,8 @@
 // die Seiten stattdessen brauchen, ist der Zustand des Kontos — ob ein Passwort
 // gesetzt ist, welche Anmeldewege daran hängen, ob die Adresse bestätigt wurde.
 
-/** Design und Dichte — landet als `data-theme` / `data-density` am Dokument. */
+/** Das gewählte Design — landet als `data-theme` am Dokument. */
 export type Theme = "dark" | "light" | "system";
-export type Density = "airy" | "compact";
 
 /** Die Anlässe, zu denen die App etwas von sich hören lässt. */
 export const NOTIFICATION_EVENTS = [
@@ -34,7 +33,6 @@ export type NotificationSettings = Record<NotificationKey, boolean>;
 /** Was jemand für sich eingestellt hat — mit den Vorgaben, wenn noch nichts. */
 export interface Preferences extends NotificationSettings {
   theme: Theme;
-  density: Density;
 }
 
 /** Allgemein: wer man ist und wie man erscheint. */

@@ -191,8 +191,8 @@ tbody.group {
   /* Eigener Stapelkontext: sonst schöben sich die Bedienelemente der Zeile
      (z-index 2) beim Scrollen über den klebenden Gruppenkopf. */
   z-index: 0;
-  /* Die Vorgabe kommt aus Variante und Dichte; `--table-row-height` ist der
-     Griff für den Aufrufer, wenn eine Liste es enger oder luftiger braucht. */
+  /* Die Vorgabe kommt aus der Variante; `--table-row-height` ist der Griff für
+     den Aufrufer, wenn eine Liste es enger oder luftiger braucht. */
   min-height: var(--table-row-height, var(--table-row-h));
   /* Die Mindesthöhe gilt für einzeilige Zellen. Bringt eine Zelle zwei Zeilen
      mit (Name über E-Mail), wächst die Zeile — und das Polster hält den Inhalt
@@ -508,14 +508,3 @@ tbody.group {
   border-top: none;
 }
 
-[data-density="compact"] .table {
-  --table-row-h: 34px;
-  --table-inset: 6px;
-  --table-pad: 10px;
-}
-
-[data-density="compact"] .table.card {
-  --table-row-h: 34px;
-  --table-inset: 0;
-  --table-pad: 12px;
-}

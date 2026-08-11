@@ -50,7 +50,6 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       data-theme="dark"
-      data-density="airy"
       className={`${hankenGrotesk.variable} ${jetbrainsMono.variable}`}
     >
       <body>

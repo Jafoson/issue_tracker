@@ -32,7 +32,6 @@ export const OAUTH_PROVIDERS = ["github", "google"] as const;
  *  `@default`s in `prisma/schema.prisma`. */
 export const DEFAULT_PREFERENCES: Preferences = {
   theme: "dark",
-  density: "airy",
   assignedInApp: true,
   assignedEmail: true,
   mentionedInApp: true,
@@ -62,11 +61,10 @@ export const getMyPreferences = cache(async (): Promise<Preferences> => {
   });
   if (!row) return DEFAULT_PREFERENCES;
 
-  const { userId: _userId, theme, density, ...notifications } = row;
+  const { userId: _userId, theme, ...notifications } = row;
   return {
     ...notifications,
     theme: theme as Preferences["theme"],
-    density: density as Preferences["density"],
   };
 });
 

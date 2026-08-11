@@ -4,7 +4,7 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
 
-/** Design, Dichte, Sprache. */
+/** Design und Sprache. */
 export default async function AccountAppearancePage({
   params,
 }: {
@@ -15,10 +15,5 @@ export default async function AccountAppearancePage({
 
   const preferences = await getMyPreferences();
 
-  return (
-    <AccountAppearance
-      theme={preferences.theme}
-      density={preferences.density}
-    />
-  );
+  return <AccountAppearance theme={preferences.theme} />;
 }

@@ -113,8 +113,7 @@ const GRIP_DOTS = [
  * ```
  *
  * Vorgabe ist die einzeilige Liste: Zeilenhöhe `--row-h`, Seitengrund, keine
- * Trennlinien. Wer sie ändert, muss die Dichte nachziehen
- * (`[data-density="compact"] .wrapper`) — der eigene Wert sticht sie aus.
+ * Trennlinien.
  */
 export function Table<T>({
   columns,

@@ -23,10 +23,6 @@
   gap: 20px;
 }
 
-[data-density="compact"] .content {
-  --table-row-height: 52px;
-}
-
 .group {
   display: flex;
   flex-direction: column;

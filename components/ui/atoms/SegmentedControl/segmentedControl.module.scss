@@ -11,6 +11,17 @@
 }
 
 .item {
+  /* Ohne diese drei Zeilen lagen Zeichen und Wort im Inline-Fluss und richteten
+     sich an der Schriftlinie aus statt an der Mitte: ein SVG sitzt dort auf der
+     Grundlinie, und der Platz, den darunter sonst die Unterlängen einnehmen,
+     schob es sichtbar nach oben. Ein Knopf ist eine Zeile aus Zeichen und Text,
+     also wird er auch hier ausgelegt wie einer (`atoms/Button`). */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Vorher standen Zeichen und Wort ohne Zwischenraum aneinander — der einzige
+     Abstand kam vom Leerraum, den es im JSX gar nicht gibt. */
+  gap: 6px;
   padding: 0 12px;
   border-radius: calc(var(--radius-sm) - 2px);
   border: none;
@@ -22,6 +33,12 @@
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   position: relative;
+
+  /* Nachgeben darf allein der Text. Ein gestauchtes Zeichen ist ein verzerrtes
+     Zeichen — dieselbe Regel und derselbe Grund wie bei den Knöpfen. */
+  & > svg {
+    flex: none;
+  }
 
   &::after{
     content: "";
@@ -42,14 +59,12 @@
   }
 
 
-  /* icon-only: quadratisch — die Breite folgt der Höhe der Zeile */
+  /* icon-only: quadratisch — die Breite folgt der Höhe der Zeile. Mittig steht
+     das Zeichen schon durch `.item`; hier bleibt nur die Form. */
   &.iconOnly {
     flex: none;
     aspect-ratio: 1;
     padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
 
   /* variant primary (default): Accent-Farbe */

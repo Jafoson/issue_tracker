@@ -35,15 +35,12 @@ describe("updateAppearance()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  // Die Werte landen als `data-theme`/`data-density` am Dokument — was hier
-  // durchkäme, stünde später im HTML.
+  // Der Wert landet als `data-theme` am Dokument — was hier durchkäme, stünde
+  // später im HTML.
   it("lässt nur bekannte Werte durch", async () => {
     expect(
       await updateAppearance({ theme: "neon" as unknown as "dark" }),
     ).toEqual({ error: "Unknown theme." });
-    expect(
-      await updateAppearance({ density: "eng" as unknown as "airy" }),
-    ).toEqual({ error: "Unknown density." });
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
@@ -58,12 +55,10 @@ describe("updateAppearance()", () => {
     });
   });
 
-  it("schreibt beide Werte zusammen, wenn beide kommen", async () => {
-    await updateAppearance({ theme: "light", density: "compact" });
-    expect(mockUpsert.mock.calls[0][0].update).toEqual({
-      theme: "light",
-      density: "compact",
-    });
+  // Nichts zu ändern ist kein Fehler — die Zeile bleibt, wie sie ist.
+  it("schreibt nichts, wenn kein Wert kommt", async () => {
+    expect(await updateAppearance({})).toEqual({ ok: true });
+    expect(mockUpsert.mock.calls[0][0].update).toEqual({});
   });
 });
 
@@ -84,9 +79,9 @@ describe("setNotification()", () => {
     expect(
       await setNotification("passwordHash" as NotificationKey, true),
     ).toEqual({ error: "Unknown setting." });
-    expect(await setNotification("assignedSms" as NotificationKey, true)).toEqual(
-      { error: "Unknown setting." },
-    );
+    expect(
+      await setNotification("assignedSms" as NotificationKey, true),
+    ).toEqual({ error: "Unknown setting." });
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 

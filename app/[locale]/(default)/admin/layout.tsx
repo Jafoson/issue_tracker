@@ -32,7 +32,7 @@ export default async function AppLayout({
 
   return (
     <>
-      <Appearance theme={preferences.theme} density={preferences.density} />
+      <Appearance theme={preferences.theme} />
       <AppShell isAdminRoute>{children}</AppShell>
     </>
   );

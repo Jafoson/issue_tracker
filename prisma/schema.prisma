@@ -95,9 +95,7 @@ model UserPreferences {
   userId String @id
 
   /// "dark" | "light" | "system" — landet als `data-theme` am Dokument.
-  theme   String @default("dark")
-  /// "airy" | "compact" — landet als `data-density` am Dokument.
-  density String @default("airy")
+  theme String @default("dark")
 
   // Benachrichtigungen, je Anlass einmal für die App und einmal für die Mail.
   // Es gibt noch keinen Mailversand; die Spalten stehen trotzdem hier, damit die

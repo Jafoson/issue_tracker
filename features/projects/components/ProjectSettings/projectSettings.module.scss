@@ -26,12 +26,6 @@
   gap: 20px;
 }
 
-/* In der dichten Ansicht rücken auch diese Zeilen zusammen — der eigene Wert
-   sticht die Vorgabe der Dichte aus, also muss er sie selbst nachziehen. */
-[data-density="compact"] .content {
-  --table-row-height: 52px;
-}
-
 /* Überschrift und Erklärung gehören zur Karte darunter, nicht zur davor. */
 .group {
   display: flex;

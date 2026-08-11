@@ -3,11 +3,10 @@ import { AppearanceListener } from "./AppearanceListener";
 interface Props {
   /** `"system"` folgt der Einstellung des Betriebssystems. */
   theme: "dark" | "light" | "system";
-  density: "airy" | "compact";
 }
 
 /**
- * Trägt Design und Dichte an das Dokument, bevor der Inhalt zu sehen ist.
+ * Trägt das Design an das Dokument, bevor der Inhalt zu sehen ist.
  *
  * Das Wurzel-Layout schreibt die Vorgabe (`data-theme="dark"`) fest ins HTML —
  * es rendert auch die Anmeldeseite und soll dafür nicht die Datenbank fragen
@@ -21,10 +20,10 @@ interface Props {
  * `AppearanceListener` bleibt danach an der Medienabfrage — wer sein System
  * abends auf dunkel stellt, soll nicht neu laden müssen.
  */
-export function Appearance({ theme, density }: Props) {
-  // Die Werte kommen aus der Datenbank und werden hier zu Code — deshalb durch
+export function Appearance({ theme }: Props) {
+  // Der Wert kommt aus der Datenbank und wird hier zu Code — deshalb durch
   // JSON.stringify statt in die Zeichenkette eingesetzt.
-  const script = `(function(){try{var r=document.documentElement,t=${JSON.stringify(theme)};r.dataset.theme=t==="system"?(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;r.dataset.density=${JSON.stringify(density)};}catch(e){}})();`;
+  const script = `(function(){try{var r=document.documentElement,t=${JSON.stringify(theme)};r.dataset.theme=t==="system"?(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;}catch(e){}})();`;
 
   return (
     <>
