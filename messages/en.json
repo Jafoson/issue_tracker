@@ -20,7 +20,12 @@
     "breadcrumb": "Breadcrumb",
     "workspaces": "Workspaces",
     "workspaceSettings": "Workspace Settings",
-    "preferences": "Personal"
+    "preferences": "Personal",
+    "account": "Account",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "security": "Security",
+    "connections": "Connected accounts"
   },
   "actions": {
     "addLabel": "Add label",
@@ -530,5 +535,69 @@
     "subtitle": "Applies to you only — on this device and in your account.",
     "nameDesc": "How you appear in lists, on issues and in comments.",
     "emailDesc": "The address you sign in with."
+  },
+  "account": {
+    "generalDesc": "How you appear in Orbit — in lists, on issues and in comments.",
+    "profile": "Profile",
+    "signIn": "Sign-in",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "nameDesc": "Your given name. It shows wherever you appear.",
+    "lastNameDesc": "Lists are sorted and searched by it.",
+    "handle": "Username",
+    "handleDesc": "Appears in filter URLs (?assignee=@name) and is unique — lowercase letters, digits and hyphens.",
+    "colorDesc": "Your avatar colour, wherever no picture is set.",
+    "emailDesc": "The address you sign in with. As long as there is no mail delivery, it cannot be changed.",
+    "appearanceDesc": "How the interface looks and which language it speaks.",
+    "language": "Language",
+    "system": "System",
+    "appearanceNote": "Your choice applies at once and is stored with your account — on every device you sign in on.",
+    "notificationsDesc": "What you want to hear about — and how it reaches you.",
+    "mailNote": "There is no mail delivery yet. Your choice is kept and applies as soon as it is set up.",
+    "channel": {
+      "InApp": "In the app",
+      "Email": "By email"
+    },
+    "event": {
+      "assigned": "Issue assigned",
+      "mentioned": "Mention",
+      "comment": "New comment",
+      "status": "Status changed",
+      "invite": "Invitation"
+    },
+    "eventDesc": {
+      "assigned": "Someone assigned an issue to you.",
+      "mentioned": "Someone named you with @ in a description or a comment.",
+      "comment": "A new comment on an issue you are involved in.",
+      "status": "The status of one of your issues changed.",
+      "invite": "You were added to a workspace or a project."
+    },
+    "securityDesc": "How you get in.",
+    "passwordDesc": "Changing it requires your current password.",
+    "passwordNoneDesc": "Your account has no password yet — you sign in through a connected provider.",
+    "changePassword": "Change password",
+    "setPassword": "Set password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "repeatPassword": "Repeat new password",
+    "passwordHint": "At least 8 characters.",
+    "passwordMismatch": "The two entries do not match.",
+    "passwordChanged": "Password changed",
+    "emailLoginDesc": "Your sign-in name. Without mail delivery, a new address cannot be verified yet.",
+    "emailVerified": "Verified",
+    "emailUnverified": "Not verified",
+    "providersDesc": "Providers you can sign in with.",
+    "providerCount": "{count, plural, one {# account connected} other {# accounts connected}}",
+    "noProviders": "None connected",
+    "connectionsDesc": "Accounts of other providers you can sign in with.",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "connected": "Connected",
+    "connectedDesc": "You can sign in through this account.",
+    "connectDesc": "Sign in with {provider} once to attach it to your account.",
+    "providerUnavailable": "Not configured on this server.",
+    "lastMethod": "Your only way in. Set a password first, then this account can be disconnected.",
+    "connectionsNote": "You have a password — connected accounts can be disconnected at any time.",
+    "connectionsNoteNoPassword": "Without a password, a connected account is your only way in. The last one therefore cannot be disconnected."
   }
 }

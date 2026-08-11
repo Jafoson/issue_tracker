@@ -45,6 +45,11 @@ const dict: Record<string, string> = {
   "nav.general": "Allgemein",
   "nav.roles": "Rollen & Rechte",
   "nav.labels": "Labels",
+  "nav.account": "Konto",
+  "nav.appearance": "Aussehen",
+  "nav.notifications": "Benachrichtigungen",
+  "nav.security": "Sicherheit",
+  "nav.connections": "Verbundene Konten",
 };
 const t = ((key: string) => dict[key] ?? key) as unknown as Translator;
 
@@ -199,6 +204,50 @@ describe("tabMeta()", () => {
     expect(meta.title).toBe("Meine Aufgaben");
     expect(meta.color).toBeNull();
     expect(meta.icon).toBe("lucide:user");
+  });
+});
+
+// Die eigenen Einstellungen liegen unter /<workspace>/account. Der Bereich
+// gehört keinem Workspace, hängt aber unter einem — ohne eigene Behandlung hießen
+// alle fünf Reiter „Konto" und trügen dasselbe Zeichen.
+describe("Konto-Routen", () => {
+  it("nennt den Kopf 'Konto' und zeigt das Personen-Zeichen", () => {
+    expect(tabTitle(`${BASE}/account`, projects, t)).toBe("Konto");
+    expect(tabIcon(`${BASE}/account`)).toBe("lucide:user");
+    expect(tabMeta(`${BASE}/account`, projects, t).title).toBe("Konto");
+  });
+
+  it("nennt den Bereich, sobald es einen gibt", () => {
+    expect(tabMeta(`${BASE}/account/appearance`, projects, t).title).toBe(
+      "Konto (Aussehen)",
+    );
+    expect(tabMeta(`${BASE}/account/security`, projects, t).title).toBe(
+      "Konto (Sicherheit)",
+    );
+    expect(tabMeta(`${BASE}/account/connections`, projects, t).title).toBe(
+      "Konto (Verbundene Konten)",
+    );
+  });
+
+  it("gibt jedem Bereich sein eigenes Zeichen", () => {
+    expect(tabIcon(`${BASE}/account/appearance`)).toBe("lucide:palette");
+    expect(tabIcon(`${BASE}/account/notifications`)).toBe("lucide:bell");
+    expect(tabIcon(`${BASE}/account/security`)).toBe("lucide:shield-check");
+    expect(tabIcon(`${BASE}/account/connections`)).toBe("lucide:link");
+  });
+
+  it("fällt für einen unbekannten Bereich auf Konto zurück", () => {
+    expect(tabMeta(`${BASE}/account/gibtsnicht`, projects, t).title).toBe(
+      "Konto",
+    );
+    expect(tabIcon(`${BASE}/account/gibtsnicht`)).toBe("lucide:circle-user");
+  });
+
+  it("hat nie eine Projektfarbe", () => {
+    expect(tabColor(`${BASE}/account`, projects)).toBeNull();
+    expect(tabMeta(`${BASE}/account/security`, projects, t).icon).toBe(
+      "lucide:shield-check",
+    );
   });
 });
 

@@ -1,0 +1,42 @@
+/* Zeichen, Zustand, Knopf — in dieser Reihenfolge und rechtsbündig, damit die
+   Knöpfe aller Zeilen eine Linie bilden. */
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mark {
+  color: var(--on-surface-variant);
+}
+
+.connected {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 2px;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

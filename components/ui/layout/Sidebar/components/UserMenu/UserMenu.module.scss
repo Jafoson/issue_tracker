@@ -27,6 +27,13 @@
     display: flex;
 } 
 
+/* Trennt den Weg weiter (Einstellungen) vom Weg hinaus (Abmelden). */
+.divider {
+    margin: 4px 0;
+    border: 0;
+    border-top: 1px solid var(--outline-variant);
+}
+
 .bellBadge{
     position: absolute;
     top: -3px;

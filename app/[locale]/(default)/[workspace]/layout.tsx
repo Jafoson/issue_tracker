@@ -1,5 +1,7 @@
 import { notFound, redirect } from "next/navigation";
+import { Appearance } from "@/components/ui/layout/Appearance/Appearance";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
+import { getMyPreferences } from "@/features/account/queries";
 import { getCurrentWorkspace } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { canEnterWorkspace } from "@/lib/permissions";
@@ -33,5 +35,16 @@ export default async function AppLayout({
   // Layout schützt nur die Seiten unter sich.
   if (!(await canEnterWorkspace(session.userId, workspace.id))) notFound();
 
-  return <AppShell>{children}</AppShell>;
+  // Design und Dichte gehören dem Benutzer und stehen deshalb nicht im
+  // Wurzel-Layout: das rendert auch die Anmeldeseite und soll dafür nicht die
+  // Datenbank fragen. Ganz oben im Rumpf, damit die Wahl greift, bevor etwas zu
+  // sehen ist.
+  const preferences = await getMyPreferences();
+
+  return (
+    <>
+      <Appearance theme={preferences.theme} density={preferences.density} />
+      <AppShell>{children}</AppShell>
+    </>
+  );
 }

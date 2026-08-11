@@ -1,0 +1,45 @@
+/* Das Raster der Zeilen kommt aus `components/ui/layout/SettingsList` — hier
+   steht nur, was die Zellen füllt. */
+
+/* Alle Eingabefelder gleich breit, damit ihre rechten Kanten eine Linie bilden.
+   `flex: none`, weil die Zelle der Tabelle ein Flex-Container ist und das Feld
+   sonst auf die Breite der Farbpalette mitwüchse. */
+.control {
+  flex: none;
+  width: 280px;
+  max-width: 100%;
+}
+
+/* Das Zeichen gehört zum Benutzernamen, nicht zur Eingabe: es steht im Feld,
+   lässt sich aber nicht löschen und nicht doppelt tippen. */
+.at {
+  color: var(--on-surface-variant);
+  font-size: var(--text-base);
+}
+
+/* Eine Angabe ohne Bedienelement — an derselben Kante wie die Felder darüber,
+   aber zurückgenommen: es gibt nichts zu tun. */
+.value {
+  font-size: var(--text-base);
+  color: var(--on-surface-variant);
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green);
+  font-size: var(--text-sm);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

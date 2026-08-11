@@ -10,15 +10,29 @@ import {
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
+import { NavLink } from "@/components/ui/layout/NavLink/NavLink";
 import { logout } from "@/features/auth/actions";
 import { fullName } from "@/lib/utils/string";
 import styles from "./UserMenu.module.scss";
 
 interface UserMenuClientProps {
   me: PersonAvatarData;
+  /**
+   * Weg zu den eigenen Einstellungen. `null`, wenn es keinen Workspace gibt, in
+   * dem sie stehen könnten — dann fehlt der Eintrag.
+   */
+  settingsHref: string | null;
 }
 
-function UserMenuClient({ me }: UserMenuClientProps) {
+/**
+ * Das eigene Menü unten in der Seitenleiste.
+ *
+ * Zwei Einträge, in dieser Reihenfolge: erst die eigenen Einstellungen — das ist
+ * der Weg, den man regelmäßig geht —, dann das Abmelden. Zwischen beiden eine
+ * Linie: das eine führt weiter, das andere hinaus, und beides direkt
+ * untereinander wäre eine Einladung zum Verklicken.
+ */
+function UserMenuClient({ me, settingsHref }: UserMenuClientProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const t = useTranslations("nav");
@@ -55,6 +69,22 @@ function UserMenuClient({ me }: UserMenuClientProps) {
         width={210}
       >
         <>
+          {settingsHref && (
+            <>
+              {/* Dieselbe Zeile wie in der Seitenleiste und in den
+                  Einstellungsleisten — ein Menüeintrag, der woandershin führt,
+                  ist ein Link und soll sich auch so verhalten (Mittelklick,
+                  „in neuem Tab öffnen"). */}
+              <NavLink
+                href={settingsHref}
+                activeHref={`${settingsHref}/*`}
+                icon="lucide:settings"
+                label={t("settings")}
+                onClick={() => setOpen(false)}
+              />
+              <hr className={styles.divider} />
+            </>
+          )}
           <Button
             variant="ghost"
             size="lg"
@@ -75,5 +105,3 @@ function UserMenuClient({ me }: UserMenuClientProps) {
 }
 
 export default UserMenuClient;
-
-// add UserSettings and Notifications in the future

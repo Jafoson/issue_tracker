@@ -20,7 +20,12 @@
     "breadcrumb": "Pfad",
     "workspaces": "Workspaces",
     "workspaceSettings": "Workspace Einstellungen",
-    "preferences": "Persönlich"
+    "preferences": "Persönlich",
+    "account": "Konto",
+    "appearance": "Aussehen",
+    "notifications": "Benachrichtigungen",
+    "security": "Sicherheit",
+    "connections": "Verbundene Konten"
   },
   "actions": {
     "addLabel": "Label hinzufügen",
@@ -530,5 +535,69 @@
     "subtitle": "Gilt nur für dich — auf diesem Gerät und in deinem Konto.",
     "nameDesc": "So erscheinst du in Listen, an Aufgaben und in Kommentaren.",
     "emailDesc": "Deine Anmeldeadresse."
+  },
+  "account": {
+    "generalDesc": "Wie du in Orbit erscheinst — in Listen, an Aufgaben und in Kommentaren.",
+    "profile": "Profil",
+    "signIn": "Anmeldung",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "nameDesc": "Dein Rufname. Er steht überall dort, wo du vorkommst.",
+    "lastNameDesc": "Nach ihm wird in Listen sortiert und gesucht.",
+    "handle": "Benutzername",
+    "handleDesc": "Steht in den Filter-Adressen (?assignee=@name) und ist einmalig — Kleinbuchstaben, Ziffern und Bindestriche.",
+    "colorDesc": "Deine Farbe im Avatar, überall dort, wo kein Bild hinterlegt ist.",
+    "emailDesc": "Damit meldest du dich an. Solange es keinen Mailversand gibt, lässt sie sich nicht ändern.",
+    "appearanceDesc": "Wie die Oberfläche aussieht und in welcher Sprache sie spricht.",
+    "language": "Sprache",
+    "system": "System",
+    "appearanceNote": "Die Wahl gilt sofort und wird zu deinem Konto gespeichert — auf jedem Gerät, an dem du dich anmeldest.",
+    "notificationsDesc": "Wovon du erfahren möchtest — und auf welchem Weg.",
+    "mailNote": "Es gibt noch keinen Mailversand. Deine Wahl steht fest und gilt, sobald er eingerichtet ist.",
+    "channel": {
+      "InApp": "In der App",
+      "Email": "Per E-Mail"
+    },
+    "event": {
+      "assigned": "Aufgabe zugewiesen",
+      "mentioned": "Erwähnung",
+      "comment": "Neuer Kommentar",
+      "status": "Status geändert",
+      "invite": "Einladung"
+    },
+    "eventDesc": {
+      "assigned": "Jemand hat dir eine Aufgabe zugewiesen.",
+      "mentioned": "Jemand hat dich mit @ in einer Beschreibung oder einem Kommentar genannt.",
+      "comment": "Neuer Kommentar an einer Aufgabe, an der du beteiligt bist.",
+      "status": "Der Status einer deiner Aufgaben hat sich geändert.",
+      "invite": "Du wurdest in einen Workspace oder ein Projekt aufgenommen."
+    },
+    "securityDesc": "Womit du hereinkommst.",
+    "passwordDesc": "Zum Ändern brauchst du dein aktuelles Passwort.",
+    "passwordNoneDesc": "Dein Konto hat noch kein Passwort — du meldest dich über einen verbundenen Anbieter an.",
+    "changePassword": "Passwort ändern",
+    "setPassword": "Passwort festlegen",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "repeatPassword": "Neues Passwort wiederholen",
+    "passwordHint": "Mindestens 8 Zeichen.",
+    "passwordMismatch": "Die beiden Eingaben stimmen nicht überein.",
+    "passwordChanged": "Passwort geändert",
+    "emailLoginDesc": "Dein Anmeldename. Ohne Mailversand lässt sich noch keine neue Adresse bestätigen.",
+    "emailVerified": "Bestätigt",
+    "emailUnverified": "Nicht bestätigt",
+    "providersDesc": "Anbieter, über die du dich anmelden kannst.",
+    "providerCount": "{count, plural, one {# Konto verbunden} other {# Konten verbunden}}",
+    "noProviders": "Keines verbunden",
+    "connectionsDesc": "Konten fremder Anbieter, über die du dich anmelden kannst.",
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "connected": "Verbunden",
+    "connectedDesc": "Du kannst dich über dieses Konto anmelden.",
+    "connectDesc": "Melde dich einmal bei {provider} an, um den Weg an dein Konto zu hängen.",
+    "providerUnavailable": "Auf diesem Server nicht eingerichtet.",
+    "lastMethod": "Dein einziger Weg herein. Lege erst ein Passwort fest, dann lässt sich dieses Konto trennen.",
+    "connectionsNote": "Du hast ein Passwort — verbundene Konten kannst du jederzeit wieder trennen.",
+    "connectionsNoteNoPassword": "Ohne Passwort ist ein verbundenes Konto dein einziger Weg herein. Der letzte lässt sich deshalb nicht trennen."
   }
 }

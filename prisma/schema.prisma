@@ -79,6 +79,41 @@ model User {
   accounts           Account[]
   sessions           Session[]
   invitations        Invitation[]
+  preferences        UserPreferences?
+}
+
+/// Was einer Person gehört und keinem Workspace: wie die Oberfläche aussieht und
+/// worüber sie benachrichtigt werden will.
+///
+/// Eigene Tabelle statt weiterer Spalten an `User`, weil hier nur Vorlieben
+/// stehen — nichts davon entscheidet über Zugriff, und `User` wird bei jeder
+/// Rechteprüfung gelesen. Die Zeile entsteht erst beim ersten Speichern
+/// (`upsert`); wer nie etwas eingestellt hat, hat keine — gelesen wird dann der
+/// Satz aus `features/account/queries.ts`, der dieselben Vorgaben trägt wie die
+/// `@default`s hier.
+model UserPreferences {
+  userId String @id
+
+  /// "dark" | "light" | "system" — landet als `data-theme` am Dokument.
+  theme   String @default("dark")
+  /// "airy" | "compact" — landet als `data-density` am Dokument.
+  density String @default("airy")
+
+  // Benachrichtigungen, je Anlass einmal für die App und einmal für die Mail.
+  // Es gibt noch keinen Mailversand; die Spalten stehen trotzdem hier, damit die
+  // Wahl schon getroffen werden kann und nicht später nachgeholt werden muss.
+  assignedInApp  Boolean @default(true)
+  assignedEmail  Boolean @default(true)
+  mentionedInApp Boolean @default(true)
+  mentionedEmail Boolean @default(true)
+  commentInApp   Boolean @default(true)
+  commentEmail   Boolean @default(false)
+  statusInApp    Boolean @default(true)
+  statusEmail    Boolean @default(false)
+  inviteInApp    Boolean @default(true)
+  inviteEmail    Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Auth.js (NextAuth) ─────────────────────────────────────────────────────────

@@ -1,0 +1,11 @@
+/* Ein Hinweis, kein Fehler: er steht unter den Listen, in der Farbe der
+   Nebentexte, und nimmt keine eigene Fläche. */
+.note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 2px;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+}

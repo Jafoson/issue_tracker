@@ -22,7 +22,12 @@ export type NavLabelKey =
   | "roles"
   | "labels"
   | "preferences"
-  | "workspaces";
+  | "workspaces"
+  | "account"
+  | "appearance"
+  | "notifications"
+  | "security"
+  | "connections";
 
 export interface NavEntry {
   section: string;
@@ -68,12 +73,32 @@ export const ROLES_NAV: NavEntry = {
   labelKey: "roles",
 };
 
+/**
+ * Die eigenen Einstellungen — `/<workspaceId>/account/…`.
+ *
+ * Sie stehen in keiner Seitenleiste: erreichbar sind sie über das eigene Menü
+ * unten links, dort, wo der eigene Name steht. Der Eintrag existiert trotzdem,
+ * weil ein offener Reiter und ein geteilter Link einen Namen und ein Zeichen
+ * brauchen — dieselbe Rolle wie `ROLES_NAV`.
+ *
+ * Der Bereich hängt unter dem Workspace, obwohl nichts darin dem Workspace
+ * gehört: die App kennt außerhalb der Workspace-Hülle keine Seitenleiste, keine
+ * Reiterleiste und keinen Weg zurück. Welcher Workspace in der Adresse steht,
+ * ist für den Inhalt ohne Bedeutung.
+ */
+export const ACCOUNT_NAV: NavEntry = {
+  section: "account",
+  icon: "lucide:circle-user",
+  labelKey: "account",
+};
+
 /** All sections that live directly under `/<workspaceId>/…` — used by the TabBar to resolve any workspace-scoped tab. */
 export const WORKSPACE_SECTIONS: NavEntry[] = [
   ...GLOBAL_NAV,
   ...WORKSPACE_NAV,
   INBOX_NAV,
   ROLES_NAV,
+  ACCOUNT_NAV,
 ];
 
 /** Sidebar "Admin" group — `/admin` (empty section = root) or `/admin/<section>`. */
@@ -138,6 +163,24 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
   { section: "preferences", icon: "lucide:palette", labelKey: "preferences" },
 ];
 
+/**
+ * Die Bereiche der eigenen Einstellungen — `/<workspaceId>/account/<section>`,
+ * leere Sektion = Allgemein.
+ *
+ * Dieselbe zweite Ebene wie beim Workspace und beim Projekt, nur gehört sie
+ * niemandem außer dem, der sie öffnet. Die Reihenfolge folgt der Häufigkeit:
+ * zuerst, wer man ist, dann wie es aussieht, dann was einen erreicht — und
+ * zuletzt, womit man sich anmeldet. Rechte spielen hier keine Rolle: jeder sieht
+ * genau seine eigenen Einstellungen, also ist auch keine Zeile je verborgen.
+ */
+export const ACCOUNT_SETTINGS_NAV: NavEntry[] = [
+  { section: "", icon: "lucide:user", labelKey: "general" },
+  { section: "appearance", icon: "lucide:palette", labelKey: "appearance" },
+  { section: "notifications", icon: "lucide:bell", labelKey: "notifications" },
+  { section: "security", icon: "lucide:shield-check", labelKey: "security" },
+  { section: "connections", icon: "lucide:link", labelKey: "connections" },
+];
+
 export function workspacePath(workspaceId: string, section: string): string {
   return section ? `/${workspaceId}/${section}` : `/${workspaceId}`;
 }
@@ -148,6 +191,12 @@ export function workspaceSettingsPath(
   section: string,
 ): string {
   const base = workspacePath(workspaceId, "settings");
+  return section ? `${base}/${section}` : base;
+}
+
+/** Ein Bereich der eigenen Einstellungen. Leere Sektion = Allgemein. */
+export function accountPath(workspaceId: string, section: string): string {
+  const base = workspacePath(workspaceId, "account");
   return section ? `${base}/${section}` : base;
 }
 

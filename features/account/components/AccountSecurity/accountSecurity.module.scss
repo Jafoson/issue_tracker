@@ -1,0 +1,85 @@
+/* Das Formular steht als eigene Karte zwischen den Listen — dieselbe Fläche und
+   derselbe Rahmen wie sie, damit es zur Zeile darüber gehört und nicht wie ein
+   fremder Einschub wirkt. Die Felder stehen untereinander in Feldbreite: ein
+   Passwort liest niemand quer. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 420px;
+  padding: 18px 20px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* Angaben ohne Bedienelement: an derselben rechten Kante wie die Knöpfe darüber,
+   aber zurückgenommen — es gibt nichts zu tun. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.value {
+  font-size: var(--text-base);
+  color: var(--on-surface-variant);
+}
+
+.verified,
+.unverified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.verified {
+  color: var(--green);
+}
+
+/* Kein Fehler, nur ein offener Punkt — deshalb die Farbe der Nebentexte und
+   nicht die der Warnungen. */
+.unverified {
+  color: var(--on-surface-variant);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--on-surface);
+  font-size: var(--text-base);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary);
+  }
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green);
+  font-size: var(--text-sm);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

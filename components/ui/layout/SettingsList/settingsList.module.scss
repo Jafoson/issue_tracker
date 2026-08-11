@@ -1,0 +1,77 @@
+/* Der scrollende Teil der Seite: die Kopfzeile bleibt oben, die Listen darunter
+   laufen durch. `min-height: 0`, sonst wächst der Inhalt die Spalte auf und die
+   ganze Seite scrollt statt nur dieser Bereich. */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Drei Werte weichen von der Vorgabe der Tabelle ab. Eine Einstellung ist keine
+   Liste gleichartiger Datensätze, sondern ein Formular: die Zeile trägt zwei
+   Textzeilen und ein Bedienelement, also braucht sie Höhe; sie ist von der
+   nächsten getrennt, weil hier jede Zeile für sich steht; und sie leuchtet nicht
+   auf, wenn der Zeiger sie überfährt — anzuklicken gibt es nur das Bedienelement
+   rechts. */
+.table {
+  --table-row-height: 62px;
+  --table-divider: var(--outline-variant);
+  --table-hover: transparent;
+}
+
+[data-density="compact"] .table {
+  --table-row-height: 52px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+/* Was sich nicht zurücknehmen lässt, trägt die Warnfarbe schon in der
+   Überschrift und im Rahmen — bevor jemand klickt, nicht danach. */
+.dangerTitle {
+  color: var(--error);
+}
+
+/* Doppelt benannt, um die Spezifität zu heben: der Rahmen kommt aus
+   `table.module.scss`, und bei gleicher Spezifität entschiede die Reihenfolge
+   der Stylesheets. */
+.danger.danger {
+  --table-surface: var(--surface);
+
+  border-color: color-mix(in oklab, var(--error) 40%, var(--outline-variant));
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  padding-block: 10px;
+}
+
+.label {
+  font-size: var(--text-md);
+  font-weight: 550;
+  line-height: var(--leading-tight);
+}
+
+.desc {
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}

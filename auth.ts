@@ -39,7 +39,12 @@ function createAdapter(): Adapter {
   };
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+// `unstable_update` schreibt das JWT neu, ohne dass sich jemand neu anmelden
+// muss — gebraucht von den eigenen Einstellungen, wenn Name oder Farbe sich
+// ändern (siehe den `update`-Zweig im jwt-Callback in `auth.config.ts`). Der
+// Name ist der von Auth.js; instabil ist daran die Bezeichnung, nicht die
+// Wirkung.
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   adapter: createAdapter(),
   providers: [

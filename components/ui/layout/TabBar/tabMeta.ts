@@ -1,5 +1,6 @@
 import type { Translator } from "@/i18n/types";
 import {
+  ACCOUNT_SETTINGS_NAV,
   ADMIN_NAV,
   findBySection,
   PROJECT_NAV,
@@ -71,6 +72,18 @@ function workspaceSettingsSection(path: string): string | null {
   return parts[3] ?? "";
 }
 
+/**
+ * Der Bereich innerhalb der eigenen Einstellungen — `""` für Allgemein,
+ * `"appearance"`, `"security"`, … `null`, wenn der Pfad nicht dort liegt.
+ * Dieselbe Unterscheidung wie bei Workspace und Projekt: ohne sie hießen alle
+ * fünf Reiter „Konto".
+ */
+function accountSection(path: string): string | null {
+  const parts = path.split("/");
+  if (parts[1] === "admin" || parts[2] !== "account") return null;
+  return parts[3] ?? "";
+}
+
 /** Human title for a tab path (no query string). */
 export function tabTitle(
   path: string,
@@ -119,6 +132,14 @@ export function tabIcon(path: string): string {
     return (
       findBySection(PROJECT_NAV, projectSection(path))?.icon ??
       "lucide:layout-dashboard"
+    );
+  }
+
+  // Dieselbe zweite Ebene, nur für die eigenen Einstellungen.
+  const account = accountSection(path);
+  if (account !== null) {
+    return (
+      findBySection(ACCOUNT_SETTINGS_NAV, account)?.icon ?? "lucide:circle-user"
     );
   }
 
@@ -183,6 +204,13 @@ export function tabMeta(
     const section = workspaceSettingsSection(path);
     const sub = section ? findBySection(WORKSPACE_SETTINGS_NAV, section) : null;
     if (sub) title = `${title} (${t(`nav.${sub.labelKey}`)})`;
+
+    // Und noch einmal für die eigenen Einstellungen.
+    const account = accountSection(path);
+    const accountSub = account
+      ? findBySection(ACCOUNT_SETTINGS_NAV, account)
+      : null;
+    if (accountSub) title = `${title} (${t(`nav.${accountSub.labelKey}`)})`;
   }
 
   return {

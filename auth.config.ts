@@ -31,13 +31,29 @@ export const authConfig = {
     // Login, eine Rollenänderung würde also erst verspätet greifen. Rechte
     // werden in `lib/permissions.ts` bei jeder Prüfung frisch aus der Datenbank
     // aufgelöst — das Token trägt nur Anzeigedaten.
-    jwt({ token, user }) {
+    //
+    // `trigger === "update"` ist der zweite Weg hinein: die eigenen
+    // Einstellungen ändern Name und Farbe, und das Token lebt bis zum nächsten
+    // Login. Ohne diesen Zweig stünde im Menü unten links noch tagelang der alte
+    // Name — angezeigt wird ja das Token, nicht die Datenbank. Übernommen werden
+    // nur diese drei Felder: was `unstable_update` sonst mitschickt, ist
+    // Eingabe aus dem Browser und hat in einem Token nichts verloren.
+    jwt({ token, user, trigger, session }) {
       if (user?.id) token.id = user.id;
       if (user) {
         token.color = user.color;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
       }
+
+      if (trigger === "update" && session && typeof session === "object") {
+        const next = (session as { user?: Record<string, unknown> }).user;
+        if (typeof next?.color === "string") token.color = next.color;
+        if (typeof next?.firstName === "string")
+          token.firstName = next.firstName;
+        if (typeof next?.lastName === "string") token.lastName = next.lastName;
+      }
+
       return token;
     },
     // Id + Farbe + Name aus dem Token in die Session spiegeln (serverseitig verfügbar).
