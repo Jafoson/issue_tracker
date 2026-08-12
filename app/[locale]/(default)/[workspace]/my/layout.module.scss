@@ -1,0 +1,10 @@
+/* Topbar (flex: none) + View (flex: 1) — die View scrollt, die Spalte nicht.
+   Dieselbe Hülle wie beim Projekt: „Meine Aufgaben“ zeigt dieselben zwei
+   Ansichten, nur über alle Projekte hinweg. */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}

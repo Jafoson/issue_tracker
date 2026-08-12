@@ -1,4 +1,4 @@
-import type { Label, Priority, User } from "@/types";
+import type { Label, Priority, Project, User } from "@/types";
 
 /**
  * Filter values live in the URL as human-readable slugs:
@@ -6,6 +6,7 @@ import type { Label, Priority, User } from "@/types";
  *   - priority → Priority.key (e.g. "high")
  *   - assignee → User.handle  (e.g. "mara")
  *   - label    → Label.slug   (e.g. "tech-debt")
+ *   - project  → Project.slug (e.g. "orbit") — cross-project views only
  *
  * The UI components work in internal-id space, so these helpers translate
  * between the URL slug and the internal id using the loaded workspace data.
@@ -35,6 +36,10 @@ export function labelIdToSlug(labels: Label[], id: string) {
   return labels.find((l) => l.id === id)?.slug ?? id;
 }
 
+export function projectIdToSlug(projects: Project[], id: string) {
+  return projects.find((p) => p.id === id)?.slug ?? id;
+}
+
 // ── URL slug → internal id ────────────────────────────────────────────────────
 
 export function statusSlugToId(slug: string) {
@@ -51,4 +56,8 @@ export function assigneeSlugToId(members: User[], slug: string) {
 
 export function labelSlugToId(labels: Label[], slug: string) {
   return labels.find((l) => l.slug === slug)?.id;
+}
+
+export function projectSlugToId(projects: Project[], slug: string) {
+  return projects.find((p) => p.slug === slug)?.id;
 }

@@ -22,7 +22,17 @@ import { useTextEnd } from "./useTextEnd";
 
 interface BoardCardProps {
   issue: Issue;
-  projectId: string;
+  /**
+   * Das Projekt der Spalte — nur als Rückfallebene für das Kürzel im Fuß. Zuerst
+   * zählt immer das Projekt am Issue selbst; in einer projektübergreifenden
+   * Ansicht gibt es hier gar keines.
+   */
+  projectId?: string;
+  /**
+   * Nennt das Projekt in der Kopfzeile. Auf dem Brett eines Projekts stünde in
+   * jeder Karte dasselbe — dort sagt das Kürzel im Fuß genug.
+   */
+  showProject?: boolean;
   lookups: IssueLookups;
   isDragging?: boolean;
   /**
@@ -49,6 +59,7 @@ interface BoardCardProps {
 export function BoardCard({
   issue,
   projectId,
+  showProject,
   lookups: { members, projects, labels, issueTypes },
   isDragging,
   isActive,
@@ -146,6 +157,18 @@ export function BoardCard({
       }}
       onKeyDown={onActivate(() => onOpen?.())}
     >
+      {/* Woher die Aufgabe kommt, steht über allem anderen — eine eigene Zeile,
+        bevor Typ und Titel sagen, was sie ist. */}
+      {showProject && (
+        <span className={styles.project} title={project.name}>
+          <span
+            className={styles.projectDot}
+            style={{ background: project.color }}
+          />
+          {project.name}
+        </span>
+      )}
+
       {/* Kopfzeile: Typ-Badge + Assignee. Der Avatar ist zugleich der Auslöser
         für die Zuweisung — sie zu ändern, ist der häufigste Griff an einer
         Karte, und dafür soll sie sich nicht erst öffnen müssen. */}

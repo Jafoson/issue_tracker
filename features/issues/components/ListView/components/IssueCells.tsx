@@ -5,6 +5,7 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import {
+  LabelIcon,
   PriorityIcon,
   StatusIcon,
   TypeIcon,
@@ -15,6 +16,7 @@ import type {
   IssueType,
   Label as LabelType,
   Priority,
+  Project,
   Status,
 } from "@/types";
 import styles from "../listView.module.scss";
@@ -138,6 +140,29 @@ export function TypeCell({
       title={type.name}
     >
       <TypeIcon type={type.id} size={13} color={type.color} />
+    </span>
+  );
+}
+
+/**
+ * Zu welchem Projekt die Zeile gehört — nur in projektübergreifenden Ansichten.
+ * Im Board und in der Liste eines Projekts wäre die Spalte in jeder Zeile
+ * dieselbe Auskunft.
+ */
+export function ProjectCell({
+  issue,
+  projects,
+}: {
+  issue: Issue;
+  projects: Project[];
+}) {
+  const project = projects.find((p) => p.id === issue.project);
+  if (!project) return null;
+
+  return (
+    <span className={styles.project} title={project.name}>
+      <LabelIcon color={project.color} size={9} />
+      {project.name}
     </span>
   );
 }

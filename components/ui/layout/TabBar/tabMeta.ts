@@ -73,6 +73,18 @@ function workspaceSettingsSection(path: string): string | null {
 }
 
 /**
+ * Die Ansicht innerhalb der eigenen Aufgaben — `""` für das Board, `"list"` für
+ * die Liste. `null`, wenn der Pfad gar nicht dort liegt. Dieselben zwei
+ * Ansichten wie im Projekt, deshalb dieselbe Unterscheidung: sonst hießen beide
+ * Reiter „Meine Aufgaben".
+ */
+function myIssuesSection(path: string): string | null {
+  const parts = path.split("/");
+  if (parts[1] === "admin" || parts[2] !== "my") return null;
+  return parts[3] ?? "";
+}
+
+/**
  * Der Bereich innerhalb der eigenen Einstellungen — `""` für Allgemein,
  * `"appearance"`, `"security"`, … `null`, wenn der Pfad nicht dort liegt.
  * Dieselbe Unterscheidung wie bei Workspace und Projekt: ohne sie hießen alle
@@ -133,6 +145,12 @@ export function tabIcon(path: string): string {
       findBySection(PROJECT_NAV, projectSection(path))?.icon ??
       "lucide:layout-dashboard"
     );
+  }
+
+  // Die eigenen Aufgaben haben zwei Ansichten wie ein Projekt — die Liste trägt
+  // deren Zeichen, das Board bleibt beim Zeichen des Bereichs.
+  if (myIssuesSection(path) === "list") {
+    return findBySection(PROJECT_NAV, "list")?.icon ?? "lucide:list";
   }
 
   // Dieselbe zweite Ebene, nur für die eigenen Einstellungen.
@@ -204,6 +222,11 @@ export function tabMeta(
     const section = workspaceSettingsSection(path);
     const sub = section ? findBySection(WORKSPACE_SETTINGS_NAV, section) : null;
     if (sub) title = `${title} (${t(`nav.${sub.labelKey}`)})`;
+
+    // Und noch einmal für die eigenen Aufgaben: das Board ist die Hauptansicht
+    // und trägt den Namen unverändert, die Liste sagt es im Suffix.
+    if (myIssuesSection(path) === "list")
+      title = `${title} (${t("nav.issues")})`;
 
     // Und noch einmal für die eigenen Einstellungen.
     const account = accountSection(path);

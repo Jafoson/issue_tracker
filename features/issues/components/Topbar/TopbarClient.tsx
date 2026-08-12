@@ -33,6 +33,7 @@ export function TopbarClient({
   const t = useTranslations();
   const {
     isPending,
+    area,
     showFilters,
     showSort,
     project,
@@ -49,16 +50,25 @@ export function TopbarClient({
     setView,
   } = useTopbar({ workspaceId, projects, priorities, members, labels });
 
-  if (!showFilters) return null;
+  if (!showFilters || !area) return null;
+
+  // Im Projekt sagt der Titel, welche Ansicht man sieht — das Projekt selbst
+  // steht schon in der Seitenleiste und im Reiter. Bei den eigenen Aufgaben
+  // sagt er, wessen Aufgaben es sind: das ist hier die eigentliche Auskunft,
+  // und die Ansicht steht als Umschalter daneben.
+  const title =
+    area === "my"
+      ? t("nav.myIssues")
+      : view === "list"
+        ? t("nav.issues")
+        : t("nav.board");
 
   return (
     <header
       className={`${styles.header}${isPending ? ` ${styles.pending}` : ""}`}
     >
       <div className={styles.titleRow}>
-        <h1 className={styles.title}>
-          {view === "list" ? t("nav.issues") : t("nav.board")}
-        </h1>
+        <h1 className={styles.title}>{title}</h1>
         <Badge className={styles.count}>{count}</Badge>
 
         <div className={styles.trailing}>
@@ -71,6 +81,7 @@ export function TopbarClient({
         <TopbarFilters
           filters={filters}
           filterCount={filterCount}
+          area={area}
           projectId={project?.id ?? ""}
           projectName={project?.name ?? ""}
           workspaceId={workspaceId}
@@ -78,6 +89,7 @@ export function TopbarClient({
           priorities={priorities}
           members={members}
           labels={labels}
+          projects={projects}
           onToggle={toggleFilter}
           onClear={clearFilter}
           onClearAll={clearAll}

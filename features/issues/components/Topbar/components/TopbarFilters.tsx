@@ -3,17 +3,21 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import type { Label, Priority, Status, User } from "@/types";
+import type { Label, Priority, Project, Status, User } from "@/types";
 import styles from "../topbar.module.scss";
-import type { FilterKey, FilterState } from "../useTopbar";
+import type { FilterKey, FilterState, IssueArea } from "../useTopbar";
 import { AssigneeFilter } from "./AssigneeFilter";
 import { LabelFilter } from "./LabelFilter";
 import { PriorityFilter } from "./PriorityFilter";
+import { ProjectFilter } from "./ProjectFilter";
 import { StatusFilter } from "./StatusFilter";
 
 interface TopbarFiltersProps {
   filters: FilterState;
   filterCount: number;
+  /** Woraufhin die Ansicht zeigt — entscheidet über die letzte Chip-Stelle. */
+  area: IssueArea;
+  /** Leer im Bereich „Meine Aufgaben“: dort gibt es kein einzelnes Projekt. */
   projectId: string;
   projectName: string;
   workspaceId: string;
@@ -21,6 +25,7 @@ interface TopbarFiltersProps {
   priorities: Priority[];
   members: User[];
   labels: Label[];
+  projects: Project[];
   onToggle: (key: FilterKey, value: string | number) => void;
   onClear: (key: FilterKey) => void;
   onClearAll: () => void;
@@ -29,6 +34,7 @@ interface TopbarFiltersProps {
 export function TopbarFilters({
   filters,
   filterCount,
+  area,
   projectId,
   projectName,
   workspaceId,
@@ -36,6 +42,7 @@ export function TopbarFilters({
   priorities,
   members,
   labels,
+  projects,
   onToggle,
   onClear,
   onClearAll,
@@ -56,12 +63,24 @@ export function TopbarFilters({
         onToggle={(id) => onToggle("priority", id)}
         onClear={() => onClear("priority")}
       />
-      <AssigneeFilter
-        value={filters.assignee}
-        members={members}
-        onToggle={(id) => onToggle("assignee", id)}
-        onClear={() => onClear("assignee")}
-      />
+      {/* Die letzte Stelle beantwortet, was der Bereich offen lässt: im Projekt
+          ist das die Zuständigkeit, bei den eigenen Aufgaben das Projekt — die
+          jeweils andere Frage ist dort schon entschieden. */}
+      {area === "project" ? (
+        <AssigneeFilter
+          value={filters.assignee}
+          members={members}
+          onToggle={(id) => onToggle("assignee", id)}
+          onClear={() => onClear("assignee")}
+        />
+      ) : (
+        <ProjectFilter
+          value={filters.project}
+          projects={projects}
+          onToggle={(id) => onToggle("project", id)}
+          onClear={() => onClear("project")}
+        />
+      )}
       <LabelFilter
         value={filters.label}
         labels={labels}

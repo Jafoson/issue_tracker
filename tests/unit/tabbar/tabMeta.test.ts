@@ -226,6 +226,22 @@ describe("tabMeta()", () => {
   });
 });
 
+// „Meine Aufgaben" haben dieselben zwei Ansichten wie ein Projekt. Ohne eigene
+// Behandlung hießen beide Reiter gleich und trügen dasselbe Zeichen.
+describe("Meine Aufgaben", () => {
+  it("lässt das Board unverändert", () => {
+    const meta = tabMeta(`${BASE}/my?status=todo`, projects, t);
+    expect(meta.title).toBe("Meine Aufgaben");
+    expect(meta.icon).toBe("lucide:user");
+  });
+
+  it("nennt die Liste im Suffix und zeigt deren Zeichen", () => {
+    const meta = tabMeta(`${BASE}/my/list`, projects, t);
+    expect(meta.title).toBe("Meine Aufgaben (Aufgaben)");
+    expect(meta.icon).toBe("lucide:list");
+  });
+});
+
 // Die eigenen Einstellungen liegen unter /<workspace>/account. Der Bereich
 // gehört keinem Workspace, hängt aber unter einem — ohne eigene Behandlung hießen
 // alle fünf Reiter „Konto" und trügen dasselbe Zeichen.

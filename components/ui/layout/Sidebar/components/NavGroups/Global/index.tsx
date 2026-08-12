@@ -8,11 +8,18 @@ async function NavGroupGlobal() {
   const workspace = await getCurrentWorkspace();
   if (!workspace) return null;
 
-  const tabs: TabGroup[] = GLOBAL_NAV.map((entry) => ({
-    href: workspacePath(workspace.id, entry.section),
-    icon: entry.icon,
-    label: t(entry.labelKey),
-  }));
+  const tabs: TabGroup[] = GLOBAL_NAV.map((entry) => {
+    const href = workspacePath(workspace.id, entry.section);
+    return {
+      href,
+      icon: entry.icon,
+      label: t(entry.labelKey),
+      // „Meine Aufgaben" haben zwei Ansichten (Board und Liste). Ohne den
+      // Bereich darunter verlöre der Eintrag seine Markierung, sobald man auf
+      // die Liste umschaltet.
+      ...(entry.section === "my" ? { activeHref: `${href}/*` } : {}),
+    };
+  });
 
   return <TabList tabs={tabs} />;
 }

@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { FilterChip } from "@/components/ui/layout/FilterChip/FilterChip";
 import {
   LabelDots,
@@ -15,6 +16,12 @@ import type { Label } from "@/types";
 interface LabelFilterProps {
   value: string[];
   labels: Label[];
+  /**
+   * Das Projekt, in dessen Rahmen gefiltert wird. Leer in einer
+   * projektübergreifenden Ansicht: dann stehen alle sichtbaren Labels zur Wahl
+   * und keines lässt sich von hier aus anlegen — ein neues Label braucht ein
+   * Zuhause, und das gäbe es hier nicht.
+   */
   projectId: string;
   projectName: string;
   workspaceId: string;
@@ -70,22 +77,36 @@ export function LabelFilter({
         )
       }
     >
-      {(close) => (
-        <LabelPickerMenu
-          allLabels={allLabels}
-          selected={value}
-          projectId={projectId}
-          projectName={projectName}
-          workspaceId={workspaceId}
-          onPick={onToggle}
-          onCreated={(l) => {
-            setCreated((cur) => [...cur, l]);
-            router.refresh();
-          }}
-          onClose={close}
-          keepOpen
-        />
-      )}
+      {(close) =>
+        !projectId ? (
+          <SelectMenu
+            items={allLabels.map((l) => ({
+              value: l.id,
+              label: l.name,
+              icon: <LabelIcon color={l.color} size={13} />,
+            }))}
+            value={value}
+            onPick={(v) => onToggle(v as string)}
+            multi
+            searchable
+          />
+        ) : (
+          <LabelPickerMenu
+            allLabels={allLabels}
+            selected={value}
+            projectId={projectId}
+            projectName={projectName}
+            workspaceId={workspaceId}
+            onPick={onToggle}
+            onCreated={(l) => {
+              setCreated((cur) => [...cur, l]);
+              router.refresh();
+            }}
+            onClose={close}
+            keepOpen
+          />
+        )
+      }
     </FilterChip>
   );
 }

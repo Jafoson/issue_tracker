@@ -10,6 +10,8 @@ import {
   labelSlugToId,
   priorityIdToSlug,
   prioritySlugToId,
+  projectIdToSlug,
+  projectSlugToId,
   statusIdToSlug,
   statusSlugToId,
 } from "@/lib/filter-slugs";
@@ -23,17 +25,38 @@ export type SortKey =
   | "title"
   | "assignee";
 
-export type FilterKey = "status" | "priority" | "assignee" | "label";
+export type FilterKey =
+  | "status"
+  | "priority"
+  | "assignee"
+  | "label"
+  | "project";
 
-const FILTER_KEYS: FilterKey[] = ["status", "priority", "assignee", "label"];
+const FILTER_KEYS: FilterKey[] = [
+  "status",
+  "priority",
+  "assignee",
+  "label",
+  "project",
+];
 
 export type View = "board" | "list";
+
+/**
+ * Woraufhin die Ansicht Issues zeigt: auf ein Projekt, oder auf die eigene
+ * Zuständigkeit quer durch alle. Board und Liste sind dieselben — verschieden
+ * sind nur der Titel, die Adresse hinter dem Umschalter und welche Filter
+ * überhaupt einen Sinn ergeben.
+ */
+export type IssueArea = "project" | "my";
 
 export interface FilterState {
   status: string[];
   priority: number[];
   assignee: string[];
   label: string[];
+  /** Nur im Bereich „Meine Aufgaben“ — im Projekt gibt es nichts einzugrenzen. */
+  project: string[];
 }
 
 /** Keystrokes are cheap, navigations are not — wait for a pause before pushing. */
@@ -68,7 +91,15 @@ export function useTopbar({
   const [, startQuietTransition] = useTransition();
   const base = `/${workspaceId}`;
 
-  const showFilters = pathname.startsWith(`${base}/project/`);
+  // Der Bereich steht im Pfad — `/<ws>/project/<slug>[/list]` oder
+  // `/<ws>/my[/list]`. Überall sonst gibt es keine Issue-Ansicht und damit auch
+  // keine Leiste.
+  const area: IssueArea | null = pathname.startsWith(`${base}/project/`)
+    ? "project"
+    : pathname === `${base}/my` || pathname.startsWith(`${base}/my/`)
+      ? "my"
+      : null;
+  const showFilters = area !== null;
   const view: View = pathname.endsWith("/list") ? "list" : "board";
   const showSort = showFilters && view === "list";
 
@@ -76,7 +107,10 @@ export function useTopbar({
     pathname.match(new RegExp(`^${base}/project/([^/]+)`))?.[1] ??
     projects[0]?.slug ??
     "";
-  const project = projects.find((p) => p.slug === slug) ?? projects[0] ?? null;
+  const project =
+    area === "my"
+      ? null
+      : (projects.find((p) => p.slug === slug) ?? projects[0] ?? null);
 
   // URL holds slugs; the UI works in internal-id space — translate on read.
   const parse = (key: FilterKey) =>
@@ -92,6 +126,9 @@ export function useTopbar({
       .filter((id): id is string => Boolean(id)),
     label: parse("label")
       .map((s) => labelSlugToId(labels, s))
+      .filter((id): id is string => Boolean(id)),
+    project: parse("project")
+      .map((s) => projectSlugToId(projects, s))
       .filter((id): id is string => Boolean(id)),
   };
 
@@ -113,7 +150,8 @@ export function useTopbar({
     filters.status.length +
     filters.priority.length +
     filters.assignee.length +
-    filters.label.length;
+    filters.label.length +
+    filters.project.length;
 
   const sortKey = (searchParams.get("sort") ?? "priority") as SortKey;
 
@@ -128,6 +166,8 @@ export function useTopbar({
         return assigneeIdToSlug(members, String(value));
       case "label":
         return labelIdToSlug(labels, String(value));
+      case "project":
+        return projectIdToSlug(projects, String(value));
       default:
         return String(value);
     }
@@ -195,17 +235,19 @@ export function useTopbar({
     else p.delete("q");
     const qs = p.toString();
     const suffix = qs ? `?${qs}` : "";
+    // Der Umschalter bleibt in seinem Bereich: das Board eines Projekts führt in
+    // dessen Liste, die eigenen Aufgaben in die eigene Liste.
+    const areaBase = area === "my" ? `${base}/my` : `${base}/project/${slug}`;
     startTransition(() =>
       router.push(
-        next === "list"
-          ? `${base}/project/${slug}/list${suffix}`
-          : `${base}/project/${slug}${suffix}`,
+        next === "list" ? `${areaBase}/list${suffix}` : `${areaBase}${suffix}`,
       ),
     );
   }
 
   return {
     isPending,
+    area,
     showFilters,
     showSort,
     project,

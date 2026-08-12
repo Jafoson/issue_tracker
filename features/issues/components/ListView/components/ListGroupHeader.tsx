@@ -13,7 +13,8 @@ import styles from "../listView.module.scss";
 interface ListGroupHeaderProps {
   status: Status;
   count: number;
-  projectId: string;
+  /** Ohne Projekt gibt es kein „+“ — siehe `ListView`. */
+  projectId?: string;
   composer: IssueComposerData;
   collapsed: boolean;
   onToggle: () => void;
@@ -35,10 +36,13 @@ export function ListGroupHeader({
   const { openModal } = useModal();
 
   // Wie im Spaltenkopf des Boards: ohne `issue.create` in diesem Projekt fehlt
-  // das Plus. Entschieden hat das der Server (`creatableProjectIds`).
-  const canCreate = composer.creatableProjectIds.includes(projectId);
+  // das Plus. Entschieden hat das der Server (`creatableProjectIds`). Ohne
+  // Projekt stellt sich die Frage nicht.
+  const canCreate =
+    projectId !== undefined && composer.creatableProjectIds.includes(projectId);
 
-  const createIssue = () =>
+  const createIssue = () => {
+    if (projectId === undefined) return;
     openModal(({ close }) => (
       <CreateIssueModal
         projectId={projectId}
@@ -47,6 +51,7 @@ export function ListGroupHeader({
         close={close}
       />
     ));
+  };
 
   return (
     <>

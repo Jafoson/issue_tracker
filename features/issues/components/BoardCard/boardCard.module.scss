@@ -55,6 +55,41 @@
   }
 }
 
+/* Woher die Aufgabe kommt — nur auf projektübergreifenden Brettern, sonst stünde
+   in jeder Karte dasselbe (siehe `showProject` in BoardCard). Sie steht als
+   Zeile über dem Typ: erst das Projekt, dann was die Aufgabe darin ist.
+
+   Punkt in der Farbe des Projekts, der Name in gedämpfter Schrift — das gefüllte
+   Typ-Badge darunter soll das kräftigere Zeichen bleiben.
+
+   Der negative Abstand holt die Zeile an das Badge heran: der Kartenrhythmus
+   (`--gap`) trennt eigenständige Blöcke, Projekt und Typ gehören aber zusammen.
+
+   `align-self` hält sie auf ihrer Textbreite, damit die Ellipse erst greift, wo
+   die Karte wirklich endet. */
+.project {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-bottom: calc(4px - var(--gap));
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--on-surface-variant);
+}
+
+.projectDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
 /* Bezugsrahmen für den Stift, der über dem Titel liegt. */
 .titleRow {
   position: relative;

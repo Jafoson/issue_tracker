@@ -434,6 +434,7 @@
     "statuses": "{count, plural, one {# status} other {# statuses}}",
     "priorities": "{count, plural, one {# priority} other {# priorities}}",
     "people": "{count, plural, one {# person} other {# people}}",
+    "projects": "{count, plural, one {# project} other {# projects}}",
     "labels": "{count, plural, one {# label} other {# labels}}"
   },
   "toast": {

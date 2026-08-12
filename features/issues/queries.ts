@@ -259,51 +259,86 @@ export const getTeams = cache(async (workspaceId: string): Promise<Team[]> => {
   }));
 });
 
-export async function getIssuesByProject(
-  projectId: string,
-  filters: {
-    status?: string;
-    priority?: string;
-    assignee?: string;
-    label?: string;
-    q?: string;
-  } = {},
-): Promise<Issue[]> {
-  // Die Issues sind der Inhalt des Projekts — ohne `project.view` gibt es sie
-  // nicht. Das greift auch für `blocked`: die Rolle verbietet alles, also auch
-  // das Lesen, und nicht nur das Schreiben.
-  if (!(await hasPermission("project.view", { projectId }))) return [];
+/**
+ * Die Filter der Topbar, so wie sie in der URL stehen: kommagetrennte,
+ * menschenlesbare Slugs. Board, Liste und „Meine Aufgaben“ tragen dieselben —
+ * nur der Ausschnitt, in dem gesucht wird, unterscheidet sie.
+ */
+export interface IssueFilters {
+  status?: string;
+  priority?: string;
+  assignee?: string;
+  label?: string;
+  /** Nur in projektübergreifenden Ansichten belegt (siehe `getMyIssues`). */
+  project?: string;
+  q?: string;
+}
 
-  // URL filter values are human-readable slugs — resolve them to the internal
-  // values stored on the issue (status slug == status id, so it needs no lookup).
-  const statuses = filters.status?.split(",").filter(Boolean) ?? [];
-  const prioritySlugs = filters.priority?.split(",").filter(Boolean) ?? [];
-  const assigneeSlugs = filters.assignee?.split(",").filter(Boolean) ?? [];
-  const labelSlugs = filters.label?.split(",").filter(Boolean) ?? [];
+/**
+ * Übersetzt die Slugs aus der URL in die internen Werte am Issue und baut daraus
+ * die `where`-Bedingungen — einmal für alle Ansichten, damit derselbe Filter
+ * überall dasselbe bedeutet.
+ *
+ * Die Projekte kommen getrennt zurück: der Aufrufer kennt seinen eigenen
+ * Ausschnitt (ein Projekt, oder die sichtbaren eines Workspace) und muss den
+ * Filter mit ihm schneiden, statt ihn zu überschreiben.
+ *
+ * Ein Slug, der nichts trifft, fällt weg — die Ansicht zeigt dann alles statt
+ * nichts. Das ist die Regel für jeden dieser Filter, und ein veralteter Link
+ * landet damit nicht auf einer leeren Seite.
+ */
+async function resolveIssueFilters(
+  filters: IssueFilters,
+  scope: { projectId: string } | { workspaceId: string },
+): Promise<{
+  where: Record<string, unknown>;
+  /** `null`, wenn nicht nach Projekt gefiltert wird. */
+  projectIds: string[] | null;
+}> {
+  const list = (value?: string) => value?.split(",").filter(Boolean) ?? [];
 
-  const [priorityRows, assigneeRows, labelRows] = await Promise.all([
-    prioritySlugs.length
-      ? db.priority.findMany({
-          where: { key: { in: prioritySlugs } },
-          select: { id: true },
-        })
-      : Promise.resolve([]),
-    assigneeSlugs.length
-      ? db.user.findMany({
-          where: { handle: { in: assigneeSlugs } },
-          select: { id: true },
-        })
-      : Promise.resolve([]),
-    labelSlugs.length
-      ? db.label.findMany({
-          where: {
-            slug: { in: labelSlugs },
-            workspace: { projects: { some: { id: projectId } } },
-          },
-          select: { id: true },
-        })
-      : Promise.resolve([]),
-  ]);
+  // Status-Slug == Status-Id, der braucht kein Nachschlagen.
+  const statuses = list(filters.status);
+  const prioritySlugs = list(filters.priority);
+  const assigneeSlugs = list(filters.assignee);
+  const labelSlugs = list(filters.label);
+  const projectSlugs = "workspaceId" in scope ? list(filters.project) : [];
+
+  const [priorityRows, assigneeRows, labelRows, projectRows] =
+    await Promise.all([
+      prioritySlugs.length
+        ? db.priority.findMany({
+            where: { key: { in: prioritySlugs } },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+      assigneeSlugs.length
+        ? db.user.findMany({
+            where: { handle: { in: assigneeSlugs } },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+      labelSlugs.length
+        ? db.label.findMany({
+            where: {
+              slug: { in: labelSlugs },
+              ...("projectId" in scope
+                ? { workspace: { projects: { some: { id: scope.projectId } } } }
+                : { workspaceId: scope.workspaceId }),
+            },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+      projectSlugs.length && "workspaceId" in scope
+        ? db.project.findMany({
+            where: {
+              slug: { in: projectSlugs },
+              workspaceId: scope.workspaceId,
+            },
+            select: { id: true },
+          })
+        : Promise.resolve([]),
+    ]);
 
   const priorities = priorityRows.map((p) => p.id);
   const assignees = assigneeRows.map((u) => u.id);
@@ -316,9 +351,8 @@ export async function getIssuesByProject(
   const keyDigits = q?.match(/^(?:[a-z]+-)?(\d{1,9})$/i)?.[1];
   const key = keyDigits ? Number(keyDigits) : undefined;
 
-  const rows = await db.issue.findMany({
+  return {
     where: {
-      projectId,
       ...(statuses.length && { status: { in: statuses } }),
       ...(priorities.length && { priority: { in: priorities } }),
       ...(assignees.length && { assigneeId: { in: assignees } }),
@@ -331,6 +365,25 @@ export async function getIssuesByProject(
         ],
       }),
     },
+    projectIds: projectRows.length ? projectRows.map((p) => p.id) : null,
+  };
+}
+
+export async function getIssuesByProject(
+  projectId: string,
+  filters: IssueFilters = {},
+): Promise<Issue[]> {
+  // Die Issues sind der Inhalt des Projekts — ohne `project.view` gibt es sie
+  // nicht. Das greift auch für `blocked`: die Rolle verbietet alles, also auch
+  // das Lesen, und nicht nur das Schreiben.
+  if (!(await hasPermission("project.view", { projectId }))) return [];
+
+  const { where } = await resolveIssueFilters(filters, { projectId });
+
+  const rows = await db.issue.findMany({
+    // Der Ausschnitt steht hinter den Filtern: kein Slug in der URL kann ihn
+    // überschreiben.
+    where: { ...where, projectId },
     include: { comments: { orderBy: { created: "asc" } } },
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
@@ -342,14 +395,29 @@ export async function getIssuesByProject(
 export async function getMyIssues(
   userId: string,
   workspaceId: string,
+  filters: IssueFilters = {},
 ): Promise<Issue[]> {
   const visible = await accessibleProjectIds(userId, workspaceId);
   if (visible.size === 0) return [];
 
+  const { where, projectIds } = await resolveIssueFilters(filters, {
+    workspaceId,
+  });
+  // Der Projektfilter schneidet in die sichtbaren Projekte hinein, nie über sie
+  // hinaus: eine Projekt-Id in der URL öffnet nichts, was ohne sie zu wäre.
+  const scoped = projectIds
+    ? [...visible].filter((id) => projectIds.includes(id))
+    : [...visible];
+  if (scoped.length === 0) return [];
+
   const rows = await db.issue.findMany({
-    where: { assigneeId: userId, projectId: { in: [...visible] } },
+    // Zuständigkeit und Ausschnitt stehen hinter den Filtern — ein `?assignee=`
+    // in der Adresse macht aus „meinen“ keine fremden Aufgaben.
+    where: { ...where, assigneeId: userId, projectId: { in: scoped } },
     include: { comments: { orderBy: { created: "asc" } } },
-    orderBy: { updated: "desc" },
+    // Wie im Projekt: nach Rang, damit eine gezogene Zeile dort liegen bleibt,
+    // wo sie fallen gelassen wurde.
+    orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
   return rows.map(mapIssue);
 }

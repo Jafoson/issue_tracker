@@ -25,6 +25,7 @@ import type { Issue } from "@/types";
 import {
   LabelsCell,
   PriorityCell,
+  ProjectCell,
   StatusCell,
   TypeCell,
   UpdatedCell,
@@ -34,13 +35,20 @@ import styles from "./listView.module.scss";
 
 interface ListViewProps {
   issues: Issue[];
-  projectId: string;
+  /**
+   * Das Projekt, in dem eine neue Aufgabe entsteht. Ohne eines — etwa bei den
+   * eigenen Aufgaben quer durch alle Projekte — fehlt das „+“ im Gruppenkopf,
+   * und stattdessen sagt eine Spalte je Zeile, aus welchem Projekt sie kommt.
+   */
+  projectId?: string;
   /**
    * Ein Bündel für alles: die Zellen lösen darüber Projekt, Zuständige, Labels,
    * Typen, Status und Prioritäten auf, die Gruppenköpfe speisen damit ihren
    * Composer. Dieselbe Prop wie beim Board.
    */
   composer: IssueComposerData;
+  /** Was statt der leeren Tabelle steht. Vorgabe: „Keine Aufgaben“. */
+  emptyTitle?: string;
 }
 
 /**
@@ -49,7 +57,12 @@ interface ListViewProps {
  * Ziehen sortiert um — innerhalb einer Gruppe und über deren Grenze hinweg,
  * womit sich der Status ändert. Dieselbe Rangrechnung wie auf dem Board.
  */
-export function ListView({ issues, projectId, composer }: ListViewProps) {
+export function ListView({
+  issues,
+  projectId,
+  composer,
+  emptyTitle,
+}: ListViewProps) {
   const { projects, members, labels, statuses, priorities, issueTypes } =
     composer;
   const t = useTranslations();
@@ -134,6 +147,19 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
         <span className={styles.identifier}>{identifier(issue)}</span>
       ),
     },
+    // Nur, wo die Zeilen aus verschiedenen Projekten kommen — sonst stünde in
+    // jeder Zeile dasselbe.
+    ...(projectId === undefined
+      ? [
+          {
+            id: "project",
+            width: "max-content",
+            cell: (issue: Issue) => (
+              <ProjectCell issue={issue} projects={projects} />
+            ),
+          },
+        ]
+      : []),
     {
       id: "status",
       cell: (issue) => <StatusCell issue={issue} statuses={statuses} />,
@@ -246,7 +272,7 @@ export function ListView({ issues, projectId, composer }: ListViewProps) {
         empty={
           <EmptyState
             icon={<Icon icon="lucide:list" width={32} />}
-            title={t("empty.noIssues")}
+            title={emptyTitle ?? t("empty.noIssues")}
           />
         }
       />

@@ -10,7 +10,13 @@ import { useBoardDnd } from "./useBoardDnd";
 
 interface BoardProps {
   issues: Issue[];
-  projectId: string;
+  /**
+   * Das Projekt, in dem eine neue Aufgabe entsteht. Ohne eines — etwa bei den
+   * eigenen Aufgaben, die quer durch alle Projekte gehen — zeigen die Spalten
+   * dieselben Karten, nur ohne „Neue Aufgabe“: dafür müsste erst feststehen,
+   * wohin sie gehörte.
+   */
+  projectId?: string;
   statuses: Status[];
   /** Speist den Composer der Spalten — die Karten-Lookups leiten sich daraus ab. */
   composer: IssueComposerData;
@@ -45,6 +51,9 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
             status={status}
             issues={board.getColumnIssues(status.id)}
             projectId={projectId}
+            // Ohne eigenes Projekt kommen die Karten aus verschiedenen — dann
+            // sagt jede, aus welchem.
+            showProject={projectId === undefined}
             lookups={lookups}
             composer={composer}
             newIssueLabel={t("actions.newIssue")}

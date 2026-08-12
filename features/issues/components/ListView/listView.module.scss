@@ -66,6 +66,21 @@
   display: inline-flex;
 }
 
+/* Projektspalte — nur in projektübergreifenden Ansichten. Sie steht neben dem
+   Kürzel und wird notfalls beschnitten: der Titel ist wichtiger als ein langer
+   Projektname, und die Farbe allein sagt schon, um welches Projekt es geht. */
+.project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
 /* Icon-Auslöser der Inline-Picker — bewusst kleiner als ein Button, damit die
    Symbolspalten schmal bleiben und die Zeile ruhig wirkt. */
 .pickerBtn {

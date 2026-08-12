@@ -1,21 +1,17 @@
 import { notFound, redirect } from "next/navigation";
-import { Board } from "@/features/issues/components/Board/Board";
+import { getTranslations } from "next-intl/server";
 import { IssuePeek } from "@/features/issues/components/IssuePeek/IssuePeek";
+import { ListView } from "@/features/issues/components/ListView/ListView";
 import { Topbar } from "@/features/issues/components/Topbar/Topbar";
 import { getIssueComposerData } from "@/features/issues/editor-data";
 import { getMyIssues } from "@/features/issues/queries";
-import { getWorkspaceStatuses } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Die eigenen Aufgaben als Board — dieselbe Ansicht wie im Projekt, nur über
- * alle Projekte hinweg, in denen man zuständig ist. Ein neues Issue entsteht
- * hier nicht: dafür fehlt das Projekt, in das es gehörte (siehe `Board`).
- */
-export default async function MyPage({
+/** Dieselben eigenen Aufgaben als Liste — mit einer Spalte für das Projekt. */
+export default async function MyListPage({
   params,
   searchParams,
 }: {
@@ -29,17 +25,21 @@ export default async function MyPage({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const [issues, statuses, composer] = await Promise.all([
+  const [issues, composer, t] = await Promise.all([
     getMyIssues(session.userId, workspace, filters),
-    getWorkspaceStatuses(),
     getIssueComposerData(),
+    getTranslations(),
   ]);
   if (!composer) notFound();
 
   return (
     <>
       <Topbar count={issues.length} />
-      <Board issues={issues} statuses={statuses} composer={composer} />
+      <ListView
+        issues={issues}
+        composer={composer}
+        emptyTitle={t("empty.noAssignedIssues")}
+      />
       {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
       <IssuePeek data={composer} />
     </>

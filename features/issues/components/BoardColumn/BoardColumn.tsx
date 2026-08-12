@@ -14,7 +14,10 @@ import styles from "./boardColumn.module.scss";
 interface BoardColumnProps {
   status: Status;
   issues: Issue[];
-  projectId: string;
+  /** Ohne Projekt gibt es kein „Neue Aufgabe“ — siehe `Board`. */
+  projectId?: string;
+  /** Reicht die Spalte nur durch: die Karte nennt dann ihr Projekt. */
+  showProject?: boolean;
   lookups: IssueLookups;
   composer: IssueComposerData;
   newIssueLabel: string;
@@ -39,6 +42,7 @@ export function BoardColumn({
   status,
   issues,
   projectId,
+  showProject,
   lookups,
   composer,
   newIssueLabel,
@@ -60,10 +64,13 @@ export function BoardColumn({
 
   // Ohne `issue.create` in diesem Projekt gibt es weder das Plus im Spaltenkopf
   // noch die Zeile am Ende der Spalte. Der Server hat das schon entschieden
-  // (`creatableProjectIds`), hier wird es nur nicht gezeichnet.
-  const canCreate = composer.creatableProjectIds.includes(projectId);
+  // (`creatableProjectIds`), hier wird es nur nicht gezeichnet. Ohne Projekt
+  // ist die Frage gar nicht erst zu stellen.
+  const canCreate =
+    projectId !== undefined && composer.creatableProjectIds.includes(projectId);
 
   function showCreateIssueModal() {
+    if (projectId === undefined) return;
     openModal(({ close }) => (
       <CreateIssueModal
         projectId={projectId}
@@ -109,6 +116,7 @@ export function BoardColumn({
               <BoardCard
                 issue={issue}
                 projectId={projectId}
+                showProject={showProject}
                 lookups={lookups}
                 isDragging={dragging === issue.id}
                 isActive={isCardActive(issue)}
