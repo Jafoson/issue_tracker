@@ -125,7 +125,8 @@
     "color": "Farbe",
     "title": "Titel",
     "description": "Beschreibung",
-    "details": "Details"
+    "details": "Details",
+    "lead": "Lead"
   },
   "sort": {
     "label": "Sortieren",
@@ -214,7 +215,8 @@
     "nameDesc": "Steht in der Seitenleiste, in Listen und in jeder Einladung.",
     "colorDesc": "Die Marke des Projekts — im Board, in den Reitern und in der Seitenleiste.",
     "url": "Projekt-Adresse",
-    "urlDesc": "Steht in jedem geteilten Link und ändert sich nicht mit dem Namen."
+    "urlDesc": "Steht in jedem geteilten Link und ändert sich nicht mit dem Namen.",
+    "descDesc": "Ein Satz für die Projektübersicht — wofür ist es da?"
   },
   "projectLabels": {
     "subtitle": "Labels, die im Projekt „{project}“ vergeben werden können.",
@@ -449,7 +451,10 @@
     "modalTitle": "Projekt erstellen",
     "identifier": "Bezeichner",
     "issuePrefix": "Aufgaben-Kürzel",
-    "example": "z. B."
+    "example": "z. B.",
+    "subtitle": "Alle Projekte, die du sehen darfst. Ein Klick führt hinein.",
+    "noLead": "Kein Lead",
+    "descPlaceholder": "Wofür ist dieses Projekt da? (optional)"
   },
   "workspaces": {
     "modalTitle": "Workspace erstellen",

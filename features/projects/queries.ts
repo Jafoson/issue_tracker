@@ -14,34 +14,111 @@ import {
   currentUserId,
   visibleProjectIds,
 } from "@/lib/permissions";
-import { DEFAULT_PROJECT_ROLE_KEY } from "@/lib/rbac";
-import type { Project, Role, User } from "@/types";
+import { DEFAULT_PROJECT_ROLE_KEY, PROJECT_ADMIN_ROLE_KEY } from "@/lib/rbac";
+import type { Role, User } from "@/types";
 
-export interface ProjectWithStats extends Project {
-  issueCount: number;
+// ── Übersicht ─────────────────────────────────────────────────────────────────
+
+/** Ein Projekt, wie die Übersichtsseite es zeigt: wer, was, wofür. */
+export interface ProjectOverviewRow {
+  id: string;
+  name: string;
+  slug: string;
+  prefix: string;
+  color: string;
+  /** Leer, wenn niemand einen Satz dazu geschrieben hat. */
+  desc: string;
+  /**
+   * Wer das Projekt leitet — die erste Person mit der Projektrolle
+   * „Project Admin". `null`, wenn es keine gibt.
+   */
+  lead: User | null;
+  /** Weitere Leitende neben `lead`; die Spalte zeigt sie als „+n". */
+  moreLeads: number;
 }
 
-export const getProjectsWithStats = cache(
-  async (workspaceId: string): Promise<ProjectWithStats[]> => {
-    // Dieselbe Sichtbarkeitsregel wie in `getProjects` — die Übersichtsseite ist
-    // nur eine andere Darstellung derselben Liste.
+export interface ProjectOverviewView {
+  rows: ProjectOverviewRow[];
+  /** `project.create` — ob der Knopf im Seitenkopf erscheint. */
+  canCreate: boolean;
+}
+
+/**
+ * Die Projekte, die der Handelnde sehen darf — zum Nachschlagen, nicht zum
+ * Verwalten.
+ *
+ * Bewusst eine andere Ansicht als `getWorkspaceProjectsView` in den
+ * Einstellungen: die trennt nach Sichtbarkeit und zählt Mitglieder und
+ * Aufgaben, weil dort verwaltet wird. Hier steht in einer einzigen Liste, was
+ * jemand sucht, der ein Projekt betreten will — Name, wofür es da ist, wer es
+ * leitet, unter welchem Kürzel seine Aufgaben laufen. Ob es privat ist, hat die
+ * Sichtbarkeitsregel schon beantwortet: was hier steht, darf man sehen.
+ */
+export const getProjectsOverview = cache(
+  async (workspaceId: string): Promise<ProjectOverviewView> => {
+    const userId = await currentUserId();
+    const access = await accessFor(userId, { workspaceId });
+    const canCreate = access.has("project.create");
+
+    // Dieselbe Sichtbarkeitsregel wie überall — die Übersicht ist nur eine
+    // andere Darstellung der Liste aus `getProjects`.
     const visible = await visibleProjectIds(workspaceId);
-    if (visible.size === 0) return [];
+    if (visible.size === 0) return { rows: [], canCreate };
 
     const projects = await db.project.findMany({
       where: { workspaceId, id: { in: [...visible] } },
-      include: { _count: { select: { issues: true } } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        prefix: true,
+        color: true,
+        desc: true,
+        // Die Leitung des Projekts. Ein paar mehr als die eine gezeigte, damit
+        // „+n" stimmt; wer ein Projekt mit mehr als sechs Leitenden hat, hat
+        // eine andere Frage als diese Spalte.
+        members: {
+          where: { role: { key: PROJECT_ADMIN_ROLE_KEY } },
+          select: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                color: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: [
+            { user: { firstName: "asc" } },
+            { user: { lastName: "asc" } },
+          ],
+          take: 6,
+        },
+      },
       orderBy: { name: "asc" },
     });
 
-    return projects.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      prefix: p.prefix,
-      color: p.color,
-      issueCount: p._count.issues,
-    }));
+    const rows: ProjectOverviewRow[] = projects.map((project) => {
+      const leads = project.members.map((m) => ({
+        ...m.user,
+        image: m.user.image ?? undefined,
+      }));
+      return {
+        id: project.id,
+        name: project.name,
+        slug: project.slug,
+        prefix: project.prefix,
+        color: project.color,
+        desc: project.desc,
+        lead: leads[0] ?? null,
+        moreLeads: Math.max(0, leads.length - 1),
+      };
+    });
+
+    return { rows, canCreate };
   },
 );
 
@@ -65,6 +142,7 @@ export const getProjectSettingsView = cache(
         slug: true,
         prefix: true,
         color: true,
+        desc: true,
         visibility: true,
         _count: { select: { issues: true, members: true } },
       },
@@ -81,6 +159,7 @@ export const getProjectSettingsView = cache(
         slug: project.slug,
         prefix: project.prefix,
         color: project.color,
+        desc: project.desc,
         visibility: project.visibility,
         issueCount: project._count.issues,
         memberCount: project._count.members,

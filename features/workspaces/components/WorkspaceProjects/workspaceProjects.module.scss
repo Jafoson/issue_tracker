@@ -88,6 +88,15 @@
   color: var(--on-surface-variant);
 }
 
+/* Avatare und Zahl in einer Zelle — die Gesichter zuerst, die Zahl schließt die
+   Spalte rechtsbündig ab, damit sie über alle Zeilen hinweg untereinander
+   steht. */
+.members {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .rowActions {
   display: flex;
   align-items: center;

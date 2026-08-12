@@ -15,6 +15,8 @@ export interface ProjectSettingsView {
     slug: string;
     prefix: string;
     color: string;
+    /** Leer, wenn niemand einen Satz dazu geschrieben hat. */
+    desc: string;
     visibility: ProjectVisibility;
     issueCount: number;
     memberCount: number;

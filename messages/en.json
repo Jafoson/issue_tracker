@@ -125,7 +125,8 @@
     "color": "Color",
     "title": "Title",
     "description": "Description",
-    "details": "Details"
+    "details": "Details",
+    "lead": "Lead"
   },
   "sort": {
     "label": "Sort",
@@ -214,7 +215,8 @@
     "nameDesc": "Shown in the sidebar, in lists and in every invitation.",
     "colorDesc": "The project's mark — on the board, in tabs and in the sidebar.",
     "url": "Project path",
-    "urlDesc": "Part of every shared link; it does not change with the name."
+    "urlDesc": "Part of every shared link; it does not change with the name.",
+    "descDesc": "One line for the project overview — what is it for?"
   },
   "projectLabels": {
     "subtitle": "Labels that can be applied in the “{project}” project.",
@@ -449,7 +451,10 @@
     "modalTitle": "Create a project",
     "identifier": "Identifier",
     "issuePrefix": "issue prefix",
-    "example": "e.g."
+    "example": "e.g.",
+    "subtitle": "Every project you can see. One click takes you in.",
+    "noLead": "No lead",
+    "descPlaceholder": "What is this project for? (optional)"
   },
   "workspaces": {
     "modalTitle": "Create a workspace",

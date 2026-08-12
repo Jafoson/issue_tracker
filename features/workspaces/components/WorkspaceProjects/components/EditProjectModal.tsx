@@ -37,6 +37,7 @@ export function EditProjectModal({ project, onDone, close }: Props) {
   const [isPending, startTransition] = useTransition();
 
   const [name, setName] = useState(project.name);
+  const [desc, setDesc] = useState(project.desc);
   const [prefix, setPrefix] = useState(project.prefix);
   const [color, setColor] = useState(project.color);
   const [visibility, setVisibility] = useState<ProjectVisibility>(
@@ -52,6 +53,7 @@ export function EditProjectModal({ project, onDone, close }: Props) {
     startTransition(async () => {
       const result = await updateProject(project.id, {
         name: trimmed,
+        desc,
         prefix,
         color,
         visibility,
@@ -91,6 +93,13 @@ export function EditProjectModal({ project, onDone, close }: Props) {
             setName(e.target.value);
             setError("");
           }}
+        />
+
+        <Input
+          label={t("fields.description")}
+          placeholder={t("projects.descPlaceholder")}
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
         />
 
         <Input

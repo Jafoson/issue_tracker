@@ -199,6 +199,9 @@ model Project {
   slug         String
   prefix       String
   color        String
+  /// Wozu das Projekt da ist, in einem Satz. Steht in der Projektübersicht
+  /// neben dem Namen; leer heißt schlicht, dass es niemand gesagt hat.
+  desc         String            @default("")
   lastIssueKey Int               @default(0)
   visibility   ProjectVisibility @default(public)
 

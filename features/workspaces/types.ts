@@ -41,9 +41,17 @@ export interface WorkspaceProjectRow {
   slug: string;
   prefix: string;
   color: string;
+  /** Wofür das Projekt da ist — leer, wenn es niemand gesagt hat. */
+  desc: string;
   visibility: ProjectVisibility;
   issueCount: number;
   memberCount: number;
+  /**
+   * Die ersten Mitglieder für den Avatar-Stapel — nicht die ganze Liste. Wie
+   * viele es insgesamt sind, sagt `memberCount`; die Gesichter beantworten die
+   * andere Frage („bin ich da drin, wer noch?"), und dafür reichen vier.
+   */
+  members: User[];
   /**
    * `project.update` in genau diesem Projekt. Die Permission ist projektlokal,
    * also entscheidet sie Zeile für Zeile — wer ein Projekt leitet, darf noch

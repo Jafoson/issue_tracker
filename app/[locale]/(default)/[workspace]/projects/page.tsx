@@ -1,28 +1,31 @@
-import { ProjectList } from "@/features/projects/components/ProjectList/ProjectList";
-import { getProjectsWithStats } from "@/features/projects/queries";
-import { getWorkspaceMembers } from "@/features/workspaces/queries";
+import { ProjectOverview } from "@/features/projects/components/ProjectOverview/ProjectOverview";
+import { getProjectsOverview } from "@/features/projects/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * Die Projekte des Workspace zum Nachschlagen — eine Liste, ein Klick hinein.
+ *
+ * Nicht dieselbe Ansicht wie unter `…/settings/projects`: dort wird verwaltet
+ * (anlegen, ändern, löschen, getrennt nach Sichtbarkeit), hier gesucht. Anders
+ * als bei den Mitgliedern, wo beide Wege dieselbe Tabelle zeigen, fallen die
+ * zwei Fragen bei Projekten auseinander.
+ */
 export default async function ProjectsPage({
   params,
 }: {
-  params: Promise<{ locale: string; workspace: string }>;
+  params: Promise<{ workspace: string }>;
 }) {
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const [projects, members] = await Promise.all([
-    getProjectsWithStats(workspace),
-    getWorkspaceMembers(),
-  ]);
-  // Locale-frei – ProjectList navigiert über next-intl (auto-Präfix).
-  const base = `/${workspace}`;
+  const { rows, canCreate } = await getProjectsOverview(workspace);
 
   return (
-    <ProjectList
-      projects={projects}
-      members={members}
-      base={base}
+    <ProjectOverview
+      rows={rows}
+      canCreate={canCreate}
       workspaceId={workspace}
     />
   );

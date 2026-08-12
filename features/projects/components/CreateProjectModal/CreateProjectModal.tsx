@@ -42,6 +42,7 @@ export function CreateProjectModal({
   const [isPending, startTransition] = useTransition();
 
   const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
   const [prefix, setPrefix] = useState("");
   const [prefixTouched, setPrefixTouched] = useState(false);
   const [color, setColor] = useState(PALETTE[0]);
@@ -58,6 +59,7 @@ export function CreateProjectModal({
       const result = await createProject({
         workspaceId,
         name: name.trim(),
+        desc,
         prefix: effectivePrefix,
         color,
         visibility,
@@ -95,6 +97,16 @@ export function CreateProjectModal({
           placeholder="Web App"
           value={name}
           onChange={(e) => setName(e.target.value)}
+        />
+
+        {/* Der Satz, der später in der Projektübersicht neben dem Namen steht.
+            Freiwillig — wer ihn hier auslässt, trägt ihn in den Einstellungen
+            des Projekts nach. */}
+        <Input
+          label={t("fields.description")}
+          placeholder={t("projects.descPlaceholder")}
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
         />
 
         <div className={styles.prefixRow}>

@@ -88,6 +88,7 @@ export function ProjectSettings({
   const [isPending, startTransition] = useTransition();
 
   const [name, setName] = useState(project.name);
+  const [desc, setDesc] = useState(project.desc);
   const [prefix, setPrefix] = useState(project.prefix);
   const [color, setColor] = useState(project.color);
   const [error, setError] = useState("");
@@ -96,6 +97,7 @@ export function ProjectSettings({
 
   const dirty =
     name.trim() !== project.name ||
+    desc.trim() !== project.desc ||
     prefix !== project.prefix ||
     color !== project.color;
 
@@ -115,7 +117,8 @@ export function ProjectSettings({
 
   const save = () =>
     run(
-      () => updateProject(project.id, { name: name.trim(), prefix, color }),
+      () =>
+        updateProject(project.id, { name: name.trim(), desc, prefix, color }),
       () => {
         setSaved(true);
         router.refresh();
@@ -149,6 +152,25 @@ export function ProjectSettings({
             disabled={!canUpdate || isPending}
             onChange={(e) => {
               setName(e.target.value);
+              touch();
+            }}
+          />
+        </div>
+      ),
+    },
+    {
+      id: "desc",
+      label: t("fields.description"),
+      desc: t("projectSettings.descDesc"),
+      control: (
+        <div className={styles.control}>
+          <Input
+            aria-label={t("fields.description")}
+            placeholder={t("projects.descPlaceholder")}
+            value={desc}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setDesc(e.target.value);
               touch();
             }}
           />

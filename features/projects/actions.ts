@@ -79,6 +79,8 @@ async function uniqueSlug(workspaceId: string, base: string): Promise<string> {
 export async function createProject(data: {
   workspaceId: string;
   name: string;
+  /** Ein Satz dazu, wozu es da ist. Freiwillig — leer ist ein gültiger Wert. */
+  desc?: string;
   prefix?: string;
   color: string;
   visibility?: ProjectVisibility;
@@ -113,6 +115,7 @@ export async function createProject(data: {
         id,
         workspaceId: data.workspaceId,
         name,
+        desc: data.desc?.trim() ?? "",
         slug,
         prefix,
         color: data.color,
@@ -184,6 +187,7 @@ export async function updateProject(
   projectId: string,
   data: {
     name?: string;
+    desc?: string;
     prefix?: string;
     color?: string;
     visibility?: ProjectVisibility;
@@ -220,6 +224,8 @@ export async function updateProject(
     where: { id: projectId },
     data: {
       ...(name !== undefined ? { name } : {}),
+      // Anders als der Name darf sie leer werden — wer sie löscht, meint das.
+      ...(data.desc !== undefined ? { desc: data.desc.trim() } : {}),
       ...(prefix !== undefined ? { prefix } : {}),
       ...(data.color !== undefined ? { color: data.color } : {}),
       ...(data.visibility !== undefined ? { visibility: data.visibility } : {}),

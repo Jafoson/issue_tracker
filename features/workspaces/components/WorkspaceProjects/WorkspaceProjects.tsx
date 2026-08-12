@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { AvatarStack } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
@@ -151,10 +152,25 @@ export function WorkspaceProjects({
     {
       id: "members",
       header: t("nav.members"),
-      width: "minmax(90px, max-content)",
+      width: "minmax(140px, max-content)",
       align: "end",
       sortValue: (row) => row.memberCount,
-      cell: (row) => <span className={styles.count}>{row.memberCount}</span>,
+      // Gesichter und Zahl: der Stapel beantwortet „wer ist da drin", die Zahl
+      // „wie viele". Der Stapel zeigt die ersten vier, deshalb steht die
+      // Gesamtzahl daneben statt als „+n" darin.
+      cell: (row) => (
+        <span className={styles.members}>
+          {row.members.length > 0 && (
+            <AvatarStack
+              ids={row.members.map((member) => member.id)}
+              users={row.members}
+              size={22}
+              max={4}
+            />
+          )}
+          <span className={styles.count}>{row.memberCount}</span>
+        </span>
+      ),
     },
     {
       id: "issues",

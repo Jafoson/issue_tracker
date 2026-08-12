@@ -265,8 +265,30 @@ export const getWorkspaceProjectsView = cache(
         slug: true,
         prefix: true,
         color: true,
+        desc: true,
         visibility: true,
         _count: { select: { issues: true, members: true } },
+        // Nur die ersten vier: mehr zeigt der Avatar-Stapel ohnehin nicht, und
+        // die Gesamtzahl steht daneben (`_count.members`).
+        members: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                color: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: [
+            { user: { firstName: "asc" } },
+            { user: { lastName: "asc" } },
+          ],
+          take: 4,
+        },
       },
       orderBy: { name: "asc" },
     });
@@ -280,9 +302,14 @@ export const getWorkspaceProjectsView = cache(
           slug: project.slug,
           prefix: project.prefix,
           color: project.color,
+          desc: project.desc,
           visibility: project.visibility as ProjectVisibility,
           issueCount: project._count.issues,
           memberCount: project._count.members,
+          members: project.members.map((m) => ({
+            ...m.user,
+            image: m.user.image ?? undefined,
+          })),
           canUpdate: access.has("project.update"),
           canDelete: access.has("project.delete"),
         };
