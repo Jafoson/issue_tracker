@@ -3,11 +3,12 @@ import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
+import { getMyPreferences } from "@/features/account/queries";
 import { routing } from "@/i18n/routing";
 import { DockProvider, ModalProvider } from "@/lib/context";
 
 // Design tokens — imported first so they're available everywhere
-import "@/styles/colors.css";
+import "@/styles/colors.scss";
 import "@/styles/dimensions.css";
 import "@/styles/typography.css";
 
@@ -43,13 +44,23 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  // Aktiviert statisches Rendering und stellt das Locale für Server Components bereit.
+  // Stellt das Locale für Server Components bereit.
   setRequestLocale(locale);
+
+  // Das Design gehört der Person, und `<html>` gibt es nur hier — deshalb wird
+  // es an dieser Stelle aufgelöst und nicht weiter unten. Es kostet nichts, wo
+  // niemand angemeldet ist: `getMyPreferences` liest erst die Session und gibt
+  // ohne sie die Vorgaben zurück, ohne die Datenbank zu fragen. Die
+  // Anmeldeseite bleibt damit dunkel, wie sie es vorher auch war.
+  //
+  // Serverseitig gesetzt statt per Skript im Browser: das Attribut steht so
+  // schon im ersten Byte des Dokuments. „System" löst CSS auf (styles/colors.scss).
+  const { theme } = await getMyPreferences();
 
   return (
     <html
       lang={locale}
-      data-theme="dark"
+      data-theme={theme}
       className={`${hankenGrotesk.variable} ${jetbrainsMono.variable}`}
     >
       <body>

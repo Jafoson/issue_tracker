@@ -19,7 +19,7 @@
   --radius-lg: 12px;
   --radius-pill: 9999px;
 
-  /* Shadows (dark-mode defaults; light overrides in colors.css) */
+  /* Shadows (dark-mode defaults; light overrides in colors.scss) */
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 1px rgba(0, 0, 0, 0.1);
   --shadow-pop:
     0 16px 40px -12px rgba(0, 0, 0, 0.6), 0 4px 12px -4px rgba(0, 0, 0, 0.4);

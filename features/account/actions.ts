@@ -108,9 +108,9 @@ export async function updateProfile(data: {
 /**
  * Das Design.
  *
- * Es wirkt sofort im Browser (`Appearance` setzt das Attribut am Dokument) —
- * hier wird nur festgehalten, was gelten soll, damit es beim nächsten Mal und
- * auf dem nächsten Gerät wieder so ist.
+ * Hier wird festgehalten, was gelten soll; gerendert wird es vom Wurzel-Layout
+ * als `data-theme` am `<html>`. `revalidatePath` unten sorgt dafür, dass das
+ * Layout die neue Wahl auch wirklich neu rendert.
  */
 export async function updateAppearance(data: {
   theme?: Theme;

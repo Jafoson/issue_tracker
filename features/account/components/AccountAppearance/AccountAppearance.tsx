@@ -41,15 +41,18 @@ export function AccountAppearance({ theme }: Props) {
 
   const [currentTheme, setCurrentTheme] = useState<Theme>(theme);
 
-  /** Das gewählte Design am Dokument — „System" fragt dafür das Gerät. */
+  /**
+   * Das gewählte Design am Dokument.
+   *
+   * Genau der Wert, den auch das Wurzel-Layout schreibt — „system" wird hier
+   * bewusst nicht zu „dark"/„light" aufgelöst, das macht CSS
+   * (`styles/colors.scss`). Der Griff ans Dokument ist nur der Vorgriff auf die
+   * Antwort des Servers: bis `updateAppearance` zurück ist und das Layout neu
+   * gerendert wurde, stünde sonst noch das alte Design da.
+   */
   const applyTheme = (value: Theme) => {
     setCurrentTheme(value);
-    document.documentElement.dataset.theme =
-      value === "system"
-        ? window.matchMedia("(prefers-color-scheme: light)").matches
-          ? "light"
-          : "dark"
-        : value;
+    document.documentElement.dataset.theme = value;
     startTransition(() => {
       updateAppearance({ theme: value });
     });

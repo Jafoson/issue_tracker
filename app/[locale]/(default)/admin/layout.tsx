@@ -1,7 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { Appearance } from "@/components/ui/layout/Appearance/Appearance";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
-import { getMyPreferences } from "@/features/account/queries";
 import { getAccess, PLATFORM } from "@/lib/permissions";
 import { getSession } from "@/lib/session";
 
@@ -26,14 +24,5 @@ export default async function AppLayout({
   const access = await getAccess(PLATFORM);
   if (!access.has("platform.access")) notFound();
 
-  // Dieselbe Wahl wie in der Workspace-Hülle: sie gilt der Person, nicht dem
-  // Bereich, in dem sie gerade steht.
-  const preferences = await getMyPreferences();
-
-  return (
-    <>
-      <Appearance theme={preferences.theme} />
-      <AppShell isAdminRoute>{children}</AppShell>
-    </>
-  );
+  return <AppShell isAdminRoute>{children}</AppShell>;
 }

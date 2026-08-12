@@ -79,7 +79,7 @@ body:has([data-resizing]) {
    Die Klassennamen erzeugt `highlight.js` und sind damit global — deshalb
    stehen sie hier und nicht in einem CSS-Modul. Dieselbe Zuordnung gilt für
    die Anzeige (`RichText`) und den Editor, die Farben selbst stehen in
-   styles/colors.css.
+   styles/colors.scss.
 
    Zusammengefasst statt einzeln: `highlight.js` kennt gut vierzig Rollen, von
    denen viele dieselbe Bedeutung tragen. Zehn Farben reichen, um Code lesbar

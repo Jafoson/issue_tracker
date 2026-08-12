@@ -34,7 +34,10 @@
   --chart-3: #3f9a6d;
 }
 
-[data-theme="dark"] {
+/* Die beiden Paletten stehen als Mixins da, weil „System" sie ein zweites Mal
+   braucht: einmal als Vorgabe, einmal unter der Medienabfrage. Zweimal derselbe
+   Block von Hand wäre zwei Wahrheiten, die auseinanderlaufen. */
+@mixin dark {
   --primary: rgb(216 199 112);
   --surface-tint: rgb(216 199 112);
   --on-primary: rgb(56 48 0);
@@ -107,7 +110,7 @@
   color-scheme: dark;
 }
 
-[data-theme="light"] {
+@mixin light {
   --primary: rgb(107 94 16);
   --surface-tint: rgb(107 94 16);
   --on-primary: rgb(255 255 255);
@@ -176,4 +179,30 @@
   --code-removed: rgb(176 42 42);
 
   color-scheme: light;
+}
+
+/* ── Die drei Werte von `data-theme` ──────────────────────────────────────────
+
+   Das Attribut steht am `<html>` und kommt server-seitig aus den Vorlieben des
+   Kontos (app/[locale]/layout.tsx) — es ist also schon im ersten Byte richtig,
+   ohne Skript und ohne Aufblitzen.
+
+   `system` ist deshalb keine dritte Palette, sondern ein Verweis auf das Gerät:
+   dunkel als Vorgabe, hell wenn der Browser es so meldet. Das kann CSS allein,
+   und nur CSS kann es rechtzeitig — ein `matchMedia` im JavaScript käme
+   frühestens nach dem ersten Bild und stellt sich zudem nicht von selbst um,
+   wenn jemand sein System abends auf dunkel schaltet. */
+[data-theme="dark"],
+[data-theme="system"] {
+  @include dark;
+}
+
+[data-theme="light"] {
+  @include light;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    @include light;
+  }
 }
