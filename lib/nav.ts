@@ -9,6 +9,8 @@
 // a project route `/<workspaceId>/project/<projectSlug>/<section>`.
 // `labelKey` is the key under the "nav" i18n namespace (messages/*.json).
 
+import type { Permission } from "@/lib/rbac";
+
 export type NavLabelKey =
   | "myIssues"
   | "inbox"
@@ -26,12 +28,28 @@ export type NavLabelKey =
   | "appearance"
   | "notifications"
   | "security"
-  | "connections";
+  | "connections"
+  | "admin"
+  | "overview"
+  | "users"
+  | "audit";
 
 export interface NavEntry {
   section: string;
   icon: string;
   labelKey: NavLabelKey;
+  /**
+   * Recht, ohne das der Eintrag nicht erscheint. Ohne Angabe steht er allen
+   * offen, die den Bereich überhaupt betreten dürfen.
+   *
+   * Nur die Plattform-Bereiche nutzen das bisher, und dort ist es keine
+   * Kosmetik: die Rollen dieser Ebene sind ausdrücklich verschieden geschnitten
+   * (`lib/rbac/roles.ts`) — Support sieht in die Mandanten, verwaltet aber keine
+   * Konten. Ein Eintrag, der beim Anklicken auf eine 403-Seite führt, wäre die
+   * schlechtere Antwort darauf. **Die Sichtbarkeit ist trotzdem kein Schutz**;
+   * geprüft wird in `features/admin/queries.ts`, bei jeder Abfrage neu.
+   */
+  permission?: Permission;
 }
 
 /** Sidebar "Global" group — always visible, not tied to workspace settings. */
@@ -100,11 +118,54 @@ export const WORKSPACE_SECTIONS: NavEntry[] = [
   ACCOUNT_NAV,
 ];
 
-/** Sidebar "Admin" group — `/admin` (empty section = root) or `/admin/<section>`. */
+/**
+ * Die Bereiche der Plattformverwaltung — `/admin` (leere Sektion = Übersicht)
+ * oder `/admin/<section>`.
+ *
+ * Die Reihenfolge ist die des Zugriffs, von innen nach außen: erst der Zustand
+ * der Plattform, dann die Konten, dann die Projekte, die ihnen gehören, dann die
+ * Rollen, die alles davon regeln — und am Ende das Protokoll, in dem steht, was
+ * hier getan wurde.
+ *
+ * Was in dieser Liste steht, ist die Hülle des Systems: Konten, Stammdaten,
+ * Rechte, Protokoll. Inhalte — Aufgaben, Kommentare, Anhänge — stehen bewusst
+ * nicht darin und sind von hier aus auch nicht erreichbar. Wer hineinsehen muss,
+ * geht über den Notfall-Zugriff (`features/admin/actions.ts`).
+ */
 export const ADMIN_NAV: NavEntry[] = [
-  { section: "", icon: "lucide:settings", labelKey: "general" },
-  { section: "members", icon: "lucide:users", labelKey: "members" },
-  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
+  { section: "", icon: "lucide:layout-dashboard", labelKey: "overview" },
+  {
+    section: "users",
+    icon: "lucide:users",
+    labelKey: "users",
+    permission: "user.manage",
+  },
+  {
+    // Ohne eigene Leseberechtigung: die Mandantenliste zeigt nichts, was das
+    // Dashboard nicht schon zeigt. Was man mit einem Workspace *tun* darf,
+    // entscheiden `workspace.suspend` und `workspace.delete` in der Ansicht.
+    section: "workspaces",
+    icon: "lucide:building-2",
+    labelKey: "workspaces",
+  },
+  {
+    section: "projects",
+    icon: "lucide:folders",
+    labelKey: "projects",
+    permission: "project.metadata.view",
+  },
+  {
+    section: "roles",
+    icon: "lucide:shield-check",
+    labelKey: "roles",
+    permission: "role.manage",
+  },
+  {
+    section: "audit",
+    icon: "lucide:scroll-text",
+    labelKey: "audit",
+    permission: "audit.view",
+  },
 ];
 
 /**

@@ -10,6 +10,28 @@
   --amber: #e0992b;
   --blue: #3b7bd5;
   --purple: #a274d9;
+
+  /* ── Datenreihen der Diagramme ──────────────────────────────────────────────
+
+     Eigene Tokens und nicht `--blue`/`--amber`/`--green`: eine Diagrammfarbe hat
+     eine Aufgabe, die eine Oberflächenfarbe nicht hat — zwei benachbarte Reihen
+     müssen auch für Rot-Grün-Blinde unterscheidbar bleiben. Die Reihenfolge der
+     Steckplätze ist dabei der Mechanismus, nicht Geschmack: sie wird der Reihe
+     nach vergeben und nie umsortiert, sonst wechselt beim Filtern die Farbe
+     unter dem Leser weg.
+
+     Dieselben drei Werte in beiden Themes, und das ist geprüft, nicht geraten:
+     sie liegen im Helligkeitsband beider Modi, halten den Buntheits-Boden und
+     erreichen auf hellem wie dunklem Grund 3:1. Der schwächste Nachbarabstand
+     liegt bei ΔE 8,0 unter Protanopie (Ziel ≥ 8) und 17,0 bei normalem Sehen
+     (Boden ≥ 15). `--amber` und `--green` von oben fielen beide durch — im
+     dunklen Modus zu hell, auf hellem Grund unter 3:1; die Werte hier sind
+     dieselben Farbtöne, eine Stufe dunkler.
+
+     Wer sie ändert, prüft sie neu — von Hand ist das nicht zu beurteilen. */
+  --chart-1: #3b7bd5;
+  --chart-2: #b87e1c;
+  --chart-3: #3f9a6d;
 }
 
 [data-theme="dark"] {

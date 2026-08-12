@@ -1,0 +1,68 @@
+.headerIcon {
+  color: var(--error);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
+}
+
+/* Was verloren geht, in Zahlen dieses Mandanten. Eine Warnung, die für jeden
+   Workspace gleich lautet, wird gelesen wie ein Cookie-Banner. */
+.losses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 12px 14px;
+  list-style: none;
+  border: 1px solid color-mix(in oklab, var(--error) 35%, var(--outline-variant));
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--error) 7%, transparent);
+
+  li {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: var(--text-sm);
+    color: var(--on-surface-variant);
+  }
+}
+
+.lossValue {
+  font-size: var(--text-md);
+  font-weight: 650;
+  color: var(--on-surface);
+}
+
+/* Der Knopf trägt die Farbe des Verlusts, nicht die des Akzents — er ist die
+   einzige Stelle im Plattform-Bereich, an der Daten unwiederbringlich
+   verschwinden. */
+.danger {
+  background: var(--error-container);
+  color: var(--on-error-container);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--error-container) 85%, var(--on-error-container));
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

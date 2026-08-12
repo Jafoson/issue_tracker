@@ -69,6 +69,19 @@ model User {
   platformRoleId String?
   platformRole   Role?     @relation("UserPlatformRole", fields: [platformRoleId], references: [id], onDelete: SetNull)
 
+  /// Seit wann es das Konto gibt. Die Plattformverwaltung zeigt es an; sonst
+  /// interessiert es niemanden.
+  createdAt     DateTime  @default(now())
+  /// Wann zuletzt ein Lebenszeichen kam. Grob gehalten (siehe `lib/presence.ts`):
+  /// die Spalte wird höchstens einmal je Stunde nachgezogen, weil sie sonst bei
+  /// jedem Seitenaufruf einen Schreibvorgang kostete.
+  lastSeenAt    DateTime?
+  /// Gesetzt heißt: stillgelegt. Das Konto bleibt samt allem, was daran hängt,
+  /// bekommt aber keinerlei Rechte mehr (`lib/permissions.ts`) und kommt nicht
+  /// mehr herein (`auth.ts`). Das Gegenstück zum Löschen, das Issues, Kommentare
+  /// und Zuweisungen mitnähme.
+  deactivatedAt DateTime?
+
   workspaces         WorkspaceMember[]
   assignedIssues     Issue[]           @relation("IssueAssignee")
   reportedIssues     Issue[]           @relation("IssueReporter")
@@ -76,6 +89,7 @@ model User {
   leadingTeams       Team[]            @relation("TeamLead")
   teamMemberships    TeamMember[]
   projectMemberships ProjectMember[]
+  createdProjects    Project[]         @relation("ProjectCreator")
   accounts           Account[]
   sessions           Session[]
   invitations        Invitation[]
@@ -96,6 +110,12 @@ model UserPreferences {
 
   /// "dark" | "light" | "system" — landet als `data-theme` am Dokument.
   theme String @default("dark")
+
+  /// Der Hinweis im Plattform-Bereich, was dort zu sehen ist und was nicht.
+  /// Weggeklickt bleibt weggeklickt — und weil die Seite server-gerendert ist,
+  /// steht die Antwort hier und nicht im `localStorage`: sonst zeigte der Server
+  /// den Hinweis und der Browser nähme ihn beim Hydrieren wieder weg.
+  adminNoticeHidden Boolean @default(false)
 
   // Benachrichtigungen, je Anlass einmal für die App und einmal für die Mail.
   // Es gibt noch keinen Mailversand; die Spalten stehen trotzdem hier, damit die
@@ -181,6 +201,17 @@ model Project {
   color        String
   lastIssueKey Int               @default(0)
   visibility   ProjectVisibility @default(public)
+
+  /// Wann es angelegt wurde.
+  createdAt   DateTime  @default(now())
+  /// Gesetzt heißt: stillgelegt. Das Projekt bleibt lesbar, aber es ist erkennbar
+  /// aus dem Betrieb — die Plattformverwaltung findet daran verwaiste Projekte.
+  archivedAt  DateTime?
+  /// Wer es angelegt hat. `SetNull`, weil ein gelöschtes Konto das Projekt nicht
+  /// mitnehmen darf — genau dann wird das Projekt zum Waisen, den die
+  /// Plattformverwaltung neu zuordnen muss.
+  createdById String?
+  createdBy   User?     @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   issues       Issue[]
@@ -544,4 +575,58 @@ model TeamProject {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@id([teamId, projectId])
+}
+
+// ─── Audit-Log ────────────────────────────────────────────────────────────────
+//
+// Was auf der Plattform geschehen ist, in der Reihenfolge, in der es geschah:
+// Anmeldungen, Rollenwechsel, Stilllegungen, Löschungen — und jeder
+// Notfall-Zugriff auf ein Projekt (`lib/audit.ts`).
+//
+// **Diese Tabelle hat mit Absicht keine Fremdschlüssel.** Ein Protokoll, das
+// mitgelöscht wird, wenn jemand das Konto löscht, über dessen Tat es berichtet,
+// ist kein Protokoll. Deshalb stehen hier nur nackte Ids — und daneben die
+// Beschriftungen, wie sie zur Tatzeit galten. Wer den Namen von heute sehen
+// will, schlägt ihn über die Id nach; wer wissen will, was damals auf dem
+// Bildschirm stand, liest das Label.
+//
+// Geschrieben wird nur, nie geändert und nie gelöscht. Es gibt dafür keine
+// Server Action — `recordAudit()` ist der einzige Weg hinein.
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  /// Schlüssel aus `AUDIT_ACTIONS` (lib/audit.ts) — z. B. `auth.login`.
+  action String
+
+  /// Wer gehandelt hat. Null bei einem fehlgeschlagenen Anmeldeversuch, bei dem
+  /// niemand feststeht.
+  actorId    String?
+  /// Name und Adresse zur Tatzeit, damit die Zeile für sich lesbar bleibt.
+  actorLabel String
+
+  /// Woran gehandelt wurde. Frei gehalten (`user`, `project`, `workspace`,
+  /// `role`), damit eine neue Objektart keine neue Spalte braucht.
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+
+  /// Wo es geschah — für die Einordnung, nicht für einen Join.
+  workspaceId String?
+  projectId   String?
+
+  /// Die Begründung, die beim Notfall-Zugriff verlangt wird. Sonst leer.
+  reason String?
+
+  /// Was sonst noch zur Tat gehört (alte und neue Rolle etwa). Bewusst formfrei:
+  /// das Protokoll soll nicht bei jedem neuen Vorgang wandern müssen.
+  meta Json?
+
+  /// Die Liste wird immer nach Zeit gelesen, meist gefiltert nach Vorgang,
+  /// Handelndem oder Ort.
+  @@index([createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([workspaceId, createdAt(sort: Desc)])
 }

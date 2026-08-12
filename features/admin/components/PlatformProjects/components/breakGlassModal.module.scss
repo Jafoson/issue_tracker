@@ -1,0 +1,59 @@
+.headerIcon {
+  color: var(--amber);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
+}
+
+/* Die drei Bedingungen des Zugriffs, bevor er stattfindet. Als Liste und nicht
+   als Fließtext: sie sind einzeln wahr und sollen einzeln gelesen werden. */
+.terms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  list-style: none;
+  border: 1px solid color-mix(in oklab, var(--amber) 35%, var(--outline-variant));
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--amber) 7%, transparent);
+
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 8px;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--on-surface);
+  }
+
+  svg {
+    /* Auf die Höhe der ersten Zeile gesetzt, damit das Zeichen neben dem Text
+       steht und nicht in der Mitte eines zweizeiligen Punktes schwebt. */
+    margin-top: 2px;
+    color: var(--amber);
+  }
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

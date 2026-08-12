@@ -1,0 +1,276 @@
+"use client";
+
+import { Icon } from "@iconify/react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useState, useTransition } from "react";
+import { Badge } from "@/components/ui/atoms/Badge/Badge";
+import { Button } from "@/components/ui/atoms/Button/Button";
+import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
+import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
+import { Label } from "@/components/ui/atoms/Label/Label";
+import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
+import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
+import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
+import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
+import { setPlatformRole, setUserActive } from "@/features/admin/actions";
+import type {
+  PlatformRoleOption,
+  PlatformUser,
+} from "@/features/admin/queries";
+import { roleColor } from "@/lib/rbac";
+import { fullName } from "@/lib/utils/string";
+import { useTimeAgo } from "@/lib/utils/useTimeAgo";
+import styles from "./platformUsers.module.scss";
+
+interface Props {
+  users: PlatformUser[];
+  roles: PlatformRoleOption[];
+  /** Die eigene Id — die eigene Zeile lässt sich nicht anfassen. */
+  currentUserId: string;
+}
+
+/**
+ * Alle Konten der Plattform: wer da ist, womit er hereinkommt, was er darf und
+ * wann er zuletzt da war.
+ *
+ * Zwei Eingriffe hängen an jeder Zeile, und beide sind Rechteverschiebungen —
+ * die Plattform-Rolle setzen und ein Konto stilllegen. Beide landen im
+ * Protokoll, beide sind an der eigenen Zeile gesperrt: `setPlatformRole` und
+ * `setUserActive` weisen das ab, und die Oberfläche zeigt es gar nicht erst an.
+ *
+ * Was hier **nicht** steht, ist genauso Absicht wie das, was dasteht. Es gibt
+ * keine Passwort-Spalte, keinen Hash, keine „Passwort anzeigen"-Aktion. Ob
+ * überhaupt eines gesetzt ist, sagt das Zeichen in der Zutritt-Spalte — mehr
+ * erfährt auf dieser Ebene niemand, und mehr gibt der Server auch nicht heraus
+ * (`features/admin/queries.ts`).
+ */
+export function PlatformUsers({ users, roles, currentUserId }: Props) {
+  const t = useTranslations();
+  const router = useRouter();
+  const confirm = useConfirm();
+  const timeAgo = useTimeAgo();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  const run = (action: () => Promise<{ ok: true } | { error: string }>) =>
+    startTransition(async () => {
+      const result = await action();
+      setError("error" in result ? result.error : "");
+      router.refresh();
+    });
+
+  const toggleActive = async (row: PlatformUser) => {
+    const active = row.deactivatedAt === null;
+
+    // Stilllegen ist die einschneidendere Richtung und bekommt die Rückfrage —
+    // sie sagt zugleich, was dabei *nicht* passiert: die Arbeit bleibt stehen.
+    if (active) {
+      const ok = await confirm({
+        title: t("platform.deactivateTitle", { name: fullName(row) }),
+        description: t("platform.deactivateDesc"),
+        confirmLabel: t("platform.deactivate"),
+        cancelLabel: t("actions.cancel"),
+        danger: true,
+      });
+      if (!ok) return;
+    }
+
+    run(() => setUserActive(row.id, !active));
+  };
+
+  const roleCell = (row: PlatformUser) => {
+    const rank = roles.find((r) => r.key === row.platformRole?.key)?.rank ?? 0;
+    const pill = (
+      <Label size="sm" filled color={roleColor(rank)}>
+        {row.platformRole?.name ?? t("platform.noRole")}
+      </Label>
+    );
+
+    // Die eigene Rolle nicht über diese Tabelle: Selbstbeförderung wäre der Weg
+    // an der Rangordnung vorbei, und der Server lehnt sie ohnehin ab.
+    if (row.id === currentUserId || roles.length === 0) return pill;
+
+    return (
+      <InlinePicker
+        trigger={
+          <button
+            type="button"
+            className={styles.roleTrigger}
+            title={t("fields.role")}
+          >
+            {pill}
+            <Icon icon="lucide:chevron-down" width={14} />
+          </button>
+        }
+        width={260}
+        stop
+      >
+        {(close) => (
+          <SelectMenu
+            items={roles.map((role) => ({ value: role.id, label: role.name }))}
+            value={
+              roles.find((r) => r.key === row.platformRole?.key)?.id ?? null
+            }
+            onPick={(value) => {
+              run(() => setPlatformRole(row.id, String(value)));
+              close();
+            }}
+            onClose={close}
+          />
+        )}
+      </InlinePicker>
+    );
+  };
+
+  const columns: TableColumn<PlatformUser>[] = [
+    {
+      id: "user",
+      header: t("platform.colUser"),
+      width: "minmax(0, 1fr)",
+      sortValue: (row) => fullName(row),
+      cell: (row) => (
+        <UserCell
+          avatar={row}
+          name={fullName(row)}
+          meta={row.email}
+          size={32}
+          className={row.deactivatedAt ? styles.dimmed : undefined}
+          trailing={
+            <>
+              {row.deactivatedAt && (
+                <Badge size="sm" mono={false}>
+                  {t("platform.statusDeactivated")}
+                </Badge>
+              )}
+              {!row.deactivatedAt && row.invitePending && (
+                <Badge size="sm" mono={false}>
+                  {t("platform.statusInvited")}
+                </Badge>
+              )}
+            </>
+          }
+        />
+      ),
+    },
+    {
+      id: "role",
+      header: t("fields.role"),
+      width: "minmax(160px, max-content)",
+      sortValue: (row) =>
+        roles.find((r) => r.key === row.platformRole?.key)?.rank ?? -1,
+      cell: roleCell,
+    },
+    {
+      id: "access",
+      header: t("platform.colAccess"),
+      width: "minmax(110px, max-content)",
+      sortValue: (row) => (row.hasPassword ? 1 : 0),
+      // Nicht *welches* Passwort — nur, ob es eines gibt. Wer keines hat, kommt
+      // über einen verbundenen Anbieter herein oder hat die Einladung noch nicht
+      // angenommen.
+      cell: (row) => (
+        <span className={styles.access}>
+          <Icon
+            icon={row.hasPassword ? "lucide:key-round" : "lucide:key-square"}
+            width={14}
+          />
+          {row.hasPassword
+            ? t("platform.accessPassword")
+            : t("platform.accessProvider")}
+        </span>
+      ),
+    },
+    {
+      id: "workspaces",
+      header: t("platform.colWorkspaces"),
+      width: "minmax(110px, max-content)",
+      align: "end",
+      sortValue: (row) => row.workspaceCount,
+      cell: (row) => <span className={styles.num}>{row.workspaceCount}</span>,
+    },
+    {
+      id: "lastSeen",
+      header: t("platform.colLastSeen"),
+      width: "minmax(130px, max-content)",
+      sortValue: (row) => row.lastSeenAt,
+      cell: (row) => (
+        <span className={styles.muted}>
+          {row.lastSeenAt
+            ? timeAgo(row.lastSeenAt.getTime())
+            : t("platform.never")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      width: "40px",
+      align: "end",
+      cell: (row) =>
+        row.id !== currentUserId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={
+              <Icon
+                icon={row.deactivatedAt ? "lucide:user-check" : "lucide:user-x"}
+                width={15}
+              />
+            }
+            title={
+              row.deactivatedAt
+                ? t("platform.reactivate")
+                : t("platform.deactivate")
+            }
+            aria-label={
+              row.deactivatedAt
+                ? t("platform.reactivate")
+                : t("platform.deactivate")
+            }
+            disabled={isPending}
+            onClick={() => toggleActive(row)}
+          />
+        ),
+    },
+  ];
+
+  const { sort, sortRows } = useTableSort(columns);
+
+  return (
+    <>
+      <PageHeader
+        divider={false}
+        title={t("nav.users")}
+        count={users.length}
+        description={t("platform.usersDesc")}
+      />
+
+      <div className={styles.content}>
+        {error && (
+          <p className={styles.error} role="alert">
+            <Icon icon="lucide:circle-alert" width={14} />
+            {error}
+          </p>
+        )}
+
+        <Table
+          variant="card"
+          label={t("nav.users")}
+          columns={columns}
+          rows={sortRows(users)}
+          sort={sort}
+          getRowKey={(row) => row.id}
+          empty={
+            <EmptyState
+              icon={<Icon icon="lucide:users" width={32} />}
+              title={t("platform.usersEmpty")}
+            />
+          }
+        />
+      </div>
+    </>
+  );
+}

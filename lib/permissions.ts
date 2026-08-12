@@ -121,13 +121,27 @@ const roleSelect = {
 type GrantRow = { permissionKey: string };
 type RoleWithGrants = { key: string; rank: number; permissions: GrantRow[] };
 
-const loadPlatformRole = cache(
-  async (userId: string): Promise<RoleWithGrants | null> => {
+/**
+ * Plattform-Rolle und Zustand des Kontos in einer Abfrage.
+ *
+ * Beides zusammen, weil beides auf jedem Pfad gebraucht wird und aus derselben
+ * Zeile kommt: die Rolle für die Rechte, `deactivated` als Schranke davor. Ein
+ * stillgelegtes Konto bekommt gar nichts — nicht auf der Plattform, in keinem
+ * Workspace, in keinem Projekt. Die Sperre steht deshalb vor jeder
+ * Rollenauflösung und nicht neben ihr.
+ */
+const loadPlatformState = cache(
+  async (
+    userId: string,
+  ): Promise<{ role: RoleWithGrants | null; deactivated: boolean }> => {
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { platformRole: { select: roleSelect } },
+      select: { deactivatedAt: true, platformRole: { select: roleSelect } },
     });
-    return user?.platformRole ?? null;
+    return {
+      role: user?.platformRole ?? null,
+      deactivated: user?.deactivatedAt != null,
+    };
   },
 );
 
@@ -286,7 +300,14 @@ async function loadBase(userId: string, workspaceId: string): Promise<Base> {
   // hat, bekommt im Mandanten alles und ist von den Regeln unten ausgenommen:
   // gerade wenn ein Workspace gesperrt oder ein Projekt privat ist, muss der
   // Support hineinsehen können. `platform_admin` hat ihn bewusst NICHT.
-  const platformRole = await loadPlatformRole(userId);
+  const platform = await loadPlatformState(userId);
+
+  // Stillgelegt: nichts, und zwar vor allem anderen. Auch der Generalschlüssel
+  // unten kommt für ein solches Konto nicht mehr zum Zug.
+  if (platform.deactivated)
+    return { granted, roles, master: false, closed: true };
+
+  const platformRole = platform.role;
   if (platformRole) {
     roles.PLATFORM = { key: platformRole.key, rank: platformRole.rank };
   }
@@ -330,12 +351,14 @@ async function resolve(
 
   // ── Kontext PLATFORM ────────────────────────────────────────────────────────
   if ("scope" in ctx) {
-    const platformRole = await loadPlatformRole(userId);
+    const platform = await loadPlatformState(userId);
+    if (platform.deactivated) return EMPTY;
+
     const roles: Partial<Record<RoleScope, ScopeRole>> = {};
-    if (platformRole) {
-      roles.PLATFORM = { key: platformRole.key, rank: platformRole.rank };
+    if (platform.role) {
+      roles.PLATFORM = { key: platform.role.key, rank: platform.role.rank };
     }
-    return makeAccess(collect(platformRole, "PLATFORM"), roles, null, null);
+    return makeAccess(collect(platform.role, "PLATFORM"), roles, null, null);
   }
 
   // ── Kontext WORKSPACE ───────────────────────────────────────────────────────

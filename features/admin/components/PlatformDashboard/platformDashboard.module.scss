@@ -1,0 +1,302 @@
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Volle Breite wie die anderen Bereiche der Plattformverwaltung. Was hier
+     steht, füllt sie auch: Kacheln und Diagramme wachsen mit, statt in der
+     Mitte zu kleben. Der einzige reine Fließtext — der Hinweiskasten — bringt
+     seine eigene Zeilenlänge mit (`.noticeBody`) und läuft nicht mit auf. */
+}
+
+/* ── Bedienelemente ─────────────────────────────────────────────────────────
+   Eine Reihe, oben, für alles darunter. */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Die Zeiträume als zusammenhängende Gruppe — ein Wert, mehrere Möglichkeiten,
+   also ein Segment-Schalter und keine vier einzelnen Knöpfe. */
+.ranges {
+  display: inline-flex;
+  /* `fieldset` bringt eigene Vorgaben mit — Rand, Polster und ein
+     `min-width: min-content`, das sich nicht schrumpfen ließe. */
+  min-width: 0;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-container-low);
+}
+
+.range {
+  padding: 5px 11px;
+  border: none;
+  border-radius: calc(var(--radius) - 3px);
+  background: none;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: var(--on-surface);
+  }
+
+  &[data-active] {
+    background: var(--surface-container-highest);
+    color: var(--on-surface);
+    font-weight: 550;
+  }
+}
+
+/* ── Hinweis ──────────────────────────────────────────────────────────────── */
+
+.notice {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 11px;
+  padding: 15px 16px;
+  padding-right: 44px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-container-lowest);
+}
+
+.noticeIcon {
+  margin-top: 2px;
+  color: var(--on-surface-variant);
+}
+
+.noticeText {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.noticeTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.noticeBody {
+  margin: 0;
+  max-width: 78ch;
+  font-size: var(--text-sm);
+  line-height: var(--leading-loose);
+  color: var(--on-surface-variant);
+}
+
+.noticeClose {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+
+/* ── Inhalt ─────────────────────────────────────────────────────────────────
+   Beim Wechsel des Zeitraums bleibt das alte Bild stehen und tritt zurück:
+   kein Skelett, kein Sprung, keine Leere. */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: opacity 0.15s;
+}
+
+.content[data-loading] {
+  opacity: 0.55;
+}
+
+/* ── Kennzahlen ─────────────────────────────────────────────────────────────
+   Vier Kacheln: was im Zeitraum entstanden ist, wie es sich zum Zeitraum davor
+   verhält, und wovon es ein Teil ist. */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 15px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+a.kpi:hover {
+  background: var(--surface-container-low);
+  border-color: var(--outline);
+}
+
+.kpiHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.kpiIcon {
+  color: var(--outline);
+}
+
+/* Proportionale Ziffern, keine tabellarischen: die Zahl steht groß und für
+   sich, und gleich breite Ziffern ließen sie bei dieser Größe lose wirken. */
+.kpiValue {
+  font-size: var(--text-2xl);
+  font-weight: 650;
+  line-height: 1.1;
+  color: var(--on-surface);
+}
+
+.kpiFoot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: var(--text-xs);
+}
+
+/* Die Veränderung trägt Richtung *und* Zeichen — bei Rot-Grün-Schwäche bliebe
+   von der Farbe allein nichts übrig. */
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface-variant);
+}
+
+.delta[data-direction="up"] {
+  color: var(--green);
+}
+
+.delta[data-direction="down"] {
+  color: var(--outline);
+}
+
+.kpiTotal {
+  color: var(--outline);
+}
+
+/* ── Diagramme ──────────────────────────────────────────────────────────────
+
+   Der Verlauf über die volle Breite, darunter eine Reihe mit dreien.
+
+   Zwei getrennte Behälter statt eines Rasters mit einer Karte über `1 / -1`:
+   ein Element, das alle Spuren überspannt, hält jede davon besetzt — und
+   `auto-fit` faltet nur *leere* Spuren weg. Auf einem breiten Bildschirm
+   entstünden so fünf Spuren, in denen drei Karten stünden, und rechts bliebe
+   eine Lücke, die aussähe wie ein Fehler. Ohne das überspannende Element
+   entscheidet die Reihe ihre Spaltenzahl selbst und teilt die Breite unter
+   ihren dreien auf. */
+.charts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chartRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* ── Braucht Aufmerksamkeit ─────────────────────────────────────────────── */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.attention {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 15px 16px 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+a.card:hover {
+  background: var(--surface-container-low);
+  border-color: var(--outline);
+}
+
+.cardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 9px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+}
+
+.cardValue {
+  font-size: var(--text-2xl);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.cardLabel {
+  margin-top: 5px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.cardHint {
+  margin-top: 9px;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--outline);
+}
+
+/* Eine Zahl, die möglichst bei null stünde, und es gerade nicht tut. Nur
+   Zeichen und Kante färben sich: leuchteten alle drei Karten, sähe man keine. */
+.card[data-warn] {
+  border-color: color-mix(in oklab, var(--amber) 45%, var(--outline-variant));
+
+  .cardIcon {
+    background: color-mix(in oklab, var(--amber) 16%, transparent);
+    color: var(--amber);
+  }
+}

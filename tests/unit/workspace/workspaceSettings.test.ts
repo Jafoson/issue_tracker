@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockWorkspaceUpdate = mock();
+const mockWorkspaceFindUnique = mock(async () => ({
+  name: "Nimbus",
+  _count: { members: 3, projects: 2 },
+}));
 const mockWorkspaceDelete = mock();
 const mockTransaction = mock();
 
@@ -13,7 +17,15 @@ const mockTx = {
 
 mock.module("@/lib/db", () => ({
   db: {
-    workspace: { update: mockWorkspaceUpdate, delete: mockWorkspaceDelete },
+    workspace: {
+      update: mockWorkspaceUpdate,
+      delete: mockWorkspaceDelete,
+      // `deleteWorkspace` liest Name und Umfang, bevor es löscht — danach
+      // stünde im Protokoll nur noch eine Id.
+      findUnique: mockWorkspaceFindUnique,
+    },
+    user: { findUnique: mock(async () => null) },
+    auditLog: { create: mock(async () => ({})) },
     $transaction: mockTransaction,
   },
 }));

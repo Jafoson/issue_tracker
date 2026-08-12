@@ -213,6 +213,10 @@ const WORKSPACE_MEMBERS = [
   { workspaceId: WS, userId: "u7", role: "viewer", pending: false },
 ];
 
+// `ownerId` ist die Zuständigkeit, nicht der Zugriff — Zugriff kommt aus
+// `ProjectMember`. Die Plattformverwaltung liest sie, um verwaiste Projekte zu
+// finden (`features/admin/queries.ts`); ohne sie sähe hier jedes Projekt aus wie
+// eines, um das sich niemand mehr kümmert.
 const PROJECTS = [
   {
     id: "p1",
@@ -221,6 +225,7 @@ const PROJECTS = [
     slug: "web-app",
     prefix: "NIM",
     color: "#6e63e6",
+    ownerId: "u1",
   },
   {
     id: "p2",
@@ -229,6 +234,7 @@ const PROJECTS = [
     slug: "mobile",
     prefix: "MOB",
     color: "#3b9d6e",
+    ownerId: "u5",
   },
   {
     id: "p3",
@@ -237,6 +243,7 @@ const PROJECTS = [
     slug: "platform",
     prefix: "PLT",
     color: "#d5733b",
+    ownerId: "u1",
   },
 ];
 
@@ -770,6 +777,9 @@ async function main() {
   // Sauber aufräumen: Mit zufälligen IDs ist Upsert-nach-id nicht mehr
   // idempotent, ein erneuter Lauf würde sonst Duplikate erzeugen. In
   // FK-sicherer Reihenfolge löschen (Kinder vor Eltern).
+  // Das Protokoll hat keine Fremdschlüssel (siehe `prisma/schema.prisma`) und
+  // fiele beim Aufräumen sonst durch jedes Raster.
+  await db.auditLog.deleteMany();
   await db.comment.deleteMany();
   await db.issue.deleteMany();
   await db.teamMember.deleteMany();
@@ -777,9 +787,12 @@ async function main() {
   await db.projectMember.deleteMany();
   await db.team.deleteMany();
   await db.label.deleteMany();
+  // Mitgliedschaften vor den Rollen: `WorkspaceMember.roleId` steht auf
+  // `Restrict` (eine Rolle, die noch jemand trägt, lässt sich nicht löschen).
+  // Andersherum bricht der Lauf ab, sobald die Datenbank nicht leer ist.
+  await db.workspaceMember.deleteMany();
   await db.rolePermission.deleteMany();
   await db.role.deleteMany();
-  await db.workspaceMember.deleteMany();
   await db.workspaceStatus.deleteMany();
   await db.workspacePriority.deleteMany();
   await db.workspaceIssueType.deleteMany();
@@ -888,6 +901,7 @@ async function main() {
         slug: p.slug,
         prefix: p.prefix,
         color: p.color,
+        createdById: ref(realUserId, p.ownerId, "project owner"),
       },
     });
     // Wer im Workspace ist, ist in dessen öffentlichen Projekten — ohne eigene

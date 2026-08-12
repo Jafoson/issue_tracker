@@ -1,0 +1,276 @@
+/* Säulendiagramm aus HTML. Siehe `ColumnChart.tsx`, warum nicht aus SVG. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Die Karte gibt die Höhe vor; das Diagramm füllt, was übrig bleibt. So
+     bleiben mehrere Karten in einer Reihe gleich hoch. */
+  flex: 1;
+  min-height: 0;
+}
+
+.plotRow {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Zwei Marken, oben und unten — mehr braucht die Größenordnung nicht. */
+.yAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: none;
+  padding-block: 0 1px;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--outline);
+  text-align: right;
+}
+
+/* Zeichenfläche und Achsenbeschriftung teilen sich eine Spalte neben der
+   Werteachse. Dadurch stehen die Marken unter ihren Säulen, ganz gleich wie
+   breit die Zahlen links werden — eine feste Einrückung stimmte nur, solange der
+   größte Wert zweistellig bleibt. */
+.plotCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Die Zeichenfläche bekommt eine Mindesthöhe, und die Achsenbeschriftung kommt
+   darunter noch dazu. Eine Karte mit fester Gesamthöhe schnitte sonst genau die
+   Achse ab, für die sie da ist. */
+.plot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 150px;
+}
+
+/* Vier durchgezogene Haarlinien, eine Stufe neben der Fläche. Gestrichelt läse
+   sich als Schwelle oder Prognose — es ist aber nur ein Raster. */
+.grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+
+  span {
+    height: 1px;
+    background: var(--outline-variant);
+    opacity: 0.55;
+  }
+
+  /* Die Grundlinie trägt mehr Gewicht als das Raster darüber: sie ist der
+     Nullpunkt, von dem alle Säulen ausgehen. */
+  span:last-child {
+    opacity: 1;
+  }
+}
+
+.slots {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* Der Zielbereich ist die ganze Spalte, nicht die Säule: ein Tag mit einer
+   Aufgabe hat sonst drei Pixel zum Treffen. */
+.slot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: default;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+
+  &[data-active],
+  &:focus-visible {
+    /* Die berührte Spalte hebt sich ab, damit sichtbar ist, worauf sich der
+       Tooltip bezieht. */
+    background: color-mix(in oklab, var(--on-surface) 7%, transparent);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+/* Höchstens 24px dick — der Rest der Spur bleibt Luft. */
+.bar {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  /* Die Abschnitte rechnen in Prozent, die Lücken dazwischen in Pixeln — beides
+     zusammen ergibt bei einer vollen Säule ein paar Pixel mehr als die Fläche.
+     `min-height: 0` lässt Flexbox das ausgleichen, statt oben überzulaufen. */
+  min-height: 0;
+  width: 100%;
+  max-width: 24px;
+  height: 100%;
+  /* Die 2px-Lücke zwischen gestapelten Abschnitten. Eine echte Lücke, kein
+     Rahmen: ein Rahmen wäre Tinte, die keine Daten trägt. */
+  gap: 2px;
+}
+
+.segment {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 0;
+
+  /* Oben gerundet, unten eckig: das Ende der Säule ist rund, die Grundlinie
+     nicht. Bei einem Stapel gilt das nur für den obersten Abschnitt. */
+  &:last-child {
+    border-radius: 4px 4px 0 0;
+  }
+}
+
+/* Ein leerer Topf: eine Andeutung auf der Grundlinie. Ohne sie sähe ein Tag
+   ohne Aufgaben aus wie ein Tag, den es nicht gab. */
+.zero {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  max-width: 24px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--outline-variant);
+}
+
+/* ── Tooltip ────────────────────────────────────────────────────────────────
+   Der Wert führt, die Reihe folgt: der Leser hat die Reihe schon im Blick und
+   sucht die Zahl. */
+.tip {
+  position: absolute;
+  bottom: 100%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-container-high);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.28);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Rechte Spalten klappen den Kasten nach links, damit er nicht über die Kante
+   der Karte hinausläuft. */
+/* Links vom Anker, sobald die Spalte in der rechten Hälfte liegt — sonst hinge
+   der Kasten über der Kante. Ohne zusätzlichen Versatz: der schöbe ihn an den
+   Rändern genau dorthin, wo er nicht hin soll. */
+.tip[data-side="start"] {
+  transform: translateX(-100%);
+}
+
+.tipTitle {
+  margin-bottom: 2px;
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+}
+
+.tipRow {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+/* Ein kurzer Strich in der Farbe der Reihe — bei dieser Dichte ist ein
+   gefülltes Kästchen zu viel Tinte für eine Beschriftung. */
+.tipKey {
+  align-self: center;
+  flex: none;
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.tipValue {
+  font-size: var(--text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
+}
+
+.tipLabel {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+/* ── Achse unten ────────────────────────────────────────────────────────────
+   Dieselbe Aufteilung wie die Spuren darüber — gleiche Breite, gleicher Abstand
+   —, damit jede Beschriftung unter ihrer Säule steht. */
+.xAxis {
+  display: flex;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.tick {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+/* ── Tabellenansicht ────────────────────────────────────────────────────────
+   Derselbe Datensatz ohne Farbe — der Weg an jede Zahl, der ohne Zeiger
+   auskommt. */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 5px 8px;
+    text-align: right;
+    border-bottom: 1px solid var(--outline-variant);
+  }
+
+  thead th {
+    color: var(--on-surface-variant);
+    font-weight: 550;
+  }
+
+  tbody th {
+    text-align: left;
+    font-weight: 400;
+    color: var(--on-surface-variant);
+    white-space: nowrap;
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: 0;
+  }
+}
+
+.caption {
+  padding-bottom: 6px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  text-align: left;
+}

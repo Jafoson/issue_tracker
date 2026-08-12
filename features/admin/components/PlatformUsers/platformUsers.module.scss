@@ -1,0 +1,64 @@
+/* Der scrollende Teil unter der Kopfzeile — wie in den Einstellungsbereichen. */
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Der Auslöser der Rollenauswahl sieht aus wie die Plakette daneben, nur mit
+   einem Winkel dahinter: dass sich hier etwas ändern lässt, soll man sehen,
+   ohne dass die Spalte zur Knopfleiste wird. */
+.roleTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  margin: -3px -5px;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface-variant);
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surface-container-high);
+  }
+}
+
+/* Ein stillgelegtes Konto bleibt in der Liste, tritt aber zurück — es arbeitet
+   nicht mehr mit. */
+.dimmed {
+  opacity: 0.55;
+}
+
+.access {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

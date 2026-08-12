@@ -24,6 +24,8 @@ mock.module("@/lib/db", () => ({
       create: mock(),
     },
     issue: { deleteMany: mockIssueDeleteMany },
+    user: { findUnique: mock(async () => null) },
+    auditLog: { create: mock(async () => ({})) },
     workspaceMember: { findMany: mockWorkspaceMemberFindMany },
     projectMember: { createMany: mockProjectMemberCreateMany },
     $transaction: mockTransaction,
@@ -72,7 +74,11 @@ function reset() {
 
   mockCurrentUserId.mockResolvedValue(ACTOR);
   mockCan.mockResolvedValue(true);
-  mockProjectFindUnique.mockResolvedValue({ workspaceId: WS });
+  mockProjectFindUnique.mockResolvedValue({
+    workspaceId: WS,
+    name: "Web App",
+    _count: { issues: 12, members: 4 },
+  });
   mockProjectUpdate.mockResolvedValue({ id: PROJECT, workspaceId: WS });
   mockWorkspaceMemberFindMany.mockResolvedValue([]);
   mockTransaction.mockImplementation(

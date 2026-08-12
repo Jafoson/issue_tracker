@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { ProjectVisibility } from "@/features/projects/types";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
 import {
@@ -116,6 +117,11 @@ export async function createProject(data: {
         prefix,
         color: data.color,
         visibility,
+        // Wer es angelegt hat, bleibt vermerkt. Nicht als Recht — Zugriff kommt
+        // allein aus `ProjectMember` — sondern als Zuständigkeit: verschwindet
+        // dieses Konto, erkennt die Plattformverwaltung das Projekt als
+        // verwaist (`features/admin/queries.ts`).
+        createdById: session.userId,
       },
     });
 
@@ -240,9 +246,35 @@ export async function deleteProject(projectId: string): Promise<ProjectResult> {
   const guard = await requireProjectManage(projectId, "project.delete");
   if ("error" in guard) return guard;
 
+  // Vor dem Löschen gelesen — danach ließe sich nicht mehr sagen, was weg ist.
+  const doomed = await db.project.findUnique({
+    where: { id: projectId },
+    select: {
+      name: true,
+      workspaceId: true,
+      _count: { select: { issues: true, members: true } },
+    },
+  });
+
   await db.$transaction(async (tx) => {
     await tx.issue.deleteMany({ where: { projectId } });
     await tx.project.delete({ where: { id: projectId } });
+  });
+
+  await recordAudit({
+    action: "project.deleted",
+    actorId: guard.actorId,
+    target: {
+      type: "project",
+      id: projectId,
+      label: doomed?.name ?? projectId,
+    },
+    workspaceId: doomed?.workspaceId ?? null,
+    projectId,
+    meta: {
+      issues: doomed?._count.issues ?? 0,
+      members: doomed?._count.members ?? 0,
+    },
   });
 
   revalidatePath("/", "layout");

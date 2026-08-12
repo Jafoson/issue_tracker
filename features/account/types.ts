@@ -33,6 +33,8 @@ export type NotificationSettings = Record<NotificationKey, boolean>;
 /** Was jemand für sich eingestellt hat — mit den Vorgaben, wenn noch nichts. */
 export interface Preferences extends NotificationSettings {
   theme: Theme;
+  /** Ob der Hinweis im Plattform-Bereich weggeklickt wurde. */
+  adminNoticeHidden: boolean;
 }
 
 /** Allgemein: wer man ist und wie man erscheint. */

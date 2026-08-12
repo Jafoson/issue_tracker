@@ -131,6 +131,27 @@ export async function updateAppearance(data: {
 }
 
 /**
+ * Der Hinweis im Plattform-Bereich: gelesen, oder wieder anzeigen.
+ *
+ * Eine Vorliebe wie das Design, deshalb steht sie hier und nicht bei den
+ * Plattform-Aktionen — sie gehört der Person, nicht der Plattform, und gilt auf
+ * jedem Gerät. Sie in der Datenbank zu halten statt im Browser hat einen
+ * zweiten Grund: die Seite wird auf dem Server gerendert, und was nur der
+ * Browser weiß, käme dort zu spät.
+ */
+export async function setAdminNoticeHidden(hidden: boolean): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_LOGGED_IN };
+
+  await writePreferences(session.userId, { adminNoticeHidden: hidden });
+
+  // Nur der Plattform-Bereich zeigt ihn — der Rest der App muss dafür nicht neu
+  // gebaut werden.
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/**
  * Ein einzelner Schalter der Benachrichtigungen.
  *
  * Einzeln und nicht als ganzer Satz: die Schalter gelten sofort, und wer einen

@@ -50,6 +50,10 @@ const dict: Record<string, string> = {
   "nav.notifications": "Benachrichtigungen",
   "nav.security": "Sicherheit",
   "nav.connections": "Verbundene Konten",
+  "nav.overview": "Übersicht",
+  "nav.users": "Benutzer",
+  "nav.workspaces": "Workspaces",
+  "nav.audit": "Protokoll",
 };
 const t = ((key: string) => dict[key] ?? key) as unknown as Translator;
 
@@ -118,14 +122,29 @@ describe("tabIcon()", () => {
 });
 
 describe("Admin-Routen", () => {
-  it("mappt /admin auf 'Allgemein' mit Settings-Icon", () => {
-    expect(tabTitle("/admin", projects, t)).toBe("Allgemein");
-    expect(tabIcon("/admin")).toBe("lucide:settings");
+  it("mappt /admin auf die Übersicht", () => {
+    expect(tabTitle("/admin", projects, t)).toBe("Übersicht");
+    expect(tabIcon("/admin")).toBe("lucide:layout-dashboard");
   });
 
-  it("mappt /admin/members", () => {
-    expect(tabTitle("/admin/members", projects, t)).toBe("Mitglieder");
-    expect(tabIcon("/admin/members")).toBe("lucide:users");
+  it("mappt /admin/users", () => {
+    expect(tabTitle("/admin/users", projects, t)).toBe("Benutzer");
+    expect(tabIcon("/admin/users")).toBe("lucide:users");
+  });
+
+  it("mappt /admin/workspaces", () => {
+    expect(tabTitle("/admin/workspaces", projects, t)).toBe("Workspaces");
+    expect(tabIcon("/admin/workspaces")).toBe("lucide:building-2");
+  });
+
+  it("mappt /admin/projects", () => {
+    expect(tabTitle("/admin/projects", projects, t)).toBe("Projekte");
+    expect(tabIcon("/admin/projects")).toBe("lucide:folders");
+  });
+
+  it("mappt /admin/audit", () => {
+    expect(tabTitle("/admin/audit", projects, t)).toBe("Protokoll");
+    expect(tabIcon("/admin/audit")).toBe("lucide:scroll-text");
   });
 
   it("mappt /admin/roles", () => {
@@ -135,7 +154,7 @@ describe("Admin-Routen", () => {
 
   it("hat für Admin nie eine Projektfarbe", () => {
     expect(tabColor("/admin", projects)).toBeNull();
-    expect(tabColor("/admin/members", projects)).toBeNull();
+    expect(tabColor("/admin/users", projects)).toBeNull();
   });
 });
 

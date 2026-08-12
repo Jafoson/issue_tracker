@@ -1,0 +1,117 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* Name links, Wert rechts — beide über dem Balken statt daneben. So bleibt der
+   Balken über die ganze Breite lesbar, auch wenn ein Name lang ist. */
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.dot {
+  align-self: center;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.labelText {
+  font-size: var(--text-base);
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value {
+  flex: none;
+  font-size: var(--text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
+}
+
+/* Die Spur zeigt, wovon der Balken ein Teil ist — dieselbe Höhe, eine Stufe
+   neben der Fläche. */
+.track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-container-high);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--chart-1);
+}
+
+.meta {
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+/* ── Tabellenansicht ──────────────────────────────────────────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 5px 8px;
+    text-align: right;
+    border-bottom: 1px solid var(--outline-variant);
+  }
+
+  thead th {
+    color: var(--on-surface-variant);
+    font-weight: 550;
+  }
+
+  tbody th {
+    text-align: left;
+    font-weight: 400;
+    color: var(--on-surface-variant);
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: 0;
+  }
+}
+
+.caption {
+  padding-bottom: 6px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  text-align: left;
+}

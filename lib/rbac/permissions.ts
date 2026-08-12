@@ -67,7 +67,7 @@ export const PERMISSIONS = {
     scopes: PLATFORM_ONLY,
   },
   "user.manage": {
-    desc: "Benutzerkonten plattformweit verwalten",
+    desc: "Benutzerkonten plattformweit verwalten: Plattform-Rolle setzen, Konten stilllegen",
     scopes: PLATFORM_ONLY,
   },
   "tenant.access": {
@@ -76,6 +76,36 @@ export const PERMISSIONS = {
   },
   "workspace.suspend": {
     desc: "Workspaces sperren und entsperren",
+    scopes: PLATFORM_ONLY,
+  },
+
+  // ── Plattform: Stammdaten und Notfall ───────────────────────────────────────
+  //
+  // Diese beiden trennen, was in einer Plattformverwaltung sonst gern
+  // zusammenfällt: *dass* es ein Projekt gibt, und *was* darin steht.
+  //
+  // `project.metadata.view` zeigt die Hülle jedes Projekts — Name, Workspace,
+  // Ersteller, Alter, Zustand — auch die privater. Genau das braucht, wer
+  // verwaiste Projekte neu zuordnen und Kosten zurechnen muss. Inhalte fallen
+  // ausdrücklich nicht darunter: `features/admin/queries.ts` liest keine Issues,
+  // keine Kommentare, keine Anhänge.
+  //
+  // `project.breakglass` ist der Weg hinein, wenn es sein muss — und nur dieser.
+  // Er trägt niemanden heimlich in ein Projekt: er legt eine gewöhnliche
+  // Mitgliedschaft an, verlangt eine Begründung und schreibt beides ins
+  // Protokoll (`features/admin/actions.ts`). Danach steht die Plattformleitung
+  // in der Mitgliederliste des Projekts wie jeder andere auch — sichtbar für
+  // alle, die dort arbeiten.
+  "project.metadata.view": {
+    desc: "Stammdaten aller Projekte sehen, auch privater — ohne deren Inhalte",
+    scopes: PLATFORM_ONLY,
+  },
+  "project.metadata.manage": {
+    desc: "Stammdaten eines Projekts ändern: Besitzer neu zuordnen, stilllegen — weiterhin ohne Blick hinein",
+    scopes: PLATFORM_ONLY,
+  },
+  "project.breakglass": {
+    desc: "Notfall-Zugriff: sich selbst mit Begründung in ein fremdes Projekt eintragen (wird protokolliert)",
     scopes: PLATFORM_ONLY,
   },
 
@@ -92,7 +122,13 @@ export const PERMISSIONS = {
     desc: "Status, Prioritäten und Issue-Typen verwalten",
     scopes: WORKSPACE_ONLY,
   },
-  "audit.view": { desc: "Audit-Log einsehen", scopes: WORKSPACE_ONLY },
+  // In beiden Scopes derselbe Key, zwei Ausschnitte desselben Protokolls: auf
+  // der Plattform das ganze, im Workspace nur, was dort geschah. Den Ausschnitt
+  // setzt nicht die Permission, sondern die Abfrage (`lib/audit.ts`).
+  "audit.view": {
+    desc: "Audit-Log einsehen",
+    scopes: ["PLATFORM", "WORKSPACE"],
+  },
 
   // ── Rollen ──────────────────────────────────────────────────────────────────
   "role.manage": {

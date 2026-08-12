@@ -32,6 +32,7 @@ export const OAUTH_PROVIDERS = ["github", "google"] as const;
  *  `@default`s in `prisma/schema.prisma`. */
 export const DEFAULT_PREFERENCES: Preferences = {
   theme: "dark",
+  adminNoticeHidden: false,
   assignedInApp: true,
   assignedEmail: true,
   mentionedInApp: true,
@@ -61,10 +62,14 @@ export const getMyPreferences = cache(async (): Promise<Preferences> => {
   });
   if (!row) return DEFAULT_PREFERENCES;
 
-  const { userId: _userId, theme, ...notifications } = row;
+  // Alles, was keine Benachrichtigung ist, wird einzeln herausgenommen — was
+  // übrig bleibt, sind genau die Schalter aus `NotificationSettings`. Eine neue
+  // Spalte, die hier nicht steht, landete sonst stillschweigend darin.
+  const { userId: _userId, theme, adminNoticeHidden, ...notifications } = row;
   return {
     ...notifications,
     theme: theme as Preferences["theme"],
+    adminNoticeHidden,
   };
 });
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
 import {
@@ -159,6 +160,9 @@ export async function createWorkspace(
           slug: projectSlug,
           prefix,
           color,
+          // Ohne diese Zeile stünde das erste Projekt jedes Workspace vom ersten
+          // Tag an als verwaist in der Plattformverwaltung.
+          createdById: session.userId,
         },
       });
 
@@ -234,9 +238,34 @@ export async function deleteWorkspace(
   if (!(await can(actorId, "workspace.delete", { workspaceId })))
     return { error: "You are not allowed to delete this workspace." };
 
+  // Vor dem Löschen gelesen: danach gibt es nichts mehr zu benennen, und ein
+  // Protokolleintrag über „irgendeinen Workspace" hilft niemandem.
+  const doomed = await db.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      name: true,
+      _count: { select: { members: true, projects: true } },
+    },
+  });
+
   await db.$transaction(async (tx) => {
     await tx.issue.deleteMany({ where: { project: { workspaceId } } });
     await tx.workspace.delete({ where: { id: workspaceId } });
+  });
+
+  await recordAudit({
+    action: "workspace.deleted",
+    actorId,
+    target: {
+      type: "workspace",
+      id: workspaceId,
+      label: doomed?.name ?? workspaceId,
+    },
+    workspaceId,
+    meta: {
+      members: doomed?._count.members ?? 0,
+      projects: doomed?._count.projects ?? 0,
+    },
   });
 
   revalidatePath("/", "layout");
@@ -493,6 +522,28 @@ export async function setMemberRole(
     where: { workspaceId_userId: { workspaceId, userId } },
     data: { roleId: next.id },
   });
+
+  // „Wer hat wem Rechte gegeben?" — dieselbe Frage wie auf der Plattform-Ebene,
+  // hier für den Workspace. Der Eintrag trägt beide Rollen, damit man später
+  // sieht, in welche Richtung es ging.
+  const target_ = await db.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true },
+  });
+  await recordAudit({
+    action: "member.role.changed",
+    actorId,
+    target: {
+      type: "user",
+      id: userId,
+      label: target_
+        ? `${target_.firstName} ${target_.lastName}`.trim()
+        : userId,
+    },
+    workspaceId,
+    meta: { from: target.role.key, to: roleKey },
+  });
+
   revalidatePath("/", "layout");
 }
 

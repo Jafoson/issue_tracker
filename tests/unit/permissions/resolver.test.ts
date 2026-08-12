@@ -67,10 +67,12 @@ function setup(
     pending?: boolean;
     suspended?: boolean;
     visibility?: string;
+    deactivated?: boolean;
   } = {},
 ) {
   mockUserFindUnique.mockResolvedValue({
     platformRole: opts.platform ?? null,
+    deactivatedAt: opts.deactivated ? new Date("2026-01-01") : null,
   });
   mockWorkspaceFindUnique.mockResolvedValue({
     suspended: opts.suspended ?? false,
@@ -613,5 +615,85 @@ describe("accessibleProjectIds", () => {
 
   it("gibt ohne Session eine leere Menge", async () => {
     expect([...(await accessibleProjectIds(null, "ws1"))]).toEqual([]);
+  });
+});
+
+// ── Stillgelegte Konten ───────────────────────────────────────────────────────
+//
+// Die Sperre steht vor jeder Rollenauflösung. Die Fälle hier prüfen genau das:
+// nicht, dass ein stillgelegtes Konto weniger bekommt, sondern dass es *nichts*
+// bekommt — auch dann, wenn seine Rollen für sich genommen alles erlaubten.
+
+describe("Ein stillgelegtes Konto bekommt nirgends Rechte", () => {
+  it("nicht auf der Plattform, auch mit voller Plattform-Rolle", async () => {
+    setup({
+      deactivated: true,
+      platform: role(
+        "platform_admin",
+        2,
+        allow("platform.access", "user.manage"),
+      ),
+    });
+
+    const access = await accessFor("u1", { scope: "platform" });
+    expect(access.has("platform.access")).toBe(false);
+    expect(access.has("user.manage")).toBe(false);
+  });
+
+  it("nicht im Workspace, auch als Owner", async () => {
+    setup({
+      deactivated: true,
+      workspace: role(
+        "owner",
+        6,
+        allow("workspace.update", "project.admin.all"),
+      ),
+    });
+
+    const access = await accessFor("u1", { workspaceId: "ws1" });
+    expect(access.has("workspace.update")).toBe(false);
+  });
+
+  it("nicht im Projekt, auch mit Projektrolle", async () => {
+    setup({
+      deactivated: true,
+      workspace: role("member", 2, []),
+      project: role("project_admin", 4, allow("project.view", "issue.create")),
+    });
+
+    const access = await accessFor("u1", { projectId: "p1" });
+    expect(access.has("project.view")).toBe(false);
+    expect(access.has("issue.create")).toBe(false);
+  });
+
+  it("hebt auch den Support-Generalschlüssel auf", async () => {
+    // `tenant.access` steht sonst vor allen Regeln. Die Stilllegung steht davor.
+    setup({
+      deactivated: true,
+      platform: role("platform_support", 1, allow("tenant.access")),
+    });
+
+    const access = await accessFor("u1", { projectId: "p1" });
+    expect(access.has("project.view")).toBe(false);
+  });
+
+  it("lässt es nicht mehr in den Workspace", async () => {
+    setup({
+      deactivated: true,
+      workspace: role("owner", 6, allow("workspace.update")),
+    });
+
+    expect(await canEnterWorkspace("u1", "ws1")).toBe(false);
+  });
+
+  it("zeigt ihm kein einziges Projekt", async () => {
+    setup({
+      deactivated: true,
+      workspace: role("owner", 6, allow("project.view.all")),
+    });
+    mockProjectFindMany.mockResolvedValue([{ id: "p1" }, { id: "p2" }]);
+    mockProjectMemberFindMany.mockResolvedValue([]);
+
+    expect([...(await accessibleProjectIds("u1", "ws1"))]).toEqual([]);
   });
 });

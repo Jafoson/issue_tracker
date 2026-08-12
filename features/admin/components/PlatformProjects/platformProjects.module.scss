@@ -1,0 +1,122 @@
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.projectText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.projectName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-tight);
+
+  /* Der Name kürzt, die Zeichen dahinter nicht — sonst verschwände zuerst die
+     Auskunft „privat" und der Name bliebe ganz. */
+  > :first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Das Schloss sagt „privat" — und steht hier ausdrücklich nicht für „gesperrt":
+   die Zeile ist ja sichtbar. Es sagt, dass der Inhalt es nicht ist. */
+.lock {
+  flex: none;
+  color: var(--on-surface-variant);
+}
+
+.projectMeta {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Verwaist: die einzige Plakette, die zum Handeln auffordert. */
+.warnBadge {
+  border-color: color-mix(in oklab, var(--amber) 45%, var(--outline-variant));
+  color: var(--amber);
+}
+
+.ownerTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  margin: -3px -5px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surface-container-high);
+  }
+}
+
+.warn {
+  color: var(--amber);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Der Notfall-Zugriff färbt sich erst unter dem Zeiger. Dauerhaft rot wäre er
+   ein Alarm in jeder Zeile; ganz farblos sähe er aus wie „Details öffnen". */
+.breakGlass:hover {
+  color: var(--amber);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}
