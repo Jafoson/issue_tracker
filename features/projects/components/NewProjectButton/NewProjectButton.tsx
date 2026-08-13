@@ -44,7 +44,6 @@ export function NewProjectButton({
   return (
     <Button
       variant="primary"
-      size="sm"
       icon={<Icon icon="lucide:plus" width={15} />}
       onClick={open}
     >
