@@ -88,7 +88,15 @@ describe("tabIcon()", () => {
   });
 
   it("nutzt das Board-Icon für die Board-Ansicht eines Projekts", () => {
-    expect(tabIcon(`${BASE}/project/fuchsly`)).toBe("lucide:layout-dashboard");
+    expect(tabIcon(`${BASE}/project/fuchsly`)).toBe("lucide:square-kanban");
+  });
+
+  it("nutzt das Übersichts-Icon für das Dashboard eines Projekts", () => {
+    // Board und Dashboard trugen einmal dasselbe Zeichen — seit es beide gibt,
+    // muss man sie im Reiter auseinanderhalten können.
+    expect(tabIcon(`${BASE}/project/fuchsly/dashboard`)).toBe(
+      "lucide:layout-dashboard",
+    );
   });
 
   it("nutzt das Mitglieder-Icon für die Mitglieder-Ansicht eines Projekts", () => {
@@ -114,7 +122,9 @@ describe("tabIcon()", () => {
     );
   });
 
-  it("fällt für unbekannte Unterseiten aufs Board-Icon zurück", () => {
+  it("fällt für unbekannte Unterseiten aufs Übersichts-Icon zurück", () => {
+    // Die Übersicht ist die Seite, auf der ein Projekt aufgeht — wer sonst
+    // nichts über eine Adresse weiß, weiß wenigstens, dass sie dorthin gehört.
     expect(tabIcon(`${BASE}/project/fuchsly/gibtsnicht`)).toBe(
       "lucide:layout-dashboard",
     );

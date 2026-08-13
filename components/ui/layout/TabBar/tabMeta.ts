@@ -4,6 +4,7 @@ import {
   ADMIN_NAV,
   findBySection,
   PROJECT_NAV,
+  PROJECT_SECTIONS,
   PROJECT_SETTINGS_NAV,
   WORKSPACE_SECTIONS,
   WORKSPACE_SETTINGS_NAV,
@@ -40,7 +41,7 @@ function projectFromPath(path: string, projects: Project[]): Project | null {
 /**
  * Sub-section of a project path — `""` for the board, `"list"`, `"members"`, …
  * Read from the path rather than matched against a list of known suffixes, so a
- * new entry in `PROJECT_NAV` needs no change here.
+ * new entry in `PROJECT_SECTIONS` needs no change here.
  */
 function projectSection(path: string): string {
   return path.split("/")[4] ?? "";
@@ -142,7 +143,7 @@ export function tabIcon(path: string): string {
     }
 
     return (
-      findBySection(PROJECT_NAV, projectSection(path))?.icon ??
+      findBySection(PROJECT_SECTIONS, projectSection(path))?.icon ??
       "lucide:layout-dashboard"
     );
   }
@@ -214,7 +215,7 @@ export function tabMeta(
       sub && sub.section ? t(`nav.${sub.labelKey}`) : t("nav.settings");
     title = `${title} (${label})`;
   } else if (inProject) {
-    const entry = findBySection(PROJECT_NAV, projectSection(path));
+    const entry = findBySection(PROJECT_SECTIONS, projectSection(path));
     if (entry?.section) title = `${title} (${t(`nav.${entry.labelKey}`)})`;
   } else {
     // Dieselbe Regel für den Workspace: der Kopf heißt „Einstellungen", die

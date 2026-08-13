@@ -178,10 +178,37 @@ export const ADMIN_NAV: NavEntry[] = [
  * unter `settings` (`PROJECT_SETTINGS_NAV`).
  */
 export const PROJECT_NAV: NavEntry[] = [
-  { section: "", icon: "lucide:layout-dashboard", labelKey: "board" },
+  { section: "", icon: "lucide:square-kanban", labelKey: "board" },
   { section: "list", icon: "lucide:list", labelKey: "issues" },
   { section: "members", icon: "lucide:users", labelKey: "members" },
   { section: "settings", icon: "lucide:settings", labelKey: "settings" },
+];
+
+/**
+ * Die Startseite eines Projekts — `…/project/<slug>/dashboard`.
+ *
+ * Sie steht in keiner Seitenleiste, denn sie *ist* die Projektzeile: wer ein
+ * Projekt anklickt, ohne einen Bereich zu meinen, landet hier. Ein zweiter
+ * Eintrag darunter zeigte auf dieselbe Adresse wie die Zeile über ihm.
+ *
+ * Der Eintrag existiert trotzdem, weil ein offener Reiter und ein geteilter Link
+ * einen Namen und ein Zeichen brauchen — dieselbe Rolle wie `ROLES_NAV` und
+ * `ACCOUNT_NAV` eine Ebene höher.
+ */
+export const PROJECT_DASHBOARD_NAV: NavEntry = {
+  section: "dashboard",
+  icon: "lucide:layout-dashboard",
+  labelKey: "overview",
+};
+
+/**
+ * Alle Bereiche unter `…/project/<slug>/…` — die Liste, aus der die Reiterleiste
+ * Namen und Zeichen einer beliebigen Projektadresse auflöst. Das Gegenstück zu
+ * `WORKSPACE_SECTIONS` eine Ebene tiefer.
+ */
+export const PROJECT_SECTIONS: NavEntry[] = [
+  PROJECT_DASHBOARD_NAV,
+  ...PROJECT_NAV,
 ];
 
 /**

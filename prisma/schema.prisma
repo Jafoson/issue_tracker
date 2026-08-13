@@ -94,6 +94,7 @@ model User {
   sessions           Session[]
   invitations        Invitation[]
   preferences        UserPreferences?
+  dashboards         DashboardPreference[]
 }
 
 /// Was einer Person gehört und keinem Workspace: wie die Oberfläche aussieht und
@@ -132,6 +133,52 @@ model UserPreferences {
   inviteEmail    Boolean @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Das Projekt-Dashboard, wie es einer eingerichtet hat ────────────────────
+//
+// Eine Zeile je Person **und** Projekt. Das Dashboard gehört keinem Projekt und
+// keinem Team, sondern dem, der es ansieht: wer Aufgaben verteilt, will die
+// Auslastung oben haben, wer selbst welche abarbeitet, den Rückstand. Beide auf
+// dieselbe Anordnung festzulegen hieße, einem von beiden die falsche Seite zu
+// zeigen.
+//
+// Die Zeile entsteht erst, wenn jemand etwas verstellt — wie `UserPreferences`.
+// Wer nie etwas anfasst, bekommt die Vorgabe aus `features/dashboard/widgets.ts`,
+// und die Oberfläche muss den Unterschied nicht kennen.
+
+model DashboardPreference {
+  userId    String
+  projectId String
+
+  /// Bausteine, die diese Person ausgeblendet hat — Keys aus `WIDGETS`.
+  hidden String[]
+
+  /// Die Reihenfolge, in der die Bausteine stehen. Unvollständig gespeichert:
+  /// was hier fehlt, behält seinen Platz aus der Vorgabe. Sonst erschiene ein
+  /// später ergänzter Baustein bei niemandem mehr, der einmal etwas verschoben
+  /// hat.
+  order String[]
+
+  /// Der Zeitraum, mit dem das Dashboard aufgeht — "7d" | "30d" | "90d" | "12m".
+  /// Steht auch in der Adresse (`?range=`); hier steht, womit es ohne Angabe
+  /// beginnt.
+  range String @default("30d")
+
+  /// Welche der beiden Ansichten zuletzt offen war — "profile" | "dashboard".
+  ///
+  /// Die Projektzeile in der Seitenleiste führt ohne `?view=` auf diese Seite;
+  /// wer zuletzt die Zahlen ansah, soll sie beim nächsten Klick wieder sehen und
+  /// nicht erst wieder umschalten. Die Vorgabe ist der Steckbrief: er beantwortet
+  /// „was ist das hier" und gilt auch für den, der das Projekt zum ersten Mal
+  /// öffnet.
+  view String @default("profile")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
 }
 
 // ─── Auth.js (NextAuth) ─────────────────────────────────────────────────────────
@@ -226,6 +273,8 @@ model Project {
   hiddenLabels ProjectHiddenLabel[]
   // Projektlokale Rollen (Role.scope = PROJECT mit gesetztem projectId).
   roles        Role[]
+  // Wie einzelne Personen das Dashboard dieses Projekts eingerichtet haben.
+  dashboards   DashboardPreference[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
@@ -509,6 +558,17 @@ model Issue {
   created DateTime @default(now())
   updated DateTime @updatedAt
 
+  /// Wann die Aufgabe abgeschlossen wurde — gesetzt, sobald ihr Status auf
+  /// „done" oder „canceled" wechselt, und wieder geleert, wenn sie zurück in die
+  /// Arbeit geht (`features/issues/actions.ts`).
+  ///
+  /// Eine eigene Spalte, obwohl `updated` beim Abschließen dasselbe Datum trägt:
+  /// `updated` verschiebt sich bei jeder späteren Änderung mit — ein Kommentar,
+  /// ein Label, ein Tippfehler im Titel. Das Dashboard misst daran den Durchsatz
+  /// und die Durchlaufzeit, und beide wären damit nicht bloß ungenau, sondern
+  /// rückwirkend veränderlich.
+  closedAt DateTime?
+
   assigneeId String?
   reporterId String
   projectId  String
@@ -521,6 +581,8 @@ model Issue {
   @@unique([projectId, key])
   @@index([projectId, status])
   @@index([assigneeId])
+  // Der Durchsatz des Dashboards gruppiert je Projekt über diese Spalte.
+  @@index([projectId, closedAt])
 }
 
 // ─── Comments ────────────────────────────────────────────────────────────────

@@ -35,6 +35,7 @@ import {
 } from "@/lib/permissions";
 import { OWNER_ROLE_KEY } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
+import { CLOSED_STATUSES } from "@/lib/workspace-defaults";
 import type {
   IssueType,
   Label,
@@ -195,9 +196,6 @@ export const getWorkspaceSearchIssues = cache(
 //
 // Der Zutritt selbst ist keine Permission (siehe `canEnterWorkspace`): wer nicht
 // dazugehört, bekommt hier gar nichts, auch nicht die leere Liste.
-
-/** Status, die als erledigt zählen — die Zahlen der Übersicht meinen die offenen. */
-const CLOSED_STATUSES = ["done", "canceled"];
 
 /** Stammdaten des Workspace samt dem, was an ihm hängt. */
 export const getWorkspaceSettingsView = cache(
@@ -434,7 +432,7 @@ export const getWorkspaceTeamsView = cache(
       by: ["projectId"],
       where: {
         project: { workspaceId },
-        status: { notIn: CLOSED_STATUSES },
+        status: { notIn: [...CLOSED_STATUSES] },
       },
       _count: { _all: true },
     });

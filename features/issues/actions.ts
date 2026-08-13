@@ -14,6 +14,7 @@ import { toPlainText } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/utils/id";
+import { isClosedStatus } from "@/lib/workspace-defaults";
 
 async function revalidate() {
   revalidatePath("/", "layout");
@@ -34,14 +35,46 @@ async function uniqueLabelSlug(workspaceId: string, name: string) {
   return slug;
 }
 
-// Lädt die für `.own`/`.any`-Prüfungen nötigen Issue-Felder.
+// Lädt die für `.own`/`.any`-Prüfungen nötigen Issue-Felder — und den Status,
+// an dem `closedAt` hängt (siehe `closedPatch`).
 async function issueContext(id: string) {
   const issue = await db.issue.findUnique({
     where: { id },
-    select: { projectId: true, reporterId: true, assigneeId: true },
+    select: {
+      projectId: true,
+      reporterId: true,
+      assigneeId: true,
+      status: true,
+      closedAt: true,
+    },
   });
   if (!issue) throw new PermissionError("issue.update.any");
   return issue;
+}
+
+/**
+ * Was am Abschlussdatum zu ändern ist, wenn der Status auf `next` wechselt.
+ *
+ * Drei Fälle, und der dritte ist der Grund für diese Funktion: wer eine
+ * abgeschlossene Aufgabe wieder aufmacht, muss das Datum verlieren — sonst zählt
+ * das Dashboard sie weiter zum Durchsatz jenes Tages, an dem sie einmal fertig
+ * war. Und wer sie von „Done" nach „Canceled" schiebt, behält das ursprüngliche
+ * Datum: geschlossen wurde sie damals, umbenannt wurde nur, wie.
+ *
+ * Ein leeres Objekt heißt „nichts anzufassen" und lässt sich unverändert in
+ * `data` spreaden.
+ */
+function closedPatch(
+  before: { status: string; closedAt: Date | null },
+  next: string | undefined,
+): { closedAt?: Date | null } {
+  if (next === undefined || next === before.status) return {};
+
+  if (isClosedStatus(next)) {
+    // Schon ein Datum? Dann bleibt es stehen — siehe „Done" → „Canceled".
+    return before.closedAt ? {} : { closedAt: new Date() };
+  }
+  return before.closedAt ? { closedAt: null } : {};
 }
 
 export async function moveIssue(id: string, status: string) {
@@ -57,7 +90,10 @@ export async function moveIssue(id: string, status: string) {
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
   ]);
-  await db.issue.update({ where: { id }, data: { status } });
+  await db.issue.update({
+    where: { id },
+    data: { status, ...closedPatch(issue, status) },
+  });
   await revalidate();
 }
 
@@ -74,7 +110,10 @@ export async function reorderIssue(id: string, status: string, rank: number) {
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
   ]);
-  await db.issue.update({ where: { id }, data: { status, rank } });
+  await db.issue.update({
+    where: { id },
+    data: { status, rank, ...closedPatch(issue, status) },
+  });
   await revalidate();
 }
 
@@ -98,6 +137,7 @@ export async function updateIssue(id: string, patch: IssuePatch) {
     where: { id },
     data: {
       ...(patch.status !== undefined && { status: patch.status }),
+      ...closedPatch(issue, patch.status),
       ...(patch.priority !== undefined && { priority: patch.priority }),
       ...(patch.type !== undefined && { type: patch.type }),
       ...(patch.assignee !== undefined && { assigneeId: patch.assignee }),
@@ -145,6 +185,9 @@ export async function createIssue(data: {
       description: data.description as unknown as Prisma.InputJsonValue,
       descriptionText: toPlainText(data.description),
       status: data.status,
+      // Wer eine Aufgabe gleich als erledigt anlegt — nachgetragene Arbeit —
+      // hat sie in derselben Sekunde geschlossen.
+      ...(isClosedStatus(data.status) ? { closedAt: new Date() } : {}),
       priority: data.priority,
       assigneeId: data.assignee,
       labels: data.labels,

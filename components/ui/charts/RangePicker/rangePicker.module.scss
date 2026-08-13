@@ -1,0 +1,35 @@
+/* Die Zeiträume als zusammenhängende Gruppe — ein Wert, mehrere Möglichkeiten,
+   also ein Segment-Schalter und keine vier einzelnen Knöpfe. */
+.ranges {
+  display: inline-flex;
+  /* `fieldset` bringt eigene Vorgaben mit — Rand, Polster und ein
+     `min-width: min-content`, das sich nicht schrumpfen ließe. */
+  min-width: 0;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-container-low);
+}
+
+.range {
+  padding: 5px 11px;
+  border: none;
+  border-radius: calc(var(--radius) - 3px);
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    color: var(--on-surface);
+  }
+
+  &[data-active] {
+    background: var(--surface-container-highest);
+    color: var(--on-surface);
+    font-weight: 550;
+  }
+}

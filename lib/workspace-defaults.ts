@@ -65,5 +65,25 @@ export const DEFAULT_ISSUE_TYPES = [
   { id: "chore", name: "Chore", color: "#8a7f6b", position: 4 },
 ];
 
+/**
+ * Die Status, die eine Aufgabe als erledigt gelten lassen — abgeschlossen oder
+ * verworfen. Alles andere ist offen.
+ *
+ * Steht hier und nicht dreimal einzeln, weil daran mehr hängt als eine Zählung:
+ * `Issue.closedAt` wird an genau dieser Grenze gesetzt und wieder geleert
+ * (`features/issues/actions.ts`), und das Dashboard misst Durchsatz und
+ * Durchlaufzeit daran. Zwei Listen, die auseinanderlaufen, hießen: eine Aufgabe
+ * gilt als offen und trägt trotzdem ein Abschlussdatum.
+ *
+ * Verworfen zählt mit dazu. Eine verworfene Aufgabe ist keine Leistung, aber sie
+ * ist auch keine Arbeit mehr — stünde sie weiter im Rückstand, wüchse der um
+ * genau das, was jemand bewusst weggeräumt hat.
+ */
+export const CLOSED_STATUSES = ["done", "canceled"] as const;
+
+export function isClosedStatus(status: string): boolean {
+  return (CLOSED_STATUSES as readonly string[]).includes(status);
+}
+
 // Default-Rollen & Permissions liegen in lib/rbac.ts (Single Source of Truth)
 // und werden über lib/rbac-provision.ts pro Workspace angelegt.

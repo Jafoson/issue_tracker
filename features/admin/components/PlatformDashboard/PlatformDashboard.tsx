@@ -12,11 +12,12 @@ import {
   type ChartSeries,
   ColumnChart,
 } from "@/components/ui/charts/ColumnChart/ColumnChart";
+import { RangePicker } from "@/components/ui/charts/RangePicker/RangePicker";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { setAdminNoticeHidden } from "@/features/account/actions";
 import type { DashboardData, PlatformStats } from "@/features/admin/queries";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { RANGES, type RangeKey, trend } from "@/lib/buckets";
+import { type RangeKey, trend } from "@/lib/buckets";
 import styles from "./platformDashboard.module.scss";
 
 interface Props {
@@ -250,23 +251,12 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
       <div className={styles.body}>
         {/* Eine Reihe, über allem, was sie betrifft. */}
         <div className={styles.controls}>
-          {/* Ein `fieldset`, weil es genau das ist: mehrere Knöpfe, die zusammen
-              einen Wert setzen. Die Beschriftung kommt per `aria-label` statt
-              als sichtbare Legende — die Knöpfe sagen selbst, worum es geht. */}
-          <fieldset className={styles.ranges} aria-label={t("dashboard.range")}>
-            {RANGES.map((range) => (
-              <button
-                key={range}
-                type="button"
-                className={styles.range}
-                data-active={data.range === range || undefined}
-                aria-pressed={data.range === range}
-                onClick={() => pickRange(range)}
-              >
-                {t(`dashboard.range_${range}`)}
-              </button>
-            ))}
-          </fieldset>
+          <RangePicker
+            value={data.range}
+            onChange={pickRange}
+            label={t("dashboard.range")}
+            labelFor={(range) => t(`dashboard.range_${range}`)}
+          />
 
           <Chip
             type="filter"

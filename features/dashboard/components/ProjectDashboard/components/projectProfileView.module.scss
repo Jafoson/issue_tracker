@@ -1,0 +1,525 @@
+/* ── Die Fläche ───────────────────────────────────────────────────────────────
+
+   Volle Breite wie das Dashboard nebenan. Damit sie sich nicht in die Länge
+   zieht, wächst nicht der einzelne Block mit, sondern ihre Zahl: die Karten
+   stehen bei viel Platz zu dritt nebeneinander statt zu zweit, und die
+   Fließtexte darin behalten ihre eigene Zeilenlänge (`.desc`). Ein Absatz, der
+   über 1900px läuft, ist nicht großzügig, sondern unlesbar — der Blick findet
+   den Anfang der nächsten Zeile nicht mehr. */
+.page {
+  display: grid;
+  /* Links alles, was das Projekt selbst beschreibt, rechts die Mitglieder.
+     Die Mitgliederspalte in einem festen Band statt als Bruchteil: als `1.4fr`
+     wüchse sie auf einem sehr breiten Schirm auf 700px mit, und ein Name mit
+     Adresse braucht keine 700px. Unter 300px bräche dagegen die Zeile aus Name
+     und Rollen-Chip um. Der Prozentwert dazwischen lässt sie mitatmen. */
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 28%, 400px);
+  /* Oben die beiden Spalten, unten die Wege hinaus. `1fr` für die obere Zeile
+     zusammen mit `flex: 1` heißt: die Ansicht nimmt sich die ganze Höhe, die
+     der scrollende Bereich hergibt, und „Weiter zu" sitzt an deren Ende statt
+     mitten in einer schwarzen Fläche. Reicht der Inhalt darüber hinaus, wächst
+     die Zeile mit — `flex-basis: 0` schrumpft nichts unter seinen Inhalt,
+     solange `min-height` bei `auto` bleibt. */
+  grid-template-rows: 1fr auto;
+  gap: 20px 12px;
+  align-items: stretch;
+  width: 100%;
+  flex: 1;
+}
+
+/* Die linke Spalte: Kopfkarte, Eckdaten, Teams und Labels untereinander. */
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* Die Mitgliederkarte füllt ihre Spalte über die ganze Höhe. Als Flex-Behälter,
+   weil `align-items: stretch` nur die Zelle dehnt — die Karte darin bliebe so
+   hoch wie ihr Inhalt und ließe die Spalte unten leer. */
+.side {
+  display: flex;
+  min-width: 0;
+}
+
+.side > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Unter ~1120px trägt die schmalere Spalte die Mitgliederkarte nicht mehr —
+   Name, Adresse und Rollen-Chip stünden dort dreizeilig. Dann alles
+   untereinander, und die Höhenverteilung fällt weg: gestapelt gibt es keinen
+   Platz mehr zu verteilen, `1fr` blähte nur die erste Zeile auf. */
+@media (max-width: 1120px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    flex: none;
+  }
+}
+
+/* Kleine Versalien-Marke über einer Gruppe — die Überschrift für alles, was
+   keine Karte ist. Sie ordnet ein, ohne wie ein Titel zu wirken.
+   Als Flex-Zeile, weil sie neben dem Wort eine Zahl tragen kann (die Rollen in
+   der Mitgliederkarte); wo sie allein steht, ändert das nichts. */
+.subLabel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-xs);
+  font-weight: 550;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+
+/* ── 1. Wer bin ich ───────────────────────────────────────────────────────────
+
+   Die Kopfkarte: Zeichen, Name, Zweck. Sie trägt den größeren Radius und mehr
+   Polster als die Karten darunter — sie ist der Einstieg und nicht eine von
+   sechs. Dass sie sich sichtbar von ihnen unterscheidet, ist die Hierarchie. */
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Der Weg zum Ändern steht am rechten Rand der Karte und wird dorthin
+   geschoben, egal wie lang Name und Beschreibung ausfallen. Umrandet und nicht
+   gefüllt: er ist ein Angebot, nicht die Hauptsache dieser Seite. */
+.heroEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  align-self: flex-start;
+  margin-inline-start: auto;
+  padding: 7px 13px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+  &:hover {
+    background: var(--surface-container-high);
+    border-color: var(--outline);
+    color: var(--on-surface);
+  }
+}
+
+.heroName {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 650;
+  line-height: var(--leading-tight);
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desc {
+  margin: 0;
+  /* Lesbare Zeilenlänge. Der Satz erklärt, er füllt nicht die Karte. */
+  max-width: 68ch;
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  color: var(--on-surface-variant);
+}
+
+/* Solange niemand etwas geschrieben hat, steht der Platzhalter an der Stelle des
+   Satzes — in derselben Größe, nur zurückgenommen. Dieselbe Rolle wie ein
+   Platzhalter im Eingabefeld: er sagt, was dorthin gehört. Wohin man dafür geht,
+   sagt „Bearbeiten" am rechten Rand derselben Karte. */
+.descEmpty {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--outline);
+}
+
+/* Auf schmalen Fenstern stellt sich die Karte auf: das 92px-Zeichen und ein
+   langer Projektname teilen sich sonst 300px, und der Name bräche nach jedem
+   Wort. */
+@media (max-width: 560px) {
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  /* Gestapelt gibt es keinen rechten Rand mehr, an den sich der Knopf schieben
+     ließe — dann steht er unter dem Text, wo er anfängt. */
+  .heroEdit {
+    margin-inline-start: 0;
+  }
+}
+
+/* ── 2. Die Eckdaten ──────────────────────────────────────────────────────────
+
+   Eine umrandete Leiste mit Trennstrichen, keine vier Kästen: es ist eine Zeile
+   Stammdaten und nicht vier Dinge.
+
+   Die Striche entstehen aus dem Untergrund, der durch 1px Lücke scheint. Der
+   naheliegende Weg — `border-left` auf allen außer dem ersten — bricht, sobald
+   die Leiste umbricht: das erste Feld der zweiten Zeile trüge dann einen Strich
+   an der Außenkante. So stimmt es in jeder Anordnung von selbst. */
+.facts {
+  display: grid;
+  /* 190px, damit die vier auch in der schmaleren linken Spalte nebeneinander
+     bleiben. Mehr Mindestbreite hieße drei oben und eine allein darunter — die
+     unsymmetrischste aller Aufteilungen von vieren. */
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--outline-variant);
+  overflow: hidden;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 13px 16px 14px;
+  background: var(--surface);
+}
+
+.factLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.factValue {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 550;
+  color: var(--on-surface);
+}
+
+/* Die Fußnote zum Wert — wer es angelegt hat, wie viele es insgesamt sind. */
+.factMeta {
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--outline);
+}
+
+.mono {
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-container-high);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* ── 3. Womit gearbeitet wird ─────────────────────────────────────────────────
+
+   Teams und Labels teilen sich die linke Spalte. Beide sind kurz und bleiben es
+   — anders als die Mitgliederliste, die mit jeder weiteren Rolle eine Gruppe
+   länger wird. Genau deshalb steht die rechts für sich: dort darf sie wachsen,
+   ohne die beiden festen Karten von ihrem Platz zu schieben.
+
+   `minmax(0, 1fr)` statt `1fr`: die Vorgabe einer Rasterspur ist `min-content`,
+   und eine lange Label-Zeile schöbe die Spur sonst breiter, als der Platz
+   hergibt. */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 15px 17px 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* Leer heißt gestrichelt und ohne Fläche: die Karte sagt „hier ist Platz" statt
+   „hier fehlt etwas". Nur so unterscheidet sich ein Projekt ohne Teams sichtbar
+   von einem, dessen Teams noch laden. */
+.card[data-empty] {
+  border-style: dashed;
+  background: none;
+
+  .cardBody {
+    font-size: var(--text-sm);
+    color: var(--outline);
+  }
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.count {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-container-high);
+  font-size: var(--text-xs);
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface-variant);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Der Weg aus der Karte heraus steht an ihrem Fuß, abgesetzt durch eine Linie —
+   er gehört zur Karte, ist aber nicht ihr Inhalt.
+
+   `margin-top: auto` drückt ihn an die Unterkante, wo die Karte höher ist als
+   ihr Inhalt (die Mitgliederkarte in ihrer gedehnten Spalte). Wo sie es nicht
+   ist, gibt es nichts zu verteilen und die Zeile sitzt wie zuvor direkt unter
+   dem Inhalt. */
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 11px;
+  border-top: 1px solid var(--outline-variant);
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--on-surface);
+  }
+
+  &:hover > svg {
+    transform: translateX(2px);
+  }
+
+  & > svg {
+    transition: transform 0.12s;
+  }
+}
+
+/* ── Menschen ─────────────────────────────────────────────────────────────── */
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.personText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.personName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--text-base);
+  color: var(--on-surface);
+}
+
+/* Nachgeben darf allein der Name — das Zeichen dahinter behält seine Form. */
+.personName > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personName > :last-child {
+  flex: none;
+}
+
+.personMeta {
+  font-size: var(--text-xs);
+  color: var(--outline);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Eine Rolle unterhalb der Mitarbeit-Schwelle: Überschrift plus senkrechte
+   Liste. Der Strich darüber trennt sie von den einzeln Genannten. */
+.roleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 13px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.roster {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rosterRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.rosterName {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Teams und Labels ─────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 11px 3px 3px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  color: var(--on-surface);
+}
+
+/* Das Kürzel trägt die Farbe des Teams, nicht der ganze Chip: als Fläche hinter
+   Text müsste jede Team-Farbe auf Kontrast geprüft sein, und das ist sie nicht —
+   sie wird frei gewählt. Auf dem kurzen Kürzel in Weiß trägt sie. */
+.teamKey {
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xxs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+/* ── 4. Die Wege hinaus ───────────────────────────────────────────────────── */
+
+/* Über beide Spalten: die vier führen aus der ganzen Ansicht hinaus, nicht aus
+   einer ihrer Spalten. */
+.next {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 2px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Umrandet statt gefüllt: diese vier führen von der Seite weg und sollen nicht
+   mit den Karten darüber um Aufmerksamkeit ringen. */
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  font-size: var(--text-base);
+  color: var(--on-surface);
+  text-decoration: none;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover {
+    background: var(--surface-container-low);
+    border-color: var(--outline);
+  }
+
+  &:hover .tileArrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tileIcon {
+  flex: none;
+  color: var(--on-surface-variant);
+}
+
+/* Der Pfeil erscheint erst beim Überfahren. Vier dauerhaft sichtbare Pfeile
+   wären vier Zeichen, die alle dasselbe sagen. */
+.tileArrow {
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--outline);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+/* ── Schmale Fenster ──────────────────────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

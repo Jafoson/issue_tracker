@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import styles from "./barList.module.scss";
 
 export interface BarRow {
@@ -10,6 +11,14 @@ export interface BarRow {
   meta?: string;
   /** Punkt vor der Beschriftung — die Farbe des Objekts, nicht der Reihe. */
   dot?: string;
+  /**
+   * Fertiges Element ganz vorn — Avatar, Zeichen, Farbfleck.
+   *
+   * Für Zeilen, deren Gegenstand ein Gesicht hat: ein Punkt in der Farbe einer
+   * Person sagt weniger als die Person selbst. Steht anstelle von `dot`, nicht
+   * daneben — beide zusammen wären zwei Kennzeichen für dieselbe Sache.
+   */
+  leading?: ReactNode;
 }
 
 interface Props {
@@ -64,8 +73,15 @@ export function BarList({ rows, label, valueLabel, asTable = false }: Props) {
         <li key={row.id} className={styles.row}>
           <span className={styles.head}>
             <span className={styles.name}>
-              {row.dot && (
-                <span className={styles.dot} style={{ background: row.dot }} />
+              {row.leading ? (
+                <span className={styles.leading}>{row.leading}</span>
+              ) : (
+                row.dot && (
+                  <span
+                    className={styles.dot}
+                    style={{ background: row.dot }}
+                  />
+                )
               )}
               <span className={styles.labelText}>{row.label}</span>
             </span>

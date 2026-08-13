@@ -39,6 +39,15 @@
   border-radius: 50%;
 }
 
+/* Der Slot für ein fertiges Element (Avatar, Zeichen). `align-self` statt der
+   Grundlinie des Elternteils: ein Avatar hat keine, und ohne diese Zeile
+   rutschte er unter die Schrift. */
+.leading {
+  display: flex;
+  align-self: center;
+  flex: none;
+}
+
 .labelText {
   font-size: var(--text-base);
   color: var(--on-surface);

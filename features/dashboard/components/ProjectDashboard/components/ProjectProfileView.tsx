@@ -1,0 +1,373 @@
+"use client";
+
+import { Icon } from "@iconify/react";
+import { useFormatter, useTranslations } from "next-intl";
+import type { ReactNode } from "react";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { Label } from "@/components/ui/atoms/Label/Label";
+import type {
+  DashboardStats,
+  ProjectProfile,
+} from "@/features/dashboard/types";
+import { Link } from "@/i18n/navigation";
+import { roleColor } from "@/lib/rbac";
+import { fullName } from "@/lib/utils/string";
+import styles from "./projectProfileView.module.scss";
+
+interface Props {
+  /** Name und Farbe stehen in der Kopfkarte — das Zeichen des Projekts. */
+  project: { name: string; color: string };
+  profile: ProjectProfile;
+  stats: DashboardStats;
+  /** Adressen der Nachbarbereiche — die Kachelreihe unten verlinkt sie. */
+  links: {
+    board: string;
+    list: string;
+    members: string;
+    settings: string;
+  };
+}
+
+interface CardProps {
+  title: string;
+  /** Zahl neben der Überschrift, wo die Karte eine Liste zeigt. */
+  count?: number;
+  /**
+   * Nichts drin. Die Karte wechselt dann von der gefüllten in die gestrichelte
+   * Form — sie sagt „hier ist Platz" statt „hier fehlt etwas". Ein grauer Satz
+   * in einem ansonsten normalen Kasten liest sich wie ein Ladefehler.
+   */
+  empty?: boolean;
+  footer?: ReactNode;
+  children: ReactNode;
+}
+
+function Card({ title, count, empty, footer, children }: CardProps) {
+  return (
+    <section className={styles.card} data-empty={empty || undefined}>
+      <h3 className={styles.cardTitle}>
+        {title}
+        {count !== undefined && <span className={styles.count}>{count}</span>}
+      </h3>
+      <div className={styles.cardBody}>{children}</div>
+      {footer}
+    </section>
+  );
+}
+
+/**
+ * Der Steckbrief des Projekts: was es ist, wem es gehört, woraus es besteht.
+ *
+ * Die Gegenansicht zum Dashboard, und bewusst eine andere Art von Auskunft.
+ * Das Dashboard beantwortet „wie läuft es gerade" und ändert sich stündlich;
+ * hier steht, was auch nächsten Monat noch gilt — Zweck, Kürzel, Leitung,
+ * Zugriff. Deshalb trägt diese Ansicht auch keinen Zeitraum: ein Kürzel hat
+ * keine 30 Tage.
+ *
+ * ── Vier Ebenen, vier Darstellungen ──
+ *
+ * Sechs gleich aussehende Kästen untereinander sind keine Übersicht, sondern
+ * eine Liste, in der alles gleich wichtig aussieht. Die Seite staffelt deshalb:
+ *
+ *   1. Wer bin ich: die **Kopfkarte** mit dem Zeichen des Projekts, seinem Namen
+ *      und seinem Zweck — größerer Radius, mehr Polster, der Einstieg.
+ *   2. Die Eckdaten als **eine umrandete Leiste** mit Trennstrichen. Vier
+ *      einzelne Kästen wären vier Dinge; es ist aber eine Zeile Stammdaten.
+ *   3. Wer und Womit als **gefüllte Karten**, die sich die Breite teilen. Was
+ *      leer ist, wird gestrichelt statt gefüllt.
+ *   4. Die Wege hinaus als **umrandete Kacheln** ganz unten — sie führen weg von
+ *      dieser Seite und gehören deshalb ans Ende, nicht dazwischen.
+ *
+ * Sie ist nicht anpassbar. Ein Steckbrief mit abschaltbaren Feldern wäre kein
+ * Steckbrief mehr — man schlägt ihn gerade deshalb nach, weil immer dasselbe
+ * darin steht.
+ */
+export function ProjectProfileView({ project, profile, stats, links }: Props) {
+  const t = useTranslations();
+  const format = useFormatter();
+
+  const created = format.dateTime(new Date(profile.createdAt), {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const isPrivate = profile.visibility === "private";
+
+  const facts = [
+    {
+      key: "prefix",
+      icon: "lucide:hash",
+      label: t("fields.prefix"),
+      // Das Kürzel in der Schrift, in der es auch an den Aufgaben steht.
+      value: <code className={styles.mono}>{profile.prefix}</code>,
+    },
+    {
+      key: "visibility",
+      icon: isPrivate ? "lucide:lock" : "lucide:globe",
+      label: t("projectSettings.visibility"),
+      value: t(
+        isPrivate ? "projectSettings.private" : "projectSettings.public",
+      ),
+    },
+    {
+      key: "created",
+      icon: "lucide:calendar",
+      label: t("fields.created"),
+      value: created,
+      // Wer es angelegt hat, steht klein darunter statt im selben Satz: das
+      // Datum ist die Auskunft, der Name die Fußnote dazu.
+      meta: profile.createdBy ? fullName(profile.createdBy) : undefined,
+    },
+    {
+      key: "issues",
+      icon: "lucide:circle-dot",
+      label: t("dashboard.issues"),
+      value: t("dashboard.issuesOpen", { count: stats.open }),
+      meta: t("dashboard.issuesTotal", { count: stats.total }),
+    },
+  ];
+
+  // Zeichen und Beschriftung sind dieselben wie in der Seitenleiste
+  // (`PROJECT_NAV`) — ein Bereich soll nicht davon abhängen, durch welche Tür
+  // man ihn betritt. Die Adressen baut die Seite, weil nur sie den Workspace
+  // kennt.
+  const shortcuts = [
+    { key: "board", icon: "lucide:square-kanban", href: links.board },
+    { key: "issues", icon: "lucide:list", href: links.list },
+    { key: "members", icon: "lucide:users", href: links.members },
+    { key: "settings", icon: "lucide:settings", href: links.settings },
+  ] as const;
+
+  // Zwei Arten, eine Rolle zu zeigen — die Gruppen kommen fertig sortiert vom
+  // Server, hier wird nur getrennt, wer einzeln genannt wird und wer in der
+  // Liste steht.
+  const named = profile.roles.filter((role) => role.distinguished);
+  const rest = profile.roles.filter((role) => !role.distinguished);
+
+  return (
+    <div className={styles.page}>
+      {/* Alles, was das Projekt selbst beschreibt, steht in einer Spalte —
+          erst wer es ist, dann seine Eckdaten, dann womit gearbeitet wird. Die
+          Mitglieder stehen daneben (`.side`) und lesen sich als eigene Spalte;
+          im Dokument kommen sie danach, damit Auge und Vorleser dieselbe
+          Reihenfolge bekommen. */}
+      <div className={styles.main}>
+        {/* ── 1. Wer bin ich ── */}
+        <header className={styles.hero}>
+          {/* Dasselbe Zeichen, mit dem die App das Projekt überall meint — nur
+            groß. `Avatar` bringt Form, Rundung und die Schriftfarbe mit, die
+            zur Projektfarbe passt; nachgebaut wäre das eine zweite Rechnung,
+            die bei einer hellen Farbe still falsch würde. */}
+          <Avatar
+            avatar={{ name: project.name, color: project.color }}
+            shape="square"
+            size={92}
+          />
+
+          <div className={styles.heroText}>
+            <h2 className={styles.heroName}>{project.name}</h2>
+            {profile.desc ? (
+              <p className={styles.desc}>{profile.desc}</p>
+            ) : (
+              // Nur der Platzhalter, kein zweiter Weg zum Ändern: der steht als
+              // „Bearbeiten" schon am rechten Rand derselben Karte.
+              <p className={styles.descEmpty}>{t("dashboard.noDescription")}</p>
+            )}
+          </div>
+
+          {/* Ein Link und kein Knopf: die Einstellungen haben eine eigene
+              Adresse, und ein Link lässt sich in einem neuen Reiter öffnen.
+              Aussehen wie ein Knopf, Verhalten wie ein Link. */}
+          {profile.canUpdate && (
+            <Link href={links.settings} className={styles.heroEdit}>
+              <Icon icon="lucide:pencil" width={14} />
+              {t("actions.edit")}
+            </Link>
+          )}
+        </header>
+
+        {/* ── 2. Die Eckdaten ── */}
+        <dl className={styles.facts}>
+          {facts.map((fact) => (
+            <div key={fact.key} className={styles.fact}>
+              <dt className={styles.factLabel}>
+                <Icon icon={fact.icon} width={13} />
+                {fact.label}
+              </dt>
+              <dd className={styles.factValue}>
+                {fact.value}
+                {fact.meta && (
+                  <span className={styles.factMeta}>{fact.meta}</span>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* ── 3. Wer, und womit ── */}
+        <div className={styles.columns}>
+          <Card
+            title={t("nav.teams")}
+            count={profile.teams.length}
+            empty={profile.teams.length === 0}
+          >
+            {profile.teams.length === 0 ? (
+              t("dashboard.noTeams")
+            ) : (
+              <ul className={styles.chips}>
+                {profile.teams.map((team) => (
+                  <li key={team.id}>
+                    <span className={styles.team}>
+                      <span
+                        className={styles.teamKey}
+                        style={{ background: team.color }}
+                      >
+                        {team.key}
+                      </span>
+                      {team.name}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card
+            title={t("nav.labels")}
+            count={profile.labels.length}
+            empty={profile.labels.length === 0}
+          >
+            {profile.labels.length === 0 ? (
+              t("dashboard.noLabels")
+            ) : (
+              <ul className={styles.chips}>
+                {profile.labels.map((label) => (
+                  <li key={label.id}>
+                    {/* Gefüllt heißt „gehört diesem Projekt", umrandet „kommt
+                        aus dem Workspace" — derselbe Unterschied, den die
+                        Label-Einstellungen machen. */}
+                    <Label
+                      color={label.color}
+                      size="sm"
+                      filled={label.own}
+                      title={t(
+                        label.own
+                          ? "dashboard.labelOwn"
+                          : "dashboard.labelShared",
+                      )}
+                    >
+                      {label.name}
+                    </Label>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* Die Mitglieder als eigene Spalte rechts. */}
+      <aside className={styles.side}>
+        <Card
+          title={t("nav.members")}
+          count={profile.memberCount}
+          empty={profile.memberCount === 0}
+          footer={
+            profile.memberCount > 0 && (
+              <Link href={links.members} className={styles.cardLink}>
+                {t("dashboard.allMembers")}
+                <Icon icon="lucide:arrow-right" width={13} />
+              </Link>
+            )
+          }
+        >
+          {profile.memberCount === 0 ? (
+            t("dashboard.noMembers")
+          ) : (
+            <>
+              {/* Wer mehr trägt als die Mitarbeit, steht einzeln: Zeichen,
+                  Name, Adresse — und das Chip mit dem Namen seiner Rolle. Es
+                  steht neben dem Namen und nicht am rechten Kartenrand: es sagt
+                  etwas über *diese* Person, und über eine halbe Kartenbreite
+                  Abstand hinweg wäre der Bezug erst zu suchen. */}
+              {named.length > 0 && (
+                <ul className={styles.people}>
+                  {named.flatMap((role) =>
+                    role.members.map((member) => (
+                      <li key={member.id} className={styles.person}>
+                        <Avatar avatar={member} size={28} />
+                        <span className={styles.personText}>
+                          <span className={styles.personName}>
+                            <span>{fullName(member)}</span>
+                            <Label
+                              size="sm"
+                              filled
+                              color={roleColor(role.rank)}
+                            >
+                              {role.name}
+                            </Label>
+                          </span>
+                          <span className={styles.personMeta}>
+                            {member.email}
+                          </span>
+                        </span>
+                      </li>
+                    )),
+                  )}
+                </ul>
+              )}
+
+              {/* Alle übrigen je Rolle als senkrechte Liste. Die Überschrift
+                  trägt den Rollennamen und macht das Chip je Zeile überflüssig —
+                  zehnmal „Contributor" untereinander wäre eine Spalte aus
+                  demselben Wort. */}
+              {rest.map((role) => (
+                <div key={role.key} className={styles.roleBlock}>
+                  <span className={styles.subLabel}>
+                    {role.name}
+                    <span className={styles.count}>{role.members.length}</span>
+                  </span>
+                  <ul className={styles.roster}>
+                    {role.members.map((member) => (
+                      <li key={member.id} className={styles.rosterRow}>
+                        <Avatar avatar={member} size={22} />
+                        <span className={styles.rosterName}>
+                          {fullName(member)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </>
+          )}
+        </Card>
+      </aside>
+
+      {/* ── 4. Die Wege hinaus ── */}
+      <nav className={styles.next} aria-label={t("dashboard.goOn")}>
+        <span className={styles.subLabel}>{t("dashboard.goOn")}</span>
+        <ul className={styles.tiles}>
+          {shortcuts.map((shortcut) => (
+            <li key={shortcut.key}>
+              <Link href={shortcut.href} className={styles.tile}>
+                <Icon
+                  icon={shortcut.icon}
+                  width={16}
+                  className={styles.tileIcon}
+                />
+                {t(`nav.${shortcut.key}`)}
+                <Icon
+                  icon="lucide:arrow-right"
+                  width={14}
+                  className={styles.tileArrow}
+                />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  );
+}

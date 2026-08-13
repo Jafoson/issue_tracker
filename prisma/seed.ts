@@ -8,6 +8,7 @@ import { provisionSystemRbac } from "../lib/rbac-provision";
 import { fromMarkdown } from "../lib/richtext/fromMarkdown";
 import { toPlainText } from "../lib/richtext/text";
 import { uid } from "../lib/utils/id";
+import { isClosedStatus } from "../lib/workspace-defaults";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter: new PrismaPg(pool) });
@@ -993,6 +994,10 @@ async function main() {
         labels: issue.labels.map((l) => ref(realLabelId, l, "issue label")),
         created: issue.created,
         updated: issue.updated,
+        // Dieselbe Näherung wie im Backfill der Migration: für alles, was hier
+        // schon erledigt ist, ist der letzte Stand der Abschluss. Ohne die
+        // Spalte stünde das Projekt-Dashboard nach `db:reset` ohne Durchsatz da.
+        closedAt: isClosedStatus(issue.status) ? issue.updated : null,
         assigneeId: issue.assignee
           ? ref(realUserId, issue.assignee, "assignee")
           : null,

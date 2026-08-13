@@ -1,0 +1,109 @@
+/* Mittig in dem Platz, den die Karte hergibt. Eine Verteilung ist zwei Zeilen
+   hoch und steht damit oft in einer Karte, die ihr Nachbar in die Höhe zieht —
+   oben angeschlagen sähe sie darin verloren aus. */
+.wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* Dieselbe Dicke und derselbe Radius wie die Spur der `BarList` — beide sind
+   dasselbe Zeichen, einmal geteilt und einmal gefüllt. */
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.segment {
+  min-width: 3px;
+  /* Ohne diese Zeile schrumpften schmale Stücke unter ihre Mindestbreite,
+     sobald viele nebeneinander stehen. */
+  flex-shrink: 0;
+  flex-basis: 0;
+}
+
+/* Kein einziger Wert: eine leere Spur statt eines fehlenden Balkens. „Null
+   Aufgaben" sieht sonst aus wie „hier fehlt etwas". */
+.empty {
+  flex: 1;
+  background: var(--surface-container-high);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-sm);
+}
+
+.swatch {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+/* Textfarbe, nie die Farbe des Abschnitts — ein heller Farbton ist als Schrift
+   unlesbar. Die Zugehörigkeit trägt das Kästchen davor. */
+.name {
+  color: var(--on-surface-variant);
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+/* ── Tabellenansicht ──────────────────────────────────────────────────────── */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 5px 8px;
+    text-align: right;
+    border-bottom: 1px solid var(--outline-variant);
+  }
+
+  thead th {
+    color: var(--on-surface-variant);
+    font-weight: 550;
+  }
+
+  tbody th {
+    text-align: left;
+    font-weight: 400;
+    color: var(--on-surface-variant);
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: 0;
+  }
+}
+
+.caption {
+  padding-bottom: 6px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  text-align: left;
+}

@@ -6,7 +6,18 @@
   flex-direction: column;
   gap: 4px;
   flex: none;
+  /* Unten mehr als oben: das Polster gilt dem Beschreibungssatz, der tiefer
+     sitzt als die Titelzeile und mehr Luft nach unten braucht. */
   padding: 8px 24px 14px;
+}
+
+/* Ohne Beschreibung ist die Kopfzeile einzeilig, und die Staffelung von oben
+   kippt sie sichtbar nach unten. Dann steht die Zeile mittig in ihrem Streifen.
+   Über `:has()` statt über einen Modifier von außen: ob es eine Beschreibung
+   gibt, weiß die Kopfzeile selbst — jeder Aufrufer müsste es sonst ein zweites
+   Mal mitteilen und könnte es dabei vergessen. */
+.header:not(:has(.description)) {
+  padding-block: 12px;
 }
 
 .divider {
