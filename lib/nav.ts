@@ -185,7 +185,7 @@ export const PROJECT_NAV: NavEntry[] = [
 ];
 
 /**
- * Die Startseite eines Projekts — `…/project/<slug>/dashboard`.
+ * Die Startseite eines Projekts — `…/project/<slug>/overview`.
  *
  * Sie steht in keiner Seitenleiste, denn sie *ist* die Projektzeile: wer ein
  * Projekt anklickt, ohne einen Bereich zu meinen, landet hier. Ein zweiter
@@ -195,8 +195,8 @@ export const PROJECT_NAV: NavEntry[] = [
  * einen Namen und ein Zeichen brauchen — dieselbe Rolle wie `ROLES_NAV` und
  * `ACCOUNT_NAV` eine Ebene höher.
  */
-export const PROJECT_DASHBOARD_NAV: NavEntry = {
-  section: "dashboard",
+export const PROJECT_OVERVIEW_NAV: NavEntry = {
+  section: "overview",
   icon: "lucide:layout-dashboard",
   labelKey: "overview",
 };
@@ -207,7 +207,7 @@ export const PROJECT_DASHBOARD_NAV: NavEntry = {
  * `WORKSPACE_SECTIONS` eine Ebene tiefer.
  */
 export const PROJECT_SECTIONS: NavEntry[] = [
-  PROJECT_DASHBOARD_NAV,
+  PROJECT_OVERVIEW_NAV,
   ...PROJECT_NAV,
 ];
 

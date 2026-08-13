@@ -23,7 +23,10 @@ import {
   setDashboardView,
 } from "@/features/dashboard/actions";
 import type { ProjectDashboardView } from "@/features/dashboard/types";
-import type { ProjectView } from "@/features/dashboard/view";
+import {
+  DEFAULT_PROJECT_VIEW,
+  type ProjectView,
+} from "@/features/dashboard/view";
 import type { WidgetKey } from "@/features/dashboard/widgets";
 import { widgetDef } from "@/features/dashboard/widgets";
 import { PriorityIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
@@ -124,14 +127,19 @@ export function ProjectDashboard({
   const [asTable, setAsTable] = useState(false);
 
   /**
-   * Beide Werte stehen immer in der Adresse, auch der, den man gerade nicht
-   * ändert. Sonst verlöre ein Wechsel der Ansicht den eingestellten Zeitraum —
-   * und wer aus der Übersicht zurück ins Dashboard geht, stünde wieder auf der
+   * Die Übersicht ist die Vorgabe und kennt gar keinen Zeitraum — sie bekommt
+   * die blanke Adresse, ohne `?view=` und ohne `?range=`. Alles andere trägt
+   * beide Werte, auch den, der gerade nicht wechselt: sonst verlöre ein
+   * Wechsel der Ansicht den eingestellten Zeitraum, und wer vom Dashboard
+   * zurück zur Übersicht und wieder zum Dashboard geht, stünde erneut auf der
    * Vorgabe.
    */
   const urlWith = (patch: { view?: ProjectView; range?: RangeKey }) => {
+    const nextView = patch.view ?? view;
+    if (nextView === DEFAULT_PROJECT_VIEW) return pathname;
+
     const next = new URLSearchParams({
-      view: patch.view ?? view,
+      view: nextView,
       range: patch.range ?? data.range,
     });
     return `${pathname}?${next}`;
@@ -477,14 +485,14 @@ export function ProjectDashboard({
             onChange={pickView}
             items={[
               {
-                value: "dashboard",
-                label: t("dashboard.viewDashboard"),
-                icon: <Icon icon="lucide:layout-dashboard" width={15} />,
-              },
-              {
                 value: "profile",
                 label: t("dashboard.viewProfile"),
                 icon: <Icon icon="lucide:info" width={15} />,
+              },
+              {
+                value: "dashboard",
+                label: t("dashboard.viewDashboard"),
+                icon: <Icon icon="lucide:layout-dashboard" width={15} />,
               },
             ]}
           />

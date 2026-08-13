@@ -4,7 +4,7 @@ import {
   getCurrentWorkspace,
   getWorkspaceProjects,
 } from "@/features/workspaces/queries";
-import { PROJECT_NAV, projectPath } from "@/lib/nav";
+import { PROJECT_NAV, PROJECT_OVERVIEW_NAV, projectPath } from "@/lib/nav";
 import styles from "../../../sidebar.module.scss";
 import TabList, { type TabGroup } from "../components/TabList";
 
@@ -20,7 +20,7 @@ export default async function NavGroupProjects() {
   const projectTabs: TabGroup[] = projects.map((p) => {
     const projPath = projectPath(workspace.id, p.slug, "");
     return {
-      href: `${projPath}/dashboard`,
+      href: `${projPath}/${PROJECT_OVERVIEW_NAV.section}`,
       activeHref: `${projPath}/*`,
       label: p.name,
       color: p.color,

@@ -12,7 +12,7 @@ describe("isNavActive()", () => {
 
   it("zieht `activeHref` dem `href` vor", () => {
     expect(
-      isNavActive(`${PROJ}/list`, `${PROJ}/dashboard`, `${PROJ}/list`),
+      isNavActive(`${PROJ}/list`, `${PROJ}/overview`, `${PROJ}/list`),
     ).toBe(true);
   });
 

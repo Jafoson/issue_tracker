@@ -91,10 +91,10 @@ describe("tabIcon()", () => {
     expect(tabIcon(`${BASE}/project/fuchsly`)).toBe("lucide:square-kanban");
   });
 
-  it("nutzt das Übersichts-Icon für das Dashboard eines Projekts", () => {
-    // Board und Dashboard trugen einmal dasselbe Zeichen — seit es beide gibt,
+  it("nutzt das Übersichts-Icon für die Startseite eines Projekts", () => {
+    // Board und Übersicht trugen einmal dasselbe Zeichen — seit es beide gibt,
     // muss man sie im Reiter auseinanderhalten können.
-    expect(tabIcon(`${BASE}/project/fuchsly/dashboard`)).toBe(
+    expect(tabIcon(`${BASE}/project/fuchsly/overview`)).toBe(
       "lucide:layout-dashboard",
     );
   });
