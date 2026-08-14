@@ -7,6 +7,7 @@ import {
 } from "@/lib/mail/templates/html";
 import { invitationEmail } from "@/lib/mail/templates/invitation";
 import { issueUpdateEmail } from "@/lib/mail/templates/issueUpdate";
+import { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
 import { notificationEmail } from "@/lib/mail/templates/notification";
 import { passwordResetEmail } from "@/lib/mail/templates/passwordReset";
 import { weeklyDigestEmail } from "@/lib/mail/templates/weeklyDigest";
@@ -88,6 +89,59 @@ describe("invitationEmail()", () => {
     expect(subject).toBe("Los geht's bei Acme!");
     expect(text).toContain("Willkommen, Ada Lovelace hat dich eingeladen");
     expect(text).toContain("Schön, dass du bei Acme dabei bist.");
+  });
+});
+
+describe("memberRemovedEmail()", () => {
+  const base = {
+    to: "mara@example.com",
+    workspaceName: "Acme",
+    projectName: null,
+    actorName: "Ada Lovelace",
+  };
+
+  it("nennt den Workspace, wenn projectName fehlt", () => {
+    const { subject, text } = memberRemovedEmail(base);
+
+    expect(subject).toBe("Du wurdest aus Acme entfernt");
+    expect(text).toContain(
+      "Ada Lovelace hat dich aus dem Workspace Acme entfernt",
+    );
+  });
+
+  it("nennt stattdessen das Projekt, wenn gesetzt", () => {
+    const { subject, text } = memberRemovedEmail({
+      ...base,
+      projectName: "Mobile",
+    });
+
+    expect(subject).toBe("Du wurdest aus Mobile (Acme) entfernt");
+    expect(text).toContain(
+      "Ada Lovelace hat dich aus dem Projekt Mobile entfernt",
+    );
+    expect(text).toContain("Der Workspace Acme bleibt dir erhalten");
+  });
+
+  it("escaped Namen im HTML, lässt den Klartext aber unverändert", () => {
+    const { html, text } = memberRemovedEmail({
+      ...base,
+      workspaceName: "<b>Acme</b>",
+    });
+
+    expect(html).not.toContain("<b>Acme</b>");
+    expect(html).toContain("&lt;b&gt;Acme&lt;/b&gt;");
+    expect(text).toContain("<b>Acme</b>");
+  });
+
+  it("nutzt einen Admin-Override statt der Default-Texte, mit Platzhaltern", () => {
+    const { subject, text } = memberRemovedEmail(base, {
+      subject: "Tschüss bei {{workspaceName}}",
+      heading: "H",
+      bodyText: "{{actorName}} hat dich rausgeworfen.",
+    });
+
+    expect(subject).toBe("Tschüss bei Acme");
+    expect(text).toContain("Ada Lovelace hat dich rausgeworfen.");
   });
 });
 

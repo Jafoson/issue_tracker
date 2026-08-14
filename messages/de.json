@@ -169,7 +169,8 @@
     "inviteTitle": "Mitglied einladen",
     "inviteDesc": "Die Person bekommt Zugriff auf diesen Workspace und seine öffentlichen Projekte.",
     "inviteLinkTitle": "Einladung erstellt",
-    "inviteLinkDesc": "Es gibt noch keinen Mailversand — schicke diesen Link an die eingeladene Person. Er gilt 14 Tage.",
+    "inviteLinkDesc": "Es ist kein Mailversand eingerichtet — schicke diesen Link an die eingeladene Person. Er gilt 14 Tage.",
+    "inviteLinkDescMailed": "Die Einladung wurde per Mail verschickt. Alternativ kannst du auch diesen Link teilen — er gilt 14 Tage.",
     "inviteLinkCopy": "Link kopieren",
     "inviteLinkCopied": "Kopiert",
     "inviteAdded": "{email} ist jetzt im Workspace."

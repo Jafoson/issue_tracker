@@ -5,7 +5,11 @@ import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
-import { sendInvitationEmail } from "@/lib/mail";
+import {
+  isMailConfigured,
+  sendInvitationEmail,
+  sendMemberRemovedEmail,
+} from "@/lib/mail";
 import { notify } from "@/lib/notify";
 import {
   accessFor,
@@ -40,10 +44,13 @@ type WorkspaceResult = { redirectTo: string } | { error: string };
 
 /**
  * Ergebnis einer Mitglieder-Aktion. `inviteUrl` steht nur da, wenn ein Konto neu
- * entstanden ist und der Link noch bei jemandem ankommen muss — es gibt keinen
- * Mailversand, also zeigt ihn die Oberfläche zum Kopieren.
+ * entstanden ist und der Link noch bei jemandem ankommen muss. `mailSent` sagt der
+ * Oberfläche, ob die Einladung zusätzlich per Mail rausging (SMTP konfiguriert) —
+ * ohne das wäre der Link der einzige Weg, und die Meldung müsste das auch so sagen.
  */
-type MemberResult = { ok: true; inviteUrl?: string } | { error: string };
+type MemberResult =
+  | { ok: true; inviteUrl?: string; mailSent?: boolean }
+  | { error: string };
 
 /**
  * Projekte für mehrere Workspaces auf einmal, gefiltert auf die Workspaces des
@@ -791,6 +798,12 @@ export async function removeMember(workspaceId: string, userId: string) {
     // das behielte die Person über ihre Projektrollen weiter Zugriff.
     await dropProjectMemberships(tx, { workspaceId, userId });
   });
+
+  // Der einzige Weg, es der Person zu sagen — eine In-App-Zeile bliebe
+  // unerreichbar: `canEnterWorkspace` sperrt den Workspace schon aus, bevor
+  // sie die Inbox überhaupt sehen könnte.
+  await sendMemberRemovedEmail({ userId, workspaceId, actorId });
+
   revalidatePath("/", "layout");
 }
 
@@ -923,5 +936,5 @@ export async function inviteWorkspaceMember(data: {
   });
 
   revalidatePath("/", "layout");
-  return { ok: true, inviteUrl };
+  return { ok: true, inviteUrl, mailSent: isMailConfigured() };
 }

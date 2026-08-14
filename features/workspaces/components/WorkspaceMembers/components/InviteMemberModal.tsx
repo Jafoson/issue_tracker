@@ -33,10 +33,10 @@ interface Props {
  * Jemanden per E-Mail in den Workspace einladen.
  *
  * Zwei Ausgänge, und der Dialog zeigt beide: ein bekanntes Konto ist danach
- * einfach dabei, für eine unbekannte Adresse entsteht ein Einladungslink. Solange
- * es keinen Mailversand gibt, ist dieser Link das Ergebnis der Handlung — er
- * bleibt deshalb stehen, bis er kopiert wurde, statt mit dem Dialog zu
- * verschwinden.
+ * einfach dabei, für eine unbekannte Adresse entsteht ein Einladungslink. Der
+ * geht per Mail raus, wenn SMTP konfiguriert ist (`mailSent`) — der Link
+ * bleibt trotzdem stehen, bis er kopiert wurde, statt mit dem Dialog zu
+ * verschwinden, für den Fall ohne Mailversand oder eine hakende Zustellung.
  */
 export function InviteMemberModal({ workspaceId, roles, close }: Props) {
   const t = useTranslations();
@@ -49,6 +49,7 @@ export function InviteMemberModal({ workspaceId, roles, close }: Props) {
   );
   const [error, setError] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
+  const [mailSent, setMailSent] = useState(false);
   const [added, setAdded] = useState("");
 
   const selected = roles.find((r) => r.id === role);
@@ -74,6 +75,7 @@ export function InviteMemberModal({ workspaceId, roles, close }: Props) {
       }
       if (result.inviteUrl) {
         setInviteUrl(result.inviteUrl);
+        setMailSent(!!result.mailSent);
       } else {
         setAdded(email.trim());
       }
@@ -110,7 +112,11 @@ export function InviteMemberModal({ workspaceId, roles, close }: Props) {
           <>
             <p className={styles.desc}>
               {inviteUrl
-                ? t("members.inviteLinkDesc")
+                ? t(
+                    mailSent
+                      ? "members.inviteLinkDescMailed"
+                      : "members.inviteLinkDesc",
+                  )
                 : t("members.inviteAdded", { email: added })}
             </p>
             {inviteUrl && (

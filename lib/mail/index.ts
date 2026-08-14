@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getMailTemplateOverride } from "@/lib/mail/overrides";
 import { isMailConfigured, sendMail } from "@/lib/mail/send";
 import { invitationEmail } from "@/lib/mail/templates/invitation";
+import { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
 
 export { isMailConfigured, sendMail } from "@/lib/mail/send";
 export type { EmailVerificationInput } from "@/lib/mail/templates/emailVerification";
@@ -14,6 +15,8 @@ export type {
   IssueUpdateEmailInput,
 } from "@/lib/mail/templates/issueUpdate";
 export { issueUpdateEmail } from "@/lib/mail/templates/issueUpdate";
+export type { MemberRemovedEmailInput } from "@/lib/mail/templates/memberRemoved";
+export { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
 export type { NotificationEmailInput } from "@/lib/mail/templates/notification";
 export { notificationEmail } from "@/lib/mail/templates/notification";
 export type { PasswordResetEmailInput } from "@/lib/mail/templates/passwordReset";
@@ -92,5 +95,69 @@ export async function sendInvitationEmail(
     await sendMail({ to: input.to, subject, html, text });
   } catch (error) {
     console.error("[mail] Einladung nicht verschickt:", error);
+  }
+}
+
+export interface SendMemberRemovedEmailInput {
+  /** Wer entfernt wurde. */
+  userId: string;
+  workspaceId: string;
+  /** Gesetzt = nur aus diesem Projekt entfernt, Workspace-Zugriff bleibt. */
+  projectId?: string | null;
+  /** Wer entfernt hat. */
+  actorId: string;
+}
+
+/**
+ * Verschickt die Mail für `removeMember`/`removeProjectMember` — lädt
+ * Empfänger-, Workspace-, Projekt- und Handelndennamen selbst nach, damit die
+ * Aufrufer nur Ids durchreichen müssen (wie `sendInvitationEmail`).
+ *
+ * Schluckt jeden Fehler: die Mitgliedschaft ist zu diesem Zeitpunkt schon
+ * weg, eine hakende Mail darf das nicht rückgängig machen.
+ */
+export async function sendMemberRemovedEmail(
+  input: SendMemberRemovedEmailInput,
+): Promise<void> {
+  if (!isMailConfigured()) return;
+
+  try {
+    const [user, workspace, project, actor, override] = await Promise.all([
+      db.user.findUnique({
+        where: { id: input.userId },
+        select: { email: true },
+      }),
+      db.workspace.findUnique({
+        where: { id: input.workspaceId },
+        select: { name: true },
+      }),
+      input.projectId
+        ? db.project.findUnique({
+            where: { id: input.projectId },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+      db.user.findUnique({
+        where: { id: input.actorId },
+        select: { firstName: true, lastName: true },
+      }),
+      getMailTemplateOverride("memberRemoved"),
+    ]);
+    if (!user || !workspace) return;
+
+    const { subject, html, text } = memberRemovedEmail(
+      {
+        to: user.email,
+        workspaceName: workspace.name,
+        projectName: project?.name ?? null,
+        actorName: actor
+          ? `${actor.firstName} ${actor.lastName}`.trim()
+          : "Jemand",
+      },
+      override,
+    );
+    await sendMail({ to: user.email, subject, html, text });
+  } catch (error) {
+    console.error("[mail] Entfernen nicht verschickt:", error);
   }
 }

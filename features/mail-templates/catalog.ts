@@ -9,6 +9,7 @@
 
 export const MAIL_TEMPLATE_KEYS = [
   "invitation",
+  "memberRemoved",
   "welcome",
   "emailVerification",
   "passwordReset",
@@ -73,6 +74,21 @@ export const MAIL_TEMPLATE_CATALOG: Record<MailTemplateKey, MailTemplateMeta> =
         WORKSPACE,
         PROJECT,
         { key: "roleName", description: "Vergebene Rolle" },
+        {
+          key: "target",
+          description: "„Projekt (Workspace)“ oder nur der Workspace-Name",
+        },
+      ],
+    },
+    memberRemoved: {
+      key: "memberRemoved",
+      label: "Aus Workspace/Projekt entfernt",
+      group: "Konto & Zugang",
+      wired: true,
+      placeholders: [
+        { key: "actorName", description: "Wer entfernt hat" },
+        WORKSPACE,
+        PROJECT,
         {
           key: "target",
           description: "„Projekt (Workspace)“ oder nur der Workspace-Name",

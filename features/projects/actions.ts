@@ -5,7 +5,11 @@ import type { ProjectVisibility } from "@/features/projects/types";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
-import { sendInvitationEmail } from "@/lib/mail";
+import {
+  isMailConfigured,
+  sendInvitationEmail,
+  sendMemberRemovedEmail,
+} from "@/lib/mail";
 import { notify } from "@/lib/notify";
 import {
   accessFor,
@@ -32,10 +36,14 @@ import { uid } from "@/lib/utils/id";
 
 /**
  * `inviteUrl` steht nur beim Einladen einer unbekannten Adresse da: dann entsteht
- * ein Konto ohne Passwort, und der Link ist der einzige Weg hinein. Ohne
- * Mailversand zeigt ihn die Oberfläche zum Kopieren.
+ * ein Konto ohne Passwort, und der Link ist der einzige Weg hinein. `mailSent`
+ * sagt der Oberfläche, ob die Einladung zusätzlich per Mail rausging (SMTP
+ * konfiguriert) — ohne das ist der Link der einzige Weg, und die Meldung muss
+ * das auch so sagen.
  */
-type ProjectResult = { ok: true; inviteUrl?: string } | { error: string };
+type ProjectResult =
+  | { ok: true; inviteUrl?: string; mailSent?: boolean }
+  | { error: string };
 
 function basePrefix(name: string): string {
   return (
@@ -545,6 +553,15 @@ export async function removeProjectMember(
     where: { projectId_userId: { projectId, userId } },
   });
 
+  // Kein `notify()` — die Workspace-Mitgliedschaft bleibt bestehen, aber es
+  // gibt keinen `NotificationEvent` für „aus dem Projekt entfernt“, nur die Mail.
+  await sendMemberRemovedEmail({
+    userId,
+    workspaceId: guard.workspaceId,
+    projectId,
+    actorId: guard.actorId,
+  });
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -703,5 +720,5 @@ export async function inviteProjectMember(data: {
   });
 
   revalidatePath("/", "layout");
-  return { ok: true, inviteUrl };
+  return { ok: true, inviteUrl, mailSent: isMailConfigured() };
 }

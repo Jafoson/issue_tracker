@@ -73,10 +73,12 @@ export function AddProjectMembersModal({
   const [role, setRole] = useState(defaultRole);
   const [error, setError] = useState("");
   // Entsteht beim Einladen einer unbekannten Adresse: das Konto hat kein
-  // Passwort, dieser Link ist der einzige Weg hinein. Solange es keinen
-  // Mailversand gibt, ist er das Ergebnis der Handlung — der Dialog schließt
-  // deshalb nicht, sondern zeigt ihn.
+  // Passwort, dieser Link ist der einzige Weg hinein. Er geht per Mail raus,
+  // wenn SMTP konfiguriert ist (`mailSent`) — der Dialog zeigt ihn trotzdem,
+  // statt zu schließen, für den Fall ohne Mailversand oder eine hakende
+  // Zustellung.
   const [inviteUrl, setInviteUrl] = useState("");
+  const [mailSent, setMailSent] = useState(false);
 
   const roleName = roles.find((r) => r.id === role)?.name ?? role;
 
@@ -121,6 +123,7 @@ export function AddProjectMembersModal({
       // bleibt offen, bis er kopiert werden konnte.
       if (result.inviteUrl) {
         setInviteUrl(result.inviteUrl);
+        setMailSent(!!result.mailSent);
         return;
       }
       close();
@@ -155,7 +158,13 @@ export function AddProjectMembersModal({
 
       {inviteUrl ? (
         <ModalBody className={styles.body}>
-          <p className={styles.inviteLinkDesc}>{t("members.inviteLinkDesc")}</p>
+          <p className={styles.inviteLinkDesc}>
+            {t(
+              mailSent
+                ? "members.inviteLinkDescMailed"
+                : "members.inviteLinkDesc",
+            )}
+          </p>
           <CopyField
             value={inviteUrl}
             copyLabel={t("members.inviteLinkCopy")}

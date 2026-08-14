@@ -110,13 +110,14 @@ werden lassen.
 | `lib/mail/templates/layout.ts` | `renderLayout()` (Rahmen, Marke, Fußzeile), `renderDetailTable()`, `renderAlertBox()` |
 | `lib/mail/templates/html.ts` | `escapeHtml()`, `humanizeKey()`, `formatDateDe()` |
 | `lib/mail/templates/*.ts` | Je Anlass eine reine Funktion `(Input) → { subject, html, text }`, kein DB-Zugriff |
-| `lib/mail/index.ts` | Barrel + `sendInvitationEmail()` (lädt Workspace-/Projekt-/Einladendennamen selbst) |
+| `lib/mail/index.ts` | Barrel + `sendInvitationEmail()`/`sendMemberRemovedEmail()` (laden Workspace-/Projekt-/Namen selbst) |
 
 Vorlagen, Stand heute:
 
 | Datei | Anlass | Versandpunkt |
 |---|---|---|
 | `invitation.ts` | Einladung (neues Konto) | `sendInvitationEmail()`, aus den Invite-Aktionen |
+| `memberRemoved.ts` | Aus Workspace/Projekt entfernt | `sendMemberRemovedEmail()`, aus `removeMember`/`removeProjectMember` |
 | `notification.ts` | assigned/mentioned/comment/status/invite/role | `lib/notify` (per `*Email`-Spalte) |
 | `welcome.ts` | Registrierung mit Passwort | **noch nicht verdrahtet** |
 | `emailVerification.ts` | E-Mail-Adresse bestätigen | **noch nicht verdrahtet** (kein Token-System) |
@@ -124,12 +125,18 @@ Vorlagen, Stand heute:
 | `weeklyDigest.ts` | Wöchentliche Zusammenfassung | **noch nicht verdrahtet** (kein Job, keine Abfrage) |
 | `issueUpdate.ts` | Sammel-Mail für Titel/Priorität/Labels | **noch nicht verdrahtet** (kein `NotificationEvent` dafür) |
 
-Zwei aktive Aufrufer:
+Drei aktive Aufrufer:
 
 - **Einladungen** (`inviteWorkspaceMember`/`inviteProjectMember` im Neukonto-Zweig)
   rufen `sendInvitationEmail()` direkt auf — derselbe Link, den die Aktion auch
   zum Kopieren zurückgibt. `lib/invitations.ts#createInvitation()` gibt dafür
   `{ token, expiresAt }` zurück statt nur den Token.
+- **Entfernen** (`removeMember`/`removeProjectMember`) rufen `sendMemberRemovedEmail()`
+  direkt auf, ohne `notify()`: eine In-App-Zeile wäre bei einer
+  Workspace-Entfernung ohnehin unerreichbar (`canEnterWorkspace` sperrt den
+  Workspace schon im Layout aus, bevor die Inbox lädt), und für „nur aus dem
+  Projekt entfernt“ gibt es keinen eigenen `NotificationEvent`. Kein
+  Preference-Schalter — wie bei der Einladung.
 - **`lib/notify`** verschickt zusätzlich zur In-App-Zeile eine Mail, wenn
   `{type}Email` in `UserPreferences` an ist (Defaults siehe
   `EMAIL_DEFAULT` in `lib/notify/index.ts` — Kommentare und Statuswechsel sind

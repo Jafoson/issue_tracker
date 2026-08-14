@@ -169,7 +169,8 @@
     "inviteTitle": "Invite a member",
     "inviteDesc": "They get access to this workspace and its public projects.",
     "inviteLinkTitle": "Invitation created",
-    "inviteLinkDesc": "There is no email delivery yet — send this link to the person you invited. It is valid for 14 days.",
+    "inviteLinkDesc": "No email delivery is configured — send this link to the person you invited. It is valid for 14 days.",
+    "inviteLinkDescMailed": "The invitation was sent by email. You can also share this link directly — it is valid for 14 days.",
     "inviteLinkCopy": "Copy link",
     "inviteLinkCopied": "Copied",
     "inviteAdded": "{email} is now in the workspace."

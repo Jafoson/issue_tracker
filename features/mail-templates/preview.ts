@@ -10,6 +10,7 @@ import type { MailTemplateKey } from "@/features/mail-templates/catalog";
 import { emailVerificationEmail } from "@/lib/mail/templates/emailVerification";
 import { invitationEmail } from "@/lib/mail/templates/invitation";
 import { issueUpdateEmail } from "@/lib/mail/templates/issueUpdate";
+import { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
 import { notificationEmail } from "@/lib/mail/templates/notification";
 import type { TemplateOverride } from "@/lib/mail/templates/override";
 import { passwordResetEmail } from "@/lib/mail/templates/passwordReset";
@@ -37,6 +38,16 @@ export function renderMailPreview(
           inviterName: "Jonas Reuter",
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           inviteUrl: "https://issues.example.com/invite/abc123",
+        },
+        override,
+      );
+    case "memberRemoved":
+      return memberRemovedEmail(
+        {
+          to: SAMPLE_TO,
+          workspaceName: "Acme",
+          projectName: "Apollo Redesign",
+          actorName: "Jonas Reuter",
         },
         override,
       );
