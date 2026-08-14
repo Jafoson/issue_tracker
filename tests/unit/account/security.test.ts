@@ -22,10 +22,7 @@ mock.module("next/cache", () => ({ revalidatePath: mock() }));
 // Passwort wirklich geprüft wird — ein Mock würde genau diese Zusage wegnehmen.
 import bcrypt from "bcryptjs";
 
-import {
-  changePassword,
-  disconnectAccount,
-} from "@/features/account/actions";
+import { changePassword, disconnectAccount } from "@/features/account/actions";
 
 const ME = "u-me";
 const OLD = "altes-passwort";
@@ -55,9 +52,9 @@ describe("changePassword()", () => {
 
   it("lehnt ab, wenn niemand eingeloggt ist", async () => {
     mockGetSession.mockResolvedValue(null);
-    expect(await changePassword({ current: OLD, next: "neues-passwort" })).toEqual(
-      { error: "You must be logged in." },
-    );
+    expect(
+      await changePassword({ current: OLD, next: "neues-passwort" }),
+    ).toEqual({ error: "You must be logged in." });
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
@@ -69,9 +66,9 @@ describe("changePassword()", () => {
   });
 
   it("verlangt das aktuelle Passwort, wenn es eines gibt", async () => {
-    expect(await changePassword({ current: "", next: "neues-passwort" })).toEqual(
-      { error: "Please enter your current password." },
-    );
+    expect(
+      await changePassword({ current: "", next: "neues-passwort" }),
+    ).toEqual({ error: "Please enter your current password." });
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
@@ -90,18 +87,18 @@ describe("changePassword()", () => {
     const written = mockUserUpdate.mock.calls[0][0];
     expect(written.where).toEqual({ id: ME });
     expect(written.data.passwordHash).not.toBe("neues-passwort");
-    expect(await bcrypt.compare("neues-passwort", written.data.passwordHash)).toBe(
-      true,
-    );
+    expect(
+      await bcrypt.compare("neues-passwort", written.data.passwordHash),
+    ).toBe(true);
   });
 
   // Wer über GitHub oder Google gekommen ist, hat kein altes Passwort — dann
   // gibt es auch nichts zu bestätigen außer der Sitzung selbst.
   it("setzt ohne bestehendes Passwort das erste, ohne nach dem alten zu fragen", async () => {
     mockUserFindUnique.mockResolvedValue({ passwordHash: null });
-    expect(await changePassword({ current: "", next: "erstes-passwort" })).toEqual(
-      { ok: true },
-    );
+    expect(
+      await changePassword({ current: "", next: "erstes-passwort" }),
+    ).toEqual({ ok: true });
     expect(mockUserUpdate).toHaveBeenCalled();
   });
 });

@@ -4,6 +4,7 @@ import NavGroupGlobal from "./Global";
 import NavGroupPlatform from "./Platform";
 import NavGroupProjects from "./Projects";
 import NavGroupWorkspace from "./Workspace";
+import NavGroupWorkspaceDashboard from "./WorkspaceDashboard";
 
 interface NavGroupProps {
   isAdminRoute: boolean;
@@ -14,6 +15,7 @@ function NavGroup({ isAdminRoute = true }: NavGroupProps) {
     <div className={styles.navGroup}>
       {!isAdminRoute && (
         <>
+          <NavGroupWorkspaceDashboard />
           <NavGroupGlobal />
           <NavGroupProjects />
           <NavGroupWorkspace />

@@ -34,6 +34,19 @@
 
 .md { /* Regelfall — Maße stehen oben in `.chip`. */ }
 
+/* Größer als der Regelfall: mehr Höhe, mehr Polster, größere Schrift — für
+   einen Chip, der für sich steht statt in einer dichten Reihe. */
+.lg {
+  height: 40px;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: var(--text-base);
+
+  &.hasIcon { padding-left: 12px; }
+  &.hasRemove { padding-right: 12px; }
+  &.hasTrailing { padding-right: 12px; }
+}
+
 /* Im Fließtext: keine feste Höhe, alles in `em`, damit der Chip mit dem Text
    ringsum wächst und die Zeile nicht auseinanderdrückt. Wird von den
    Erwähnungs-, Issue- und Datums-Chips im Rich Text benutzt. */

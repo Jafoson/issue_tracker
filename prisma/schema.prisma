@@ -36,6 +36,9 @@ model Workspace {
   // Zugriff ohne Löschen (vom Plattform-Admin gesetzt).
   suspended Boolean  @default(false)
   createdAt DateTime @default(now())
+  /// Wozu der Workspace da ist, in ein bis zwei Sätzen. Steht im Steckbrief
+  /// unter dem Namen; leer heißt, dass es niemand gesagt hat.
+  desc      String   @default("")
 
   members     WorkspaceMember[]
   projects    Project[]
@@ -46,6 +49,27 @@ model Workspace {
   priorities  WorkspacePriority[]
   issueTypes  WorkspaceIssueType[]
   roles       Role[]
+  // Wie einzelne Personen das Dashboard dieses Workspace eingerichtet haben.
+  dashboards  WorkspaceDashboardPreference[]
+  // Wichtige externe Adressen — Dokumentation, Repository, Chat.
+  links       WorkspaceLink[]
+}
+
+/// Eine wichtige externe Adresse eines Workspace — Dokumentation, Repository,
+/// Chat, was sonst dazugehört. Steht im Steckbrief als Reihe großer Chips
+/// direkt unter der Kopfkarte.
+model WorkspaceLink {
+  id          String @id
+  workspaceId String
+  label       String
+  url         String
+  /// Reihenfolge der Chips. Explizit statt aus der Anlagezeit abgeleitet, weil
+  /// sich eine Reihenfolge im Steckbrief per Hand einrichten lassen soll.
+  position    Int
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -82,19 +106,20 @@ model User {
   /// und Zuweisungen mitnähme.
   deactivatedAt DateTime?
 
-  workspaces         WorkspaceMember[]
-  assignedIssues     Issue[]           @relation("IssueAssignee")
-  reportedIssues     Issue[]           @relation("IssueReporter")
-  comments           Comment[]
-  leadingTeams       Team[]            @relation("TeamLead")
-  teamMemberships    TeamMember[]
-  projectMemberships ProjectMember[]
-  createdProjects    Project[]         @relation("ProjectCreator")
-  accounts           Account[]
-  sessions           Session[]
-  invitations        Invitation[]
-  preferences        UserPreferences?
-  dashboards         DashboardPreference[]
+  workspaces          WorkspaceMember[]
+  assignedIssues      Issue[]                        @relation("IssueAssignee")
+  reportedIssues      Issue[]                        @relation("IssueReporter")
+  comments            Comment[]
+  leadingTeams        Team[]                         @relation("TeamLead")
+  teamMemberships     TeamMember[]
+  projectMemberships  ProjectMember[]
+  createdProjects     Project[]                      @relation("ProjectCreator")
+  accounts            Account[]
+  sessions            Session[]
+  invitations         Invitation[]
+  preferences         UserPreferences?
+  dashboards          DashboardPreference[]
+  workspaceDashboards WorkspaceDashboardPreference[]
 }
 
 /// Was einer Person gehört und keinem Workspace: wie die Oberfläche aussieht und
@@ -181,6 +206,31 @@ model DashboardPreference {
   @@index([projectId])
 }
 
+/// Wie eine Person das Dashboard eines Workspace eingerichtet hat — dasselbe
+/// Muster wie `DashboardPreference` eine Ebene tiefer, nur ohne `view`: Dashboard
+/// und Übersicht sind beim Workspace zwei eigene Routen mit je einem eigenen
+/// Navlink in der Seitenleiste, keine Ansicht, die sich eine Zeile merken muss.
+model WorkspaceDashboardPreference {
+  userId      String
+  workspaceId String
+
+  /// Bausteine, die diese Person ausgeblendet hat — Keys aus `WIDGETS`.
+  hidden String[]
+
+  /// Die Reihenfolge, in der die Bausteine stehen. Unvollständig gespeichert,
+  /// siehe `DashboardPreference.order`.
+  order String[]
+
+  /// Der Zeitraum, mit dem das Dashboard aufgeht — "7d" | "30d" | "90d" | "12m".
+  range String @default("30d")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+  @@index([workspaceId])
+}
+
 // ─── Auth.js (NextAuth) ─────────────────────────────────────────────────────────
 // Standard-Adapter-Modelle. Session bleibt bei JWT-Strategie ungenutzt, wird aber
 // vom PrismaAdapter typseitig erwartet.
@@ -263,7 +313,7 @@ model Project {
   createdById String?
   createdBy   User?     @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
-  workspace    Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace    Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   issues       Issue[]
   teams        TeamProject[]
   labels       Label[]

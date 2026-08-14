@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { CopyField } from "@/components/ui/atoms/CopyField/CopyField";
 import { Input } from "@/components/ui/atoms/Input/Input";
@@ -15,6 +16,8 @@ import {
 } from "@/features/workspaces/actions";
 import type { WorkspaceSettingsView } from "@/features/workspaces/types";
 import { useRouter } from "@/i18n/navigation";
+import { useModal } from "@/lib/context";
+import { AddLinkDialog } from "./components/AddLinkDialog";
 import styles from "./workspaceSettings.module.scss";
 
 interface Props extends WorkspaceSettingsView {
@@ -66,6 +69,15 @@ const COLUMNS: TableColumn<SettingRow>[] = [
  * ändert, sieht meist auch das andere durch, und zwei Knöpfe brauchten dafür
  * zwei Runden zum Server.
  */
+/** Ein Link im Formular — `key` ist die Server-Id oder, für einen frisch im
+ * Dialog angelegten, eine clientseitig erzeugte, damit React ihn über
+ * Änderungen der Liste hinweg wiedererkennt. */
+interface LinkDraft {
+  key: string;
+  label: string;
+  url: string;
+}
+
 export function WorkspaceSettings({
   workspace,
   canUpdate,
@@ -74,15 +86,28 @@ export function WorkspaceSettings({
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
+  const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
 
   const [name, setName] = useState(workspace.name);
   const [color, setColor] = useState(workspace.color);
+  const [desc, setDesc] = useState(workspace.desc);
+  const [links, setLinks] = useState<LinkDraft[]>(() =>
+    workspace.links.map((link) => ({ key: link.id, ...link })),
+  );
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const dirty = name.trim() !== workspace.name || color !== workspace.color;
+  const linksChanged =
+    JSON.stringify(links.map(({ label, url }) => ({ label, url }))) !==
+    JSON.stringify(workspace.links.map(({ label, url }) => ({ label, url })));
+
+  const dirty =
+    name.trim() !== workspace.name ||
+    color !== workspace.color ||
+    desc !== workspace.desc ||
+    linksChanged;
 
   const run = (
     action: () => Promise<{ ok: true } | { error: string }>,
@@ -100,7 +125,13 @@ export function WorkspaceSettings({
 
   const save = () =>
     run(
-      () => updateWorkspace(workspace.id, { name: name.trim(), color }),
+      () =>
+        updateWorkspace(workspace.id, {
+          name: name.trim(),
+          color,
+          desc,
+          links: links.map(({ label, url }) => ({ label, url })),
+        }),
       () => {
         setSaved(true);
         router.refresh();
@@ -117,6 +148,21 @@ export function WorkspaceSettings({
 
   const touch = () => setSaved(false);
 
+  const addLink = (link: { label: string; url: string }) => {
+    setLinks((current) => [...current, { key: crypto.randomUUID(), ...link }]);
+    touch();
+  };
+
+  const removeLink = (key: string) => {
+    setLinks((current) => current.filter((link) => link.key !== key));
+    touch();
+  };
+
+  const openAddLink = () =>
+    openModal(({ close }) => <AddLinkDialog close={close} onAdd={addLink} />, {
+      label: t("workspaceSettings.addLink"),
+    });
+
   const general: SettingRow[] = [
     {
       id: "name",
@@ -130,6 +176,25 @@ export function WorkspaceSettings({
             disabled={!canUpdate || isPending}
             onChange={(e) => {
               setName(e.target.value);
+              touch();
+            }}
+          />
+        </div>
+      ),
+    },
+    {
+      id: "desc",
+      label: t("fields.description"),
+      desc: t("workspaceSettings.descDesc"),
+      control: (
+        <div className={styles.control}>
+          <Input
+            aria-label={t("fields.description")}
+            placeholder={t("workspaceSettings.descPlaceholder")}
+            value={desc}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setDesc(e.target.value);
               touch();
             }}
           />
@@ -286,6 +351,41 @@ export function WorkspaceSettings({
           rows={general}
           getRowKey={(row) => row.id}
         />
+
+        <section className={styles.group}>
+          <h2 className={styles.groupTitle}>{t("workspaceSettings.links")}</h2>
+
+          <div className={styles.linksRow}>
+            {links.map((link) => (
+              <Chip
+                key={link.key}
+                type="input"
+                icon={<Icon icon="lucide:link" width={14} />}
+                onRemove={canUpdate ? () => removeLink(link.key) : undefined}
+                removeLabel={t("workspaceSettings.removeLink")}
+                disabled={isPending}
+              >
+                {link.label}
+              </Chip>
+            ))}
+
+            {canUpdate && (
+              <Chip
+                icon={<Icon icon="lucide:plus" width={14} />}
+                disabled={isPending}
+                onClick={openAddLink}
+              >
+                {t("workspaceSettings.addLink")}
+              </Chip>
+            )}
+
+            {links.length === 0 && !canUpdate && (
+              <span className={styles.linksEmpty}>
+                {t("workspaceSettings.linksEmpty")}
+              </span>
+            )}
+          </div>
+        </section>
 
         <section className={styles.group}>
           <h2 className={styles.groupTitle}>

@@ -8,11 +8,17 @@ const mockWorkspaceFindUnique = mock(async () => ({
   _count: { members: 3, projects: 2 },
 }));
 const mockWorkspaceDelete = mock();
+const mockLinkDeleteMany = mock();
+const mockLinkCreateMany = mock();
 const mockTransaction = mock();
 
 const mockTx = {
   issue: { deleteMany: mock() },
-  workspace: { delete: mockWorkspaceDelete },
+  workspace: { update: mockWorkspaceUpdate, delete: mockWorkspaceDelete },
+  workspaceLink: {
+    deleteMany: mockLinkDeleteMany,
+    createMany: mockLinkCreateMany,
+  },
 };
 
 mock.module("@/lib/db", () => ({
@@ -57,6 +63,8 @@ function reset() {
   for (const m of [
     mockWorkspaceUpdate,
     mockWorkspaceDelete,
+    mockLinkDeleteMany,
+    mockLinkCreateMany,
     mockTransaction,
     mockCan,
     mockCurrentUserId,
@@ -68,6 +76,8 @@ function reset() {
   mockCan.mockResolvedValue(true);
   mockWorkspaceUpdate.mockResolvedValue({ id: WS });
   mockWorkspaceDelete.mockResolvedValue({ id: WS });
+  mockLinkDeleteMany.mockResolvedValue({ count: 0 });
+  mockLinkCreateMany.mockResolvedValue({ count: 0 });
   mockTx.issue.deleteMany.mockResolvedValue({ count: 0 });
   mockTransaction.mockImplementation(
     async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx),
@@ -125,6 +135,75 @@ describe("updateWorkspace()", () => {
     const data = mockWorkspaceUpdate.mock.calls[0][0].data;
     expect(data).not.toHaveProperty("slug");
     expect(data).not.toHaveProperty("id");
+  });
+
+  it("trimmt die Beschreibung", async () => {
+    await updateWorkspace(WS, { desc: "  Ein Satz.  " });
+    expect(mockWorkspaceUpdate.mock.calls[0][0].data).toEqual({
+      desc: "Ein Satz.",
+    });
+  });
+
+  it("lässt Links unangetastet, wenn keine übergeben werden", async () => {
+    await updateWorkspace(WS, { name: "Acme" });
+    expect(mockLinkDeleteMany).not.toHaveBeenCalled();
+    expect(mockLinkCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("ersetzt die Links durch die übergebene Liste, in ihrer Reihenfolge", async () => {
+    expect(
+      await updateWorkspace(WS, {
+        links: [
+          { label: "Docs", url: "https://docs.example.com" },
+          { label: "Chat", url: "https://chat.example.com" },
+        ],
+      }),
+    ).toEqual({ ok: true });
+
+    expect(mockLinkDeleteMany).toHaveBeenCalledWith({
+      where: { workspaceId: WS },
+    });
+    expect(mockLinkCreateMany.mock.calls[0][0].data).toEqual([
+      {
+        id: expect.any(String),
+        workspaceId: WS,
+        label: "Docs",
+        url: "https://docs.example.com",
+        position: 0,
+      },
+      {
+        id: expect.any(String),
+        workspaceId: WS,
+        label: "Chat",
+        url: "https://chat.example.com",
+        position: 1,
+      },
+    ]);
+  });
+
+  it("lässt leere Zeilen still weg, statt sie zu speichern", async () => {
+    expect(
+      await updateWorkspace(WS, { links: [{ label: "", url: "" }] }),
+    ).toEqual({ ok: true });
+    expect(mockLinkDeleteMany).toHaveBeenCalled();
+    expect(mockLinkCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("lehnt eine Zeile ohne Beschriftung oder Adresse ab", async () => {
+    expect(
+      await updateWorkspace(WS, {
+        links: [{ label: "Docs", url: "" }],
+      }),
+    ).toEqual({ error: "Every link needs a label and a URL." });
+    expect(mockLinkDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("verlangt http:// oder https://", async () => {
+    expect(
+      await updateWorkspace(WS, {
+        links: [{ label: "Docs", url: "ftp://example.com" }],
+      }),
+    ).toEqual({ error: "Links must start with http:// or https://." });
   });
 });
 

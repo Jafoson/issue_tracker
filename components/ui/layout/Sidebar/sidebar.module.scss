@@ -26,6 +26,13 @@
   padding-top: 4px;
 }
 
+/* Übersicht und Dashboard des Workspace, oben in der Seitenleiste. Der Abstand
+   darunter trennt sie sichtbar von „Meine Aufgaben" — beides sind Ansichten auf
+   den ganzen Workspace, nicht Teil der Bereiche darunter. */
+.workspaceDashboardGroup {
+  margin-bottom: 14px;
+}
+
 .adminBack {
   display: flex;
   align-items: center;

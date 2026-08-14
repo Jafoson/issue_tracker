@@ -456,6 +456,17 @@ tbody.group {
   padding: 0;
 }
 
+/* Ohne dieses `flex-shrink: 0` presste ein Flex-Vorfahre (z. B. `.content` der
+   Einstellungsseiten) die Karte unter ihre Inhaltshöhe zusammen, sobald genug
+   Zeilen zusammenkamen: `overflow: hidden` auf `.card` setzt die automatische
+   Mindesthöhe eines Flex-Elements laut Spezifikation auf 0, und ohne eigenen
+   `flex-shrink` schrumpfte die Karte dann klaglos unter ihren Inhalt — spätere
+   Zeilen standen zwar im DOM, aber unsichtbar hinter dem beschnittenen Rand.
+   Nicht für `.fill`: die soll gerade schrumpfen und selbst scrollen dürfen. */
+.card:not(.fill) {
+  flex-shrink: 0;
+}
+
 /* Soll die Karte die Ansicht füllen, muss sie selbst scrollen — `hidden` würde
    das verhindern. `auto` beschneidet die Ecken genauso. */
 .card.fill {

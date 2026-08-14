@@ -210,7 +210,12 @@ export const getWorkspaceSettingsView = cache(
         name: true,
         slug: true,
         color: true,
+        desc: true,
         _count: { select: { projects: true, members: true } },
+        links: {
+          select: { id: true, label: true, url: true },
+          orderBy: { position: "asc" },
+        },
       },
     });
     if (!workspace) return null;
@@ -229,9 +234,11 @@ export const getWorkspaceSettingsView = cache(
         name: workspace.name,
         slug: workspace.slug,
         color: workspace.color,
+        desc: workspace.desc,
         projectCount: workspace._count.projects,
         memberCount: workspace._count.members,
         issueCount,
+        links: workspace.links,
       },
       canUpdate: access.has("workspace.update"),
       canDelete: access.has("workspace.delete"),

@@ -13,6 +13,7 @@ import type { Permission } from "@/lib/rbac";
 
 export type NavLabelKey =
   | "myIssues"
+  | "dashboard"
   | "inbox"
   | "board"
   | "issues"
@@ -51,6 +52,27 @@ export interface NavEntry {
    */
   permission?: Permission;
 }
+
+/**
+ * Die Startseite des Workspace, in zwei Ansichten — `/<workspaceId>` (leere
+ * Sektion) und `/<workspaceId>/dashboard`. Anders als beim Projekt
+ * (`PROJECT_OVERVIEW_NAV`, das unter `/overview` steht, weil die Wurzel dort
+ * schon das Board ist) hat der Workspace keine Wurzel, die ihm streitig macht —
+ * die Übersicht bekommt sie deshalb direkt. Beide Ansichten stehen als eigener
+ * Navlink in der Seitenleiste: es gibt keine Zeile, die beide meint und sich
+ * merken müsste, welche zuletzt offen war.
+ */
+export const WORKSPACE_OVERVIEW_NAV: NavEntry = {
+  section: "",
+  icon: "lucide:info",
+  labelKey: "overview",
+};
+
+export const WORKSPACE_DASHBOARD_NAV: NavEntry = {
+  section: "dashboard",
+  icon: "lucide:layout-dashboard",
+  labelKey: "dashboard",
+};
 
 /** Sidebar "Global" group — always visible, not tied to workspace settings. */
 export const GLOBAL_NAV: NavEntry[] = [
@@ -111,6 +133,8 @@ export const ACCOUNT_NAV: NavEntry = {
 
 /** All sections that live directly under `/<workspaceId>/…` — used by the TabBar to resolve any workspace-scoped tab. */
 export const WORKSPACE_SECTIONS: NavEntry[] = [
+  WORKSPACE_OVERVIEW_NAV,
+  WORKSPACE_DASHBOARD_NAV,
   ...GLOBAL_NAV,
   ...WORKSPACE_NAV,
   INBOX_NAV,

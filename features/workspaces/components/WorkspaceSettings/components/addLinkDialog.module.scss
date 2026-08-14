@@ -1,0 +1,15 @@
+.body {
+  gap: 14px;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}

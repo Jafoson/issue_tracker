@@ -9,10 +9,6 @@ import { ModalFooter } from "@/components/ui/layout/Modal/components/ModalFooter
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
 import {
-  resetDashboardLayout,
-  saveDashboardLayout,
-} from "@/features/dashboard/actions";
-import {
   moveWidget,
   type WidgetKey,
   widgetDef,
@@ -20,12 +16,20 @@ import {
 import styles from "./customizeDialog.module.scss";
 
 interface Props {
-  projectId: string;
   /** Sichtbare Bausteine in ihrer Reihenfolge. */
   order: WidgetKey[];
   /** Abgewählte Bausteine — sie stehen unten und lassen sich zurückholen. */
   hidden: WidgetKey[];
   close: () => void;
+  /**
+   * Speichern und Zurücksetzen kommen als Funktionen herein statt der Dialog
+   * riefe die Server-Aktionen selbst: Projekt- und Workspace-Dashboard teilen
+   * sich diesen Dialog, kennen aber unterschiedliche Aktionen und Kontext-Ids
+   * (`saveDashboardLayout`/`saveWorkspaceDashboardLayout`) — der Dialog selbst
+   * muss den Unterschied nicht kennen.
+   */
+  onSave: (order: string[], hidden: string[]) => Promise<unknown>;
+  onReset: () => Promise<unknown>;
 }
 
 /**
@@ -50,10 +54,11 @@ interface Props {
  * „Abbrechen", das es auch wirklich gibt.
  */
 export function CustomizeDialog({
-  projectId,
   order: initialOrder,
   hidden: initialHidden,
   close,
+  onSave,
+  onReset,
 }: Props) {
   const t = useTranslations();
   const [pending, startTransition] = useTransition();
@@ -82,14 +87,14 @@ export function CustomizeDialog({
 
   const save = () => {
     startTransition(async () => {
-      await saveDashboardLayout(projectId, order, [...hidden]);
+      await onSave(order, [...hidden]);
       close();
     });
   };
 
   const reset = () => {
     startTransition(async () => {
-      await resetDashboardLayout(projectId);
+      await onReset();
       close();
     });
   };

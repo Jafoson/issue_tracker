@@ -200,7 +200,18 @@ type SettingsResult = { ok: true } | { error: string };
  */
 export async function updateWorkspace(
   workspaceId: string,
-  data: { name?: string; color?: string },
+  data: {
+    name?: string;
+    color?: string;
+    desc?: string;
+    /**
+     * Die ganze Liste, nicht ein Diff — dieselbe Wahl wie bei Teams: der Dialog
+     * zeigt sie ohnehin vollständig, und ein Diff aus Einzelaufrufen wäre
+     * derselbe Vorgang in mehreren Runden. `undefined` heißt „unverändert
+     * lassen", `[]` heißt „alle entfernen".
+     */
+    links?: { label: string; url: string }[];
+  },
 ): Promise<SettingsResult> {
   const actorId = await currentUserId();
   if (!actorId) return { error: "You must be logged in." };
@@ -210,12 +221,48 @@ export async function updateWorkspace(
   const name = data.name?.trim();
   if (name !== undefined && !name) return { error: "Name is required." };
 
-  await db.workspace.update({
-    where: { id: workspaceId },
-    data: {
-      ...(name !== undefined ? { name } : {}),
-      ...(data.color !== undefined ? { color: data.color } : {}),
-    },
+  // Leere Zeilen (weder Name noch Adresse) sind kein Link, sondern eine
+  // ungenutzte Reihe im Dialog — sie fallen still weg. Was übrig bleibt, muss
+  // vollständig sein: ein Chip ohne Beschriftung oder ohne Ziel wäre unbedienbar.
+  let links: { label: string; url: string }[] | undefined;
+  if (data.links !== undefined) {
+    links = data.links
+      .map((link) => ({ label: link.label.trim(), url: link.url.trim() }))
+      .filter((link) => link.label !== "" || link.url !== "");
+    for (const link of links) {
+      if (!link.label || !link.url) {
+        return { error: "Every link needs a label and a URL." };
+      }
+      if (!/^https?:\/\//i.test(link.url)) {
+        return { error: "Links must start with http:// or https://." };
+      }
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(data.color !== undefined ? { color: data.color } : {}),
+        ...(data.desc !== undefined ? { desc: data.desc.trim() } : {}),
+      },
+    });
+
+    if (links !== undefined) {
+      await tx.workspaceLink.deleteMany({ where: { workspaceId } });
+      if (links.length > 0) {
+        await tx.workspaceLink.createMany({
+          data: links.map((link, index) => ({
+            id: uid("wl"),
+            workspaceId,
+            label: link.label,
+            url: link.url,
+            position: index,
+          })),
+        });
+      }
+    }
   });
 
   revalidatePath("/", "layout");

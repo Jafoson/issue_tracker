@@ -188,3 +188,63 @@ export interface ProjectDashboardView {
   order: WidgetKey[];
   hidden: WidgetKey[];
 }
+
+// ─── Dasselbe eine Ebene höher: der Workspace ────────────────────────────────
+//
+// Dieselben Bausteine wie beim Projekt, nur über alle seine Projekte hinweg
+// summiert — `WorkspaceDashboardData` trägt deshalb dieselbe Form wie
+// `ProjectDashboardData` und keine eigene.
+
+export type WorkspaceDashboardData = ProjectDashboardData;
+
+/** Ein Projekt des Workspace, wie der Steckbrief es verlinkt. */
+export interface WorkspaceProjectSummary {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
+
+/**
+ * Alle, die im Workspace dieselbe Rolle tragen — dieselbe Form wie
+ * `ProjectRoleGroup` eine Ebene tiefer, nur gruppiert nach
+ * `WorkspaceMember.role` statt `ProjectMember.role`.
+ */
+export type WorkspaceRoleGroup = ProjectRoleGroup;
+
+/** Eine wichtige externe Adresse — Dokumentation, Repository, Chat. */
+export interface WorkspaceLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
+/**
+ * Der Steckbrief des Workspace — was er ist, wem er gehört, woraus er besteht.
+ *
+ * Kein `prefix`: der Workspace kennt es nicht, anders als ein Projekt. Dafür
+ * die Zahl seiner Projekte — die eine Auskunft, die es beim Projekt-Steckbrief
+ * nicht braucht, weil sie dort immer eins ist.
+ */
+export interface WorkspaceProfile {
+  /** Wozu der Workspace da ist. Leer heißt, dass es niemand gesagt hat. */
+  desc: string;
+  createdAt: number;
+  /** `workspace.update` — ob der Bearbeiten-Knopf in der Kopfkarte erscheint. */
+  canUpdate: boolean;
+  roles: WorkspaceRoleGroup[];
+  memberCount: number;
+  teams: ProjectTeam[];
+  projects: WorkspaceProjectSummary[];
+  /** Wichtige Adressen, als große Chips direkt unter der Kopfkarte. */
+  links: WorkspaceLink[];
+}
+
+/** Was die Workspace-Seite braucht: die Zahlen, der Steckbrief, die Anordnung. */
+export interface WorkspaceDashboardView {
+  workspace: { id: string; name: string; slug: string; color: string };
+  data: WorkspaceDashboardData;
+  profile: WorkspaceProfile;
+  order: WidgetKey[];
+  hidden: WidgetKey[];
+}

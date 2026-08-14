@@ -45,4 +45,6 @@ export {
   SYSTEM_ROLES,
   type SystemRole,
   systemRolesIn,
+  WORKSPACE_GUEST_ROLE_KEY,
+  WORKSPACE_VIEWER_ROLE_KEY,
 } from "./roles";

@@ -5,6 +5,13 @@ import type { Project, Role, User } from "@/types";
 // rendert: fertige Zeilen plus die Frage, was der Handelnde damit darf. Die
 // Rechte löst der Server auf — keine Komponente hier baut Regeln nach.
 
+/** Eine wichtige externe Adresse des Workspace — Dokumentation, Repository, Chat. */
+export interface WorkspaceLinkRow {
+  id: string;
+  label: string;
+  url: string;
+}
+
 /** Allgemein: Stammdaten des Workspace und was daran hängt. */
 export interface WorkspaceSettingsView {
   workspace: {
@@ -12,11 +19,14 @@ export interface WorkspaceSettingsView {
     name: string;
     slug: string;
     color: string;
+    /** Wozu der Workspace da ist — leer, wenn es niemand gesagt hat. */
+    desc: string;
     projectCount: number;
     memberCount: number;
     issueCount: number;
+    links: WorkspaceLinkRow[];
   };
-  /** `workspace.update` — Name und Farbe. */
+  /** `workspace.update` — Name, Farbe, Beschreibung und Links. */
   canUpdate: boolean;
   /** `workspace.delete` — den Workspace mit allem darin löschen. */
   canDelete: boolean;

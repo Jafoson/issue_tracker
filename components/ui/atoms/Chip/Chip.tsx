@@ -11,8 +11,12 @@ type ChipType = "assist" | "filter" | "input";
  * ein Datum. Der Chip gibt dort seine feste Höhe auf und bemisst sich in `em`,
  * damit er die Zeile nicht auseinanderdrückt und mit dem Text ringsum
  * mitwächst.
+ *
+ * `lg` steht für sich, nicht in einer Reihe gleichartiger Kacheln — ein
+ * einzelner wichtiger Link auf einem Steckbrief zum Beispiel, wo ein
+ * `md`-Chip neben Name und Kopfkarte zu klein wirkte.
  */
-type ChipSize = "md" | "inline";
+type ChipSize = "md" | "lg" | "inline";
 
 interface ChipProps extends Omit<React.HTMLAttributes<HTMLElement>, "onClick"> {
   /**

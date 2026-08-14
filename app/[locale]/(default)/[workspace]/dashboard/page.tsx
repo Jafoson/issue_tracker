@@ -11,26 +11,25 @@ import { workspacePath, workspaceSettingsPath } from "@/lib/nav";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Übersicht des Workspace — der Steckbrief: was er ist, wer ihn trägt,
- * woraus er besteht. Sie ist die Wurzel des Workspace (`/<workspaceId>`) und
- * nicht `/<workspaceId>/overview`: anders als ein Projekt, dessen Wurzel schon
- * das Board ist, hat der Workspace keine eigene Startseite, der sie streitig
- * machen könnte.
- *
- * Kennt keinen Zeitraum und deshalb kein `?range=` in der Adresse; die Zahlen
- * dazu holt `getWorkspaceDashboard` trotzdem mit, damit ein Wechsel zum
- * Dashboard keinen zweiten Serverlauf braucht.
+ * Das Dashboard des Workspace — die Zahlen über alle seine Projekte hinweg.
+ * Die Gegenansicht ist die Wurzel des Workspace (`/<workspaceId>`, kein
+ * `/overview`); anders als beim Projekt sind es hier zwei eigene Routen mit
+ * je einem eigenen Navlink in der Seitenleiste, siehe `WorkspaceDashboard`
+ * für die Begründung.
  */
-export default async function WorkspaceOverviewPage({
+export default async function WorkspaceDashboardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspace: string }>;
+  searchParams: Promise<{ range?: string }>;
 }) {
   const { workspace } = await params;
+  const { range: rangeParam } = await searchParams;
   setCurrentWorkspaceId(workspace);
 
   const stored = await getMyWorkspaceDashboardLayout(workspace);
-  const range = toRange(stored.range ?? undefined);
+  const range = toRange(rangeParam ?? stored.range ?? undefined);
 
   const data = await getWorkspaceDashboard(workspace, range);
   if (!data) notFound();
@@ -38,7 +37,7 @@ export default async function WorkspaceOverviewPage({
   return (
     <WorkspaceDashboard
       {...data}
-      view="profile"
+      view="dashboard"
       issueBase={`/${workspace}/issue`}
       links={{
         dashboard: workspacePath(workspace, "dashboard"),

@@ -283,6 +283,10 @@ export const DEFAULT_PLATFORM_ROLE_KEY = "platform_member";
 export const OWNER_ROLE_KEY = "owner";
 /** Workspace-Rolle für frisch Eingeladene, solange nichts anderes gewählt wird. */
 export const DEFAULT_WORKSPACE_ROLE_KEY = "member";
+/** Lesezugriff auf den Workspace, ohne Mitarbeit. */
+export const WORKSPACE_VIEWER_ROLE_KEY = "viewer";
+/** Von außen zum Workspace hinzugekommen. */
+export const WORKSPACE_GUEST_ROLE_KEY = "guest";
 /** Vorauswahl beim Aufnehmen in ein Projekt. */
 export const DEFAULT_PROJECT_ROLE_KEY = "contributor";
 /** Projektrolle für Gäste ohne Workspace-Mitgliedschaft. */

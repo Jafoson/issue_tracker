@@ -5,7 +5,7 @@ import { PROJECT_VIEWS } from "@/features/dashboard/view";
 import { isWidgetKey } from "@/features/dashboard/widgets";
 import { RANGES, type RangeKey } from "@/lib/buckets";
 import { db } from "@/lib/db";
-import { hasPermission } from "@/lib/permissions";
+import { currentUserCanEnterWorkspace, hasPermission } from "@/lib/permissions";
 import { getSession } from "@/lib/session";
 
 // Wie die eigenen Einstellungen (`features/account/actions.ts`) kennen diese
@@ -113,6 +113,67 @@ export async function resetDashboardLayout(projectId: string): Promise<Result> {
 
   await db.dashboardPreference.deleteMany({
     where: { userId: session.userId, projectId },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// ─── Dasselbe eine Ebene höher: das Dashboard eines Workspace ────────────────
+//
+// Derselbe Aufbau wie oben — `write`, drei Aktionen, dieselbe Prüfung des
+// Zutritts. Kein `setDashboardView`-Gegenstück: Dashboard und Übersicht sind
+// beim Workspace zwei eigene Routen, keine gespeicherte Ansicht.
+
+async function writeWorkspace(
+  workspaceId: string,
+  data: { hidden?: string[]; order?: string[]; range?: string },
+): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_ALLOWED };
+  if (!(await currentUserCanEnterWorkspace(workspaceId))) {
+    return { error: NOT_ALLOWED };
+  }
+
+  await db.workspaceDashboardPreference.upsert({
+    where: { userId_workspaceId: { userId: session.userId, workspaceId } },
+    create: { userId: session.userId, workspaceId, ...data },
+    update: data,
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function saveWorkspaceDashboardLayout(
+  workspaceId: string,
+  order: string[],
+  hidden: string[],
+): Promise<Result> {
+  return writeWorkspace(workspaceId, {
+    order: order.filter(isWidgetKey),
+    hidden: hidden.filter(isWidgetKey),
+  });
+}
+
+export async function setWorkspaceDashboardRange(
+  workspaceId: string,
+  range: string,
+): Promise<Result> {
+  if (!(RANGES as readonly string[]).includes(range)) {
+    return { error: `Unknown range: ${range}` };
+  }
+  return writeWorkspace(workspaceId, { range: range as RangeKey });
+}
+
+export async function resetWorkspaceDashboardLayout(
+  workspaceId: string,
+): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_ALLOWED };
+
+  await db.workspaceDashboardPreference.deleteMany({
+    where: { userId: session.userId, workspaceId },
   });
 
   revalidatePath("/", "layout");

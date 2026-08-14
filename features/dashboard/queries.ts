@@ -12,6 +12,10 @@ import type {
   StatusSlice,
   ThroughputPoint,
   WorkloadRow,
+  WorkspaceDashboardData,
+  WorkspaceDashboardView,
+  WorkspaceProfile,
+  WorkspaceProjectSummary,
 } from "@/features/dashboard/types";
 import { resolveLayout } from "@/features/dashboard/widgets";
 import { getPriorities, getStatuses } from "@/features/issues/queries";
@@ -23,13 +27,21 @@ import {
 } from "@/lib/buckets";
 import { db } from "@/lib/db";
 import { Prisma } from "@/lib/generated/prisma/client";
-import { accessFor, currentUserId, hasPermission } from "@/lib/permissions";
+import {
+  accessFor,
+  currentUserCanEnterWorkspace,
+  currentUserId,
+  hasPermission,
+} from "@/lib/permissions";
 import {
   DEFAULT_PROJECT_ROLE_KEY,
+  DEFAULT_WORKSPACE_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,
   PROJECT_GUEST_ROLE_KEY,
   PROJECT_VIEWER_ROLE_KEY,
   systemRolesIn,
+  WORKSPACE_GUEST_ROLE_KEY,
+  WORKSPACE_VIEWER_ROLE_KEY,
 } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 import { CLOSED_STATUSES } from "@/lib/workspace-defaults";
@@ -92,6 +104,19 @@ const ROSTER_ROLE_KEYS = new Set<string>([
   PROJECT_VIEWER_ROLE_KEY,
   PROJECT_GUEST_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,
+]);
+
+/** Dasselbe eine Ebene höher — die Mitarbeit im Workspace statt im Projekt. */
+const WS_CONTRIBUTOR_RANK =
+  systemRolesIn("WORKSPACE").find(
+    (role) => role.key === DEFAULT_WORKSPACE_ROLE_KEY,
+  )?.rank ?? 2;
+
+/** Die Workspace-Rollen, die „arbeitet mit" oder „liest mit" bedeuten. */
+const WS_ROSTER_ROLE_KEYS = new Set<string>([
+  DEFAULT_WORKSPACE_ROLE_KEY,
+  WORKSPACE_VIEWER_ROLE_KEY,
+  WORKSPACE_GUEST_ROLE_KEY,
 ]);
 
 function mapUser(user: {
@@ -463,12 +488,18 @@ async function attentionFor(
  * Zusammen heißt das: die Leitung und alles, was sich ein Workspace daneben
  * selbst geschaffen hat, steht mit Namen; die Mitarbeitenden und Mitlesenden
  * stehen als Liste.
+ *
+ * `contributorRank` und `rosterKeys` kommen herein statt fest zu stehen: dasselbe
+ * Verfahren gilt eine Ebene höher für die Mitgliedschaft im Workspace, nur mit
+ * anderen Rollen und einem anderen Rang der bloßen Mitarbeit (`getWorkspaceDashboard`).
  */
-function groupByRole(
+export function groupByRole(
   members: {
     user: Parameters<typeof mapUser>[0];
     role: { key: string; name: string; rank: number };
   }[],
+  contributorRank: number = CONTRIBUTOR_RANK,
+  rosterKeys: Set<string> = ROSTER_ROLE_KEYS,
 ): ProjectRoleGroup[] {
   const groups = new Map<string, ProjectRoleGroup>();
 
@@ -483,8 +514,7 @@ function groupByRole(
       name: member.role.name,
       rank: member.role.rank,
       distinguished:
-        member.role.rank >= CONTRIBUTOR_RANK &&
-        !ROSTER_ROLE_KEYS.has(member.role.key),
+        member.role.rank >= contributorRank && !rosterKeys.has(member.role.key),
       members: [mapUser(member.user)],
     });
   }
@@ -712,4 +742,395 @@ export async function getMyDashboardView(
   projectId: string,
 ): Promise<string | null> {
   return (await getMyDashboardLayout(projectId)).view;
+}
+
+// ─── Dasselbe eine Ebene höher: das Dashboard eines Workspace ────────────────
+//
+// Dieselben Bausteine wie beim Projekt, nur ohne die Grenze auf ein einzelnes
+// Projekt: jede Zählung geht über `project.workspaceId` statt über `projectId`.
+// Zwei eigene Routen statt eines Umschalters — siehe `WorkspaceDashboardPreference`
+// im Schema —, deshalb kein `view` und kein `setDashboardView`-Gegenstück hier.
+//
+// **Rechte.** `currentUserCanEnterWorkspace` statt `project.view`: die Zahlen
+// verdichten alle Projekte, zu denen der Zutritt schon unterschiedlich sein
+// kann — wer sie sehen darf, ist deshalb, wer überhaupt in den Workspace darf,
+// nicht wer jedes einzelne Projekt sehen dürfte.
+
+async function wsStatsFor(
+  workspaceId: string,
+  from: Date,
+  to: Date,
+): Promise<DashboardStats> {
+  const window = { gte: from, lt: to };
+  const project = { workspaceId };
+
+  const [total, open, inProgress, inReview, created, urgent, urgentUnassigned] =
+    await Promise.all([
+      db.issue.count({ where: { project } }),
+      db.issue.count({ where: { project, status: { notIn: CLOSED } } }),
+      db.issue.count({ where: { project, status: "in_progress" } }),
+      db.issue.count({ where: { project, status: "in_review" } }),
+      db.issue.count({ where: { project, created: window } }),
+      db.issue.count({
+        where: { project, status: { notIn: CLOSED }, priority: 4 },
+      }),
+      db.issue.count({
+        where: {
+          project,
+          status: { notIn: CLOSED },
+          priority: 4,
+          assigneeId: null,
+        },
+      }),
+    ]);
+
+  const [cycle] = await db.$queryRaw<
+    { closed: bigint; avg_days: number | null }[]
+  >`
+    SELECT COUNT(*)                                                     AS closed,
+           AVG(EXTRACT(EPOCH FROM (i."closedAt" - i."created")) / 86400.0) AS avg_days
+      FROM "Issue" i
+      JOIN "Project" p ON p.id = i."projectId"
+     WHERE p."workspaceId" = ${workspaceId}
+       AND i."closedAt" >= ${from}
+       AND i."closedAt" <  ${to}
+  `;
+
+  return {
+    total,
+    open,
+    inProgress,
+    inReview,
+    created,
+    urgent,
+    urgentUnassigned,
+    closed: Number(cycle?.closed ?? 0),
+    cycleDays:
+      cycle?.avg_days == null ? null : Math.round(cycle.avg_days * 10) / 10,
+  };
+}
+
+async function wsStatusesFor(workspaceId: string): Promise<StatusSlice[]> {
+  const [statuses, rows] = await Promise.all([
+    getStatuses(workspaceId),
+    db.issue.groupBy({
+      by: ["status"],
+      where: { project: { workspaceId } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const counts = new Map(rows.map((row) => [row.status, row._count._all]));
+  return statuses.map((status) => ({
+    id: status.id,
+    name: status.name,
+    short: status.short,
+    color: status.color,
+    count: counts.get(status.id) ?? 0,
+  }));
+}
+
+async function wsPrioritiesFor(workspaceId: string): Promise<PrioritySlice[]> {
+  const [priorities, rows] = await Promise.all([
+    getPriorities(workspaceId),
+    db.issue.groupBy({
+      by: ["priority"],
+      where: { project: { workspaceId }, status: { notIn: CLOSED } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const counts = new Map(rows.map((row) => [row.priority, row._count._all]));
+  return priorities
+    .map((priority) => ({
+      id: priority.id,
+      key: priority.key,
+      name: priority.name,
+      color: priority.color,
+      count: counts.get(priority.id) ?? 0,
+    }))
+    .sort((a, b) => b.id - a.id);
+}
+
+async function wsThroughputFor(
+  workspaceId: string,
+  unit: BucketUnit,
+  from: Date,
+  to: Date,
+  keys: string[],
+): Promise<ThroughputPoint[]> {
+  const countsIn = async (column: "created" | "closedAt") => {
+    const rows = await db.$queryRaw<{ bucket: Date; count: bigint }[]>`
+      SELECT date_trunc(${unit}, ${Prisma.raw(`i."${column}"`)}) AS bucket,
+             COUNT(*) AS count
+        FROM "Issue" i
+        JOIN "Project" p ON p.id = i."projectId"
+       WHERE p."workspaceId" = ${workspaceId}
+         AND ${Prisma.raw(`i."${column}"`)} >= ${from}
+         AND ${Prisma.raw(`i."${column}"`)} <  ${to}
+       GROUP BY 1
+    `;
+    return new Map(
+      rows.map((row) => [bucketKey(row.bucket), Number(row.count)]),
+    );
+  };
+
+  const [created, closed] = await Promise.all([
+    countsIn("created"),
+    countsIn("closedAt"),
+  ]);
+
+  return keys.map((date) => ({
+    date,
+    created: created.get(date) ?? 0,
+    closed: closed.get(date) ?? 0,
+  }));
+}
+
+async function wsWorkloadFor(workspaceId: string): Promise<WorkloadRow[]> {
+  const rows = await db.issue.groupBy({
+    by: ["assigneeId", "status"],
+    where: { project: { workspaceId }, status: { notIn: CLOSED } },
+    _count: { _all: true },
+  });
+  if (rows.length === 0) return [];
+
+  const ids = [
+    ...new Set(
+      rows.map((row) => row.assigneeId).filter((id): id is string => !!id),
+    ),
+  ];
+  const users = await db.user.findMany({
+    where: { id: { in: ids } },
+    select: USER_SELECT,
+  });
+  const byId = new Map(users.map((user) => [user.id, mapUser(user)]));
+
+  const totals = new Map<string, { open: number; inProgress: number }>();
+  for (const row of rows) {
+    const key = row.assigneeId ?? "";
+    const entry = totals.get(key) ?? { open: 0, inProgress: 0 };
+    entry.open += row._count._all;
+    if (row.status === "in_progress") entry.inProgress += row._count._all;
+    totals.set(key, entry);
+  }
+
+  return [...totals.entries()]
+    .map(([id, counts]) => ({
+      user: id ? (byId.get(id) ?? null) : null,
+      ...counts,
+    }))
+    .sort(
+      (a, b) =>
+        b.open - a.open ||
+        (a.user?.firstName ?? "").localeCompare(b.user?.firstName ?? ""),
+    );
+}
+
+/** Wie `attentionFor`, nur über alle Projekte — die Kennung braucht deshalb das Kürzel des Projekts, zu dem die jeweilige Aufgabe gehört, statt eines festen. */
+async function wsAttentionFor(
+  workspaceId: string,
+  statusColors: Map<string, string>,
+): Promise<AttentionIssue[]> {
+  const staleBefore = new Date(Date.now() - STALE_DAYS * 86400_000);
+
+  const rows = await db.issue.findMany({
+    where: {
+      project: { workspaceId },
+      status: { notIn: CLOSED },
+      OR: [
+        { priority: { gte: 3 } },
+        { status: "in_progress", updated: { lt: staleBefore } },
+      ],
+    },
+    select: {
+      id: true,
+      key: true,
+      title: true,
+      status: true,
+      priority: true,
+      updated: true,
+      assignee: { select: USER_SELECT },
+      project: { select: { prefix: true } },
+    },
+    orderBy: [{ priority: "desc" }, { updated: "asc" }],
+    take: LIST_LIMIT,
+  });
+
+  return rows.map((row) => {
+    const reason: AttentionReason =
+      row.priority === 4 && !row.assignee
+        ? "unassigned"
+        : row.priority >= 3
+          ? "urgent"
+          : "stale";
+
+    return {
+      id: row.id,
+      ref: issueRef(row.project.prefix, row.key),
+      title: row.title,
+      status: row.status,
+      statusColor: statusColors.get(row.status) ?? "#8a9099",
+      priority: row.priority,
+      assignee: row.assignee ? mapUser(row.assignee) : null,
+      updated: row.updated.getTime(),
+      reason,
+    } satisfies AttentionIssue;
+  });
+}
+
+/**
+ * Was der Workspace ist, unabhängig davon, wie es gerade läuft — das
+ * Gegenstück zu `profileFor` eine Ebene tiefer.
+ *
+ * Kein `desc`, kein `prefix`: der Workspace kennt beides nicht. Dafür seine
+ * Projekte, die den Platz einnehmen, den beim Projekt-Steckbrief die Labels
+ * hatten — die Frage „woraus besteht das hier" beantwortet auf dieser Ebene
+ * die Liste der Projekte, nicht die der Labels.
+ */
+async function wsProfileFor(
+  workspaceId: string,
+): Promise<WorkspaceProfile | null> {
+  const access = await accessFor(await currentUserId(), { workspaceId });
+
+  const workspace = await db.workspace.findUnique({
+    where: { id: workspaceId },
+    select: {
+      desc: true,
+      createdAt: true,
+      // Wer eingeladen, aber noch nicht beigetreten ist, gehört noch nicht zur
+      // Mannschaft — der Steckbrief zeigt, wer Zugriff *hat*, nicht wer ihn
+      // demnächst bekommt.
+      members: {
+        where: { pending: false },
+        select: {
+          user: { select: USER_SELECT },
+          role: { select: { key: true, name: true, rank: true } },
+        },
+        orderBy: byName,
+      },
+      teams: {
+        select: { id: true, name: true, key: true, color: true },
+        orderBy: { name: "asc" },
+      },
+      projects: {
+        select: { id: true, name: true, slug: true, color: true },
+        orderBy: { name: "asc" },
+      },
+      links: {
+        select: { id: true, label: true, url: true },
+        orderBy: { position: "asc" },
+      },
+    },
+  });
+  if (!workspace) return null;
+
+  return {
+    desc: workspace.desc,
+    createdAt: workspace.createdAt.getTime(),
+    canUpdate: access.has("workspace.update"),
+    roles: groupByRole(
+      workspace.members,
+      WS_CONTRIBUTOR_RANK,
+      WS_ROSTER_ROLE_KEYS,
+    ),
+    memberCount: workspace.members.length,
+    teams: workspace.teams,
+    projects: workspace.projects satisfies WorkspaceProjectSummary[],
+    links: workspace.links,
+  };
+}
+
+/** Die eigene Anordnung für diesen Workspace — das Gegenstück zu `getMyDashboardLayout`. */
+export const getMyWorkspaceDashboardLayout = cache(
+  async (
+    workspaceId: string,
+  ): Promise<{ order: string[]; hidden: string[]; range: string | null }> => {
+    const session = await getSession();
+    if (!session) return { order: [], hidden: [], range: null };
+
+    const row = await db.workspaceDashboardPreference.findUnique({
+      where: { userId_workspaceId: { userId: session.userId, workspaceId } },
+    });
+    return {
+      order: row?.order ?? [],
+      hidden: row?.hidden ?? [],
+      range: row?.range ?? null,
+    };
+  },
+);
+
+/** Das ganze Dashboard eines Workspace — das Gegenstück zu `getProjectDashboard`. */
+export const getWorkspaceDashboard = cache(
+  async (
+    workspaceId: string,
+    range: RangeKey,
+  ): Promise<WorkspaceDashboardView | null> => {
+    if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
+    if (!(await currentUserId())) return null;
+
+    const workspace = await db.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true, slug: true, color: true },
+    });
+    if (!workspace) return null;
+
+    const window = windowFor(range);
+
+    const [stats, statuses, priorities, throughput, workload, profile, layout] =
+      await Promise.all([
+        wsStatsFor(workspaceId, window.from, window.to),
+        wsStatusesFor(workspaceId),
+        wsPrioritiesFor(workspaceId),
+        wsThroughputFor(
+          workspaceId,
+          window.unit,
+          window.from,
+          window.to,
+          window.keys,
+        ),
+        wsWorkloadFor(workspaceId),
+        wsProfileFor(workspaceId),
+        getMyWorkspaceDashboardLayout(workspaceId),
+      ]);
+    if (!profile) return null;
+
+    const attention = await wsAttentionFor(
+      workspaceId,
+      new Map(statuses.map((status) => [status.id, status.color])),
+    );
+
+    const resolved = resolveLayout(layout.order, layout.hidden);
+
+    const data: WorkspaceDashboardData = {
+      range,
+      unit: window.unit,
+      stats,
+      statuses,
+      priorities,
+      throughput,
+      workload,
+      attention,
+    };
+
+    return {
+      workspace: {
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        color: workspace.color,
+      },
+      data,
+      profile,
+      order: resolved.visible,
+      hidden: resolved.hidden,
+    } satisfies WorkspaceDashboardView;
+  },
+);
+
+/** Der Zeitraum, mit dem das Workspace-Dashboard ohne `?range=` in der Adresse aufgeht. */
+export async function getMyWorkspaceDashboardRange(
+  workspaceId: string,
+): Promise<string | null> {
+  return (await getMyWorkspaceDashboardLayout(workspaceId)).range;
 }

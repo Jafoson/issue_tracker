@@ -40,6 +40,21 @@
   color: var(--error);
 }
 
+/* Kein `Table` und keine Karte: Chips brauchen keine Fläche, sie tragen ihre
+   eigene. Der „Hinzufügen“-Chip steht in derselben Reihe wie die vorhandenen
+   Links — ein Chip mehr, keine Zeile für sich. */
+.linksRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.linksEmpty {
+  font-size: var(--text-sm);
+  color: var(--outline);
+}
+
 .setting {
   display: flex;
   flex-direction: column;
