@@ -5,6 +5,7 @@ import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
+import { sendInvitationEmail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
 import {
   accessFor,
@@ -890,7 +891,7 @@ export async function inviteWorkspaceMember(data: {
   const handle = await generateHandle(email);
   const now = new Date();
 
-  const token = await db.$transaction(async (tx) => {
+  const { token, expiresAt } = await db.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         firstName: localPart.charAt(0).toUpperCase() + localPart.slice(1),
@@ -911,6 +912,16 @@ export async function inviteWorkspaceMember(data: {
     return createInvitation(tx, { userId: user.id, workspaceId }, now);
   });
 
+  const inviteUrl = invitationUrl(token);
+  await sendInvitationEmail({
+    to: email,
+    workspaceId,
+    inviterId: actorId,
+    roleName: role.name,
+    expiresAt,
+    inviteUrl,
+  });
+
   revalidatePath("/", "layout");
-  return { ok: true, inviteUrl: invitationUrl(token) };
+  return { ok: true, inviteUrl };
 }

@@ -90,6 +90,14 @@ const ACTIONS = {
     message: "workspaceDeleted",
     loud: true,
   },
+  "mail.template.updated": {
+    icon: "lucide:mail",
+    message: "mailTemplateUpdated",
+  },
+  "mail.template.reset": {
+    icon: "lucide:mail-x",
+    message: "mailTemplateReset",
+  },
 } as const satisfies Record<
   AuditAction,
   { icon: string; message: string; loud?: boolean }

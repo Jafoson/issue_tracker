@@ -91,13 +91,14 @@ describe("createInvitation()", () => {
     expect(create.mock.calls[0][0].data.projectId).toBe("p-1");
   });
 
-  it("gibt den Token zurück, den sie geschrieben hat", async () => {
-    const token = await createInvitation(
+  it("gibt Token und Frist zurück, wie sie geschrieben wurden", async () => {
+    const result = await createInvitation(
       db,
       { userId: "u-1", workspaceId: "acme" },
       NOW,
     );
-    expect(create.mock.calls[0][0].data.token).toBe(token);
+    expect(create.mock.calls[0][0].data.token).toBe(result.token);
+    expect(result.expiresAt).toEqual(new Date("2026-08-18T12:00:00Z"));
   });
 });
 

@@ -837,3 +837,27 @@ model AuditLog {
   @@index([actorId, createdAt(sort: Desc)])
   @@index([workspaceId, createdAt(sort: Desc)])
 }
+
+// ─── Mail-Vorlagen (Admin-Override) ────────────────────────────────────────────
+//
+// Jede Vorlage in `lib/mail/templates/` hat einen Code-Default. Diese Tabelle
+// überschreibt davon nur drei Textbausteine — Betreff, Überschrift,
+// Einleitungstext — mit `{{platzhalter}}`-Syntax für Namen und Links; siehe
+// `MAIL_TEMPLATE_CATALOG` in `features/mail-templates/catalog.ts` für die
+// gültigen Schlüssel und Platzhalter je Vorlage. Layout, Detailtabellen und
+// der Knopftext bleiben immer Code — eine kaputte Vorlage kann höchstens
+// falschen Text zeigen, nie das Layout brechen oder Escaping umgehen.
+//
+// Fehlt eine Zeile zu einem Schlüssel, gilt der Code-Default unverändert —
+// wie bei jeder anderen Einstellung in dieser App mit Vorgabewert.
+
+model MailTemplate {
+  /// Aus `MAIL_TEMPLATE_KEYS`, z. B. `invitation` oder `notification.assigned`.
+  key String @id
+
+  subject  String
+  heading  String
+  bodyText String
+
+  updatedAt DateTime @updatedAt
+}

@@ -28,7 +28,8 @@
     "overview": "Overview",
     "dashboard": "Dashboard",
     "users": "Users",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "mailTemplates": "Mail templates"
   },
   "actions": {
     "addLabel": "Add label",
@@ -713,7 +714,9 @@
       "projectDeleted": "Project deleted",
       "workspaceSuspended": "Workspace suspended",
       "workspaceUnsuspended": "Workspace unsuspended",
-      "workspaceDeleted": "Workspace deleted"
+      "workspaceDeleted": "Workspace deleted",
+      "mailTemplateUpdated": "Mail template edited",
+      "mailTemplateReset": "Mail template reset"
     }
   },
   "dashboard": {

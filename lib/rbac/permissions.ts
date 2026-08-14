@@ -78,6 +78,10 @@ export const PERMISSIONS = {
     desc: "Workspaces sperren und entsperren",
     scopes: PLATFORM_ONLY,
   },
+  "mail.template.manage": {
+    desc: "Betreff, Überschrift und Einleitungstext der Mail-Vorlagen bearbeiten",
+    scopes: PLATFORM_ONLY,
+  },
 
   // ── Plattform: Stammdaten und Notfall ───────────────────────────────────────
   //

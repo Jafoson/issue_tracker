@@ -33,7 +33,8 @@ export type NavLabelKey =
   | "admin"
   | "overview"
   | "users"
-  | "audit";
+  | "audit"
+  | "mailTemplates";
 
 export interface NavEntry {
   section: string;
@@ -189,6 +190,12 @@ export const ADMIN_NAV: NavEntry[] = [
     icon: "lucide:scroll-text",
     labelKey: "audit",
     permission: "audit.view",
+  },
+  {
+    section: "mail-templates",
+    icon: "lucide:mail",
+    labelKey: "mailTemplates",
+    permission: "mail.template.manage",
   },
 ];
 

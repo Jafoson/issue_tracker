@@ -43,6 +43,8 @@ export const AUDIT_ACTIONS = {
   "workspace.suspended": "Workspace gesperrt",
   "workspace.unsuspended": "Workspace entsperrt",
   "workspace.deleted": "Workspace gelöscht",
+  "mail.template.updated": "Mail-Vorlage bearbeitet",
+  "mail.template.reset": "Mail-Vorlage auf Standard zurückgesetzt",
 } as const;
 
 export type AuditAction = keyof typeof AUDIT_ACTIONS;
@@ -68,7 +70,12 @@ export function toAuditAction(value: string): AuditAction | null {
  * je Art: das Protokoll überlebt seine Ziele (siehe `prisma/schema.prisma`), es
  * kann also gar nicht auf sie zeigen.
  */
-export type AuditTargetType = "user" | "project" | "workspace" | "role";
+export type AuditTargetType =
+  | "user"
+  | "project"
+  | "workspace"
+  | "role"
+  | "mailTemplate";
 
 export interface AuditTarget {
   type: AuditTargetType;

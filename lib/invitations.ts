@@ -5,9 +5,10 @@
 // was fehlte, war der Weg von dort zum fertigen Zugang. Diese Datei ist dieser
 // Weg: einen Token ausstellen, ihn einlösen, und dazwischen nichts verraten.
 //
-// Es gibt keinen Mailversand. Statt die Einladung zu verschicken, gibt die Action
-// den Link zurück, und die Oberfläche zeigt ihn zum Kopieren. Sobald Mail dazukommt,
-// verschickt sie dieselbe URL — hier ändert sich dafür nichts.
+// Der Versand selbst steht nicht hier, sondern in `lib/mail` (`sendInvitationEmail`,
+// aus den Aktionen aufgerufen) — diese Datei bleibt der schmale Token-Baustein.
+// Ohne SMTP-Konfiguration verschickt `lib/mail` nichts; die Action gibt den Link
+// trotzdem zurück, und die Oberfläche zeigt ihn zum Kopieren.
 
 import { randomBytes } from "node:crypto";
 import { appUrl } from "@/lib/app-url";
@@ -29,8 +30,15 @@ export function newInvitationToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
+export interface CreatedInvitation {
+  token: string;
+  /** Damit die Einladungsmail dieselbe Frist nennt, die auch gilt — statt
+   *  `VALID_DAYS` an zwei Stellen zu pflegen. */
+  expiresAt: Date;
+}
+
 /**
- * Stellt eine Einladung aus und gibt ihren Token zurück.
+ * Stellt eine Einladung aus und gibt Token und Frist zurück.
  *
  * Ältere, noch offene Einladungen derselben Person in denselben Workspace werden
  * dabei verworfen: es soll nicht zwei Links geben, von denen einer ins Leere
@@ -40,7 +48,7 @@ export async function createInvitation(
   db: Db,
   data: { userId: string; workspaceId: string; projectId?: string | null },
   now: Date,
-): Promise<string> {
+): Promise<CreatedInvitation> {
   await db.invitation.deleteMany({
     where: {
       userId: data.userId,
@@ -62,7 +70,7 @@ export async function createInvitation(
     },
   });
 
-  return token;
+  return { token, expiresAt: expires };
 }
 
 /** Der Pfad, unter dem eine Einladung angenommen wird. Ohne Locale-Präfix. */

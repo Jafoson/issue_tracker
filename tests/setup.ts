@@ -4,6 +4,23 @@ import { plugin } from "bun";
 // server-only throws when imported outside of Next.js server context
 mock.module("server-only", () => ({}));
 
+// Bun lädt `.env` für jeden Aufruf automatisch, auch für `bun test` — ein
+// lokal für Mailpit & Co. gesetztes SMTP_HOST würde `isMailConfigured()`
+// sonst mitten im Unit-Test wahr werden lassen, ohne dass ein Test das
+// erwartet oder `@/lib/db` entsprechend mockt. Tests, die den Mailversand
+// selbst prüfen (`tests/unit/mail/config.test.ts`), setzen die Variablen
+// gezielt selbst.
+for (const name of [
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_SECURE",
+  "SMTP_USER",
+  "SMTP_PASS",
+  "SMTP_FROM",
+]) {
+  delete process.env[name];
+}
+
 // Komponenten importieren ihre SCSS-Module direkt — im Test gibt es keinen
 // Bundler dafür. Der Stub liefert für jede Klasse ihren eigenen Namen zurück,
 // damit gerenderte Klassennamen lesbar bleiben.

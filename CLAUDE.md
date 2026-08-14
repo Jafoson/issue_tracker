@@ -90,6 +90,60 @@ keine Strings. Lesen und Schreiben sind getrennt:
   `toDoc`/`isEmptyDoc` (Eingang aus der DB), `toPlainText`/`toPreview`
   (Suche, Vorschauen), `fromMarkdown` (Seed und einmalige Migration).
 
+## E-Mail (`lib/mail`)
+
+SMTP, ausschließlich über die Umgebung konfiguriert (`SMTP_HOST`, `SMTP_PORT`,
+`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, dazu optional
+`MAIL_COMPANY_NAME`/`MAIL_COMPANY_ADDRESS` für die Fußzeile — siehe
+`example.env`). Ohne `SMTP_HOST` verschickt die App keine Mails; alle Wege
+bleiben dabei funktionsfähig (Einladungslink zum Kopieren, In-App-Benachrichtigungen).
+`tests/setup.ts` löscht alle `SMTP_*`-Variablen vor jedem Testlauf — sonst
+würde ein lokal für Mailpit & Co. gesetztes `SMTP_HOST` in `.env` (Bun lädt
+`.env` auch für `bun test`) `isMailConfigured()` mitten im Unit-Test wahr
+werden lassen.
+
+| Datei | Aufgabe |
+|---|---|
+| `lib/mail/config.ts` | Liest die SMTP-Variablen, `isMailConfigured()` |
+| `lib/mail/transport.ts` | `nodemailer`-Transport, wiederverwendet solange die Konfiguration gleich bleibt |
+| `lib/mail/send.ts` | `sendMail()` — schluckt Fehler, no-op ohne Konfiguration |
+| `lib/mail/templates/layout.ts` | `renderLayout()` (Rahmen, Marke, Fußzeile), `renderDetailTable()`, `renderAlertBox()` |
+| `lib/mail/templates/html.ts` | `escapeHtml()`, `humanizeKey()`, `formatDateDe()` |
+| `lib/mail/templates/*.ts` | Je Anlass eine reine Funktion `(Input) → { subject, html, text }`, kein DB-Zugriff |
+| `lib/mail/index.ts` | Barrel + `sendInvitationEmail()` (lädt Workspace-/Projekt-/Einladendennamen selbst) |
+
+Vorlagen, Stand heute:
+
+| Datei | Anlass | Versandpunkt |
+|---|---|---|
+| `invitation.ts` | Einladung (neues Konto) | `sendInvitationEmail()`, aus den Invite-Aktionen |
+| `notification.ts` | assigned/mentioned/comment/status/invite/role | `lib/notify` (per `*Email`-Spalte) |
+| `welcome.ts` | Registrierung mit Passwort | **noch nicht verdrahtet** |
+| `emailVerification.ts` | E-Mail-Adresse bestätigen | **noch nicht verdrahtet** (kein Token-System) |
+| `passwordReset.ts` | Passwort zurücksetzen | **noch nicht verdrahtet** (kein Reset-Token) |
+| `weeklyDigest.ts` | Wöchentliche Zusammenfassung | **noch nicht verdrahtet** (kein Job, keine Abfrage) |
+| `issueUpdate.ts` | Sammel-Mail für Titel/Priorität/Labels | **noch nicht verdrahtet** (kein `NotificationEvent` dafür) |
+
+Zwei aktive Aufrufer:
+
+- **Einladungen** (`inviteWorkspaceMember`/`inviteProjectMember` im Neukonto-Zweig)
+  rufen `sendInvitationEmail()` direkt auf — derselbe Link, den die Aktion auch
+  zum Kopieren zurückgibt. `lib/invitations.ts#createInvitation()` gibt dafür
+  `{ token, expiresAt }` zurück statt nur den Token.
+- **`lib/notify`** verschickt zusätzlich zur In-App-Zeile eine Mail, wenn
+  `{type}Email` in `UserPreferences` an ist (Defaults siehe
+  `EMAIL_DEFAULT` in `lib/notify/index.ts` — Kommentare und Statuswechsel sind
+  standardmäßig aus, alles andere an, deckungsgleich mit `prisma/schema.prisma`).
+  `manageUrl` (Link „Benachrichtigungen verwalten“ im Fuß) zeigt immer auf
+  `accountPath(workspaceId, "notifications")`.
+
+Neue Vorlage hinzufügen: Funktion in `lib/mail/templates/` ergänzen, die
+`renderLayout()` (plus bei Bedarf `renderDetailTable()`/`renderAlertBox()`)
+nutzt und `{ subject, html, text }` liefert — Werte aus der DB oder von
+Nutzereingaben immer mit `escapeHtml()` behandeln, bevor sie ins HTML kommen
+(der Klartext bleibt unescaped). `to` (Empfängeradresse, für die Fußzeile
+„Diese E-Mail wurde an … gesendet“) gehört in jedes Input-Interface.
+
 ## Prisma
 
 - Schema: `prisma/schema.prisma`
@@ -137,6 +191,26 @@ Die Migration manuell um den Backfill-Schritt erweitern.
 **Migrations-Verzeichnis niemals leer lassen:**
 Ein Ordner in `prisma/migrations/` ohne `migration.sql` bricht `migrate deploy` ab (Error P3015).
 Entweder die Datei erstellen oder das leere Verzeichnis löschen.
+
+### Neue Permission — Provisionierung nicht vergessen
+
+Ein Eintrag in `PERMISSIONS` (`lib/rbac/permissions.ts`) ist nur die Code-Definition.
+Die Tabellen `Permission` und `RolePermission` bekommen die neue Zeile erst durch
+`provisionSystemRbac()` (`lib/rbac-provision.ts`) — aufgerufen von `prisma/seed.ts`,
+idempotent über `skipDuplicates`. Auf einer schon gesäten DB (Dev, bestehende Umgebungen)
+bleibt eine neue Permission sonst wirkungslos: `requirePermission()` schlägt fehl, ohne
+dass Schema oder Migration etwas davon ahnen lassen — kein Typfehler, keine fehlgeschlagene
+Migration, nur ein „Seite nicht gefunden“ beim eigentlich berechtigten Account.
+
+```
+bun -e '
+import { db } from "./lib/db";
+import { provisionSystemRbac } from "./lib/rbac-provision";
+await db.$transaction((tx) => provisionSystemRbac(tx));
+'
+```
+
+Auf einer frischen DB erledigt `bun db:dev`/`bun db:seed` das ohnehin mit.
 
 ## Verzeichnisstruktur
 
@@ -291,6 +365,14 @@ tests/
       richText.test.tsx           ← PM-JSON-Renderer (components/ui/atoms/RichText)
       fromMarkdown.test.ts        ← Markdown → PM-JSON (Migration + Seed)
       text.test.ts                ← toPlainText / toPreview / isEmptyDoc
+    notifications/
+      notify.test.ts              ← lib/notify (mockt zusätzlich `@/lib/mail`, eigener Prozess)
+      queries.test.ts             ← Inbox-Abfrage
+      actions.test.ts             ← markNotificationRead / markAllNotificationsRead
+    mail/
+      config.test.ts              ← lib/mail/config (SMTP aus der Umgebung)
+      send.test.ts                ← lib/mail/send (Transport, Fehler geschluckt)
+      templates.test.ts           ← lib/mail/templates (Escaping, Betreff/Text)
 ```
 
 ### Mocking-Konventionen
@@ -319,6 +401,22 @@ Umgekehrt gilt: **kein Modul mocken, dessen eigene Tests im selben Prozess laufe
 und mockt trotzdem nur `@/lib/db` — ein `mock.module("@/lib/invitations")` hätte
 `invitations/invitations.test.ts` gegen den Mock testen lassen. Der DB-Mock ist die
 kleinere Annahme und lässt den echten Code laufen.
+
+Aus demselben Grund steht `notifications/` (mit `notify.test.ts`) in einem eigenen
+Prozess: es mockt `@/lib/mail` komplett, um zu prüfen, *ob* und *für wen* `notify()`
+eine Mail anstößt. `workspace/inviteWorkspaceMember.test.ts` und
+`projects/projectMembers.test.ts` importieren transitiv `sendInvitationEmail` aus
+`@/lib/mail` und verlassen sich auf die echte Funktion (die ohne `SMTP_HOST` sofort
+zurückkehrt) — liefen sie im selben Prozess, riefen sie den Mock aus `notify.test.ts`
+auf, der `sendInvitationEmail` gar nicht exportiert.
+
+Innerhalb von `mail/` gilt dieselbe Regel noch einmal, eine Ebene tiefer:
+`send.test.ts` mockt `@/lib/mail/config` und `@/lib/mail/transport`, um `sendMail()`
+isoliert zu prüfen — `config.test.ts` testet aber genau `@/lib/mail/config` echt, mit
+gesetzten und gelöschten Umgebungsvariablen. Liefen beide im selben Prozess, sähe
+`config.test.ts` den Mock aus `send.test.ts` statt der echten Funktion. `send.test.ts`
+bekommt deshalb einen eigenen Aufruf, `config.test.ts` und `templates.test.ts` (beide
+ohne `mock.module`) teilen sich einen.
 
 ```
 # Korrekt:

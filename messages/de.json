@@ -28,7 +28,8 @@
     "overview": "Übersicht",
     "dashboard": "Dashboard",
     "users": "Benutzer",
-    "audit": "Protokoll"
+    "audit": "Protokoll",
+    "mailTemplates": "Mail-Vorlagen"
   },
   "actions": {
     "addLabel": "Label hinzufügen",
@@ -713,7 +714,9 @@
       "projectDeleted": "Projekt gelöscht",
       "workspaceSuspended": "Workspace gesperrt",
       "workspaceUnsuspended": "Workspace entsperrt",
-      "workspaceDeleted": "Workspace gelöscht"
+      "workspaceDeleted": "Workspace gelöscht",
+      "mailTemplateUpdated": "Mail-Vorlage bearbeitet",
+      "mailTemplateReset": "Mail-Vorlage zurückgesetzt"
     }
   },
   "dashboard": {
