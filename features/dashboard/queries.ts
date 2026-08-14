@@ -1038,6 +1038,10 @@ async function wsProfileFor(
     teams: workspace.teams,
     projects: workspace.projects satisfies WorkspaceProjectSummary[],
     links: workspace.links,
+    canCreateProject: access.has("project.create"),
+    canCreateTeam: access.has("team.create"),
+    canManageTeamMembers: access.has("team.member.manage"),
+    canManageTeamProjects: access.has("team.project.manage"),
   };
 }
 

@@ -219,13 +219,25 @@
 }
 
 .card[data-empty] {
-  border-style: dashed;
-  background: none;
-
   .cardBody {
     font-size: var(--text-sm);
     color: var(--outline);
   }
+}
+
+/* Listen-Cards (Teams, Projekte) tragen den gestrichelten Rahmen immer, nicht
+   nur solange sie leer sind — die Liste selbst liefert den Inhalt, die Card
+   bleibt reine Hülle. */
+.card[data-dashed] {
+  border-style: dashed;
+  background: none;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .cardTitle {
@@ -361,34 +373,55 @@
   white-space: nowrap;
 }
 
-/* ── Teams und Projekte als Chips ── */
-.chips {
+/* ── Teams und Projekte als Liste ── */
+.rows {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 7px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.team {
-  display: inline-flex;
+/* Jede Zeile wie ein Outline-Button (`Button/button.module.scss` `.outline`):
+   eigener Rahmen statt Trennlinie, damit Teams und Projekte als Reihe
+   greifbarer Kacheln statt als reine Textliste wirken. */
+.row {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 3px 11px 3px 3px;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-pill);
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
+  font-weight: 550;
   color: var(--on-surface);
   text-decoration: none;
+}
+
+/* Projekt-Zeilen sind Links, Team-Zeilen nicht — nur die anklickbaren
+   bekommen den Hover und den Pfeil. */
+.rowLink {
   transition: background 0.12s, border-color 0.12s;
 }
 
-/* Projekt-Chips sind Links, Team-Chips nicht — nur die anklickbaren bekommen
-   den Hover. */
-a.team:hover {
+.rowLink:hover {
   background: var(--surface-container-low);
-  border-color: var(--outline);
+  border-color: var(--on-surface-variant);
+}
+
+.rowArrow {
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--outline);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+.rowLink:hover .rowArrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .teamKey {
@@ -404,9 +437,9 @@ a.team:hover {
    in seiner eigenen Karte statt einmal im Seitenkopf. */
 .projectDot {
   flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
 }
 
 /* ── 4. Die Wege hinaus ── */

@@ -238,6 +238,12 @@ export interface WorkspaceProfile {
   projects: WorkspaceProjectSummary[];
   /** Wichtige Adressen, als große Chips direkt unter der Kopfkarte. */
   links: WorkspaceLink[];
+  /** Ob die Teams- bzw. Projekte-Karte einen Hinzufügen-Knopf zeigt. */
+  canCreateProject: boolean;
+  canCreateTeam: boolean;
+  /** Für den Team-Dialog aus der Übersicht — dieselben Rechte wie auf der Teams-Seite. */
+  canManageTeamMembers: boolean;
+  canManageTeamProjects: boolean;
 }
 
 /** Was die Workspace-Seite braucht: die Zahlen, der Steckbrief, die Anordnung. */

@@ -4,21 +4,25 @@ import { Icon } from "@iconify/react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { Button } from "@/components/ui/atoms/Button/Button";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import type {
   DashboardStats,
   WorkspaceProfile,
 } from "@/features/dashboard/types";
-import { Link } from "@/i18n/navigation";
+import { NewProjectButton } from "@/features/projects/components/NewProjectButton/NewProjectButton";
+import { TeamModal } from "@/features/workspaces/components/WorkspaceTeams/components/TeamModal";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useModal } from "@/lib/context";
 import { projectPath } from "@/lib/nav";
 import { roleColor } from "@/lib/rbac";
 import { fullName } from "@/lib/utils/string";
 import styles from "./workspaceProfileView.module.scss";
 
 interface Props {
-  /** Name und Farbe stehen in der Kopfkarte — das Zeichen des Workspace. */
-  workspace: { name: string; color: string };
+  /** Name, Farbe und Id stehen in der Kopfkarte bzw. brauchen die Dialoge zum Anlegen. */
+  workspace: { id: string; name: string; color: string };
   workspaceSlug: string;
   profile: WorkspaceProfile;
   stats: DashboardStats;
@@ -35,17 +39,37 @@ interface CardProps {
   title: string;
   count?: number;
   empty?: boolean;
+  /** Gestrichelter Rahmen unabhängig vom Inhalt — für Listen-Cards, die immer
+   * so aussehen sollen, nicht nur wenn sie leer sind. */
+  dashed?: boolean;
+  /** Knopf oben rechts neben Titel und Zahl, z. B. zum Anlegen. */
+  action?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 }
 
-function Card({ title, count, empty, footer, children }: CardProps) {
+function Card({
+  title,
+  count,
+  empty,
+  dashed,
+  action,
+  footer,
+  children,
+}: CardProps) {
   return (
-    <section className={styles.card} data-empty={empty || undefined}>
-      <h3 className={styles.cardTitle}>
-        {title}
-        {count !== undefined && <span className={styles.count}>{count}</span>}
-      </h3>
+    <section
+      className={styles.card}
+      data-empty={empty || undefined}
+      data-dashed={dashed || undefined}
+    >
+      <div className={styles.cardHead}>
+        <h3 className={styles.cardTitle}>
+          {title}
+          {count !== undefined && <span className={styles.count}>{count}</span>}
+        </h3>
+        {action}
+      </div>
       <div className={styles.cardBody}>{children}</div>
       {footer}
     </section>
@@ -69,6 +93,26 @@ export function WorkspaceProfileView({
 }: Props) {
   const t = useTranslations();
   const format = useFormatter();
+  const router = useRouter();
+  const { openModal } = useModal();
+
+  // Kandidaten für den Team-Dialog sind die Workspace-Mitglieder — hier schon
+  // als flache Liste da, weil der Steckbrief sie ohnehin nach Rolle gruppiert
+  // geladen hat; eine eigene Abfrage nur für den Dialog wäre doppelt.
+  const candidates = profile.roles.flatMap((role) => role.members);
+
+  const openNewTeam = () =>
+    openModal(({ close }) => (
+      <TeamModal
+        workspaceId={workspace.id}
+        candidates={candidates}
+        projects={profile.projects}
+        canManageMembers={profile.canManageTeamMembers}
+        canManageProjects={profile.canManageTeamProjects}
+        onDone={() => router.refresh()}
+        close={close}
+      />
+    ));
 
   const created = format.dateTime(new Date(profile.createdAt), {
     day: "numeric",
@@ -187,14 +231,26 @@ export function WorkspaceProfileView({
             title={t("nav.teams")}
             count={profile.teams.length}
             empty={profile.teams.length === 0}
+            dashed
+            action={
+              profile.canCreateTeam && (
+                <Button
+                  variant="text"
+                  icon={<Icon icon="lucide:plus" width={15} />}
+                  aria-label={t("actions.newTeam")}
+                  title={t("actions.newTeam")}
+                  onClick={openNewTeam}
+                />
+              )
+            }
           >
             {profile.teams.length === 0 ? (
               t("dashboard.noTeams")
             ) : (
-              <ul className={styles.chips}>
+              <ul className={styles.rows}>
                 {profile.teams.map((team) => (
                   <li key={team.id}>
-                    <span className={styles.team}>
+                    <span className={styles.row}>
                       <span
                         className={styles.teamKey}
                         style={{ background: team.color }}
@@ -213,16 +269,22 @@ export function WorkspaceProfileView({
             title={t("nav.projects")}
             count={profile.projects.length}
             empty={profile.projects.length === 0}
+            dashed
+            action={
+              profile.canCreateProject && (
+                <NewProjectButton workspaceId={workspace.id} compact />
+              )
+            }
           >
             {profile.projects.length === 0 ? (
               t("dashboard.noProjects")
             ) : (
-              <ul className={styles.chips}>
+              <ul className={styles.rows}>
                 {profile.projects.map((project) => (
                   <li key={project.id}>
                     <Link
                       href={projectPath(workspaceSlug, project.slug, "")}
-                      className={styles.team}
+                      className={`${styles.row} ${styles.rowLink}`}
                     >
                       <span
                         className={styles.projectDot}
@@ -230,6 +292,11 @@ export function WorkspaceProfileView({
                         aria-hidden="true"
                       />
                       {project.name}
+                      <Icon
+                        icon="lucide:arrow-right"
+                        width={13}
+                        className={styles.rowArrow}
+                      />
                     </Link>
                   </li>
                 ))}
