@@ -370,13 +370,14 @@ export function WorkspaceSettings({
             ))}
 
             {canUpdate && (
-              <Chip
+              <Button
+                variant="elevated"
                 icon={<Icon icon="lucide:plus" width={14} />}
                 disabled={isPending}
                 onClick={openAddLink}
               >
                 {t("workspaceSettings.addLink")}
-              </Chip>
+              </Button>
             )}
 
             {links.length === 0 && !canUpdate && (
