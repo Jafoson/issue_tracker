@@ -1,51 +1,51 @@
 import { notFound, redirect } from "next/navigation";
-import { Inbox } from "@/features/issues/components/Inbox/Inbox";
 import { IssuePeek } from "@/features/issues/components/IssuePeek/IssuePeek";
 import { getIssueComposerData } from "@/features/issues/editor-data";
-import { getInboxIssues } from "@/features/issues/queries";
-import {
-  getMe,
-  getWorkspaceMembers,
-  getWorkspaceProjects,
-  getWorkspaceStatuses,
-} from "@/features/workspaces/queries";
+import { Inbox } from "@/features/notifications/components/Inbox/Inbox";
+import { getNotifications } from "@/features/notifications/queries";
+import type { NotificationFilter } from "@/features/notifications/types";
+import { getWorkspaceStatuses } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
+const FILTERS: NotificationFilter[] = ["all", "workspace", "project"];
+
 export default async function InboxPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; workspace: string }>;
+  searchParams: Promise<{ scope?: string }>;
 }) {
   const { locale, workspace } = await params;
+  const { scope } = await searchParams;
   setCurrentWorkspaceId(workspace);
 
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  const [issues, me, members, projects, statuses, composer] = await Promise.all(
-    [
-      getInboxIssues(session.userId, workspace),
-      getMe(),
-      getWorkspaceMembers(),
-      getWorkspaceProjects(),
-      getWorkspaceStatuses(),
-      getIssueComposerData(),
-    ],
-  );
-  if (!me || !composer) notFound();
+  const filter: NotificationFilter = FILTERS.includes(
+    scope as NotificationFilter,
+  )
+    ? (scope as NotificationFilter)
+    : "all";
+
+  const [notifications, statuses, composer] = await Promise.all([
+    getNotifications(workspace, filter),
+    getWorkspaceStatuses(),
+    getIssueComposerData(),
+  ]);
+  if (!composer) notFound();
 
   return (
     <>
       <Inbox
-        issues={issues}
-        me={me}
-        members={members}
-        projects={projects}
-        statuses={statuses}
+        notifications={notifications}
         workspaceId={workspace}
+        filter={filter}
+        statuses={statuses}
       />
       {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
       <IssuePeek data={composer} />

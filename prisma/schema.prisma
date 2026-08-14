@@ -40,19 +40,20 @@ model Workspace {
   /// unter dem Namen; leer heißt, dass es niemand gesagt hat.
   desc      String   @default("")
 
-  members     WorkspaceMember[]
-  projects    Project[]
-  labels      Label[]
-  teams       Team[]
-  invitations Invitation[]
-  statuses    WorkspaceStatus[]
-  priorities  WorkspacePriority[]
-  issueTypes  WorkspaceIssueType[]
-  roles       Role[]
+  members       WorkspaceMember[]
+  projects      Project[]
+  labels        Label[]
+  teams         Team[]
+  invitations   Invitation[]
+  statuses      WorkspaceStatus[]
+  priorities    WorkspacePriority[]
+  issueTypes    WorkspaceIssueType[]
+  roles         Role[]
   // Wie einzelne Personen das Dashboard dieses Workspace eingerichtet haben.
-  dashboards  WorkspaceDashboardPreference[]
+  dashboards    WorkspaceDashboardPreference[]
   // Wichtige externe Adressen — Dokumentation, Repository, Chat.
-  links       WorkspaceLink[]
+  links         WorkspaceLink[]
+  notifications Notification[]
 }
 
 /// Eine wichtige externe Adresse eines Workspace — Dokumentation, Repository,
@@ -120,6 +121,8 @@ model User {
   preferences         UserPreferences?
   dashboards          DashboardPreference[]
   workspaceDashboards WorkspaceDashboardPreference[]
+  notifications       Notification[]                 @relation("NotificationRecipient")
+  notificationsCaused Notification[]                 @relation("NotificationActor")
 }
 
 /// Was einer Person gehört und keinem Workspace: wie die Oberfläche aussieht und
@@ -156,6 +159,8 @@ model UserPreferences {
   statusEmail    Boolean @default(false)
   inviteInApp    Boolean @default(true)
   inviteEmail    Boolean @default(true)
+  roleInApp      Boolean @default(true)
+  roleEmail      Boolean @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -313,18 +318,19 @@ model Project {
   createdById String?
   createdBy   User?     @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
-  workspace    Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  issues       Issue[]
-  teams        TeamProject[]
-  labels       Label[]
-  members      ProjectMember[]
-  invitations  Invitation[]
+  workspace     Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues        Issue[]
+  teams         TeamProject[]
+  labels        Label[]
+  members       ProjectMember[]
+  invitations   Invitation[]
   // Workspace-Labels, die in diesem Projekt nicht angeboten werden.
-  hiddenLabels ProjectHiddenLabel[]
+  hiddenLabels  ProjectHiddenLabel[]
   // Projektlokale Rollen (Role.scope = PROJECT mit gesetztem projectId).
-  roles        Role[]
+  roles         Role[]
   // Wie einzelne Personen das Dashboard dieses Projekts eingerichtet haben.
-  dashboards   DashboardPreference[]
+  dashboards    DashboardPreference[]
+  notifications Notification[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
@@ -623,10 +629,11 @@ model Issue {
   reporterId String
   projectId  String
 
-  assignee User?     @relation("IssueAssignee", fields: [assigneeId], references: [id])
-  reporter User      @relation("IssueReporter", fields: [reporterId], references: [id])
-  project  Project   @relation(fields: [projectId], references: [id])
-  comments Comment[]
+  assignee      User?          @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  reporter      User           @relation("IssueReporter", fields: [reporterId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id])
+  comments      Comment[]
+  notifications Notification[]
 
   @@unique([projectId, key])
   @@index([projectId, status])
@@ -650,6 +657,48 @@ model Comment {
 
   issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
   author User  @relation(fields: [authorId], references: [id])
+}
+
+// ─── Benachrichtigungen ─────────────────────────────────────────────────────
+//
+// Eine Zeile je Empfänger und Anlass — Anlässe stehen in `NOTIFICATION_EVENTS`
+// (`features/account/types.ts`), gegen `UserPreferences.{type}InApp` geprüft,
+// bevor die Zeile überhaupt entsteht (`lib/notify`). `projectId` trennt
+// Workspace- von Projekt-Ereignissen: gesetzt heißt projekt-, `null`
+// workspace-bezogen — genau die Grenze, an der die Inbox filtert.
+//
+// `actorLabel` ist wie `AuditLog.actorLabel` zur Schreibzeit eingefroren: wer
+// später sein Konto umbenennt oder verliert, verändert damit nicht rückwirkend,
+// was in einer schon zugestellten Benachrichtigung steht.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  /// Schlüssel aus `NOTIFICATION_EVENTS` — assigned, mentioned, comment,
+  /// status, invite, role.
+  type      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  workspaceId String
+  /// Gesetzt = projekt-bezogen, `null` = workspace-bezogen.
+  projectId   String?
+  issueId     String?
+
+  actorId    String?
+  actorLabel String  @default("")
+  /// Zusatztext je nach `type`: Rollenname (role/invite), Statuskey (status)
+  /// oder Kommentar-Vorschau (comment/mentioned).
+  text       String  @default("")
+
+  user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issue     Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, projectId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
 }
 
 // ─── Teams ───────────────────────────────────────────────────────────────────

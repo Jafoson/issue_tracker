@@ -6,11 +6,15 @@ const mockProjectFindUnique = mock();
 const mockRoleFindFirst = mock();
 const mockWorkspaceMemberFindMany = mock();
 const mockProjectMemberFindUnique = mock();
+const mockProjectMemberFindMany = mock();
 const mockProjectMemberCreateMany = mock();
 const mockProjectMemberCreate = mock();
 const mockProjectMemberUpdate = mock();
 const mockProjectMemberDelete = mock();
 const mockUserFindUnique = mock();
+const mockUserFindMany = mock();
+const mockUserPreferencesFindMany = mock();
+const mockNotificationCreateMany = mock();
 const mockTransaction = mock();
 
 // Der Tx-Client für den Einladungsweg mit neuem Account: dort entstehen Konto,
@@ -29,18 +33,21 @@ mock.module("@/lib/db", () => ({
   db: {
     project: { findUnique: mockProjectFindUnique, create: mock() },
     role: { findFirst: mockRoleFindFirst },
-    user: { findUnique: mockUserFindUnique },
+    user: { findUnique: mockUserFindUnique, findMany: mockUserFindMany },
     workspaceMember: {
       findMany: mockWorkspaceMemberFindMany,
       findUnique: mock(),
     },
     projectMember: {
       findUnique: mockProjectMemberFindUnique,
+      findMany: mockProjectMemberFindMany,
       createMany: mockProjectMemberCreateMany,
       create: mockProjectMemberCreate,
       update: mockProjectMemberUpdate,
       delete: mockProjectMemberDelete,
     },
+    userPreferences: { findMany: mockUserPreferencesFindMany },
+    notification: { createMany: mockNotificationCreateMany },
     $transaction: mockTransaction,
   },
 }));
@@ -110,11 +117,15 @@ function reset() {
     mockRoleFindFirst,
     mockWorkspaceMemberFindMany,
     mockProjectMemberFindUnique,
+    mockProjectMemberFindMany,
     mockProjectMemberCreateMany,
     mockProjectMemberCreate,
     mockProjectMemberUpdate,
     mockProjectMemberDelete,
     mockUserFindUnique,
+    mockUserFindMany,
+    mockUserPreferencesFindMany,
+    mockNotificationCreateMany,
     mockTransaction,
     mockCan,
     mockCurrentUserId,
@@ -154,10 +165,16 @@ function reset() {
   mockProjectFindUnique.mockResolvedValue({ workspaceId: WS });
   mockRoleFindFirst.mockResolvedValue({ id: "wsp:acme:contributor", rank: 3 });
   mockWorkspaceMemberFindMany.mockResolvedValue([{ userId: "u-1" }]);
+  // Standardmäßig noch niemand im Projekt — sonst bekäme eine frisch
+  // aufgenommene Person keine "invite"-Benachrichtigung.
+  mockProjectMemberFindMany.mockResolvedValue([]);
   mockProjectMemberCreateMany.mockResolvedValue({ count: 1 });
   mockProjectMemberCreate.mockResolvedValue({});
   mockProjectMemberUpdate.mockResolvedValue({});
   mockProjectMemberDelete.mockResolvedValue({});
+  mockUserFindMany.mockResolvedValue([]);
+  mockUserPreferencesFindMany.mockResolvedValue([]);
+  mockNotificationCreateMany.mockResolvedValue({ count: 0 });
 }
 
 const add = () =>

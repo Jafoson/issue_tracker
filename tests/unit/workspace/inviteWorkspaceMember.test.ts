@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockUserFindUnique = mock();
+const mockUserFindMany = mock();
 const mockRoleFindFirst = mock();
 const mockWorkspaceMemberFindUnique = mock();
+const mockUserPreferencesFindMany = mock();
+const mockNotificationCreateMany = mock();
 const mockTransaction = mock();
 
 const mockTx = {
@@ -17,10 +20,12 @@ const mockTx = {
 
 mock.module("@/lib/db", () => ({
   db: {
-    user: { findUnique: mockUserFindUnique },
+    user: { findUnique: mockUserFindUnique, findMany: mockUserFindMany },
     role: { findFirst: mockRoleFindFirst },
     workspace: { findUnique: mock() },
     workspaceMember: { findUnique: mockWorkspaceMemberFindUnique },
+    userPreferences: { findMany: mockUserPreferencesFindMany },
+    notification: { createMany: mockNotificationCreateMany },
     $transaction: mockTransaction,
   },
 }));
@@ -76,8 +81,11 @@ function access(rank: number | null) {
 function reset() {
   for (const m of [
     mockUserFindUnique,
+    mockUserFindMany,
     mockRoleFindFirst,
     mockWorkspaceMemberFindUnique,
+    mockUserPreferencesFindMany,
+    mockNotificationCreateMany,
     mockTransaction,
     mockCan,
     mockCurrentUserId,
@@ -105,7 +113,10 @@ function reset() {
   mockAccessFor.mockResolvedValue(access(5));
   mockRoleFindFirst.mockResolvedValue({ id: "sys:WORKSPACE:member", rank: 2 });
   mockUserFindUnique.mockResolvedValue(null);
+  mockUserFindMany.mockResolvedValue([]);
   mockWorkspaceMemberFindUnique.mockResolvedValue(null);
+  mockUserPreferencesFindMany.mockResolvedValue([]);
+  mockNotificationCreateMany.mockResolvedValue({ count: 0 });
 }
 
 const invite = (over: Partial<{ email: string; role: string }> = {}) =>

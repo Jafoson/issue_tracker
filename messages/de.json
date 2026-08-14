@@ -389,6 +389,24 @@
     "issueNotFound": "Aufgabe nicht gefunden",
     "issueNotFoundHint": "Sie wurde gelöscht oder liegt in einem anderen Workspace."
   },
+  "inbox": {
+    "scope": {
+      "all": "Alle",
+      "workspace": "Workspace",
+      "project": "Projekt"
+    },
+    "markAllRead": "Alle als gelesen markieren",
+    "event": {
+      "assigned": "{actor} hat dir {issue} zugewiesen",
+      "mentioned": "{actor} hat dich in {issue} erwähnt",
+      "comment": "{actor} hat {issue} kommentiert",
+      "status": "{actor} hat den Status von {issue} zu „{status}“ geändert",
+      "inviteWorkspace": "{actor} hat dich in den Workspace aufgenommen",
+      "inviteProject": "{actor} hat dich zum Projekt „{project}“ hinzugefügt",
+      "roleWorkspace": "{actor} hat deine Rolle im Workspace zu „{role}“ geändert",
+      "roleProject": "{actor} hat deine Rolle im Projekt „{project}“ zu „{role}“ geändert"
+    }
+  },
   "palette": {
     "navigation": "Navigation",
     "issues": "Aufgaben",
@@ -627,14 +645,16 @@
       "mentioned": "Erwähnung",
       "comment": "Neuer Kommentar",
       "status": "Status geändert",
-      "invite": "Einladung"
+      "invite": "Einladung",
+      "role": "Rolle geändert"
     },
     "eventDesc": {
       "assigned": "Jemand hat dir eine Aufgabe zugewiesen.",
       "mentioned": "Jemand hat dich mit @ in einer Beschreibung oder einem Kommentar genannt.",
       "comment": "Neuer Kommentar an einer Aufgabe, an der du beteiligt bist.",
       "status": "Der Status einer deiner Aufgaben hat sich geändert.",
-      "invite": "Du wurdest in einen Workspace oder ein Projekt aufgenommen."
+      "invite": "Du wurdest in einen Workspace oder ein Projekt aufgenommen.",
+      "role": "Deine Rolle in einem Workspace oder Projekt hat sich geändert."
     },
     "securityDesc": "Womit du hereinkommst.",
     "passwordDesc": "Zum Ändern brauchst du dein aktuelles Passwort.",

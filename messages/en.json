@@ -389,6 +389,24 @@
     "issueNotFound": "Issue not found",
     "issueNotFoundHint": "It may have been deleted or moved to another workspace."
   },
+  "inbox": {
+    "scope": {
+      "all": "All",
+      "workspace": "Workspace",
+      "project": "Project"
+    },
+    "markAllRead": "Mark all as read",
+    "event": {
+      "assigned": "{actor} assigned {issue} to you",
+      "mentioned": "{actor} mentioned you in {issue}",
+      "comment": "{actor} commented on {issue}",
+      "status": "{actor} changed the status of {issue} to \"{status}\"",
+      "inviteWorkspace": "{actor} added you to the workspace",
+      "inviteProject": "{actor} added you to the project \"{project}\"",
+      "roleWorkspace": "{actor} changed your role in the workspace to \"{role}\"",
+      "roleProject": "{actor} changed your role in \"{project}\" to \"{role}\""
+    }
+  },
   "palette": {
     "navigation": "Navigation",
     "issues": "Issues",
@@ -627,14 +645,16 @@
       "mentioned": "Mention",
       "comment": "New comment",
       "status": "Status changed",
-      "invite": "Invitation"
+      "invite": "Invitation",
+      "role": "Role changed"
     },
     "eventDesc": {
       "assigned": "Someone assigned an issue to you.",
       "mentioned": "Someone named you with @ in a description or a comment.",
       "comment": "A new comment on an issue you are involved in.",
       "status": "The status of one of your issues changed.",
-      "invite": "You were added to a workspace or a project."
+      "invite": "You were added to a workspace or a project.",
+      "role": "Your role in a workspace or a project changed."
     },
     "securityDesc": "How you get in.",
     "passwordDesc": "Changing it requires your current password.",

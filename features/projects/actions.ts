@@ -5,6 +5,7 @@ import type { ProjectVisibility } from "@/features/projects/types";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
+import { notify } from "@/lib/notify";
 import {
   accessFor,
   assignmentCeiling,
@@ -352,7 +353,7 @@ async function requireMemberManage(
 async function resolveAssignable(
   guard: MemberGuard,
   roleKey: string,
-): Promise<{ id: string; rank: number } | { error: string }> {
+): Promise<{ id: string; rank: number; name: string } | { error: string }> {
   if (!roleKey) return { error: "Pick a valid role." };
 
   const role = await db.role.findFirst({
@@ -365,7 +366,7 @@ async function resolveAssignable(
         { projectId: guard.projectId },
       ],
     },
-    select: { id: true, rank: true },
+    select: { id: true, rank: true, name: true },
     // Die spezifischste Rolle gewinnt, falls mehrere denselben Key tragen:
     // projektlokal vor workspaceweit vor geteilt. `nulls: "last"` ist nötig,
     // weil Postgres bei DESC sonst NULL voranstellt.
@@ -419,6 +420,15 @@ export async function addProjectMembers(data: {
   if (members.length !== userIds.length)
     return { error: "Some of those people are not in this workspace." };
 
+  // Wer schon im Projekt ist, bekäme sonst fälschlich eine "invite"-
+  // Benachrichtigung für eine Aufnahme, die gar keine ist.
+  const already = await db.projectMember.findMany({
+    where: { projectId: data.projectId, userId: { in: userIds } },
+    select: { userId: true },
+  });
+  const alreadyIds = new Set(already.map((m) => m.userId));
+  const newlyAdded = userIds.filter((id) => !alreadyIds.has(id));
+
   await db.projectMember.createMany({
     data: userIds.map((userId) => ({
       projectId: data.projectId,
@@ -429,6 +439,17 @@ export async function addProjectMembers(data: {
     // soll sie nicht überschreiben. Zum Ändern gibt es `setProjectMemberRole`.
     skipDuplicates: true,
   });
+
+  await notify(
+    newlyAdded.map((userId) => ({
+      userId,
+      type: "invite" as const,
+      actorId: guard.actorId,
+      workspaceId: guard.workspaceId,
+      projectId: data.projectId,
+      text: role.name,
+    })),
+  );
 
   revalidatePath("/", "layout");
   return { ok: true };
@@ -465,6 +486,15 @@ export async function setProjectMemberRole(
   await db.projectMember.update({
     where: { projectId_userId: { projectId, userId } },
     data: { roleId: role.id },
+  });
+
+  await notify({
+    userId,
+    type: "role",
+    actorId: guard.actorId,
+    workspaceId: guard.workspaceId,
+    projectId,
+    text: role.name,
   });
 
   revalidatePath("/", "layout");
@@ -561,6 +591,18 @@ export async function inviteProjectMember(data: {
         userId: existing.id,
         roleId: role.id,
       },
+    });
+
+    // Wie in `inviteWorkspaceMember`: nur wer schon ein Konto hat, kann sich
+    // anmelden und eine In-App-Benachrichtigung sehen — der Neukonto-Zweig
+    // unten legt nur einen Einladungslink an.
+    await notify({
+      userId: existing.id,
+      type: "invite",
+      actorId: guard.actorId,
+      workspaceId: guard.workspaceId,
+      projectId: data.projectId,
+      text: role.name,
     });
 
     revalidatePath("/", "layout");

@@ -16,6 +16,7 @@ export const NOTIFICATION_EVENTS = [
   "comment",
   "status",
   "invite",
+  "role",
 ] as const;
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];

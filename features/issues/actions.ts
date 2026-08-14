@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache";
 import type { IssuePatch } from "@/features/issues/types";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { notify } from "@/lib/notify";
 import {
   hasPermission,
   PermissionError,
   requirePermission,
   requirePermissionOr,
 } from "@/lib/permissions";
-import { toPlainText } from "@/lib/richtext/text";
+import { mentionedUserIds, toPlainText, toPreview } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/utils/id";
@@ -36,7 +37,9 @@ async function uniqueLabelSlug(workspaceId: string, name: string) {
 }
 
 // Lädt die für `.own`/`.any`-Prüfungen nötigen Issue-Felder — und den Status,
-// an dem `closedAt` hängt (siehe `closedPatch`).
+// an dem `closedAt` hängt (siehe `closedPatch`). Trägt außerdem, was die
+// Benachrichtigungen unten brauchen (Titel, Beschreibung, Workspace/Prefix des
+// Projekts), damit dafür keine zweite Abfrage nötig ist.
 async function issueContext(id: string) {
   const issue = await db.issue.findUnique({
     where: { id },
@@ -46,10 +49,74 @@ async function issueContext(id: string) {
       assigneeId: true,
       status: true,
       closedAt: true,
+      title: true,
+      description: true,
+      project: { select: { workspaceId: true } },
     },
   });
   if (!issue) throw new PermissionError("issue.update.any");
   return issue;
+}
+
+/**
+ * Benachrichtigt Bearbeiter und Ersteller über einen Statuswechsel — aus
+ * `moveIssue`, `reorderIssue` und `updateIssue` gleichermaßen aufgerufen, denn
+ * ein Statuswechsel per Drag&Drop ist derselbe Anlass wie einer aus dem Panel.
+ */
+async function notifyStatusChange(
+  issueId: string,
+  issue: {
+    projectId: string;
+    status: string;
+    assigneeId: string | null;
+    reporterId: string;
+    project: { workspaceId: string };
+  },
+  actorId: string,
+  nextStatus: string,
+): Promise<void> {
+  if (nextStatus === issue.status) return;
+  const recipients = [...new Set([issue.assigneeId, issue.reporterId])].filter(
+    (userId): userId is string => !!userId && userId !== actorId,
+  );
+  if (recipients.length === 0) return;
+  await notify(
+    recipients.map((userId) => ({
+      userId,
+      type: "status" as const,
+      actorId,
+      workspaceId: issue.project.workspaceId,
+      projectId: issue.projectId,
+      issueId,
+      text: nextStatus,
+    })),
+  );
+}
+
+/** Wer neu in einem Dokument erwähnt wurde, minus dem, der es geschrieben hat. */
+async function notifyMentions(
+  ids: string[],
+  ctx: {
+    workspaceId: string;
+    projectId: string;
+    issueId: string;
+    text: string;
+  },
+  actorId: string,
+): Promise<void> {
+  const recipients = ids.filter((userId) => userId !== actorId);
+  if (recipients.length === 0) return;
+  await notify(
+    recipients.map((userId) => ({
+      userId,
+      type: "mentioned" as const,
+      actorId,
+      workspaceId: ctx.workspaceId,
+      projectId: ctx.projectId,
+      issueId: ctx.issueId,
+      text: ctx.text,
+    })),
+  );
 }
 
 /**
@@ -79,7 +146,7 @@ function closedPatch(
 
 export async function moveIssue(id: string, status: string) {
   const issue = await issueContext(id);
-  await requirePermissionOr([
+  const actorId = await requirePermissionOr([
     {
       permission: "issue.update.any",
       ctx: { projectId: issue.projectId },
@@ -94,12 +161,13 @@ export async function moveIssue(id: string, status: string) {
     where: { id },
     data: { status, ...closedPatch(issue, status) },
   });
+  await notifyStatusChange(id, issue, actorId, status);
   await revalidate();
 }
 
 export async function reorderIssue(id: string, status: string, rank: number) {
   const issue = await issueContext(id);
-  await requirePermissionOr([
+  const actorId = await requirePermissionOr([
     {
       permission: "issue.update.any",
       ctx: { projectId: issue.projectId },
@@ -114,13 +182,14 @@ export async function reorderIssue(id: string, status: string, rank: number) {
     where: { id },
     data: { status, rank, ...closedPatch(issue, status) },
   });
+  await notifyStatusChange(id, issue, actorId, status);
   await revalidate();
 }
 
 export async function updateIssue(id: string, patch: IssuePatch) {
   const issue = await issueContext(id);
   const ctx = { projectId: issue.projectId };
-  await requirePermissionOr([
+  const actorId = await requirePermissionOr([
     { permission: "issue.update.any", ctx },
     {
       permission: "issue.update.own",
@@ -151,6 +220,43 @@ export async function updateIssue(id: string, patch: IssuePatch) {
       }),
     },
   });
+
+  if (
+    patch.assignee &&
+    patch.assignee !== issue.assigneeId &&
+    patch.assignee !== actorId
+  ) {
+    await notify({
+      userId: patch.assignee,
+      type: "assigned",
+      actorId,
+      workspaceId: issue.project.workspaceId,
+      projectId: issue.projectId,
+      issueId: id,
+    });
+  }
+
+  if (patch.status !== undefined) {
+    await notifyStatusChange(id, issue, actorId, patch.status);
+  }
+
+  if (patch.description !== undefined) {
+    const before = new Set(mentionedUserIds(issue.description));
+    const newlyMentioned = mentionedUserIds(patch.description).filter(
+      (userId) => !before.has(userId),
+    );
+    await notifyMentions(
+      newlyMentioned,
+      {
+        workspaceId: issue.project.workspaceId,
+        projectId: issue.projectId,
+        issueId: id,
+        text: toPreview(patch.description),
+      },
+      actorId,
+    );
+  }
+
   await revalidate();
 }
 
@@ -172,14 +278,15 @@ export async function createIssue(data: {
 
   // Atomically claim the next key for this project. The counter only ever
   // increments, so deleted keys are never reused and each key stays unique.
-  const { lastIssueKey } = await db.project.update({
+  const { lastIssueKey, workspaceId } = await db.project.update({
     where: { id: data.projectId },
     data: { lastIssueKey: { increment: 1 } },
-    select: { lastIssueKey: true },
+    select: { lastIssueKey: true, workspaceId: true },
   });
+  const id = uid("i");
   await db.issue.create({
     data: {
-      id: uid("i"),
+      id,
       key: lastIssueKey,
       title: data.title,
       description: data.description as unknown as Prisma.InputJsonValue,
@@ -197,6 +304,29 @@ export async function createIssue(data: {
       rank: Date.now(),
     },
   });
+
+  if (data.assignee && data.assignee !== userId) {
+    await notify({
+      userId: data.assignee,
+      type: "assigned",
+      actorId: userId,
+      workspaceId,
+      projectId: data.projectId,
+      issueId: id,
+    });
+  }
+
+  await notifyMentions(
+    mentionedUserIds(data.description),
+    {
+      workspaceId,
+      projectId: data.projectId,
+      issueId: id,
+      text: toPreview(data.description),
+    },
+    userId,
+  );
+
   await revalidate();
 }
 
@@ -428,7 +558,12 @@ export async function addComment(
 ) {
   const issue = await db.issue.findUnique({
     where: { id: issueId },
-    select: { projectId: true },
+    select: {
+      projectId: true,
+      assigneeId: true,
+      reporterId: true,
+      project: { select: { workspaceId: true } },
+    },
   });
   if (!issue) throw new PermissionError("comment.create");
   // Autor ist immer der eingeloggte User — der Parameter wird ignoriert.
@@ -445,6 +580,41 @@ export async function addComment(
       authorId: userId,
     },
   });
+
+  const text = toPreview(body);
+  const mentionedIds = mentionedUserIds(body).filter((id) => id !== userId);
+  await notifyMentions(
+    mentionedIds,
+    {
+      workspaceId: issue.project.workspaceId,
+      projectId: issue.projectId,
+      issueId,
+      text,
+    },
+    userId,
+  );
+
+  // Wer explizit erwähnt wurde, bekommt nur die genauere "mentioned"-
+  // Benachrichtigung, nicht zusätzlich die generische "comment" für dieselbe
+  // Zeile.
+  const mentioned = new Set(mentionedIds);
+  const commentRecipients = [
+    ...new Set([issue.assigneeId, issue.reporterId]),
+  ].filter((id): id is string => !!id && id !== userId && !mentioned.has(id));
+  if (commentRecipients.length > 0) {
+    await notify(
+      commentRecipients.map((recipientId) => ({
+        userId: recipientId,
+        type: "comment" as const,
+        actorId: userId,
+        workspaceId: issue.project.workspaceId,
+        projectId: issue.projectId,
+        issueId,
+        text,
+      })),
+    );
+  }
+
   await revalidate();
 }
 

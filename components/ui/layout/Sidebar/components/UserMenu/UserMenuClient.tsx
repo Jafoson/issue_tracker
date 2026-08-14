@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import buttonStyles from "@/components/ui/atoms/Button/button.module.scss";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { NavLink } from "@/components/ui/layout/NavLink/NavLink";
 import { logout } from "@/features/auth/actions";
+import { Link } from "@/i18n/navigation";
 import { fullName } from "@/lib/utils/string";
 import styles from "./UserMenu.module.scss";
 
@@ -22,6 +24,10 @@ interface UserMenuClientProps {
    * dem sie stehen könnten — dann fehlt der Eintrag.
    */
   settingsHref: string | null;
+  /** Weg zur Inbox. `null` aus demselben Grund wie `settingsHref`. */
+  inboxHref: string | null;
+  /** Ungelesene Benachrichtigungen im aktiven Workspace. */
+  unreadCount: number;
 }
 
 /**
@@ -32,7 +38,12 @@ interface UserMenuClientProps {
  * Linie: das eine führt weiter, das andere hinaus, und beides direkt
  * untereinander wäre eine Einladung zum Verklicken.
  */
-function UserMenuClient({ me, settingsHref }: UserMenuClientProps) {
+function UserMenuClient({
+  me,
+  settingsHref,
+  inboxHref,
+  unreadCount,
+}: UserMenuClientProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const t = useTranslations("nav");
@@ -51,16 +62,27 @@ function UserMenuClient({ me, settingsHref }: UserMenuClientProps) {
         <span className={styles.title}>{fullName(me)}</span>
       </Button>
 
-      <span className={styles.bellSlot}>
-        <Button
-          variant="ghost"
-          size="md"
-          icon={<Icon icon="lucide:bell" height={20} />}
-        />
-        <Badge size="sm" active className={styles.bellBadge}>
-          <span>9</span>
-        </Badge>
-      </span>
+      {inboxHref && (
+        <span className={styles.bellSlot}>
+          <Link
+            href={inboxHref}
+            aria-label={t("inbox")}
+            className={[
+              buttonStyles.btn,
+              buttonStyles.ghost,
+              buttonStyles.md,
+              buttonStyles.iconOnly,
+            ].join(" ")}
+          >
+            <Icon icon="lucide:bell" height={20} />
+          </Link>
+          {unreadCount > 0 && (
+            <Badge size="sm" active className={styles.bellBadge}>
+              <span>{unreadCount > 99 ? "99+" : unreadCount}</span>
+            </Badge>
+          )}
+        </span>
+      )}
       <Popover
         open={open}
         onClose={() => setOpen(false)}

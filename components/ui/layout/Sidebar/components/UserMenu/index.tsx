@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
 import type { PersonAvatarData } from "@/components/ui/atoms/Avatar/Avatar";
+import { getUnreadNotificationCount } from "@/features/notifications/queries";
 import { getMyWorkspaces } from "@/features/workspaces/queries";
 import { getCurrentWorkspaceId } from "@/lib/current-workspace";
-import { accountPath } from "@/lib/nav";
+import { accountPath, workspacePath } from "@/lib/nav";
 import UserMenuClient from "./UserMenuClient";
-
-//TODO add Notification logic and add this in Badge
 
 export async function UserMenu() {
   const session = await auth();
@@ -33,10 +32,16 @@ export async function UserMenu() {
   const workspaceId =
     getCurrentWorkspaceId() ?? (await getMyWorkspaces())[0]?.id ?? null;
 
+  const unreadCount = workspaceId
+    ? await getUnreadNotificationCount(workspaceId)
+    : 0;
+
   return (
     <UserMenuClient
       me={me}
       settingsHref={workspaceId ? accountPath(workspaceId, "") : null}
+      inboxHref={workspaceId ? workspacePath(workspaceId, "inbox") : null}
+      unreadCount={unreadCount}
     />
   );
 }

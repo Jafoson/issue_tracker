@@ -1,0 +1,107 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--outline-variant);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surface-variant);
+  }
+}
+
+/* Der Punkt vor dem Icon markiert Ungelesenes — der fette Satz macht es an
+   Zeilen mit vielen Einträgen auch beim schnellen Scrollen sichtbar. */
+.unread {
+  .sentence {
+    font-weight: 600;
+  }
+
+  .iconWrap::after {
+    content: "";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+}
+
+.iconWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-variant);
+  color: var(--on-surface-variant);
+  margin-top: 2px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sentence {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--on-surface);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: var(--text-xs);
+  color: var(--on-surface-variant);
+}
+
+.identifier {
+  font-size: var(--text-xs);
+}
+
+.time {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--outline);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  color: var(--outline);
+
+  p {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+}

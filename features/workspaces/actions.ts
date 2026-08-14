@@ -5,6 +5,7 @@ import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
+import { notify } from "@/lib/notify";
 import {
   accessFor,
   assignmentCeiling,
@@ -556,7 +557,7 @@ export async function setMemberRole(
       key: roleKey,
       OR: [{ system: true }, { workspaceId }],
     },
-    select: { id: true, rank: true },
+    select: { id: true, rank: true, name: true },
   });
   if (!next) throw new PermissionError(guard);
 
@@ -568,6 +569,14 @@ export async function setMemberRole(
   await db.workspaceMember.update({
     where: { workspaceId_userId: { workspaceId, userId } },
     data: { roleId: next.id },
+  });
+
+  await notify({
+    userId,
+    type: "role",
+    actorId,
+    workspaceId,
+    text: next.name,
   });
 
   // „Wer hat wem Rechte gegeben?" — dieselbe Frage wie auf der Plattform-Ebene,
@@ -671,7 +680,7 @@ export async function inviteWorkspaceMember(data: {
       key: data.role,
       OR: [{ system: true }, { workspaceId }],
     },
-    select: { id: true, rank: true },
+    select: { id: true, rank: true, name: true },
   });
   if (!role) return { error: "Pick a valid role." };
   if (role.rank > ceiling)
@@ -699,6 +708,18 @@ export async function inviteWorkspaceMember(data: {
         },
       });
       await enrollInWorkspaceProjects(tx, { workspaceId, userId: existing.id });
+    });
+
+    // Ein neues Konto steckt noch hinter einem Einladungstoken (unten) und
+    // kann sich nicht anmelden — dort gäbe es niemanden, der eine
+    // In-App-Benachrichtigung sehen könnte. Wer schon ein Konto hat, ist
+    // direkt Mitglied und bekommt sie sofort.
+    await notify({
+      userId: existing.id,
+      type: "invite",
+      actorId,
+      workspaceId,
+      text: role.name,
     });
 
     revalidatePath("/", "layout");

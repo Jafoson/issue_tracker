@@ -422,31 +422,6 @@ export async function getMyIssues(
   return rows.map(mapIssue);
 }
 
-export async function getInboxIssues(
-  userId: string,
-  workspaceId: string,
-): Promise<Issue[]> {
-  const visible = await accessibleProjectIds(userId, workspaceId);
-  if (visible.size === 0) return [];
-
-  const rows = await db.issue.findMany({
-    where: {
-      projectId: { in: [...visible] },
-      OR: [{ assigneeId: userId }, { reporterId: userId }],
-      comments: { some: { authorId: { not: userId } } },
-    },
-    include: {
-      comments: {
-        where: { authorId: { not: userId } },
-        orderBy: { created: "desc" },
-      },
-    },
-    orderBy: { updated: "desc" },
-    take: 30,
-  });
-  return rows.map(mapIssue);
-}
-
 export async function getIssueById(id: string): Promise<Issue | null> {
   const i = await db.issue.findUnique({
     where: { id },
