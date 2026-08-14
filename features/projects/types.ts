@@ -44,6 +44,15 @@ export interface ProjectMemberRow {
   /** Rang der Rolle, für die Einfärbung. Kommt aus der Datenbank. */
   roleRank: number;
   source: ProjectAccessSource;
+  /**
+   * Nur bei `source: "project"`: ob die Rolle von einem Projektleiter gesetzt
+   * wurde oder von einem Team übernommen ist (`ProjectMember.origin`). Eine
+   * `team`-Zeile lässt sich wie jede andere ändern — das Setzen macht sie
+   * dauerhaft `manual`, siehe `setProjectMemberRole`.
+   */
+  origin?: "manual" | "team";
+  /** Nur bei `origin: "team"`: welches Team die Rolle zuletzt begründet hat. */
+  originTeam?: { id: string; name: string; color: string };
   /** Die Workspace-Einladung wurde noch nicht angenommen. */
   pending: boolean;
   /** Das ist der gerade eingeloggte User — die Zeile markiert sich selbst. */

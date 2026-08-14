@@ -180,6 +180,7 @@
     "statusActive": "Active",
     "statusInvited": "Invited",
     "inherited": "Role inherited from the workspace",
+    "viaTeam": "Via team “{team}”. Set a role here to override it for this person.",
     "you": "(you)",
     "pending": "Invited",
     "addToProject": "Add to project",
@@ -590,7 +591,7 @@
     "fromProjectsDesc": "These labels belong to individual projects and apply only there. They are edited in that project's settings — the row takes you there."
   },
   "workspaceTeams": {
-    "subtitle": "Teams group people and projects. They grant no permissions — those live in the roles.",
+    "subtitle": "Teams group people and projects. Give a team a role on a project and its members inherit it — a project lead can still set someone's role individually.",
     "colTeam": "Team",
     "colLead": "Lead",
     "colOpen": "Open",
@@ -605,8 +606,13 @@
     "pickLead": "Pick a person",
     "membersCount": "{count, plural, =0 {Members} one {Members (#)} other {Members (#)}}",
     "projectsCount": "{count, plural, =0 {Projects} one {Projects (#)} other {Projects (#)}}",
+    "noRole": "No role",
+    "projectRole": "Role in this project",
+    "projectRoleHint": "Members get the “{role}” role in this project",
+    "addProject": "Add project",
+    "noProjectsPicked": "No projects added yet",
     "deleteTitle": "Delete “{name}”?",
-    "deleteDesc": "{count, plural, =0 {The team has no members.} one {# person loses the grouping.} other {# people lose the grouping.}} Accounts, projects and issues stay untouched.",
+    "deleteDesc": "{count, plural, =0 {The team has no members.} one {# person loses the grouping.} other {# people lose the grouping.}} Anyone whose project access came only from this team loses it too. Accounts, projects and issues stay untouched.",
     "emptyTitle": "No teams yet",
     "emptyDesc": "A team captures who works on the same projects — useful as soon as the workspace grows past a handful of people."
   },

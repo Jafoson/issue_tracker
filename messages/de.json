@@ -180,6 +180,7 @@
     "statusActive": "Aktiv",
     "statusInvited": "Eingeladen",
     "inherited": "Rolle aus dem Workspace geerbt",
+    "viaTeam": "Über Team „{team}“. Setze hier eine Rolle, um sie für diese Person zu überschreiben.",
     "you": "(du)",
     "pending": "Eingeladen",
     "addToProject": "Ins Projekt übernehmen",
@@ -590,7 +591,7 @@
     "fromProjectsDesc": "Diese Labels gehören einzelnen Projekten und gelten nur dort. Geändert werden sie in den Einstellungen des jeweiligen Projekts — die Zeile führt hin."
   },
   "workspaceTeams": {
-    "subtitle": "Teams bündeln Menschen und Projekte. Rechte vergeben sie keine — die stehen in den Rollen.",
+    "subtitle": "Teams bündeln Menschen und Projekte. Gib einem Team eine Rolle für ein Projekt, und seine Mitglieder übernehmen sie — ein Projektleiter kann einzelne Personen weiterhin gesondert einstellen.",
     "colTeam": "Team",
     "colLead": "Lead",
     "colOpen": "Offen",
@@ -605,8 +606,13 @@
     "pickLead": "Person wählen",
     "membersCount": "{count, plural, =0 {Mitglieder} one {Mitglieder (#)} other {Mitglieder (#)}}",
     "projectsCount": "{count, plural, =0 {Projekte} one {Projekte (#)} other {Projekte (#)}}",
+    "noRole": "Keine Rolle",
+    "projectRole": "Rolle in diesem Projekt",
+    "projectRoleHint": "Mitglieder bekommen die Rolle „{role}“ in diesem Projekt",
+    "addProject": "Projekt hinzufügen",
+    "noProjectsPicked": "Noch keine Projekte hinzugefügt",
     "deleteTitle": "„{name}“ löschen?",
-    "deleteDesc": "{count, plural, =0 {Im Team ist niemand.} one {# Person verliert die Zuordnung.} other {# Personen verlieren die Zuordnung.}} Konten, Projekte und Aufgaben bleiben unberührt.",
+    "deleteDesc": "{count, plural, =0 {Im Team ist niemand.} one {# Person verliert die Zuordnung.} other {# Personen verlieren die Zuordnung.}} Wer seinen Projektzugriff nur über dieses Team hatte, verliert ihn ebenfalls. Konten, Projekte und Aufgaben bleiben unberührt.",
     "emptyTitle": "Noch keine Teams",
     "emptyDesc": "Ein Team fasst zusammen, wer an denselben Projekten arbeitet — praktisch, sobald der Workspace über eine Handvoll Personen hinauswächst."
   },

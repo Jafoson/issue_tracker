@@ -235,7 +235,11 @@ export const getProjectMembersView = cache(
       await Promise.all([
         db.projectMember.findMany({
           where: { projectId },
-          include: { user: true, role: memberRoleSelect },
+          include: {
+            user: true,
+            role: memberRoleSelect,
+            originTeam: { select: { id: true, name: true, color: true } },
+          },
           orderBy: byName,
         }),
         db.workspaceMember.findMany({
@@ -297,6 +301,8 @@ export const getProjectMembersView = cache(
       roleName: pm.role.name,
       roleRank: pm.role.rank,
       source: "project",
+      origin: pm.origin,
+      originTeam: pm.originTeam ?? undefined,
       pending: pendingOf.get(pm.userId) ?? false,
       you: pm.userId === actorId,
       // Niemand ändert ein Mitglied, das über ihm steht — und die eigene Rolle

@@ -121,6 +121,18 @@ export interface WorkspaceLabelsView {
   canDelete: boolean;
 }
 
+/**
+ * Ein Projekt, das an einem Team hängt — mit der Rolle, die das Team dort
+ * verleiht. `role` ist `null`, wenn die Verknüpfung nur zur Gruppierung da
+ * ist, ohne dass Mitglieder dadurch Zugriff bekommen.
+ */
+export interface TeamProjectRow {
+  id: string;
+  name: string;
+  color: string;
+  role: { key: string; name: string; rank: number } | null;
+}
+
 /** Ein Team mit allem, was seine Zeile zeigt. */
 export interface WorkspaceTeamRow {
   id: string;
@@ -132,7 +144,7 @@ export interface WorkspaceTeamRow {
   /** Die Person, die das Team führt. `null`, wenn ihr Konto weg ist. */
   lead: User | null;
   members: User[];
-  projects: { id: string; name: string; color: string }[];
+  projects: TeamProjectRow[];
   /** Offene Aufgaben in den Projekten dieses Teams. */
   openIssues: number;
 }
@@ -143,6 +155,18 @@ export interface WorkspaceTeamsView {
   candidates: User[];
   /** Auswahl für den Dialog: Projekte des Workspace. */
   projects: { id: string; name: string; color: string }[];
+  /**
+   * Rollen, die sich im Dialog einem Projekt zuweisen lassen — die
+   * Projektrollen des Workspace (system oder eigen), die in allen seinen
+   * Projekten gelten. Projektlokale Rollen einzelner Projekte stehen hier
+   * bewusst nicht: ein Team kann mehrere Projekte umfassen, eine Rolle, die
+   * nur in einem davon existiert, wäre in den anderen keine gültige Wahl.
+   *
+   * Ob eine gewählte Rolle im konkreten Projekt tatsächlich vergeben werden
+   * darf, prüft `resolveTeamProjectRoles` beim Speichern serverseitig —
+   * diese Liste ist nur die Auswahl im Dialog, keine Zusage.
+   */
+  assignableProjectRoles: { key: string; name: string; rank: number }[];
   /** `team.create` */
   canCreate: boolean;
   /** `team.update` — Name, Kürzel, Farbe, Lead. */
@@ -151,7 +175,7 @@ export interface WorkspaceTeamsView {
   canDelete: boolean;
   /** `team.member.manage` — wer im Team ist. */
   canManageMembers: boolean;
-  /** `team.project.manage` — welche Projekte zum Team gehören. */
+  /** `team.project.manage` — welche Projekte zum Team gehören, mit welcher Rolle. */
   canManageProjects: boolean;
 }
 

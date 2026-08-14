@@ -18,6 +18,7 @@ import {
   dropProjectMemberships,
   enrollInWorkspaceProjects,
   enrollWorkspaceMembers,
+  syncProjectTeamRoles,
 } from "@/lib/project-membership";
 import {
   DEFAULT_PLATFORM_ROLE_KEY,
@@ -322,14 +323,25 @@ export async function deleteWorkspace(
 
 // ─── Teams ────────────────────────────────────────────────────────────────────
 //
-// Ein Team gruppiert Menschen und Projekte, es vergibt keine Rechte. Deshalb
-// hängt es an eigenen Permissions (`team.*`) und nicht an `member.*`: wer Teams
-// zusammenstellt, entscheidet damit über keinen einzigen Zugriff.
+// Ein Team gruppiert Menschen und Projekte — und kann seit `TeamProject.roleId`
+// an einem Projekt zusätzlich eine Rolle tragen. Das Team selbst vergibt damit
+// immer noch keine Rechte: was es verleiht, ist genau die Projektrolle, die es
+// trägt, und die landet ganz normal in `ProjectMember`
+// (`syncProjectTeamRoles`, lib/project-membership.ts). Deshalb hängt das Team
+// weiterhin an eigenen Permissions (`team.*`) — nur das Verleihen einer Rolle
+// braucht zusätzlich `member.role.update` im betroffenen Projekt, siehe
+// `resolveTeamProjectRoles`.
 //
 // Mitglieder und Projekte kommen als vollständige Liste herein und werden als
 // Ganzes gesetzt. Der Dialog zeigt beide Mengen ohnehin komplett; ein Diff aus
 // Einzelaufrufen wäre derselbe Vorgang in mehreren Runden — mit dem Risiko,
 // zwischendrin steckenzubleiben.
+
+interface TeamProjectInput {
+  projectId: string;
+  /** Rollen-Key aus dem Scope PROJECT, oder `null` für reine Gruppierung ohne Rolle. */
+  roleKey: string | null;
+}
 
 interface TeamInput {
   name: string;
@@ -338,7 +350,7 @@ interface TeamInput {
   desc?: string;
   leadId: string;
   memberIds: string[];
-  projectIds: string[];
+  projects: TeamProjectInput[];
 }
 
 /** Kürzel wie beim Projekt: bis zu vier Zeichen, Buchstaben und Ziffern. */
@@ -382,15 +394,81 @@ async function checkTeamInput(
   if (known !== memberIds.length)
     return { error: "Only workspace members can be part of a team." };
 
-  if (data.projectIds.length > 0) {
+  const projectIds = [...new Set(data.projects.map((p) => p.projectId))];
+  if (projectIds.length > 0) {
     const projects = await db.project.count({
-      where: { workspaceId, id: { in: data.projectIds } },
+      where: { workspaceId, id: { in: projectIds } },
     });
-    if (projects !== data.projectIds.length)
+    if (projects !== projectIds.length)
       return { error: "Only projects of this workspace can be assigned." };
   }
 
   return { key, memberIds };
+}
+
+/**
+ * Für jede Team-Projekt-Verknüpfung die zu vergebende Rolle auflösen — oder
+ * `null` für reine Gruppierung ohne Rolle.
+ *
+ * Eine Rolle über ein Team zu verleihen ist ein Zugriffsentscheid wie jede
+ * andere Rollenvergabe im Projekt: verlangt wird deshalb zusätzlich
+ * `member.role.update` in genau diesem Projekt, und der Rang darf die eigene
+ * Obergrenze dort nicht übersteigen (`assignmentCeiling`, wie in
+ * `features/projects/actions.ts`). Ohne diese zweite Prüfung könnte, wer nur
+ * `team.project.manage` trägt — die Workspace-Rolle „Manager" etwa, die
+ * keinerlei Projektrechte hat —, über ein Team Zugriff auf beliebige Projekte
+ * des Workspace verleihen, an denen er selbst gar nichts darf.
+ */
+async function resolveTeamProjectRoles(
+  workspaceId: string,
+  actorId: string,
+  projects: TeamProjectInput[],
+): Promise<
+  | { error: string }
+  | { entries: { projectId: string; roleId: string | null }[] }
+> {
+  const entries: { projectId: string; roleId: string | null }[] = [];
+
+  for (const p of projects) {
+    if (!p.roleKey) {
+      entries.push({ projectId: p.projectId, roleId: null });
+      continue;
+    }
+
+    const access = await accessFor(actorId, { projectId: p.projectId });
+    if (!access.has("member.role.update"))
+      return {
+        error: "You are not allowed to grant project roles through teams here.",
+      };
+
+    const role = await db.role.findFirst({
+      where: {
+        scope: "PROJECT",
+        key: p.roleKey,
+        OR: [
+          { system: true },
+          { workspaceId, projectId: null },
+          { projectId: p.projectId },
+        ],
+      },
+      select: { id: true, rank: true },
+      // Wie `resolveAssignable`: die spezifischste Rolle gewinnt, falls
+      // mehrere denselben Key tragen.
+      orderBy: [
+        { projectId: { sort: "desc", nulls: "last" } },
+        { workspaceId: { sort: "desc", nulls: "last" } },
+      ],
+    });
+    if (!role) return { error: "Pick a valid role for each project." };
+    if (role.rank > assignmentCeiling(access, "PROJECT"))
+      return {
+        error: "You cannot grant a team a role above your own in that project.",
+      };
+
+    entries.push({ projectId: p.projectId, roleId: role.id });
+  }
+
+  return { entries };
 }
 
 export async function createTeam(
@@ -405,20 +483,39 @@ export async function createTeam(
   const checked = await checkTeamInput(workspaceId, data);
   if ("error" in checked) return checked;
 
-  await db.team.create({
-    data: {
-      id: uid("t"),
-      workspaceId,
-      name: data.name.trim(),
-      key: checked.key,
-      color: data.color,
-      desc: data.desc?.trim() ?? "",
-      leadId: data.leadId,
-      members: { create: checked.memberIds.map((userId) => ({ userId })) },
-      projects: {
-        create: data.projectIds.map((projectId) => ({ projectId })),
+  const resolved = await resolveTeamProjectRoles(
+    workspaceId,
+    actorId,
+    data.projects,
+  );
+  if ("error" in resolved) return resolved;
+
+  const teamId = uid("t");
+
+  await db.$transaction(async (tx) => {
+    await tx.team.create({
+      data: {
+        id: teamId,
+        workspaceId,
+        name: data.name.trim(),
+        key: checked.key,
+        color: data.color,
+        desc: data.desc?.trim() ?? "",
+        leadId: data.leadId,
+        members: { create: checked.memberIds.map((userId) => ({ userId })) },
+        projects: {
+          create: resolved.entries.map((p) => ({
+            projectId: p.projectId,
+            roleId: p.roleId,
+          })),
+        },
       },
-    },
+    });
+
+    for (const p of resolved.entries) {
+      if (p.roleId)
+        await syncProjectTeamRoles(tx, p.projectId, checked.memberIds);
+    }
   });
 
   revalidatePath("/", "layout");
@@ -458,7 +555,29 @@ export async function updateTeam(
   const checked = await checkTeamInput(workspaceId, data, teamId);
   if ("error" in checked) return checked;
 
+  // Nur auflösen, was auch geschrieben wird — ohne `team.project.manage`
+  // bräuchte die Prüfung in `resolveTeamProjectRoles` sonst Rechte, die der
+  // Aufruf am Ende ohnehin übergeht.
+  const resolved = canProjects
+    ? await resolveTeamProjectRoles(workspaceId, actorId, data.projects)
+    : { entries: [] as { projectId: string; roleId: string | null }[] };
+  if ("error" in resolved) return resolved;
+
   await db.$transaction(async (tx) => {
+    // Vorher merken, wen und welche Projekte der Team-Rollen-Sync danach
+    // abgleichen muss — die alten Zeilen sind nach den Änderungen unten schon
+    // weg, und ohne diesen Stand verlöre jemand, der aus dem Team fliegt,
+    // seine Team-Rolle nie wieder.
+    const [before, previousProjectRoles] = await Promise.all([
+      tx.teamMember.findMany({ where: { teamId }, select: { userId: true } }),
+      tx.teamProject.findMany({
+        where: { teamId, roleId: { not: null } },
+        select: { projectId: true },
+      }),
+    ]);
+    const previousMemberIds = before.map((m) => m.userId);
+    const previousProjectIds = previousProjectRoles.map((p) => p.projectId);
+
     if (canUpdate) {
       await tx.team.update({
         where: { id: teamId },
@@ -482,8 +601,28 @@ export async function updateTeam(
     if (canProjects) {
       await tx.teamProject.deleteMany({ where: { teamId } });
       await tx.teamProject.createMany({
-        data: data.projectIds.map((projectId) => ({ teamId, projectId })),
+        data: resolved.entries.map((p) => ({
+          teamId,
+          projectId: p.projectId,
+          roleId: p.roleId,
+        })),
       });
+    }
+
+    // Betroffen ist, wer vorher oder nachher Mitglied war, in jedem Projekt,
+    // das vorher oder nachher eine Rolle trug.
+    const affectedMemberIds = canMembers
+      ? [...new Set([...previousMemberIds, ...checked.memberIds])]
+      : previousMemberIds;
+    const currentProjectIds = canProjects
+      ? resolved.entries.filter((p) => p.roleId).map((p) => p.projectId)
+      : previousProjectIds;
+    const affectedProjectIds = [
+      ...new Set([...previousProjectIds, ...currentProjectIds]),
+    ];
+
+    for (const projectId of affectedProjectIds) {
+      await syncProjectTeamRoles(tx, projectId, affectedMemberIds);
     }
   });
 
@@ -504,9 +643,27 @@ export async function deleteTeam(teamId: string): Promise<SettingsResult> {
   if (!(await can(actorId, "team.delete", { workspaceId: team.workspaceId })))
     return { error: "You are not allowed to delete this team." };
 
-  // Mitgliedschaften und Projektzuordnungen kaskadieren vom Team aus; an den
-  // Aufgaben hängt ein Team nicht, es bleibt also nichts zurück.
-  await db.team.delete({ where: { id: teamId } });
+  await db.$transaction(async (tx) => {
+    const [members, projectRoles] = await Promise.all([
+      tx.teamMember.findMany({ where: { teamId }, select: { userId: true } }),
+      tx.teamProject.findMany({
+        where: { teamId, roleId: { not: null } },
+        select: { projectId: true },
+      }),
+    ]);
+    const memberIds = members.map((m) => m.userId);
+
+    // Mitgliedschaften und Projektzuordnungen kaskadieren vom Team aus; an den
+    // Aufgaben hängt ein Team nicht, es bleibt also nichts zurück.
+    await tx.team.delete({ where: { id: teamId } });
+
+    // Nach dem Löschen zählt diese Verknüpfung nicht mehr mit — wer seine
+    // Projektrolle nur von hier hatte, verliert die Zeile jetzt (sofern nicht
+    // manuell gesetzt oder von einem anderen Team weiter getragen).
+    for (const { projectId } of projectRoles) {
+      await syncProjectTeamRoles(tx, projectId, memberIds);
+    }
+  });
 
   revalidatePath("/", "layout");
   return { ok: true };

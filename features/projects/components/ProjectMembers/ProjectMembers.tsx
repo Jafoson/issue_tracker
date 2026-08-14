@@ -93,6 +93,7 @@ export function ProjectMembers({
 
   const roleCell = (row: ProjectMemberRow) => {
     const own = row.source === "project";
+    const viaTeam = row.origin === "team";
     // Gefüllt heißt „diese Rolle gehört dem Projekt". Eine geerbte
     // Workspace-Rolle bleibt blass — sie gilt hier, entschieden wurde sie
     // woanders. Das ersetzt die frühere eigene Spalte dafür.
@@ -101,9 +102,24 @@ export function ProjectMembers({
         size="sm"
         filled={own}
         color={roleColor(row.roleRank)}
-        title={own ? undefined : t("projectMembers.inherited")}
+        title={
+          !own
+            ? t("projectMembers.inherited")
+            : viaTeam
+              ? t("projectMembers.viaTeam", {
+                  team: row.originTeam?.name ?? "",
+                })
+              : undefined
+        }
       >
         {row.roleName}
+        {viaTeam && (
+          <Icon
+            icon="lucide:users-round"
+            width={11}
+            className={styles.teamIcon}
+          />
+        )}
       </Label>
     );
     // Nur eine eigene Projektrolle lässt sich hier ändern, und nur mit

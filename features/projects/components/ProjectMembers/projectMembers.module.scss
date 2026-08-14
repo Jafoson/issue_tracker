@@ -29,6 +29,14 @@
   }
 }
 
+/* Markiert eine Rolle, die von einem Team übernommen ist, statt von Hand
+   gesetzt zu sein — die Farbe der Rolle bleibt, das Icon ergänzt nur, woher
+   sie kommt. */
+.teamIcon {
+  margin-inline-start: 2px;
+  opacity: 0.75;
+}
+
 .you {
   color: var(--on-surface-variant);
   font-size: var(--text-sm);

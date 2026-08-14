@@ -187,6 +187,152 @@ export async function enrollInWorkspaceProjects(
   });
 }
 
+// ─── Team-Rollen nachziehen ────────────────────────────────────────────────
+//
+// Ein Team kann an einem `TeamProject` eine Rolle tragen (siehe Schema-
+// Kommentar dort). Diese Rolle wirkt nicht über eine zweite Auflösung in
+// `lib/permissions.ts` — dort bleibt es bei „genau eine Rolle je Scope, nichts
+// wird vereinigt". Stattdessen schreibt sie sich hier, beim Ändern von Team,
+// Mitgliedschaft oder Projekt-Verknüpfung, in ganz normale `ProjectMember`-
+// Zeilen. Die Leseseite merkt von alledem nichts.
+//
+// Eine `ProjectMember`-Zeile mit `origin: "manual"` fasst diese Funktion nie
+// an — weder um sie zu ändern noch um sie zu löschen. Das ist die Zusage an
+// den Projektleiter: eine von Hand gesetzte Rolle bleibt, was ein Team auch
+// zwischendrin an seinen Verknüpfungen ändert. Wer sie wieder den Teams
+// überlassen will, setzt sie über die Mitgliederliste zurück (dort entsteht
+// dann wieder eine `manual`-Zeile mit der Team-Rolle als Startwert — echtes
+// „zurück auf Team" gibt es bewusst nicht, siehe `resetProjectMemberToTeam`
+// weiter unten).
+
+interface TeamRoleGrant {
+  roleId: string;
+  rank: number;
+  teamId: string;
+}
+
+/**
+ * Die ranghöchste Team-Rolle je Person in einem Projekt.
+ *
+ * Mehrere Teams können an demselben Projekt hängen und dieselbe Person
+ * enthalten — dann gewinnt die Rolle mit dem höheren `Role.rank`, genau wie
+ * `assignmentCeiling` Ränge sonst auch vergleicht. Nur Verknüpfungen mit
+ * gesetzter Rolle zählen; ein Team, das nur zur Gruppierung an einem Projekt
+ * hängt, vergibt nichts.
+ */
+async function bestTeamRoleByUser(
+  db: Db,
+  projectId: string,
+  userIds: string[],
+): Promise<Map<string, TeamRoleGrant>> {
+  const links = await db.teamProject.findMany({
+    where: {
+      projectId,
+      roleId: { not: null },
+      team: { members: { some: { userId: { in: userIds } } } },
+    },
+    select: {
+      teamId: true,
+      roleId: true,
+      role: { select: { rank: true } },
+      team: {
+        select: {
+          members: {
+            where: { userId: { in: userIds } },
+            select: { userId: true },
+          },
+        },
+      },
+    },
+  });
+
+  const best = new Map<string, TeamRoleGrant>();
+  for (const link of links) {
+    if (!link.roleId || !link.role) continue;
+    for (const { userId } of link.team.members) {
+      const current = best.get(userId);
+      if (!current || link.role.rank > current.rank) {
+        best.set(userId, {
+          roleId: link.roleId,
+          rank: link.role.rank,
+          teamId: link.teamId,
+        });
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * `ProjectMember` für eine Reihe von Personen an die aktuellen Team-Rollen in
+ * einem Projekt angleichen.
+ *
+ * Aufzurufen nach jeder Änderung, die eine Team-Rolle in diesem Projekt
+ * betreffen könnte: Team-Mitgliedschaft, Team-Projekt-Verknüpfung, deren
+ * Rolle, oder das Löschen eines Teams. Die Funktion fragt den aktuellen Stand
+ * frisch ab, statt einen Diff entgegenzunehmen — bei mehreren Teams pro
+ * Projekt ist „was gilt jetzt" einfacher zu bilden als „was hat sich
+ * geändert".
+ *
+ * Drei Fälle je Person:
+ * - `origin: "manual"` → unangetastet, siehe oben.
+ * - kein Team trägt mehr eine Rolle, aber die Zeile stammt aus einem Team
+ *   (`origin: "team"`) → gelöscht. Keine Zeile heißt kein Zugriff, und ohne
+ *   Team gibt es dafür keinen Grund mehr.
+ * - sonst → die Zeile trägt (neu oder aktualisiert) die ranghöchste
+ *   Team-Rolle, mit `origin: "team"` und `originTeamId` zur Anzeige.
+ */
+export async function syncProjectTeamRoles(
+  db: Db,
+  projectId: string,
+  userIds: string[],
+): Promise<void> {
+  const ids = [...new Set(userIds)];
+  if (ids.length === 0) return;
+
+  const [existing, bestByUser] = await Promise.all([
+    db.projectMember.findMany({
+      where: { projectId, userId: { in: ids } },
+      select: { userId: true, origin: true },
+    }),
+    bestTeamRoleByUser(db, projectId, ids),
+  ]);
+  const originByUser = new Map(existing.map((m) => [m.userId, m.origin]));
+
+  const toRemove: string[] = [];
+  for (const userId of ids) {
+    const origin = originByUser.get(userId);
+    if (origin === "manual") continue;
+
+    const grant = bestByUser.get(userId);
+    if (grant) {
+      await db.projectMember.upsert({
+        where: { projectId_userId: { projectId, userId } },
+        update: {
+          roleId: grant.roleId,
+          origin: "team",
+          originTeamId: grant.teamId,
+        },
+        create: {
+          projectId,
+          userId,
+          roleId: grant.roleId,
+          origin: "team",
+          originTeamId: grant.teamId,
+        },
+      });
+    } else if (origin === "team") {
+      toRemove.push(userId);
+    }
+  }
+
+  if (toRemove.length > 0) {
+    await db.projectMember.deleteMany({
+      where: { projectId, userId: { in: toRemove } },
+    });
+  }
+}
+
 /**
  * Alle Projektmitgliedschaften einer Person in einem Workspace löschen.
  *

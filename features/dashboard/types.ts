@@ -244,6 +244,8 @@ export interface WorkspaceProfile {
   /** Für den Team-Dialog aus der Übersicht — dieselben Rechte wie auf der Teams-Seite. */
   canManageTeamMembers: boolean;
   canManageTeamProjects: boolean;
+  /** Für den Team-Dialog aus der Übersicht — siehe `WorkspaceTeamsView.assignableProjectRoles`. */
+  assignableProjectRoles: { key: string; name: string; rank: number }[];
 }
 
 /** Was die Workspace-Seite braucht: die Zahlen, der Steckbrief, die Anordnung. */

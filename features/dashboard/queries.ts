@@ -993,36 +993,49 @@ async function wsProfileFor(
 ): Promise<WorkspaceProfile | null> {
   const access = await accessFor(await currentUserId(), { workspaceId });
 
-  const workspace = await db.workspace.findUnique({
-    where: { id: workspaceId },
-    select: {
-      desc: true,
-      createdAt: true,
-      // Wer eingeladen, aber noch nicht beigetreten ist, gehört noch nicht zur
-      // Mannschaft — der Steckbrief zeigt, wer Zugriff *hat*, nicht wer ihn
-      // demnächst bekommt.
-      members: {
-        where: { pending: false },
-        select: {
-          user: { select: USER_SELECT },
-          role: { select: { key: true, name: true, rank: true } },
+  const [workspace, assignableProjectRoles] = await Promise.all([
+    db.workspace.findUnique({
+      where: { id: workspaceId },
+      select: {
+        desc: true,
+        createdAt: true,
+        // Wer eingeladen, aber noch nicht beigetreten ist, gehört noch nicht zur
+        // Mannschaft — der Steckbrief zeigt, wer Zugriff *hat*, nicht wer ihn
+        // demnächst bekommt.
+        members: {
+          where: { pending: false },
+          select: {
+            user: { select: USER_SELECT },
+            role: { select: { key: true, name: true, rank: true } },
+          },
+          orderBy: byName,
         },
-        orderBy: byName,
+        teams: {
+          select: { id: true, name: true, key: true, color: true },
+          orderBy: { name: "asc" },
+        },
+        projects: {
+          select: { id: true, name: true, slug: true, color: true },
+          orderBy: { name: "asc" },
+        },
+        links: {
+          select: { id: true, label: true, url: true },
+          orderBy: { position: "asc" },
+        },
       },
-      teams: {
-        select: { id: true, name: true, key: true, color: true },
-        orderBy: { name: "asc" },
+    }),
+    // Wie in `getWorkspaceTeamsView`: nur die Projektrollen, die in allen
+    // Projekten des Workspace gelten — siehe Kommentar an
+    // `WorkspaceTeamsView.assignableProjectRoles`.
+    db.role.findMany({
+      where: {
+        scope: "PROJECT",
+        OR: [{ system: true }, { workspaceId, projectId: null }],
       },
-      projects: {
-        select: { id: true, name: true, slug: true, color: true },
-        orderBy: { name: "asc" },
-      },
-      links: {
-        select: { id: true, label: true, url: true },
-        orderBy: { position: "asc" },
-      },
-    },
-  });
+      select: { key: true, name: true, rank: true },
+      orderBy: { rank: "desc" },
+    }),
+  ]);
   if (!workspace) return null;
 
   return {
@@ -1042,6 +1055,7 @@ async function wsProfileFor(
     canCreateTeam: access.has("team.create"),
     canManageTeamMembers: access.has("team.member.manage"),
     canManageTeamProjects: access.has("team.project.manage"),
+    assignableProjectRoles,
   };
 }
 

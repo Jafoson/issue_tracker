@@ -348,6 +348,19 @@ model Project {
 // Zeile heißt kein Zugriff (lib/permissions.ts). `Project.visibility` steuert
 // deshalb nur noch, wer beim Anlegen automatisch eingetragen wird.
 
+/// Woher die Rolle einer `ProjectMember`-Zeile stammt.
+///
+/// `manual` heißt: ein Projektleiter hat sie ausdrücklich gesetzt (per
+/// Mitgliederliste oder Einladung) — oder sie ist die Standardrolle aus der
+/// Workspace-Aufnahme (`lib/project-membership.ts`). `team` heißt: sie kommt
+/// aus einem Team, das mit einer Rolle an diesem Projekt hängt. Der
+/// Unterschied entscheidet, wer eine Zeile beim Nachziehen der Team-Rollen
+/// anfassen darf — eine `manual`-Zeile fasst `syncProjectTeamRoles` nie an.
+enum ProjectMemberOrigin {
+  manual
+  team
+}
+
 model ProjectMember {
   projectId String
   userId    String
@@ -357,13 +370,24 @@ model ProjectMember {
   // Workspace-Rolle greift nur über `project.admin.all` durch.
   roleId    String
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role    Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  /// Siehe `ProjectMemberOrigin`. Default `manual`, damit jede bestehende und
+  /// jede von Hand gesetzte Zeile unangetastet bleibt.
+  origin ProjectMemberOrigin @default(manual)
+  /// Nur bei `origin = team` gesetzt: welches Team diese Rolle zuletzt
+  /// begründet hat — reine Anzeige ("via Team X"). `SetNull`, weil das Team
+  /// verschwinden kann, ohne dass die (dann verwaiste) Zeile mitgerissen wird;
+  /// der nächste Sync räumt sie ohnehin auf.
+  originTeamId String?
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  originTeam Team?   @relation(fields: [originTeamId], references: [id], onDelete: SetNull)
 
   @@id([projectId, userId])
   @@index([userId])
   @@index([roleId])
+  @@index([originTeamId])
 }
 
 // ─── Einladungen ──────────────────────────────────────────────────────────────
@@ -507,6 +531,8 @@ model Role {
   workspaceMembers WorkspaceMember[]
   projectMembers   ProjectMember[]
   platformUsers    User[]            @relation("UserPlatformRole")
+  // Team-Projekt-Verknüpfungen, die diese Rolle verleihen.
+  teamProjects     TeamProject[]
 
   @@index([scope, workspaceId])
   @@index([projectId])
@@ -717,6 +743,9 @@ model Team {
   workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members   TeamMember[]
   projects  TeamProject[]
+  // Zeilen, deren Rolle zuletzt von diesem Team begründet wurde (Anzeige,
+  // siehe `ProjectMember.originTeam`).
+  grantedMembers ProjectMember[]
 
   @@unique([workspaceId, key])
 }
@@ -731,14 +760,28 @@ model TeamMember {
   @@id([teamId, userId])
 }
 
+/// Verknüpft ein Team mit einem Projekt — zur Gruppierung (offene Aufgaben in
+/// der Team-Übersicht) und optional mit einer Rolle, die das Team dort
+/// verleiht.
+///
+/// `roleId` ist bewusst nullable: ein Team lässt sich weiterhin ohne Rolle an
+/// ein Projekt hängen, rein zur Zuordnung, ohne dass seine Mitglieder dadurch
+/// Zugriff bekommen. Erst eine gesetzte Rolle lässt `syncProjectTeamRoles`
+/// (`lib/project-membership.ts`) `ProjectMember`-Zeilen für die Mitglieder
+/// nachziehen.
 model TeamProject {
   teamId    String
   projectId String
+  roleId    String?
 
   team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Restrict wie bei ProjectMember: eine Rolle, die noch ein Team trägt, lässt
+  // sich nicht löschen.
+  role    Role?   @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   @@id([teamId, projectId])
+  @@index([roleId])
 }
 
 // ─── Audit-Log ────────────────────────────────────────────────────────────────

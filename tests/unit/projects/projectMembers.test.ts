@@ -302,7 +302,12 @@ describe("addProjectMembers() — Aufnahme", () => {
     expect(await add()).toEqual({ ok: true });
     expect(mockProjectMemberCreateMany).toHaveBeenCalledWith({
       data: [
-        { projectId: PROJECT, userId: "u-1", roleId: "wsp:acme:contributor" },
+        {
+          projectId: PROJECT,
+          userId: "u-1",
+          roleId: "wsp:acme:contributor",
+          origin: "manual",
+        },
       ],
       skipDuplicates: true,
     });
@@ -371,7 +376,7 @@ describe("setProjectMemberRole()", () => {
     });
     expect(mockProjectMemberUpdate).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-1" } },
-      data: { roleId: "wsp:acme:contributor" },
+      data: { roleId: "wsp:acme:contributor", origin: "manual" },
     });
   });
 
@@ -470,6 +475,7 @@ describe("inviteProjectMember()", () => {
         projectId: PROJECT,
         userId: "u-9",
         roleId: "wsp:acme:contributor",
+        origin: "manual",
       },
     });
   });
@@ -538,11 +544,12 @@ describe("inviteProjectMember()", () => {
     // … und im einladenden Projekt die eingeladene Rolle.
     expect(mockTx.projectMember.upsert).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-new" } },
-      update: { roleId: "wsp:acme:contributor" },
+      update: { roleId: "wsp:acme:contributor", origin: "manual" },
       create: {
         projectId: PROJECT,
         userId: "u-new",
         roleId: "wsp:acme:contributor",
+        origin: "manual",
       },
     });
   });

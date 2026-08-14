@@ -38,6 +38,7 @@ export function WorkspaceTeams({
   rows,
   candidates,
   projects,
+  assignableProjectRoles,
   canCreate,
   canUpdate,
   canDelete,
@@ -61,6 +62,7 @@ export function WorkspaceTeams({
         team={team}
         candidates={candidates}
         projects={projects}
+        assignableProjectRoles={assignableProjectRoles}
         canManageMembers={canManageMembers}
         canManageProjects={canManageProjects}
         onDone={() => {
@@ -168,7 +170,16 @@ export function WorkspaceTeams({
         ) : (
           <span className={styles.projects}>
             {row.projects.slice(0, 2).map((p) => (
-              <Label key={p.id} size="sm" color={p.color}>
+              <Label
+                key={p.id}
+                size="sm"
+                color={p.color}
+                title={
+                  p.role
+                    ? t("workspaceTeams.projectRoleHint", { role: p.role.name })
+                    : t("workspaceTeams.noRole")
+                }
+              >
                 {p.name}
               </Label>
             ))}

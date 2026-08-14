@@ -8,12 +8,17 @@ const mockTeamDelete = mock();
 const mockTeamFindUnique = mock();
 const mockMemberCount = mock();
 const mockProjectCount = mock();
+const mockRoleFindFirst = mock();
 const mockTransaction = mock();
 
 const mockTx = {
-  team: { update: mockTeamUpdate },
-  teamMember: { deleteMany: mock(), createMany: mock() },
-  teamProject: { deleteMany: mock(), createMany: mock() },
+  team: {
+    create: mockTeamCreate,
+    update: mockTeamUpdate,
+    delete: mockTeamDelete,
+  },
+  teamMember: { deleteMany: mock(), createMany: mock(), findMany: mock() },
+  teamProject: { deleteMany: mock(), createMany: mock(), findMany: mock() },
 };
 
 mock.module("@/lib/db", () => ({
@@ -26,20 +31,35 @@ mock.module("@/lib/db", () => ({
     },
     workspaceMember: { count: mockMemberCount },
     project: { count: mockProjectCount },
+    role: { findFirst: mockRoleFindFirst },
     $transaction: mockTransaction,
   },
 }));
 
 const mockCan = mock();
 const mockCurrentUserId = mock();
+const mockAccessFor = mock();
+const mockAssignmentCeiling = mock(() => Number.POSITIVE_INFINITY);
 
 mock.module("@/lib/permissions", () => ({
   can: mockCan,
   currentUserId: mockCurrentUserId,
-  accessFor: mock(),
+  accessFor: mockAccessFor,
   requirePermission: mock(),
   PermissionError: class PermissionError extends Error {},
-  assignmentCeiling: () => Number.POSITIVE_INFINITY,
+  assignmentCeiling: mockAssignmentCeiling,
+}));
+
+// Die Team-Rollen-Synchronisation selbst hat ihre eigenen Tests
+// (tests/unit/projects/teamProjectRoles.test.ts) — hier zählt nur, dass
+// `createTeam`/`updateTeam`/`deleteTeam` sie mit den richtigen Ids aufrufen.
+const mockSyncProjectTeamRoles = mock();
+
+mock.module("@/lib/project-membership", () => ({
+  dropProjectMemberships: mock(),
+  enrollInWorkspaceProjects: mock(),
+  enrollWorkspaceMembers: mock(),
+  syncProjectTeamRoles: mockSyncProjectTeamRoles,
 }));
 
 mock.module("@/lib/session", () => ({ getSession: mock() }));
@@ -62,7 +82,9 @@ const input = (over: Partial<Parameters<typeof createTeam>[1]> = {}) => ({
   desc: "",
   leadId: "u-lead",
   memberIds: ["u-1"],
-  projectIds: ["p-1"],
+  // Ohne `roleKey` bleibt die Verknüpfung reine Gruppierung — dasselbe
+  // Verhalten wie vor den Team-Projektrollen.
+  projects: [{ projectId: "p-1", roleKey: null }],
   ...over,
 });
 
@@ -81,18 +103,27 @@ function reset() {
     mockTeamFindUnique,
     mockMemberCount,
     mockProjectCount,
+    mockRoleFindFirst,
     mockTransaction,
     mockCan,
     mockCurrentUserId,
+    mockAccessFor,
+    mockAssignmentCeiling,
+    mockSyncProjectTeamRoles,
   ]) {
     m.mockReset();
   }
+  mockAssignmentCeiling.mockReturnValue(Number.POSITIVE_INFINITY);
   for (const group of [mockTx.teamMember, mockTx.teamProject]) {
     for (const fn of Object.values(group)) {
       fn.mockReset();
       fn.mockResolvedValue({});
     }
   }
+  // Vorheriger Stand für Sync-Vergleiche: ohne Mitglieder/Projekt-Rollen, wenn
+  // ein Test nichts anderes vorgibt.
+  mockTx.teamMember.findMany.mockResolvedValue([]);
+  mockTx.teamProject.findMany.mockResolvedValue([]);
 
   mockCurrentUserId.mockResolvedValue(ACTOR);
   mockCan.mockResolvedValue(true);
@@ -169,7 +200,64 @@ describe("createTeam()", () => {
       { userId: "u-lead" },
       { userId: "u-1" },
     ]);
-    expect(created.projects.create).toEqual([{ projectId: "p-1" }]);
+    expect(created.projects.create).toEqual([
+      { projectId: "p-1", roleId: null },
+    ]);
+  });
+
+  it("verknüpft ein Projekt ohne Rolle, ohne die Team-Rollen zu synchronisieren", async () => {
+    expect(await createTeam(WS, input())).toEqual({ ok: true });
+    expect(mockSyncProjectTeamRoles).not.toHaveBeenCalled();
+  });
+
+  describe("mit einer Rolle je Projekt", () => {
+    const withRole = () =>
+      input({ projects: [{ projectId: "p-1", roleKey: "contributor" }] });
+
+    it("verlangt member.role.update im betroffenen Projekt", async () => {
+      mockAccessFor.mockResolvedValue({ has: () => false });
+      expect(await createTeam(WS, withRole())).toEqual({
+        error: "You are not allowed to grant project roles through teams here.",
+      });
+      expect(mockTeamCreate).not.toHaveBeenCalled();
+    });
+
+    it("lehnt eine unbekannte Rolle ab", async () => {
+      mockAccessFor.mockResolvedValue({ has: () => true });
+      mockRoleFindFirst.mockResolvedValue(null);
+      expect(await createTeam(WS, withRole())).toEqual({
+        error: "Pick a valid role for each project.",
+      });
+    });
+
+    // Ohne diese Prüfung könnte, wer nur `team.project.manage` trägt (z. B.
+    // die Rolle „Manager", ohne jedes Projektrecht), über ein Team Zugriff auf
+    // ein Projekt verleihen, in dem er selbst nichts darf.
+    it("lehnt eine Rolle über der eigenen Obergrenze im Projekt ab", async () => {
+      mockAccessFor.mockResolvedValue({ has: () => true });
+      mockAssignmentCeiling.mockReturnValue(2);
+      mockRoleFindFirst.mockResolvedValue({ id: "role-admin", rank: 4 });
+      expect(await createTeam(WS, withRole())).toEqual({
+        error: "You cannot grant a team a role above your own in that project.",
+      });
+      expect(mockTeamCreate).not.toHaveBeenCalled();
+    });
+
+    it("legt die Team-Projektrolle an und synchronisiert die Mitglieder", async () => {
+      mockAccessFor.mockResolvedValue({ has: () => true });
+      mockRoleFindFirst.mockResolvedValue({ id: "role-contrib", rank: 3 });
+
+      expect(await createTeam(WS, withRole())).toEqual({ ok: true });
+
+      const created = mockTeamCreate.mock.calls[0][0].data;
+      expect(created.projects.create).toEqual([
+        { projectId: "p-1", roleId: "role-contrib" },
+      ]);
+      expect(mockSyncProjectTeamRoles).toHaveBeenCalledWith(mockTx, "p-1", [
+        "u-lead",
+        "u-1",
+      ]);
+    });
   });
 });
 
@@ -219,7 +307,7 @@ describe("updateTeam()", () => {
     expect(mockTeamUpdate).not.toHaveBeenCalled();
     expect(mockTx.teamMember.deleteMany).not.toHaveBeenCalled();
     expect(mockTx.teamProject.createMany).toHaveBeenCalledWith({
-      data: [{ teamId: TEAM, projectId: "p-1" }],
+      data: [{ teamId: TEAM, projectId: "p-1", roleId: null }],
     });
   });
 
@@ -243,6 +331,41 @@ describe("updateTeam()", () => {
     );
     expect(await updateTeam(TEAM, input())).toEqual({ ok: true });
   });
+
+  it("synchronisiert Team-Rollen für alte und neue Mitglieder eines weiter verknüpften Projekts", async () => {
+    mockAccessFor.mockResolvedValue({ has: () => true });
+    mockRoleFindFirst.mockResolvedValue({ id: "role-contrib", rank: 3 });
+    // Vorher: u-2 war Mitglied, Projekt p-1 trug schon eine Rolle.
+    mockTx.teamMember.findMany.mockResolvedValue([{ userId: "u-2" }]);
+    mockTx.teamProject.findMany.mockResolvedValue([{ projectId: "p-1" }]);
+
+    await updateTeam(
+      TEAM,
+      input({
+        memberIds: ["u-1"],
+        projects: [{ projectId: "p-1", roleKey: "contributor" }],
+      }),
+    );
+
+    expect(mockSyncProjectTeamRoles).toHaveBeenCalledWith(
+      mockTx,
+      "p-1",
+      expect.arrayContaining(["u-lead", "u-1", "u-2"]),
+    );
+  });
+
+  it("synchronisiert auch das Projekt, das gerade seine Rolle verliert", async () => {
+    // Vorher trug p-1 eine Rolle; jetzt wird die Verknüpfung ganz entfernt.
+    mockTx.teamProject.findMany.mockResolvedValue([{ projectId: "p-1" }]);
+
+    await updateTeam(TEAM, input({ projects: [] }));
+
+    expect(mockSyncProjectTeamRoles).toHaveBeenCalledWith(
+      mockTx,
+      "p-1",
+      expect.any(Array),
+    );
+  });
 });
 
 describe("deleteTeam()", () => {
@@ -262,5 +385,26 @@ describe("deleteTeam()", () => {
   it("löscht das Team", async () => {
     expect(await deleteTeam(TEAM)).toEqual({ ok: true });
     expect(mockTeamDelete).toHaveBeenCalledWith({ where: { id: TEAM } });
+  });
+
+  it("synchronisiert Team-Rollen für jedes Projekt, das eine Rolle trug", async () => {
+    mockTx.teamMember.findMany.mockResolvedValue([
+      { userId: "u-1" },
+      { userId: "u-2" },
+    ]);
+    mockTx.teamProject.findMany.mockResolvedValue([{ projectId: "p-1" }]);
+
+    await deleteTeam(TEAM);
+
+    expect(mockSyncProjectTeamRoles).toHaveBeenCalledWith(mockTx, "p-1", [
+      "u-1",
+      "u-2",
+    ]);
+  });
+
+  it("synchronisiert nichts, wenn kein Projekt eine Rolle trug", async () => {
+    mockTx.teamProject.findMany.mockResolvedValue([]);
+    await deleteTeam(TEAM);
+    expect(mockSyncProjectTeamRoles).not.toHaveBeenCalled();
   });
 });

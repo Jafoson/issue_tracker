@@ -107,6 +107,7 @@ export function WorkspaceProfileView({
         workspaceId={workspace.id}
         candidates={candidates}
         projects={profile.projects}
+        assignableProjectRoles={profile.assignableProjectRoles}
         canManageMembers={profile.canManageTeamMembers}
         canManageProjects={profile.canManageTeamProjects}
         onDone={() => router.refresh()}

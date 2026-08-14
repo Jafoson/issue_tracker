@@ -4,6 +4,7 @@ import {
   enrollInWorkspaceProjects,
   enrollWorkspaceMembers,
   projectRoleKeyFor,
+  syncProjectTeamRoles,
 } from "@/lib/project-membership";
 
 // Die Helfer bekommen ihren Client als Argument — hier genügt ein Doppel mit
@@ -14,6 +15,9 @@ const workspaceMemberFindUnique = mock();
 const projectFindMany = mock();
 const projectMemberCreateMany = mock();
 const projectMemberDeleteMany = mock();
+const projectMemberFindMany = mock();
+const projectMemberUpsert = mock();
+const teamProjectFindMany = mock();
 
 const fake = {
   workspaceMember: {
@@ -24,7 +28,10 @@ const fake = {
   projectMember: {
     createMany: projectMemberCreateMany,
     deleteMany: projectMemberDeleteMany,
+    findMany: projectMemberFindMany,
+    upsert: projectMemberUpsert,
   },
+  teamProject: { findMany: teamProjectFindMany },
 };
 
 type Db = Parameters<typeof enrollWorkspaceMembers>[0];
@@ -55,6 +62,9 @@ beforeEach(() => {
     projectFindMany,
     projectMemberCreateMany,
     projectMemberDeleteMany,
+    projectMemberFindMany,
+    projectMemberUpsert,
+    teamProjectFindMany,
   ]) {
     m.mockReset();
     m.mockResolvedValue({});
@@ -65,6 +75,8 @@ beforeEach(() => {
   ]);
   workspaceMemberFindUnique.mockResolvedValue({ role: role("member") });
   projectFindMany.mockResolvedValue([{ id: "p-1" }, { id: "p-2" }]);
+  projectMemberFindMany.mockResolvedValue([]);
+  teamProjectFindMany.mockResolvedValue([]);
 });
 
 describe("projectRoleKeyFor()", () => {
@@ -184,5 +196,108 @@ describe("dropProjectMemberships()", () => {
     expect(projectMemberDeleteMany).toHaveBeenCalledWith({
       where: { userId: "u-9", project: { workspaceId: WS } },
     });
+  });
+});
+
+describe("syncProjectTeamRoles()", () => {
+  const PROJECT = "p-1";
+
+  /** Eine Team-Projekt-Verknüpfung mit Rolle, wie die Datenbank sie liefert. */
+  const grant = (
+    teamId: string,
+    roleId: string,
+    rank: number,
+    userIds: string[],
+  ) => ({
+    teamId,
+    roleId,
+    role: { rank },
+    team: { members: userIds.map((userId) => ({ userId })) },
+  });
+
+  it("fragt nichts ab, wenn keine Personen betroffen sind", async () => {
+    await syncProjectTeamRoles(db, PROJECT, []);
+    expect(teamProjectFindMany).not.toHaveBeenCalled();
+    expect(projectMemberFindMany).not.toHaveBeenCalled();
+  });
+
+  it("übernimmt die Team-Rolle für ein neues Mitglied", async () => {
+    teamProjectFindMany.mockResolvedValue([
+      grant("t-1", "role-contrib", 3, ["u-1"]),
+    ]);
+
+    await syncProjectTeamRoles(db, PROJECT, ["u-1"]);
+
+    expect(projectMemberUpsert).toHaveBeenCalledWith({
+      where: { projectId_userId: { projectId: PROJECT, userId: "u-1" } },
+      update: { roleId: "role-contrib", origin: "team", originTeamId: "t-1" },
+      create: {
+        projectId: PROJECT,
+        userId: "u-1",
+        roleId: "role-contrib",
+        origin: "team",
+        originTeamId: "t-1",
+      },
+    });
+  });
+
+  // Zwei Teams am selben Projekt, dieselbe Person in beiden — es gewinnt der
+  // höhere Rang, genau wie `assignmentCeiling` Ränge sonst auch vergleicht.
+  it("wählt bei mehreren Teams die ranghöchste Rolle", async () => {
+    teamProjectFindMany.mockResolvedValue([
+      grant("t-viewer", "role-viewer", 2, ["u-1"]),
+      grant("t-admin", "role-admin", 4, ["u-1"]),
+    ]);
+
+    await syncProjectTeamRoles(db, PROJECT, ["u-1"]);
+
+    expect(projectMemberUpsert).toHaveBeenCalledTimes(1);
+    expect(projectMemberUpsert.mock.calls[0][0].update).toEqual({
+      roleId: "role-admin",
+      origin: "team",
+      originTeamId: "t-admin",
+    });
+  });
+
+  // Die Zusage an den Projektleiter: eine Rolle, die er selbst gesetzt hat,
+  // ändert kein Team-Sync — weder um sie zu aktualisieren noch zu löschen.
+  it("fasst eine manuell gesetzte Zeile nicht an", async () => {
+    projectMemberFindMany.mockResolvedValue([
+      { userId: "u-1", origin: "manual" },
+    ]);
+    teamProjectFindMany.mockResolvedValue([
+      grant("t-1", "role-contrib", 3, ["u-1"]),
+    ]);
+
+    await syncProjectTeamRoles(db, PROJECT, ["u-1"]);
+
+    expect(projectMemberUpsert).not.toHaveBeenCalled();
+    expect(projectMemberDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("löscht eine Team-Zeile, wenn kein Team mehr eine Rolle trägt", async () => {
+    projectMemberFindMany.mockResolvedValue([
+      { userId: "u-1", origin: "team" },
+    ]);
+    teamProjectFindMany.mockResolvedValue([]);
+
+    await syncProjectTeamRoles(db, PROJECT, ["u-1"]);
+
+    expect(projectMemberDeleteMany).toHaveBeenCalledWith({
+      where: { projectId: PROJECT, userId: { in: ["u-1"] } },
+    });
+    expect(projectMemberUpsert).not.toHaveBeenCalled();
+  });
+
+  it("lässt eine manuelle Zeile ohne Team-Deckung unangetastet", async () => {
+    projectMemberFindMany.mockResolvedValue([
+      { userId: "u-1", origin: "manual" },
+    ]);
+    teamProjectFindMany.mockResolvedValue([]);
+
+    await syncProjectTeamRoles(db, PROJECT, ["u-1"]);
+
+    expect(projectMemberDeleteMany).not.toHaveBeenCalled();
+    expect(projectMemberUpsert).not.toHaveBeenCalled();
   });
 });

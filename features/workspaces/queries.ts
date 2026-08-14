@@ -15,6 +15,7 @@ import {
 import type { ProjectVisibility } from "@/features/projects/types";
 import type {
   ProjectWithWorkspace,
+  TeamProjectRow,
   WorkspaceLabelRow,
   WorkspaceLabelsView,
   WorkspaceMemberRow,
@@ -406,32 +407,53 @@ export const getWorkspaceLabelsView = cache(
 /**
  * Die Teams des Workspace — wer darin ist, woran sie arbeiten, wie viel offen ist.
  *
- * Ein Team ist eine Gruppierung, keine Zugriffsentscheidung: es vergibt keine
- * Rechte, weder im Workspace noch im Projekt. Deshalb genügt der Zutritt zum
- * Lesen; die fünf `team.*`-Rechte entscheiden nur über das Ändern.
+ * Ein Team gruppiert Menschen und Projekte. Rechte vergibt es nur noch dort,
+ * wo eine `TeamProject`-Verknüpfung ausdrücklich eine Rolle trägt — die landet
+ * dann ganz normal in `ProjectMember` (`syncProjectTeamRoles`,
+ * lib/project-membership.ts) und wirkt über den üblichen Pfad. Für das Lesen
+ * hier genügt trotzdem der bloße Zutritt zum Workspace; die fünf `team.*`-
+ * Rechte entscheiden nur über das Ändern.
  */
 export const getWorkspaceTeamsView = cache(
   async (): Promise<WorkspaceTeamsView | null> => {
     const workspaceId = requireWorkspaceId();
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
-    const [teams, members, projects] = await Promise.all([
-      db.team.findMany({
-        where: { workspaceId },
-        include: {
-          lead: true,
-          members: { select: { userId: true } },
-          projects: { select: { projectId: true } },
-        },
-        orderBy: { name: "asc" },
-      }),
-      getMembers(workspaceId),
-      db.project.findMany({
-        where: { workspaceId },
-        select: { id: true, name: true, color: true },
-        orderBy: { name: "asc" },
-      }),
-    ]);
+    const [teams, members, projects, assignableProjectRoles] =
+      await Promise.all([
+        db.team.findMany({
+          where: { workspaceId },
+          include: {
+            lead: true,
+            members: { select: { userId: true } },
+            projects: {
+              select: {
+                projectId: true,
+                role: { select: { key: true, name: true, rank: true } },
+              },
+            },
+          },
+          orderBy: { name: "asc" },
+        }),
+        getMembers(workspaceId),
+        db.project.findMany({
+          where: { workspaceId },
+          select: { id: true, name: true, color: true },
+          orderBy: { name: "asc" },
+        }),
+        // Projektrollen, die in allen Projekten des Workspace gelten — die
+        // einzigen, die sich einem Team ohne Rücksicht auf ein bestimmtes
+        // Projekt anbieten lassen. Siehe Kommentar an
+        // `WorkspaceTeamsView.assignableProjectRoles`.
+        db.role.findMany({
+          where: {
+            scope: "PROJECT",
+            OR: [{ system: true }, { workspaceId, projectId: null }],
+          },
+          select: { key: true, name: true, rank: true },
+          orderBy: { rank: "desc" },
+        }),
+      ]);
 
     // Eine Abfrage für alle Teams statt einer je Team: die offenen Aufgaben je
     // Projekt einmal zählen und anschließend zuordnen.
@@ -451,8 +473,12 @@ export const getWorkspaceTeamsView = cache(
     const projectById = new Map(projects.map((p) => [p.id, p]));
 
     const rows: WorkspaceTeamRow[] = teams.map((team) => {
-      const teamProjects = team.projects
-        .map((p) => projectById.get(p.projectId))
+      const teamProjects: TeamProjectRow[] = team.projects
+        .map((p) => {
+          const project = projectById.get(p.projectId);
+          if (!project) return undefined;
+          return { ...project, role: p.role };
+        })
         .filter((p) => p !== undefined);
 
       return {
@@ -489,6 +515,7 @@ export const getWorkspaceTeamsView = cache(
       rows,
       candidates: members,
       projects,
+      assignableProjectRoles,
       canCreate: access.has("team.create"),
       canUpdate: access.has("team.update"),
       canDelete: access.has("team.delete"),

@@ -434,6 +434,9 @@ export async function addProjectMembers(data: {
       projectId: data.projectId,
       userId,
       roleId: role.id,
+      // Ausdrücklich von einem Projektleiter vergeben — ein Team-Sync fasst
+      // diese Zeile danach nicht mehr an (`origin`, siehe schema.prisma).
+      origin: "manual",
     })),
     // Wer schon eine Rolle in diesem Projekt hat, behält sie — ein Doppelklick
     // soll sie nicht überschreiben. Zum Ändern gibt es `setProjectMemberRole`.
@@ -485,7 +488,10 @@ export async function setProjectMemberRole(
 
   await db.projectMember.update({
     where: { projectId_userId: { projectId, userId } },
-    data: { roleId: role.id },
+    // `origin: "manual"` auch dann, wenn die Zeile vorher `team` war — ein
+    // Projektleiter, der hier ausdrücklich eine Rolle setzt, überschreibt die
+    // Team-Zuordnung dauerhaft, nicht nur bis zum nächsten Team-Sync.
+    data: { roleId: role.id, origin: "manual" },
   });
 
   await notify({
@@ -590,6 +596,7 @@ export async function inviteProjectMember(data: {
         projectId: data.projectId,
         userId: existing.id,
         roleId: role.id,
+        origin: "manual",
       },
     });
 
@@ -662,8 +669,13 @@ export async function inviteProjectMember(data: {
       where: {
         projectId_userId: { projectId: data.projectId, userId: user.id },
       },
-      update: { roleId: role.id },
-      create: { projectId: data.projectId, userId: user.id, roleId: role.id },
+      update: { roleId: role.id, origin: "manual" },
+      create: {
+        projectId: data.projectId,
+        userId: user.id,
+        roleId: role.id,
+        origin: "manual",
+      },
     });
 
     // Das Konto hat kein Passwort — ohne diesen Token käme niemand hinein.

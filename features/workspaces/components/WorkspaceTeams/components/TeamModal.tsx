@@ -31,6 +31,8 @@ interface Props {
   /** Mitglieder des Workspace — nur sie können in ein Team. */
   candidates: User[];
   projects: { id: string; name: string; color: string }[];
+  /** Rollen, die sich einem Projekt zuweisen lassen — siehe Typ-Kommentar. */
+  assignableProjectRoles: { key: string; name: string; rank: number }[];
   canManageMembers: boolean;
   canManageProjects: boolean;
   onDone: () => void;
@@ -61,12 +63,19 @@ function toggle(set: ReadonlySet<string>, id: string): Set<string> {
  *
  * Der Lead ist zugleich Mitglied — der Server nimmt ihn ohnehin in die Liste
  * auf, hier steht er deshalb schon markiert.
+ *
+ * Ein gewähltes Projekt trägt zusätzlich eine Rolle (oder keine, für reine
+ * Gruppierung) — sie ist es, die Mitglieder des Teams dort bekommen
+ * (`syncProjectTeamRoles`, lib/project-membership.ts). Neu gewählte Projekte
+ * starten ohne Rolle: wer eine vergeben will, wählt sie ausdrücklich, statt
+ * dass ein Häkchen im Vorbeigehen Zugriff verleiht.
  */
 export function TeamModal({
   workspaceId,
   team,
   candidates,
   projects,
+  assignableProjectRoles,
   canManageMembers,
   canManageProjects,
   onDone,
@@ -86,9 +95,11 @@ export function TeamModal({
   const [members, setMembers] = useState<ReadonlySet<string>>(
     new Set(team?.members.map((m) => m.id) ?? []),
   );
-  const [chosenProjects, setChosenProjects] = useState<ReadonlySet<string>>(
-    new Set(team?.projects.map((p) => p.id) ?? []),
-  );
+  // Projekt-Id → Rollen-Key, oder `null` für reine Gruppierung ohne Rolle. Wer
+  // in der Map steht, ist ausgewählt — das ersetzt das frühere `Set`.
+  const [projectRoles, setProjectRoles] = useState<
+    ReadonlyMap<string, string | null>
+  >(new Map(team?.projects.map((p) => [p.id, p.role?.key ?? null]) ?? []));
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
 
@@ -107,6 +118,11 @@ export function TeamModal({
       )
     : candidates;
 
+  const projectById = new Map(projects.map((p) => [p.id, p]));
+  // Nur, was noch nicht dabei ist, taugt als Angebot im Dropdown — ein
+  // Projekt steht im Team höchstens einmal.
+  const availableProjects = projects.filter((p) => !projectRoles.has(p.id));
+
   const submit = () => {
     if (!trimmed || !leadId || isPending) return;
 
@@ -117,7 +133,10 @@ export function TeamModal({
       desc,
       leadId,
       memberIds: [...members],
-      projectIds: [...chosenProjects],
+      projects: [...projectRoles].map(([projectId, roleKey]) => ({
+        projectId,
+        roleKey,
+      })),
     };
 
     startTransition(async () => {
@@ -276,35 +295,129 @@ export function TeamModal({
 
         {canManageProjects && projects.length > 0 && (
           <div className={styles.field}>
-            <span className={styles.label}>
-              {t("workspaceTeams.projectsCount", {
-                count: chosenProjects.size,
-              })}
-            </span>
-            <div className={styles.chips}>
-              {projects.map((project) => {
-                const picked = chosenProjects.has(project.id);
-                return (
-                  <button
-                    key={project.id}
-                    type="button"
-                    className={styles.chip}
-                    aria-pressed={picked}
-                    data-picked={picked ? "true" : undefined}
-                    onClick={() =>
-                      setChosenProjects((prev) => toggle(prev, project.id))
-                    }
-                  >
-                    <span
-                      className={styles.chipDot}
-                      style={{ background: project.color }}
-                      aria-hidden
+            <div className={styles.projectsHead}>
+              <span className={styles.label}>
+                {t("workspaceTeams.projectsCount", {
+                  count: projectRoles.size,
+                })}
+              </span>
+
+              {availableProjects.length > 0 && (
+                <InlinePicker
+                  trigger={
+                    <button type="button" className={styles.addProject}>
+                      <Icon icon="lucide:plus" width={13} />
+                      {t("workspaceTeams.addProject")}
+                    </button>
+                  }
+                  width={240}
+                  stop
+                >
+                  {(closePicker) => (
+                    <SelectMenu
+                      searchable={availableProjects.length > 6}
+                      items={availableProjects.map((project) => ({
+                        value: project.id,
+                        label: project.name,
+                      }))}
+                      value=""
+                      onPick={(value) => {
+                        // Neu hinzugefügt heißt ohne Rolle: wer eine vergeben
+                        // will, wählt sie im nächsten Schritt ausdrücklich.
+                        setProjectRoles((prev) =>
+                          new Map(prev).set(String(value), null),
+                        );
+                        closePicker();
+                      }}
+                      onClose={closePicker}
                     />
-                    {project.name}
-                  </button>
-                );
-              })}
+                  )}
+                </InlinePicker>
+              )}
             </div>
+
+            {projectRoles.size > 0 ? (
+              <ul className={styles.projectList}>
+                {[...projectRoles.keys()].map((projectId) => {
+                  const project = projectById.get(projectId);
+                  if (!project) return null;
+                  const roleKey = projectRoles.get(projectId) ?? null;
+                  const roleName = roleKey
+                    ? (assignableProjectRoles.find((r) => r.key === roleKey)
+                        ?.name ?? roleKey)
+                    : t("workspaceTeams.noRole");
+
+                  return (
+                    <li key={projectId} className={styles.projectRow}>
+                      <span className={styles.projectName}>
+                        <span
+                          className={styles.chipDot}
+                          style={{ background: project.color }}
+                          aria-hidden
+                        />
+                        {project.name}
+                      </span>
+
+                      <InlinePicker
+                        trigger={
+                          <button
+                            type="button"
+                            className={styles.roleChip}
+                            title={t("workspaceTeams.projectRole")}
+                          >
+                            {roleName}
+                            <Icon icon="lucide:chevron-down" width={11} />
+                          </button>
+                        }
+                        width={200}
+                        stop
+                      >
+                        {(closePicker) => (
+                          <SelectMenu
+                            items={[
+                              { value: "", label: t("workspaceTeams.noRole") },
+                              ...assignableProjectRoles.map((r) => ({
+                                value: r.key,
+                                label: r.name,
+                              })),
+                            ]}
+                            value={roleKey ?? ""}
+                            onPick={(value) => {
+                              const next = String(value) || null;
+                              setProjectRoles((prev) =>
+                                new Map(prev).set(projectId, next),
+                              );
+                              closePicker();
+                            }}
+                            onClose={closePicker}
+                          />
+                        )}
+                      </InlinePicker>
+
+                      <button
+                        type="button"
+                        className={styles.removeProject}
+                        aria-label={t("actions.remove")}
+                        title={t("actions.remove")}
+                        onClick={() =>
+                          setProjectRoles((prev) => {
+                            const next = new Map(prev);
+                            next.delete(projectId);
+                            return next;
+                          })
+                        }
+                      >
+                        <Icon icon="lucide:x" width={14} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className={styles.noResults}>
+                {t("workspaceTeams.noProjectsPicked")}
+              </p>
+            )}
           </div>
         )}
 
