@@ -38,13 +38,20 @@ interface CardProps {
    * in einem ansonsten normalen Kasten liest sich wie ein Ladefehler.
    */
   empty?: boolean;
+  /** Gestrichelter Rahmen unabhängig vom Inhalt — für Listen-Cards, die immer
+   * so aussehen sollen, nicht nur wenn sie leer sind (wie im Workspace-Steckbrief). */
+  dashed?: boolean;
   footer?: ReactNode;
   children: ReactNode;
 }
 
-function Card({ title, count, empty, footer, children }: CardProps) {
+function Card({ title, count, empty, dashed, footer, children }: CardProps) {
   return (
-    <section className={styles.card} data-empty={empty || undefined}>
+    <section
+      className={styles.card}
+      data-empty={empty || undefined}
+      data-dashed={dashed || undefined}
+    >
       <h3 className={styles.cardTitle}>
         {title}
         {count !== undefined && <span className={styles.count}>{count}</span>}
@@ -217,14 +224,15 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
             title={t("nav.teams")}
             count={profile.teams.length}
             empty={profile.teams.length === 0}
+            dashed
           >
             {profile.teams.length === 0 ? (
               t("dashboard.noTeams")
             ) : (
-              <ul className={styles.chips}>
+              <ul className={styles.rows}>
                 {profile.teams.map((team) => (
                   <li key={team.id}>
-                    <span className={styles.team}>
+                    <span className={styles.row}>
                       <span
                         className={styles.teamKey}
                         style={{ background: team.color }}
@@ -243,28 +251,33 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
             title={t("nav.labels")}
             count={profile.labels.length}
             empty={profile.labels.length === 0}
+            dashed
           >
             {profile.labels.length === 0 ? (
               t("dashboard.noLabels")
             ) : (
-              <ul className={styles.chips}>
+              <ul className={styles.rows}>
                 {profile.labels.map((label) => (
                   <li key={label.id}>
-                    {/* Gefüllt heißt „gehört diesem Projekt", umrandet „kommt
-                        aus dem Workspace" — derselbe Unterschied, den die
-                        Label-Einstellungen machen. */}
-                    <Label
-                      color={label.color}
-                      size="sm"
-                      filled={label.own}
+                    {/* Derselbe Unterschied wie in den Label-Einstellungen
+                        (eigen/geteilt), jetzt nur noch über den Titel-Tooltip
+                        statt gefüllt/umrandet — die Zeile selbst sieht aus wie
+                        jede andere hier. */}
+                    <span
+                      className={styles.row}
                       title={t(
                         label.own
                           ? "dashboard.labelOwn"
                           : "dashboard.labelShared",
                       )}
                     >
+                      <span
+                        className={styles.labelDot}
+                        style={{ background: label.color }}
+                        aria-hidden="true"
+                      />
                       {label.name}
-                    </Label>
+                    </span>
                   </li>
                 ))}
               </ul>

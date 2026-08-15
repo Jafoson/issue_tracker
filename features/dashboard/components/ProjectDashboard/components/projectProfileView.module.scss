@@ -267,13 +267,18 @@
    „hier fehlt etwas". Nur so unterscheidet sich ein Projekt ohne Teams sichtbar
    von einem, dessen Teams noch laden. */
 .card[data-empty] {
-  border-style: dashed;
-  background: none;
-
   .cardBody {
     font-size: var(--text-sm);
     color: var(--outline);
   }
+}
+
+/* Listen-Cards (Teams, Labels) tragen den gestrichelten Rahmen immer, nicht
+   nur solange sie leer sind — dieselbe Hülle wie im Workspace-Steckbrief
+   (`WorkspaceProfileView`), die Liste selbst liefert den Inhalt. */
+.card[data-dashed] {
+  border-style: dashed;
+  background: none;
 }
 
 .cardTitle {
@@ -422,36 +427,51 @@
 
 /* ── Teams und Labels ─────────────────────────────────────────────────────── */
 
-.chips {
+.rows {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 7px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.team {
-  display: inline-flex;
+/* Jede Zeile wie ein Outline-Button (`Button/button.module.scss` `.outline`):
+   eigener Rahmen statt Trennlinie, damit Teams und Labels als Reihe greifbarer
+   Kacheln statt als reine Textliste wirken — dieselbe Zeile wie im
+   Workspace-Steckbrief (`WorkspaceProfileView`). */
+.row {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 3px 11px 3px 3px;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-pill);
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
+  font-weight: 550;
   color: var(--on-surface);
 }
 
-/* Das Kürzel trägt die Farbe des Teams, nicht der ganze Chip: als Fläche hinter
-   Text müsste jede Team-Farbe auf Kontrast geprüft sein, und das ist sie nicht —
-   sie wird frei gewählt. Auf dem kurzen Kürzel in Weiß trägt sie. */
+/* Das Kürzel trägt die Farbe des Teams, nicht die ganze Zeile: als Fläche
+   hinter Text müsste jede Team-Farbe auf Kontrast geprüft sein, und das ist
+   sie nicht — sie wird frei gewählt. Auf dem kurzen Kürzel in Weiß trägt sie. */
 .teamKey {
   padding: 2px 7px;
   border-radius: var(--radius-pill);
   font-size: var(--text-xxs);
+  line-height: 1;
   font-weight: 650;
   letter-spacing: 0.04em;
   color: #fff;
+}
+
+/* Dasselbe Zeichen wie beim Projekt-Punkt im Workspace-Steckbrief — nur hier
+   je Label in seiner eigenen Zeile statt je Projekt. */
+.labelDot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
 }
 
 /* ── 4. Die Wege hinaus ───────────────────────────────────────────────────── */
