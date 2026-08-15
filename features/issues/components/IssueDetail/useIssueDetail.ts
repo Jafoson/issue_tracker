@@ -9,7 +9,7 @@ import {
 } from "@/features/issues/actions";
 import type { IssueEditorData, IssuePatch } from "@/features/issues/types";
 import type { PMDoc } from "@/lib/richtext/types";
-import type { Issue } from "@/types";
+import type { IssueDetail } from "@/types";
 
 interface UseIssueDetailOptions {
   /** Interne Id oder Referenz der Form „PREFIX-123“. */
@@ -19,14 +19,14 @@ interface UseIssueDetailOptions {
    * Vorgeladenes Issue. Die Vollseite hat es vom Server, das Panel kennt beim
    * Öffnen nur die Referenz aus der URL und lädt selbst nach.
    */
-  initialIssue?: Issue;
+  initialIssue?: IssueDetail;
   /** Läuft, nachdem das Issue gelöscht wurde — Panel schließen, Seite verlassen. */
   onDeleted: () => void;
 }
 
 export interface IssueDetailState {
   /** `null`, solange geladen wird — oder wenn es die Referenz nicht gibt. */
-  issue: Issue | null;
+  issue: IssueDetail | null;
   /** Geladen und nichts gefunden. Unterscheidet den Leer- vom Ladezustand. */
   isMissing: boolean;
   patch: (patch: IssuePatch) => void;
@@ -51,7 +51,7 @@ export function useIssueDetail({
   onDeleted,
 }: UseIssueDetailOptions): IssueDetailState {
   const router = useRouter();
-  const [fetched, setFetched] = useState<Issue | null>(null);
+  const [fetched, setFetched] = useState<IssueDetail | null>(null);
   const [isMissing, setIsMissing] = useState(false);
   const [, startTransition] = useTransition();
   const issue = fetched ?? initialIssue ?? null;
@@ -65,7 +65,9 @@ export function useIssueDetail({
   const load = useCallback(
     async (ref: string) => {
       const response = await fetch(endpoint(ref));
-      return response.ok ? ((await response.json()) as Issue | null) : null;
+      return response.ok
+        ? ((await response.json()) as IssueDetail | null)
+        : null;
     },
     [endpoint],
   );

@@ -6,11 +6,11 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { useIssuePatch } from "@/features/issues/useIssuePatch";
 import { fullName } from "@/lib/utils/string";
-import type { Issue, User } from "@/types";
+import type { IssueDetail, User } from "@/types";
 import styles from "./assigneePicker.module.scss";
 
 interface AssigneePickerProps {
-  issue: Issue;
+  issue: IssueDetail;
   members: User[];
   /** Größe des Avatars — die Fläche zum Anklicken wächst mit ihm. */
   size?: number;
@@ -23,6 +23,10 @@ interface AssigneePickerProps {
  *
  * `stop` am `InlinePicker` ist hier keine Feinheit, sondern Bedingung: auf dem
  * Board sitzt der Avatar in einer Karte, die selbst auf Klicks reagiert.
+ *
+ * Ohne `issue.access.canAssign` (spiegelt `issue.assign` in `updateIssue`)
+ * bleibt der Avatar ein reiner Anzeigewert — derselbe Grund wie bei der
+ * Detailansicht (`IssueProperties.tsx`): der Server lehnte den Patch ohnehin ab.
  */
 export function AssigneePicker({
   issue,
@@ -34,6 +38,18 @@ export function AssigneePicker({
   const assignee = issue.assignee
     ? (members.find((member) => member.id === issue.assignee) ?? null)
     : null;
+
+  if (!issue.access.canAssign) {
+    return (
+      <span
+        className={styles.trigger}
+        data-readonly
+        title={assignee ? fullName(assignee) : t("fields.unassigned")}
+      >
+        <Avatar avatar={assignee} size={size} placeholder />
+      </span>
+    );
+  }
 
   return (
     <InlinePicker

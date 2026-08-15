@@ -4,12 +4,12 @@ import { BoardColumn } from "@/features/issues/components/BoardColumn/BoardColum
 import { useIssueOpen } from "@/features/issues/issue-links";
 import type { IssueComposerData, IssueLookups } from "@/features/issues/types";
 import { useShiftScroll } from "@/lib/utils/useShiftScroll";
-import type { Issue, Status } from "@/types";
+import type { IssueDetail, Status } from "@/types";
 import styles from "./board.module.scss";
 import { useBoardDnd } from "./useBoardDnd";
 
 interface BoardProps {
-  issues: Issue[];
+  issues: IssueDetail[];
   /**
    * Das Projekt, in dem eine neue Aufgabe entsteht. Ohne eines — etwa bei den
    * eigenen Aufgaben, die quer durch alle Projekte gehen — zeigen die Spalten
@@ -37,7 +37,7 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
   // Shift + Rad schiebt die Spalten waagerecht, egal worüber der Zeiger steht.
   const scrollRef = useShiftScroll();
 
-  const identifier = (issue: Issue) =>
+  const identifier = (issue: IssueDetail) =>
     `${lookups.projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
   return (

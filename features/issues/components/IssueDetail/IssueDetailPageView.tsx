@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
 import type { PMDoc } from "@/lib/richtext/types";
-import type { Issue, Project } from "@/types";
+import type { IssueDetail, Project } from "@/types";
 import { IssueComments } from "./components/IssueComments";
 import { IssueDescription } from "./components/IssueDescription";
 import {
@@ -17,7 +17,7 @@ import { IssueTitle } from "./components/IssueTitle";
 import styles from "./issueDetail.module.scss";
 
 interface IssueDetailPageViewProps {
-  issue: Issue;
+  issue: IssueDetail;
   /** Aufgelöst, weil die Kopfzeile es braucht — `null`, wenn es fehlt. */
   project: Project | null;
   data: IssueComposerData;
@@ -85,16 +85,24 @@ export function IssueDetailPageView({
             identifier={identifier}
           />
           {/* Ohne `OpenPageButton` daneben — hier ist die Seite schon. */}
-          <IssueActionsMenu onDelete={onDelete} />
+          <IssueActionsMenu
+            onDelete={onDelete}
+            canDelete={issue.access.canDelete}
+          />
         </div>
       </header>
 
       <div className={styles.split}>
         <div className={styles.main}>
-          <IssueTitle title={issue.title} onPatch={onPatch} />
+          <IssueTitle
+            title={issue.title}
+            readOnly={!issue.access.canEdit}
+            onPatch={onPatch}
+          />
           <IssueDescription
             description={issue.description}
             data={data}
+            readOnly={!issue.access.canEdit}
             onPatch={onPatch}
           />
           <IssueComments

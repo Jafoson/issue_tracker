@@ -10,7 +10,7 @@ import { Modal } from "@/components/ui/layout/Modal/Modal";
 import { Resizer } from "@/components/ui/layout/Resizer/Resizer";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
 import type { PMDoc } from "@/lib/richtext/types";
-import type { Issue } from "@/types";
+import type { IssueDetail } from "@/types";
 import { IssueComments } from "./components/IssueComments";
 import { IssueDescription } from "./components/IssueDescription";
 import {
@@ -51,7 +51,7 @@ function shellClass(isExpanded: boolean) {
 }
 
 interface IssueDetailViewProps {
-  issue: Issue;
+  issue: IssueDetail;
   data: IssueComposerData;
   onClose: () => void;
   /**
@@ -123,7 +123,10 @@ export function IssueDetailView({
               workspaceId={data.workspaceId}
               identifier={identifier}
             />
-            <IssueActionsMenu onDelete={onDelete} />
+            <IssueActionsMenu
+              onDelete={onDelete}
+              canDelete={issue.access.canDelete}
+            />
           </>
         }
         onClose={onClose}
@@ -139,7 +142,11 @@ export function IssueDetailView({
           auf der Vollseite beim Inhalt links, Attribute rechts. */}
       {isPanel ? (
         <div className={styles.body}>
-          <IssueTitle title={issue.title} onPatch={onPatch} />
+          <IssueTitle
+            title={issue.title}
+            readOnly={!issue.access.canEdit}
+            onPatch={onPatch}
+          />
           <IssueProperties
             issue={issue}
             data={data}
@@ -149,6 +156,7 @@ export function IssueDetailView({
           <IssueDescription
             description={issue.description}
             data={data}
+            readOnly={!issue.access.canEdit}
             onPatch={onPatch}
           />
           <IssueLabels
@@ -169,10 +177,15 @@ export function IssueDetailView({
       ) : (
         <div className={styles.split}>
           <div className={styles.main}>
-            <IssueTitle title={issue.title} onPatch={onPatch} />
+            <IssueTitle
+              title={issue.title}
+              readOnly={!issue.access.canEdit}
+              onPatch={onPatch}
+            />
             <IssueDescription
               description={issue.description}
               data={data}
+              readOnly={!issue.access.canEdit}
               onPatch={onPatch}
             />
             <IssueComments

@@ -13,6 +13,7 @@ import {
 } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import {
+  navEntryAllowed,
   settingsScopeItems,
   WORKSPACE_SETTINGS_NAV,
   workspaceSettingsPath,
@@ -75,11 +76,11 @@ export default async function WorkspaceSettingsLayout({
     },
   });
 
-  // Rollen sind der einzige Bereich mit eigener Hürde: dort stehen die Regeln,
-  // nach denen alles andere entschieden wird. Die übrigen bleiben auch ohne
-  // Schreibrecht sichtbar — sie zeigen dann, was gilt, nur unveränderlich.
-  const items: SettingsNavItem[] = WORKSPACE_SETTINGS_NAV.filter(
-    (entry) => entry.section !== "roles" || access.has("role.manage"),
+  // Rollen und Mitglieder sind die einzigen Bereiche mit eigener Hürde
+  // (`role.manage` bzw. `member.view`) — die übrigen bleiben auch ohne
+  // Schreibrecht sichtbar, sie zeigen dann, was gilt, nur unveränderlich.
+  const items: SettingsNavItem[] = WORKSPACE_SETTINGS_NAV.filter((entry) =>
+    navEntryAllowed(access.has, entry),
   ).map((entry) => ({
     href: workspaceSettingsPath(workspace, entry.section),
     label: t(`nav.${entry.labelKey}`),

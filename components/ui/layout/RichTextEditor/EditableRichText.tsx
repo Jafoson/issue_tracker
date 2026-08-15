@@ -61,6 +61,8 @@ interface EditableRichTextProps {
   /** Beschriftungen der Anzeige — bislang nur der Codeblock. */
   labels?: Partial<RichTextLabels>;
   className?: string;
+  /** Nur Anzeige: kein Klick öffnet den Editor, `onCommit` wird nie aufgerufen. */
+  readOnly?: boolean;
 }
 
 export function EditableRichText({
@@ -76,6 +78,7 @@ export function EditableRichText({
   issues,
   labels,
   className,
+  readOnly = false,
 }: EditableRichTextProps) {
   const [draft, setDraft] = useState<PMDoc>(() => toDoc(value));
   const [source, setSource] = useState(value);
@@ -147,6 +150,22 @@ export function EditableRichText({
   };
 
   if (!isEditing) {
+    // Nur Anzeige: kein `role="button"`, kein Klick, der den Editor öffnet —
+    // sonst wirkte ein reiner Text weiterhin wie ein Feld.
+    if (readOnly) {
+      return (
+        <div className={className}>
+          <div className={styles.preview} data-readonly>
+            {isEmptyDoc(draft) ? (
+              <span className={styles.placeholder}>{placeholder}</span>
+            ) : (
+              <RichText value={draft} labels={labels} />
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={className}>
         {/* biome-ignore lint/a11y/useSemanticElements: enthält Absätze und Listen — ein <button> wäre ungültiges HTML */}

@@ -159,6 +159,7 @@ const WORKSPACE_ROLES: SystemRole[] = [
       "project.create",
       "project.view.all",
       "project.admin.all",
+      "member.view",
       "member.invite",
       "member.remove",
       "member.role.update",

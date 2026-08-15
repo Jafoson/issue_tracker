@@ -232,6 +232,15 @@ export interface WorkspaceProfile {
   createdAt: number;
   /** `workspace.update` — ob der Bearbeiten-Knopf in der Kopfkarte erscheint. */
   canUpdate: boolean;
+  /** `member.view` — ob `roles` den Namen/E-Mail-Steckbrief zeigt oder leer bleibt. */
+  canViewMembers: boolean;
+  /**
+   * `role.manage` ODER `label.create` ODER `workspace.update` — dieselbe Hürde
+   * wie beim Einstellungen-Tab (`lib/nav.ts`, `WORKSPACE_NAV`). Ohne eines der
+   * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
+   */
+  canViewSettings: boolean;
+  /** Leer ohne `member.view`, auch bei `memberCount > 0` — siehe `canViewMembers`. */
   roles: WorkspaceRoleGroup[];
   memberCount: number;
   teams: ProjectTeam[];

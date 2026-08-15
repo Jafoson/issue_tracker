@@ -143,6 +143,15 @@ export const PERMISSIONS = {
   // ── Mitglieder ──────────────────────────────────────────────────────────────
   // Dieselben drei Permissions in beiden Scopes: im Workspace betreffen sie
   // seine Mitglieder, im Projekt dessen Projektmitglieder.
+  //
+  // `member.view` ist bewusst nur WORKSPACE: sie entscheidet allein, ob der
+  // Tab "Mitglieder" erscheint (`lib/nav.ts`, `getWorkspaceMembersView`). Die
+  // Projekt-Mitgliederliste hängt daran nicht — dafür gibt es (noch) kein
+  // eigenes Gate.
+  "member.view": {
+    desc: "Die Mitgliederliste des Workspace sehen",
+    scopes: WORKSPACE_ONLY,
+  },
   "member.invite": {
     desc: "Mitglieder hinzufügen und einladen",
     scopes: WORKSPACE_AND_PROJECT,
@@ -183,6 +192,14 @@ export const PERMISSIONS = {
   },
 
   // ── Teams ───────────────────────────────────────────────────────────────────
+  //
+  // Ohne dieses Recht sieht man nur die Teams, in denen man selbst Mitglied
+  // ist (`getWorkspaceTeamsView`) — kein verstecktes Gate, sondern gefilterte
+  // statt leerer Liste, anders als `member.view` beim Mitglieder-Tab.
+  "team.view.all": {
+    desc: "Alle Teams des Workspace sehen, nicht nur die eigenen",
+    scopes: WORKSPACE_ONLY,
+  },
   "team.create": { desc: "Team erstellen", scopes: WORKSPACE_ONLY },
   "team.update": {
     desc: "Team-Name, Farbe und Lead ändern",

@@ -28,6 +28,8 @@ interface EditableTextProps {
   cancelLabel?: string;
   /** Typografie des umgebenden Texts — Feld und Zwilling erben sie. */
   className?: string;
+  /** Nur lesen: kein Fokus, keine Knöpfe, `onCommit` wird nie aufgerufen. */
+  readOnly?: boolean;
 }
 
 /**
@@ -49,6 +51,7 @@ export function EditableText({
   saveLabel = "Save",
   cancelLabel = "Cancel",
   className,
+  readOnly = false,
 }: EditableTextProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState(value);
@@ -126,6 +129,19 @@ export function EditableText({
    * weg, bevor sie etwas auslösen könnten.
    */
   const keepFocus = (e: React.MouseEvent) => e.preventDefault();
+
+  // Nur Anzeige: keine Textarea, kein Fokus, kein Cursor beim Klicken — ein
+  // `readonly`-Attribut allein ließe das Feld weiterhin fokussierbar und
+  // markierbar aussehen, als könnte man doch hinein.
+  if (readOnly) {
+    return (
+      <div className={[styles.wrap, className].filter(Boolean).join(" ")}>
+        <div className={styles.field} data-value={value} data-readonly>
+          <div className={styles.input}>{value}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={[styles.wrap, className].filter(Boolean).join(" ")}>

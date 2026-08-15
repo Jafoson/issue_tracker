@@ -21,7 +21,7 @@ import { useIssueOpen } from "@/features/issues/issue-links";
 import { rankBetween, sortByRank } from "@/features/issues/rank";
 import type { IssueComposerData } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
-import type { Issue } from "@/types";
+import type { IssueDetail } from "@/types";
 import {
   LabelsCell,
   PriorityCell,
@@ -34,7 +34,7 @@ import { ListGroupHeader } from "./components/ListGroupHeader";
 import styles from "./listView.module.scss";
 
 interface ListViewProps {
-  issues: Issue[];
+  issues: IssueDetail[];
   /**
    * Das Projekt, in dem eine neue Aufgabe entsteht. Ohne eines — etwa bei den
    * eigenen Aufgaben quer durch alle Projekte — fehlt das „+“ im Gruppenkopf,
@@ -82,13 +82,13 @@ export function ListView({
   // wieder ihren alten Titel.
   const [shown, applyPatch] = useOptimistic(
     issues,
-    (state, patch: { id: string } & Partial<Issue>) =>
+    (state, patch: { id: string } & Partial<IssueDetail>) =>
       state.map((issue) =>
         issue.id === patch.id ? { ...issue, ...patch } : issue,
       ),
   );
 
-  const saveTitle = (issue: Issue, title: string) =>
+  const saveTitle = (issue: IssueDetail, title: string) =>
     startTransition(async () => {
       applyPatch({ id: issue.id, title });
       await updateIssue(issue.id, { title });
@@ -102,7 +102,7 @@ export function ListView({
       return next;
     });
 
-  const identifier = (issue: Issue) =>
+  const identifier = (issue: IssueDetail) =>
     `${projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
   // Das offene Issue steht als Identifier in der URL — dieselbe Quelle nutzt die
@@ -111,7 +111,7 @@ export function ListView({
 
   // Workflow-Status bekommen immer eine Gruppe — auch leer, damit das "+" im
   // Kopf erreichbar bleibt. Alle übrigen nur, wenn Issues darin liegen.
-  const groups: TableGroup<Issue>[] = statuses
+  const groups: TableGroup<IssueDetail>[] = statuses
     .map((status) => ({
       status,
       // Nach Rang, nicht nach Anlagedatum — sonst stünde die Zeile nach dem
@@ -136,7 +136,7 @@ export function ListView({
       rows,
     }));
 
-  const columns: TableColumn<Issue>[] = [
+  const columns: TableColumn<IssueDetail>[] = [
     {
       id: "priority",
       cell: (issue) => <PriorityCell issue={issue} priorities={priorities} />,
@@ -154,7 +154,7 @@ export function ListView({
           {
             id: "project",
             width: "max-content",
-            cell: (issue: Issue) => (
+            cell: (issue: IssueDetail) => (
               <ProjectCell issue={issue} projects={projects} />
             ),
           },
@@ -174,15 +174,19 @@ export function ListView({
       // Der Titel ist sein eigener Auslöser: anklicken und schreiben. Er liegt
       // damit über dem Zeilen-Link — geöffnet wird das Issue über den Rest der
       // Zeile.
+      //
+      // Ohne issue.update.any/.own bleibt es beim reinen Text: der Server
+      // lehnt den Patch ohnehin ab (`updateIssue`), und ein Knopf, der nichts
+      // auslöst, ist nur eine falsche Einladung.
       cell: (issue) =>
-        editing === issue.id ? (
+        editing === issue.id && issue.access.canEdit ? (
           <IssueTitleField
             className={styles.titleEdit}
             value={issue.title}
             onSave={(value) => saveTitle(issue, value)}
             onDone={() => setEditing(null)}
           />
-        ) : (
+        ) : issue.access.canEdit ? (
           <button
             type="button"
             className={styles.title}
@@ -191,6 +195,10 @@ export function ListView({
           >
             {issue.title}
           </button>
+        ) : (
+          <span className={styles.title} data-readonly>
+            {issue.title}
+          </span>
         ),
     },
     {
@@ -220,7 +228,7 @@ export function ListView({
     position,
     total,
     phase,
-  }: TableDndAnnouncement<Issue>) => {
+  }: TableDndAnnouncement<IssueDetail>) => {
     const name = `${identifier(row)} ${row.title}`;
     if (phase === "grabbed") return t("a11y.reorderGrabbed", { name });
     if (phase === "cancelled") return t("a11y.reorderCancelled", { name });
@@ -230,12 +238,14 @@ export function ListView({
       : t("a11y.reorderDropped", { name, position, total, group });
   };
 
-  const dnd = useTableDnd<Issue>({
+  const dnd = useTableDnd<IssueDetail>({
     groups,
     getRowKey: (issue) => issue.id,
     // Wer gerade schreibt, wird nicht gezogen: eine ziehbare Zeile nähme dem
-    // Feld darin das Markieren mit der Maus weg.
-    canDrag: (issue) => issue.id !== editing,
+    // Feld darin das Markieren mit der Maus weg. Ohne issue.update.any/.own
+    // auch nicht — Ziehen ändert den Status (`reorderIssue`), den der Server
+    // ohne diese Rechte ablehnt.
+    canDrag: (issue) => issue.id !== editing && issue.access.canEdit,
     rowLabel: (issue) =>
       t("actions.reorder", { name: `${identifier(issue)} ${issue.title}` }),
     announce,

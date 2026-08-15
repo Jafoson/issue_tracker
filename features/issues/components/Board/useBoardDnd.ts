@@ -9,7 +9,7 @@ import type { Issue } from "@/types";
  * columns, rank calculation, and the transient hover/insert state needed
  * to render drop indicators.
  */
-export function useBoardDnd(issues: Issue[]) {
+export function useBoardDnd<T extends Issue>(issues: T[]) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -20,7 +20,7 @@ export function useBoardDnd(issues: Issue[]) {
   const [insertAbove, setInsertAbove] = useState(false);
 
   // Refs for use inside event handlers — always up-to-date, no stale closure
-  const dragIssueRef = useRef<Issue | null>(null);
+  const dragIssueRef = useRef<T | null>(null);
   const dragOverCardRef = useRef<string | null>(null);
   const insertAboveRef = useRef(false);
 
@@ -43,7 +43,7 @@ export function useBoardDnd(issues: Issue[]) {
     setDragOverCard(null);
   };
 
-  const onDragStart = (issue: Issue) => (e: React.DragEvent) => {
+  const onDragStart = (issue: T) => (e: React.DragEvent) => {
     dragIssueRef.current = issue;
     setDragging(issue.id);
     e.dataTransfer.effectAllowed = "move";

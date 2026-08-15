@@ -3,13 +3,13 @@
 import type { IssueComposerData } from "@/features/issues/types";
 import { useRouter } from "@/i18n/navigation";
 import { projectPath } from "@/lib/nav";
-import type { Issue } from "@/types";
+import type { IssueDetail } from "@/types";
 import { IssueDetailPageView } from "./IssueDetailPageView";
 import { useIssueDetail } from "./useIssueDetail";
 
 interface IssueDetailPageProps {
   /** Vom Server geladen — die Seite fängt nie leer an. */
-  issue: Issue;
+  issue: IssueDetail;
   data: IssueComposerData;
 }
 

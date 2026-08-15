@@ -15,13 +15,13 @@ import type { IssueLookups } from "@/features/issues/types";
 import { useIssuePatch } from "@/features/issues/useIssuePatch";
 import { onActivate } from "@/lib/a11y";
 import { useTimeAgo } from "@/lib/utils/useTimeAgo";
-import type { Issue, Label as LabelType } from "@/types";
+import type { IssueDetail, Label as LabelType } from "@/types";
 import styles from "./boardCard.module.scss";
 import { useRowFit } from "./useRowFit";
 import { useTextEnd } from "./useTextEnd";
 
 interface BoardCardProps {
-  issue: Issue;
+  issue: IssueDetail;
   /**
    * Das Projekt der Spalte — nur als Rückfallebene für das Kürzel im Fuß. Zuerst
    * zählt immer das Projekt am Issue selbst; in einer projektübergreifenden
@@ -132,8 +132,10 @@ export function BoardCard({
       data-active={isActive || undefined}
       aria-current={isActive || undefined}
       // Beim Schreiben nicht: ein ziehbarer Vorfahr nimmt dem Feld sonst das
-      // Markieren mit der Maus weg.
-      draggable={!isEditing}
+      // Markieren mit der Maus weg. Ohne issue.update.any/.own auch nicht —
+      // Ziehen ändert den Status (`moveIssue`/`reorderIssue`), den der Server
+      // ohne diese Rechte ablehnt.
+      draggable={!isEditing && issue.access.canEdit}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
@@ -182,7 +184,7 @@ export function BoardCard({
         <AssigneePicker issue={issue} members={members} size={30} />
       </div>
 
-      {isEditing ? (
+      {isEditing && issue.access.canEdit ? (
         <IssueTitleField
           className={styles.titleEdit}
           value={title}
@@ -197,30 +199,35 @@ export function BoardCard({
         // gesetzt: hinter das letzte Wort, und wo dort kein Platz mehr ist, auf
         // das Zeilenende. Im Textfluss stehen kann er nicht — die Begrenzung auf
         // drei Zeilen schnitte ihn bei langen Titeln mit ab.
+        //
+        // Ohne issue.update.any/.own bleibt der Stift ganz weg: der Server
+        // lehnt den Patch ohnehin ab (`updateIssue`).
         <div className={styles.titleRow}>
           <p className={styles.title} ref={titleRef}>
             {title}
           </p>
-          <button
-            type="button"
-            className={styles.editTitle}
-            style={
-              textEnd
-                ? ({
-                    "--title-end-x": `${textEnd.x}px`,
-                    "--title-end-y": `${textEnd.y}px`,
-                  } as CSSProperties)
-                : undefined
-            }
-            title={t("actions.editTitle")}
-            aria-label={t("actions.editTitle")}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditing(true);
-            }}
-          >
-            <Icon icon="lucide:pencil" width={13} />
-          </button>
+          {issue.access.canEdit && (
+            <button
+              type="button"
+              className={styles.editTitle}
+              style={
+                textEnd
+                  ? ({
+                      "--title-end-x": `${textEnd.x}px`,
+                      "--title-end-y": `${textEnd.y}px`,
+                    } as CSSProperties)
+                  : undefined
+              }
+              title={t("actions.editTitle")}
+              aria-label={t("actions.editTitle")}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+            >
+              <Icon icon="lucide:pencil" width={13} />
+            </button>
+          )}
         </div>
       )}
 

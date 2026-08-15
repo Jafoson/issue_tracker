@@ -13,6 +13,7 @@ import {
 import { useIssuePatch } from "@/features/issues/useIssuePatch";
 import type {
   Issue,
+  IssueDetail,
   IssueType,
   Label as LabelType,
   Priority,
@@ -25,17 +26,29 @@ import styles from "../listView.module.scss";
 const MAX_LABELS = 2;
 
 // ── Bedienbare Zellen: ändern das Issue direkt aus der Liste heraus ───────────
+//
+// Ohne `issue.access.canEdit` (spiegelt `issue.update.any`/`.own` in
+// `updateIssue`) bleibt der Picker-Knopf weg — derselbe Grund wie in der
+// Detailansicht (`IssueProperties.tsx`): der Server lehnte den Patch ohnehin ab.
 
 export function PriorityCell({
   issue,
   priorities,
 }: {
-  issue: Issue;
+  issue: IssueDetail;
   priorities: Priority[];
 }) {
   const t = useTranslations();
   const { patch } = useIssuePatch(issue.id);
   const current = priorities.find((p) => p.id === issue.priority);
+
+  if (!issue.access.canEdit) {
+    return (
+      <span className={styles.pickerBtn} data-readonly>
+        <PriorityIcon priority={issue.priority} size={15} />
+      </span>
+    );
+  }
 
   return (
     <InlinePicker
@@ -75,12 +88,20 @@ export function StatusCell({
   issue,
   statuses,
 }: {
-  issue: Issue;
+  issue: IssueDetail;
   statuses: Status[];
 }) {
   const t = useTranslations();
   const { patch } = useIssuePatch(issue.id);
   const current = statuses.find((s) => s.id === issue.status);
+
+  if (!issue.access.canEdit) {
+    return (
+      <span className={styles.pickerBtn} data-readonly>
+        <StatusIcon status={issue.status} size={15} color={current?.color} />
+      </span>
+    );
+  }
 
   return (
     <InlinePicker

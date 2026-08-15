@@ -8,12 +8,12 @@ import { CreateIssueModal } from "@/features/issues/components/CreateIssueModal/
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { IssueComposerData, IssueLookups } from "@/features/issues/types";
 import { useModal } from "@/lib/context";
-import type { Issue, Status } from "@/types";
+import type { IssueDetail, Status } from "@/types";
 import styles from "./boardColumn.module.scss";
 
 interface BoardColumnProps {
   status: Status;
-  issues: Issue[];
+  issues: IssueDetail[];
   /** Ohne Projekt gibt es kein „Neue Aufgabe“ — siehe `Board`. */
   projectId?: string;
   /** Reicht die Spalte nur durch: die Karte nennt dann ihr Projekt. */
@@ -28,14 +28,14 @@ interface BoardColumnProps {
   onColumnDragOver: (e: React.DragEvent) => void;
   onColumnDragLeave: (e: React.DragEvent) => void;
   onColumnDrop: (e: React.DragEvent) => void;
-  onCardDragStart: (issue: Issue) => (e: React.DragEvent) => void;
+  onCardDragStart: (issue: IssueDetail) => (e: React.DragEvent) => void;
   onCardDragEnd: () => void;
   onCardDragOver: (cardId: string) => (e: React.DragEvent) => void;
   /** Ob dieses Issue gerade im Seitenpanel steht. */
-  isCardActive: (issue: Issue) => boolean;
-  onCardOpen: (issue: Issue) => void;
+  isCardActive: (issue: IssueDetail) => boolean;
+  onCardOpen: (issue: IssueDetail) => void;
   /** Strg/Cmd- und Mittelklick auf eine Karte: Vollseite im neuen Tab. */
-  onCardOpenInNewTab: (issue: Issue) => void;
+  onCardOpenInNewTab: (issue: IssueDetail) => void;
 }
 
 export function BoardColumn({

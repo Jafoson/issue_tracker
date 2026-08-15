@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
+import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 import { type Prisma, PrismaClient } from "../lib/generated/prisma/client";
 import { enrollWorkspaceMembers } from "../lib/project-membership";
@@ -15,10 +16,30 @@ const db = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const WS = "nimbus";
 
+// Alle Seed-User bekommen dasselbe Passwort, damit sich jede Rolle für
+// Permission-Tests im Browser tatsächlich einloggen lässt (Login mit
+// z. B. mara@nimbus.io / DEV_PASSWORD).
+const DEV_PASSWORD = "test";
+
 // Bootstrap: erster Plattform-Admin (SaaS-Betreiber-Ebene über allen Workspaces).
 // u1 (Mara) wird global zum Plattform-Admin ernannt. Hat keinen Durchgriff auf
 // Tenant-Inhalte, nur auf Plattform-Operationen.
 const PLATFORM_ADMIN_IDS = new Set(["u1"]);
+
+// Platform Support trägt `tenant.access` — der einzige Generalschlüssel, der
+// jede Sperre (gesperrter Workspace, privates Projekt, `blocked`) durchbricht.
+// Zum Testen bewusst getrennt von `platform_admin`, der genau das NICHT darf.
+const PLATFORM_SUPPORT_IDS = new Set(["u18"]);
+
+// u21 (pending1) simuliert eine offene Einladung: `WorkspaceMember.pending`
+// steht schon, ein Passwort gibt es erst nach Annahme (siehe lib/invitations.ts)
+// — genau deshalb bekommt dieser User hier keinen Hash und kann sich (zu Recht)
+// nicht einloggen.
+const NO_PASSWORD_IDS = new Set(["u21"]);
+
+// u20 (deactivated1) testet die Sperre am Login selbst: `auth.ts` weist ein
+// stillgelegtes Konto zurück, noch bevor irgendeine Rolle geladen wird.
+const DEACTIVATED_USER_IDS = new Set(["u20"]);
 
 // ─── Workspace Config ─────────────────────────────────────────────────────────
 
@@ -145,62 +166,184 @@ const LABELS = [
 
 // ─── Seed Data ───────────────────────────────────────────────────────────────
 
+// Handle/E-Mail tragen die zu testende Rolle im Namen (owner@, manager1@, …)
+// statt eines Fantasienamens — beim Durchklicken der Mitgliederliste ist so
+// auf einen Blick klar, wer welche Rechte mitbringt und mit wem eingeloggt
+// werden muss, um sie zu prüfen.
 const USERS = [
   {
     id: "u1",
     firstName: "Mara",
     lastName: "Velez",
-    handle: "mara",
-    email: "mara@nimbus.io",
+    handle: "owner",
+    email: "owner@nimbus.io",
     color: "#6e63e6",
   },
   {
     id: "u2",
     firstName: "Tomas",
     lastName: "Køhler",
-    handle: "tomas",
-    email: "tomas@nimbus.io",
+    handle: "member1",
+    email: "member1@nimbus.io",
     color: "#d5733b",
   },
   {
     id: "u3",
     firstName: "Aisha",
     lastName: "Rahman",
-    handle: "aisha",
-    email: "aisha@nimbus.io",
+    handle: "member2",
+    email: "member2@nimbus.io",
     color: "#3b9d6e",
   },
   {
     id: "u4",
     firstName: "Devon",
     lastName: "Park",
-    handle: "devon",
-    email: "devon@nimbus.io",
+    handle: "member3",
+    email: "member3@nimbus.io",
     color: "#c2456b",
   },
   {
     id: "u5",
     firstName: "Lena",
     lastName: "Brandt",
-    handle: "lena",
-    email: "lena@nimbus.io",
+    handle: "admin",
+    email: "admin@nimbus.io",
     color: "#3b7bd5",
   },
   {
     id: "u6",
     firstName: "Yusuf",
     lastName: "Demir",
-    handle: "yusuf",
-    email: "yusuf@nimbus.io",
+    handle: "member4",
+    email: "member4@nimbus.io",
     color: "#a05fd0",
   },
   {
     id: "u7",
     firstName: "Priya",
     lastName: "Nair",
-    handle: "priya",
-    email: "priya@nimbus.io",
+    handle: "viewer1",
+    email: "viewer1@nimbus.io",
     color: "#cf9a3b",
+  },
+  // u8+: Deckt die restlichen Workspace-Rollen ab (manager, project_lead,
+  // guest fehlten oben ganz) und gibt jeder Rolle genug Köpfe, um Listen,
+  // Rechte-Matrix und Mitgliederverwaltung mit realistischer Menge zu prüfen.
+  {
+    id: "u8",
+    firstName: "Noah",
+    lastName: "Fischer",
+    handle: "manager1",
+    email: "manager1@nimbus.io",
+    color: "#4a90d9",
+  },
+  {
+    id: "u9",
+    firstName: "Elif",
+    lastName: "Sahin",
+    handle: "manager2",
+    email: "manager2@nimbus.io",
+    color: "#d94a90",
+  },
+  {
+    id: "u10",
+    firstName: "Marco",
+    lastName: "Rossi",
+    handle: "projectlead1",
+    email: "projectlead1@nimbus.io",
+    color: "#90d94a",
+  },
+  {
+    id: "u11",
+    firstName: "Sofia",
+    lastName: "Andersson",
+    handle: "projectlead2",
+    email: "projectlead2@nimbus.io",
+    color: "#d9a44a",
+  },
+  {
+    id: "u12",
+    firstName: "Kwame",
+    lastName: "Boateng",
+    handle: "member5",
+    email: "member5@nimbus.io",
+    color: "#4ad9c2",
+  },
+  {
+    id: "u13",
+    firstName: "Ingrid",
+    lastName: "Larsen",
+    handle: "member6",
+    email: "member6@nimbus.io",
+    color: "#9a4ad9",
+  },
+  {
+    id: "u14",
+    firstName: "Hiro",
+    lastName: "Tanaka",
+    handle: "viewer2",
+    email: "viewer2@nimbus.io",
+    color: "#d94a4a",
+  },
+  {
+    id: "u15",
+    firstName: "Fatima",
+    lastName: "Zahra",
+    handle: "viewer3",
+    email: "viewer3@nimbus.io",
+    color: "#4ad96b",
+  },
+  {
+    id: "u16",
+    firstName: "Erik",
+    lastName: "Johansson",
+    handle: "guest1",
+    email: "guest1@nimbus.io",
+    color: "#d9d14a",
+  },
+  {
+    id: "u17",
+    firstName: "Camila",
+    lastName: "Santos",
+    handle: "guest2",
+    email: "guest2@nimbus.io",
+    color: "#4a6ed9",
+  },
+  // u18+: Randfälle jenseits der reinen Workspace-Rollen-Matrix — Support-
+  // Durchgriff, ein Projekt-Gast ganz ohne Workspace-Mitgliedschaft, ein
+  // stillgelegtes Konto und eine noch offene Einladung.
+  {
+    id: "u18",
+    firstName: "Robin",
+    lastName: "Weiss",
+    handle: "support",
+    email: "support@nimbus.io",
+    color: "#5a5f66",
+  },
+  {
+    id: "u19",
+    firstName: "Jonas",
+    lastName: "Berger",
+    handle: "projectguest1",
+    email: "projectguest1@nimbus.io",
+    color: "#8a6ed9",
+  },
+  {
+    id: "u20",
+    firstName: "Petra",
+    lastName: "Nowak",
+    handle: "deactivated1",
+    email: "deactivated1@nimbus.io",
+    color: "#8a9099",
+  },
+  {
+    id: "u21",
+    firstName: "Samuel",
+    lastName: "Ade",
+    handle: "pending1",
+    email: "pending1@nimbus.io",
+    color: "#d9c24a",
   },
 ];
 
@@ -212,6 +355,22 @@ const WORKSPACE_MEMBERS = [
   { workspaceId: WS, userId: "u5", role: "admin", pending: false },
   { workspaceId: WS, userId: "u6", role: "member", pending: false },
   { workspaceId: WS, userId: "u7", role: "viewer", pending: false },
+  { workspaceId: WS, userId: "u8", role: "manager", pending: false },
+  { workspaceId: WS, userId: "u9", role: "manager", pending: false },
+  { workspaceId: WS, userId: "u10", role: "project_lead", pending: false },
+  { workspaceId: WS, userId: "u11", role: "project_lead", pending: false },
+  { workspaceId: WS, userId: "u12", role: "member", pending: false },
+  { workspaceId: WS, userId: "u13", role: "member", pending: false },
+  { workspaceId: WS, userId: "u14", role: "viewer", pending: false },
+  { workspaceId: WS, userId: "u15", role: "viewer", pending: false },
+  { workspaceId: WS, userId: "u16", role: "guest", pending: false },
+  { workspaceId: WS, userId: "u17", role: "guest", pending: false },
+  // u18 (support) und u19 (projectguest1) bleiben absichtlich außen vor: der
+  // eine braucht keine Workspace-Mitgliedschaft (tenant.access durchbricht das
+  // ohnehin), der andere soll genau die Rolle "nur in einem Projekt, nirgends
+  // sonst" abbilden.
+  { workspaceId: WS, userId: "u20", role: "member", pending: false },
+  { workspaceId: WS, userId: "u21", role: "member", pending: true },
 ];
 
 // `ownerId` ist die Zuständigkeit, nicht der Zugriff — Zugriff kommt aus
@@ -248,6 +407,22 @@ const PROJECTS = [
     prefix: "PLT",
     color: "#d5733b",
     ownerId: "u1",
+  },
+  // Einziges privates Projekt im Seed: NICHT automatisch für alle
+  // Workspace-Mitglieder eingetragen (siehe lib/project-membership.ts).
+  // Damit lässt sich direkt gegentesten, wer es sieht (Mitglieder + wer
+  // project.admin.all/project.view.all im Workspace trägt) und wer nicht
+  // (jedes Mitglied ohne eigene Zeile hier, z. B. member2).
+  {
+    id: "p4",
+    workspaceId: WS,
+    name: "Vault",
+    slug: "vault",
+    desc: "Vertrauliches Projekt — nur für ausdrücklich eingeladene Personen.",
+    prefix: "VLT",
+    color: "#5a5f66",
+    ownerId: "u1",
+    visibility: "private" as const,
   },
 ];
 
@@ -853,15 +1028,23 @@ async function main() {
   await provisionSystemRbac(db);
   console.log("   ✓ RBAC permissions & shared system roles");
 
+  // Ein Hash für alle Seed-User: sie sind Testdaten, kein echtes Passwort pro
+  // Kopf nötig, aber ohne passwordHash könnte sich niemand einloggen und
+  // Rollen im Browser gegeneinander testen.
+  const devPasswordHash = await bcrypt.hash(DEV_PASSWORD, 12);
+
   for (const u of USERS) {
     const id = ref(realUserId, u.id, "user");
-    const roleId = systemRoleId(
-      "PLATFORM",
-      PLATFORM_ADMIN_IDS.has(u.id) ? "platform_admin" : "platform_member",
-    );
+    const platformRoleKey = PLATFORM_ADMIN_IDS.has(u.id)
+      ? "platform_admin"
+      : PLATFORM_SUPPORT_IDS.has(u.id)
+        ? "platform_support"
+        : "platform_member";
+    const roleId = systemRoleId("PLATFORM", platformRoleKey);
+    const passwordHash = NO_PASSWORD_IDS.has(u.id) ? null : devPasswordHash;
     await db.user.upsert({
       where: { id },
-      update: { platformRoleId: roleId },
+      update: { platformRoleId: roleId, passwordHash },
       create: {
         id,
         firstName: u.firstName,
@@ -870,10 +1053,21 @@ async function main() {
         email: u.email,
         color: u.color,
         platformRoleId: roleId,
+        passwordHash,
       },
     });
   }
-  console.log(`   ✓ ${USERS.length} users`);
+  await db.user.updateMany({
+    where: {
+      id: {
+        in: [...DEACTIVATED_USER_IDS].map((u) =>
+          ref(realUserId, u, "deactivated user"),
+        ),
+      },
+    },
+    data: { deactivatedAt: new Date() },
+  });
+  console.log(`   ✓ ${USERS.length} users (Login-Passwort: ${DEV_PASSWORD})`);
 
   for (const m of WORKSPACE_MEMBERS) {
     const userId = ref(realUserId, m.userId, "member user");
@@ -895,9 +1089,10 @@ async function main() {
 
   for (const p of PROJECTS) {
     const id = ref(realProjectId, p.id, "project");
+    const visibility = "visibility" in p ? p.visibility : "public";
     await db.project.upsert({
       where: { id },
-      update: {},
+      update: { visibility },
       create: {
         id,
         workspaceId: p.workspaceId,
@@ -906,15 +1101,103 @@ async function main() {
         desc: p.desc,
         prefix: p.prefix,
         color: p.color,
+        visibility,
         createdById: ref(realUserId, p.ownerId, "project owner"),
       },
     });
-    // Wer im Workspace ist, ist in dessen öffentlichen Projekten — ohne eigene
-    // Projektrolle, die Rechte kommen aus dem Workspace.
-    await enrollWorkspaceMembers(db, { id, workspaceId: p.workspaceId });
+    if (visibility === "public") {
+      // Wer im Workspace ist, ist in dessen öffentlichen Projekten — ohne
+      // eigene Projektrolle, die Rechte kommen aus dem Workspace.
+      await enrollWorkspaceMembers(db, { id, workspaceId: p.workspaceId });
+    }
+    // Private Projekte (aktuell nur "Vault") bekommen ihre Mitglieder weiter
+    // unten ausdrücklich einzeln — genau das ist der Punkt an privat.
+  }
+  console.log(`   ✓ ${PROJECTS.length} projects`);
+
+  // ── Vault (p4, privat): nur wer ausdrücklich eingeladen ist ────────────────
+  const vaultId = ref(realProjectId, "p4", "vault project");
+  const vaultMembers: Array<{ userId: string; roleKey: string }> = [
+    { userId: "u1", roleKey: "project_admin" }, // owner, zugleich Ersteller
+    { userId: "u5", roleKey: "project_admin" }, // admin, ausdrücklich hinzugefügt
+    { userId: "u2", roleKey: "contributor" }, // member1, arbeitet mit
+    { userId: "u19", roleKey: "project_guest" }, // projectguest1: NUR hier Mitglied
+  ];
+  for (const vm of vaultMembers) {
+    await db.projectMember.upsert({
+      where: {
+        projectId_userId: {
+          projectId: vaultId,
+          userId: ref(realUserId, vm.userId, "vault member"),
+        },
+      },
+      update: { roleId: systemRoleId("PROJECT", vm.roleKey) },
+      create: {
+        projectId: vaultId,
+        userId: ref(realUserId, vm.userId, "vault member"),
+        roleId: systemRoleId("PROJECT", vm.roleKey),
+      },
+    });
   }
   console.log(
-    `   ✓ ${PROJECTS.length} projects (${PROJECTS.length * WORKSPACE_MEMBERS.length} memberships)`,
+    `   ✓ vault: ${vaultMembers.length} ausdrücklich eingeladene Mitglieder`,
+  );
+
+  // ── Verschiedene Manager für verschiedene Projekte ─────────────────────────
+  //
+  // `manager` trägt weder project.admin.all noch project.view.all (siehe
+  // lib/rbac/roles.ts) — anders als Owner/Admin/Project Lead hängt der Zugriff
+  // hier also wirklich an der einzelnen ProjectMember-Zeile.
+  // enrollWorkspaceMembers hat beide oben in alle drei öffentlichen Projekte
+  // als project_admin eingetragen; hier wird das auf je ein Projekt verengt,
+  // damit sich testen lässt, ob ein Manager wirklich nur "sein" Projekt sieht.
+  const web = ref(realProjectId, "p1", "web app project");
+  const mobile = ref(realProjectId, "p2", "mobile project");
+  const platform = ref(realProjectId, "p3", "platform project");
+  const manager1 = ref(realUserId, "u8", "manager1");
+  const manager2 = ref(realUserId, "u9", "manager2");
+  await db.projectMember.deleteMany({
+    where: {
+      userId: manager1,
+      projectId: { in: [mobile, platform] },
+    },
+  });
+  await db.projectMember.deleteMany({
+    where: {
+      userId: manager2,
+      projectId: { in: [web, platform] },
+    },
+  });
+  console.log("   ✓ manager1 → nur Web App, manager2 → nur Mobile");
+
+  // ── Blocked: mit und ohne Wirkung ──────────────────────────────────────────
+  //
+  // member3 hat sonst nirgends einen Generalschlüssel — für sie sperrt
+  // "blocked" das Projekt wirklich. project_lead2 dagegen trägt
+  // project.admin.all im Workspace; die Prüfung in lib/permissions.ts greift
+  // dort, bevor die Projektrolle überhaupt geladen wird, "blocked" bleibt also
+  // wirkungslos. Beides lässt sich am selben Datensatz nebeneinander zeigen.
+  const blockedRoleId = systemRoleId("PROJECT", "blocked");
+  await db.projectMember.update({
+    where: {
+      projectId_userId: {
+        projectId: mobile,
+        userId: ref(realUserId, "u4", "member3"),
+      },
+    },
+    data: { roleId: blockedRoleId },
+  });
+  await db.projectMember.update({
+    where: {
+      projectId_userId: {
+        projectId: platform,
+        userId: ref(realUserId, "u11", "projectlead2"),
+      },
+    },
+    data: { roleId: blockedRoleId },
+  });
+  console.log(
+    "   ✓ member3 in Mobile blocked, project_lead2 in Platform blocked (wirkungslos)",
   );
 
   for (const l of LABELS) {

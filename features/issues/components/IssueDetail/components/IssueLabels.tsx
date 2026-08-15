@@ -7,12 +7,12 @@ import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { Label as LabelChip } from "@/components/ui/atoms/Label/Label";
 import { LabelPickerMenu } from "@/features/issues/components/LabelPickerMenu/LabelPickerMenu";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
-import type { Issue, Label } from "@/types";
+import type { IssueDetail, Label } from "@/types";
 import styles from "../issueDetail.module.scss";
 import type { IssueDetailLayout } from "../types";
 
 interface IssueLabelsProps {
-  issue: Issue;
+  issue: IssueDetail;
   data: IssueComposerData;
   layout: IssueDetailLayout;
   onPatch: (patch: IssuePatch) => void;
@@ -39,6 +39,7 @@ export function IssueLabels({
 }: IssueLabelsProps) {
   const { labels, projects } = data;
   const t = useTranslations();
+  const { canEdit } = issue.access;
 
   // Im Label-Picker neu angelegte Labels kennt die Server-Prop noch nicht —
   // bis zum nächsten Refresh kommen sie von hier.
@@ -90,8 +91,10 @@ export function IssueLabels({
       color={label.color}
       size="sm"
       // Derselbe Weg wie über das Menü — `toggleLabel` nimmt es heraus, wenn
-      // es schon gesetzt ist.
-      onRemove={() => toggleLabel(label.id)}
+      // es schon gesetzt ist. Ohne issue.update.*/.own kein Kreuz: `onRemove`
+      // fehlt dann ganz, statt auf einen Klick zu warten, der serverseitig
+      // ohnehin abgelehnt würde.
+      onRemove={canEdit ? () => toggleLabel(label.id) : undefined}
       removeLabel={t("actions.removeLabel", { name: label.name })}
     >
       {label.name}
@@ -103,16 +106,17 @@ export function IssueLabels({
       <div className={styles.labels}>
         <div className={styles.labelsHead}>
           <span className={styles.rowLabel}>{t("fields.labels")}</span>
-          {picker(
-            <button
-              type="button"
-              className={styles.iconBtn}
-              aria-label={t("actions.addLabel")}
-              title={t("actions.addLabel")}
-            >
-              <Icon icon="lucide:plus" width={14} />
-            </button>,
-          )}
+          {canEdit &&
+            picker(
+              <button
+                type="button"
+                className={styles.iconBtn}
+                aria-label={t("actions.addLabel")}
+                title={t("actions.addLabel")}
+              >
+                <Icon icon="lucide:plus" width={14} />
+              </button>,
+            )}
         </div>
         {issueLabels.length > 0 ? (
           <div className={`${styles.labelsList} ${styles.labelsListAside}`}>
@@ -134,17 +138,18 @@ export function IssueLabels({
 
       <div className={styles.labelsList}>
         {chips}
-        {picker(
-          <button
-            type="button"
-            className={styles.addLabel}
-            aria-label={t("actions.addLabel")}
-            title={t("actions.addLabel")}
-          >
-            <Icon icon="lucide:plus" width={13} aria-hidden="true" />
-            {issueLabels.length === 0 && <span>{t("fields.label")}</span>}
-          </button>,
-        )}
+        {canEdit &&
+          picker(
+            <button
+              type="button"
+              className={styles.addLabel}
+              aria-label={t("actions.addLabel")}
+              title={t("actions.addLabel")}
+            >
+              <Icon icon="lucide:plus" width={13} aria-hidden="true" />
+              {issueLabels.length === 0 && <span>{t("fields.label")}</span>}
+            </button>,
+          )}
       </div>
     </section>
   );

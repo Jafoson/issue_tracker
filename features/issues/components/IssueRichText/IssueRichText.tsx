@@ -36,6 +36,8 @@ interface IssueRichTextProps {
   cancelLabel?: string;
   /** Siehe `EditableRichText` — aus, wo ein Dialog eigene Knöpfe trägt. */
   actions?: boolean;
+  /** Siehe `EditableRichText` — nur Anzeige, kein Klick öffnet den Editor. */
+  readOnly?: boolean;
   className?: string;
 }
 
@@ -81,6 +83,7 @@ export function IssueRichText({
   saveLabel,
   cancelLabel,
   actions,
+  readOnly,
   className,
 }: IssueRichTextProps) {
   const { members, issues } = useEditorSources(data);
@@ -100,6 +103,7 @@ export function IssueRichText({
       saveLabel={saveLabel}
       cancelLabel={cancelLabel}
       actions={actions}
+      readOnly={readOnly}
       members={members}
       issues={issues}
       className={className}

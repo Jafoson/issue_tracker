@@ -12,6 +12,7 @@ import {
 } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import {
+  navEntryAllowed,
   PROJECT_SETTINGS_NAV,
   projectSettingsPath,
   settingsScopeItems,
@@ -77,8 +78,8 @@ export default async function ProjectSettingsLayout({
   // Rollen sind der einzige Bereich mit eigener Hürde: dort stehen die Regeln,
   // nach denen alles andere entschieden wird. Allgemein und Labels bleiben auch
   // ohne Schreibrecht sichtbar — sie zeigen dann, was gilt, nur unveränderlich.
-  const items: SettingsNavItem[] = PROJECT_SETTINGS_NAV.filter(
-    (entry) => entry.section !== "roles" || access.has("role.manage"),
+  const items: SettingsNavItem[] = PROJECT_SETTINGS_NAV.filter((entry) =>
+    navEntryAllowed(access.has, entry),
   ).map((entry) => ({
     href: projectSettingsPath(workspace, projectSlug, entry.section),
     label: t(`nav.${entry.labelKey}`),

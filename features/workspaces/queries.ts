@@ -419,10 +419,22 @@ export const getWorkspaceTeamsView = cache(
     const workspaceId = requireWorkspaceId();
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
+    const actorId = await currentUserId();
+    const access = await accessFor(actorId, { workspaceId });
+    // Ohne `team.view.all` nur die Teams, in denen man selbst Mitglied ist —
+    // kein Gate wie bei den Mitgliedern, sondern eine gefilterte statt leeren
+    // Liste (`lib/rbac/permissions.ts`).
+    const canViewAllTeams = access.has("team.view.all");
+
     const [teams, members, projects, assignableProjectRoles] =
       await Promise.all([
         db.team.findMany({
-          where: { workspaceId },
+          where: {
+            workspaceId,
+            ...(canViewAllTeams || !actorId
+              ? {}
+              : { members: { some: { userId: actorId } } }),
+          },
           include: {
             lead: true,
             members: { select: { userId: true } },
@@ -509,8 +521,6 @@ export const getWorkspaceTeamsView = cache(
       };
     });
 
-    const access = await accessFor(await currentUserId(), { workspaceId });
-
     return {
       rows,
       candidates: members,
@@ -540,7 +550,10 @@ export const getWorkspaceMembersView = cache(
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
     const actorId = await currentUserId();
-    const [rowsRaw, teams, roles, access] = await Promise.all([
+    const access = await accessFor(actorId, { workspaceId });
+    if (!access.has("member.view")) return null;
+
+    const [rowsRaw, teams, roles] = await Promise.all([
       db.workspaceMember.findMany({
         where: { workspaceId },
         include: {
@@ -563,7 +576,6 @@ export const getWorkspaceMembersView = cache(
         orderBy: { name: "asc" },
       }),
       getRoles(workspaceId),
-      accessFor(actorId, { workspaceId }),
     ]);
 
     const canInvite = access.has("member.invite");

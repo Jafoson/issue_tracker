@@ -12,7 +12,7 @@ import type { Issue } from "@/types";
 export const effectiveRank = (issue: Issue) =>
   issue.rank !== 0 ? issue.rank : issue.created;
 
-export const sortByRank = (issues: Issue[]) =>
+export const sortByRank = <T extends Issue>(issues: T[]): T[] =>
   [...issues].sort((a, b) => effectiveRank(a) - effectiveRank(b));
 
 /**

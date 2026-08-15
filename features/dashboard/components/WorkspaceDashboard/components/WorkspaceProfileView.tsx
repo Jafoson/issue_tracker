@@ -143,12 +143,22 @@ export function WorkspaceProfileView({
     },
   ];
 
-  const shortcuts = [
-    { key: "projects", icon: "lucide:folders", href: links.projects },
-    { key: "members", icon: "lucide:users", href: links.members },
-    { key: "teams", icon: "lucide:users-round", href: links.teams },
-    { key: "settings", icon: "lucide:settings", href: links.settings },
-  ] as const;
+  // Ohne member.view führte die Kachel geradewegs in ein 404 — die Seite
+  // dahinter ist jetzt genauso gesperrt wie der Tab (`getWorkspaceMembersView`).
+  // Ohne canViewSettings bliebe die Kachel sonst die einzige Tür zu den
+  // Einstellungen, obwohl der Sidebar-Tab dafür längst ausgeblendet ist.
+  const shortcuts = (
+    [
+      { key: "projects", icon: "lucide:folders", href: links.projects },
+      { key: "members", icon: "lucide:users", href: links.members },
+      { key: "teams", icon: "lucide:users-round", href: links.teams },
+      { key: "settings", icon: "lucide:settings", href: links.settings },
+    ] as const
+  ).filter(
+    (s) =>
+      (s.key !== "members" || profile.canViewMembers) &&
+      (s.key !== "settings" || profile.canViewSettings),
+  );
 
   const named = profile.roles.filter((role) => role.distinguished);
   const rest = profile.roles.filter((role) => !role.distinguished);
@@ -307,74 +317,80 @@ export function WorkspaceProfileView({
         </div>
       </div>
 
-      {/* Die Mitglieder als eigene Spalte rechts. */}
-      <aside className={styles.side}>
-        <Card
-          title={t("nav.members")}
-          count={profile.memberCount}
-          empty={profile.memberCount === 0}
-          footer={
-            profile.memberCount > 0 && (
-              <Link href={links.members} className={styles.cardLink}>
-                {t("dashboard.allMembers")}
-                <Icon icon="lucide:arrow-right" width={13} />
-              </Link>
-            )
-          }
-        >
-          {profile.memberCount === 0 ? (
-            t("dashboard.noMembers")
-          ) : (
-            <>
-              {named.length > 0 && (
-                <ul className={styles.people}>
-                  {named.flatMap((role) =>
-                    role.members.map((member) => (
-                      <li key={member.id} className={styles.person}>
-                        <Avatar avatar={member} size={28} />
-                        <span className={styles.personText}>
-                          <span className={styles.personName}>
-                            <span>{fullName(member)}</span>
-                            <Label
-                              size="sm"
-                              filled
-                              color={roleColor(role.rank)}
-                            >
-                              {role.name}
-                            </Label>
+      {/* Die Mitglieder als eigene Spalte rechts — ohne member.view ganz weg,
+          nicht nur leer, sonst bliebe Namen-und-E-Mail-Steckbrief hinter
+          einer Karte mit korrekter Kopfzahl versteckt statt wirklich verborgen. */}
+      {profile.canViewMembers && (
+        <aside className={styles.side}>
+          <Card
+            title={t("nav.members")}
+            count={profile.memberCount}
+            empty={profile.memberCount === 0}
+            footer={
+              profile.memberCount > 0 && (
+                <Link href={links.members} className={styles.cardLink}>
+                  {t("dashboard.allMembers")}
+                  <Icon icon="lucide:arrow-right" width={13} />
+                </Link>
+              )
+            }
+          >
+            {profile.memberCount === 0 ? (
+              t("dashboard.noMembers")
+            ) : (
+              <>
+                {named.length > 0 && (
+                  <ul className={styles.people}>
+                    {named.flatMap((role) =>
+                      role.members.map((member) => (
+                        <li key={member.id} className={styles.person}>
+                          <Avatar avatar={member} size={28} />
+                          <span className={styles.personText}>
+                            <span className={styles.personName}>
+                              <span>{fullName(member)}</span>
+                              <Label
+                                size="sm"
+                                filled
+                                color={roleColor(role.rank)}
+                              >
+                                {role.name}
+                              </Label>
+                            </span>
+                            <span className={styles.personMeta}>
+                              {member.email}
+                            </span>
                           </span>
-                          <span className={styles.personMeta}>
-                            {member.email}
-                          </span>
-                        </span>
-                      </li>
-                    )),
-                  )}
-                </ul>
-              )}
-
-              {rest.map((role) => (
-                <div key={role.key} className={styles.roleBlock}>
-                  <span className={styles.subLabel}>
-                    {role.name}
-                    <span className={styles.count}>{role.members.length}</span>
-                  </span>
-                  <ul className={styles.roster}>
-                    {role.members.map((member) => (
-                      <li key={member.id} className={styles.rosterRow}>
-                        <Avatar avatar={member} size={22} />
-                        <span className={styles.rosterName}>
-                          {fullName(member)}
-                        </span>
-                      </li>
-                    ))}
+                        </li>
+                      )),
+                    )}
                   </ul>
-                </div>
-              ))}
-            </>
-          )}
-        </Card>
-      </aside>
+                )}
+
+                {rest.map((role) => (
+                  <div key={role.key} className={styles.roleBlock}>
+                    <span className={styles.subLabel}>
+                      {role.name}
+                      <span className={styles.count}>
+                        {role.members.length}
+                      </span>
+                    </span>
+                    <ul className={styles.roster}>
+                      {role.members.map((member) => (
+                        <li key={member.id} className={styles.rosterRow}>
+                          <Avatar avatar={member} size={22} />
+                          <span className={styles.rosterName}>
+                            {fullName(member)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </>
+            )}
+          </Card>
+        </aside>
+      )}
 
       {/* ── 4. Die Wege hinaus ── */}
       <nav className={styles.next} aria-label={t("dashboard.goOn")}>

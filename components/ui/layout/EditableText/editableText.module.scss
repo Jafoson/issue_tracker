@@ -41,9 +41,11 @@
   }
 
   /* Derselbe Wert wie bei der Beschreibung (`.preview` in
-     `editableRichText.module.scss`) — die beiden stehen übereinander. */
-  &:hover::before,
-  &:focus-within::before {
+     `editableRichText.module.scss`) — die beiden stehen übereinander.
+     Nicht bei `[data-readonly]`: ein Hover-Schein auf einem Feld, das sich
+     nicht öffnen lässt, wäre eine Einladung, die nicht eingehalten wird. */
+  &:not([data-readonly]):hover::before,
+  &:not([data-readonly]):focus-within::before {
     opacity: 0.08;
   }
 

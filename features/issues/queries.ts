@@ -1,14 +1,18 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
 import {
+  accessFor,
   accessibleProjectIds,
   currentUserCanEnterWorkspace,
+  currentUserId,
   hasPermission,
   visibleProjectIds,
 } from "@/lib/permissions";
 import { toDoc } from "@/lib/richtext/doc";
 import type {
   Issue,
+  IssueAccess,
+  IssueDetail,
   IssueType,
   Label,
   Priority,
@@ -372,7 +376,7 @@ async function resolveIssueFilters(
 export async function getIssuesByProject(
   projectId: string,
   filters: IssueFilters = {},
-): Promise<Issue[]> {
+): Promise<IssueDetail[]> {
   // Die Issues sind der Inhalt des Projekts — ohne `project.view` gibt es sie
   // nicht. Das greift auch für `blocked`: die Rolle verbietet alles, also auch
   // das Lesen, und nicht nur das Schreiben.
@@ -387,7 +391,16 @@ export async function getIssuesByProject(
     include: { comments: { orderBy: { created: "asc" } } },
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
-  return rows.map(mapIssue);
+  // `issueAccessFor` löst je Projekt einmal auf und ist `cache()`d — bei allen
+  // Zeilen desselben Projekts kostet das keine weitere Datenbankfrage. Board
+  // und Liste zeigen sonst Titel, Status, Priorität und Zuständigkeit als
+  // Bedienelemente, die der Server ohnehin ablehnen würde (`updateIssue`).
+  return Promise.all(
+    rows.map(async (i) => ({
+      ...mapIssue(i),
+      access: await issueAccessFor(i),
+    })),
+  );
 }
 
 // Auch die eigenen Issues bleiben an das Projekt gebunden: wer aus einem Projekt
@@ -396,7 +409,7 @@ export async function getMyIssues(
   userId: string,
   workspaceId: string,
   filters: IssueFilters = {},
-): Promise<Issue[]> {
+): Promise<IssueDetail[]> {
   const visible = await accessibleProjectIds(userId, workspaceId);
   if (visible.size === 0) return [];
 
@@ -419,10 +432,52 @@ export async function getMyIssues(
     // wo sie fallen gelassen wurde.
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
-  return rows.map(mapIssue);
+  // Über mehrere Projekte hinweg löst `issueAccessFor` je vorkommendem Projekt
+  // einmal auf (`cache()`), nicht je Zeile.
+  return Promise.all(
+    rows.map(async (i) => ({
+      ...mapIssue(i),
+      access: await issueAccessFor(i),
+    })),
+  );
 }
 
-export async function getIssueById(id: string): Promise<Issue | null> {
+/**
+ * Was der aktuelle Benutzer mit genau diesem Issue darf.
+ *
+ * Spiegelt `updateIssue`/`deleteIssue` (`features/issues/actions.ts`) Zeile
+ * für Zeile — die Detailansicht (Titel, Beschreibung, Typ, Status, Priorität,
+ * Zuständigkeit, Löschen) bietet damit nie eine Bedienung an, die der Server
+ * ohnehin mit `PermissionError` ablehnen würde. `issue.update.own`/
+ * `issue.delete.own` hängen an Eigentümerschaft, nicht nur an der Rolle —
+ * deshalb hier und nicht in `mapIssue` (das kennt weder Benutzer noch Access).
+ */
+async function issueAccessFor(issue: {
+  reporterId: string;
+  assigneeId: string | null;
+  projectId: string;
+}): Promise<IssueAccess> {
+  const userId = await currentUserId();
+  if (!userId) return { canEdit: false, canAssign: false, canDelete: false };
+
+  const access = await accessFor(userId, { projectId: issue.projectId });
+  const isOwner = userId === issue.reporterId || userId === issue.assigneeId;
+
+  const canEdit =
+    access.has("issue.update.any") ||
+    (access.has("issue.update.own") && isOwner);
+  const canDelete =
+    access.has("issue.delete.any") ||
+    (access.has("issue.delete.own") && isOwner);
+
+  return {
+    canEdit,
+    canAssign: canEdit && access.has("issue.assign"),
+    canDelete,
+  };
+}
+
+export async function getIssueById(id: string): Promise<IssueDetail | null> {
   const i = await db.issue.findUnique({
     where: { id },
     include: { comments: { orderBy: { created: "asc" } } },
@@ -433,7 +488,8 @@ export async function getIssueById(id: string): Promise<Issue | null> {
   // daraus ein 404, und ein 404 verrät nicht, dass es das Issue gibt.
   if (!(await hasPermission("project.view", { projectId: i.projectId })))
     return null;
-  return mapIssue(i);
+  const access = await issueAccessFor(i);
+  return { ...mapIssue(i), access };
 }
 
 /**
@@ -443,7 +499,10 @@ export async function getIssueById(id: string): Promise<Issue | null> {
  * einmal für `generateMetadata` (Tab-Titel) und einmal für die Seite selbst.
  */
 export const getIssueByRef = cache(
-  async (workspaceId: string, issueRef: string): Promise<Issue | null> => {
+  async (
+    workspaceId: string,
+    issueRef: string,
+  ): Promise<IssueDetail | null> => {
     const match = issueRef.match(/^([A-Z0-9]+)-(\d+)$/i);
     if (!match) return null;
     const prefix = match[1].toUpperCase();
@@ -460,7 +519,9 @@ export const getIssueByRef = cache(
       where: { projectId_key: { projectId: project.id, key } },
       include: { comments: { orderBy: { created: "asc" } } },
     });
-    return i ? mapIssue(i) : null;
+    if (!i) return null;
+    const access = await issueAccessFor(i);
+    return { ...mapIssue(i), access };
   },
 );
 

@@ -1,14 +1,25 @@
 import { getTranslations } from "next-intl/server";
 import { getCurrentWorkspace } from "@/features/workspaces/queries";
-import { WORKSPACE_NAV, workspacePath } from "@/lib/nav";
+import { navEntryAllowed, WORKSPACE_NAV, workspacePath } from "@/lib/nav";
+import { getAccess } from "@/lib/permissions";
 import TabList, { type TabGroup } from "../components/TabList";
 
+/**
+ * Gefiltert nach dem, was die Workspace-Rolle hergibt — dieselbe Höflichkeit
+ * wie bei `NavGroupAdmin`: kein Eintrag, der beim Anklicken auf ein 404 führt.
+ * Die eigentliche Prüfung sitzt in den Abfragen dahinter
+ * (`getWorkspaceMembersView`, `getWorkspaceSettingsView`, …).
+ */
 async function NavGroupWorkspace() {
   const t = await getTranslations("nav");
   const workspace = await getCurrentWorkspace();
   if (!workspace) return null;
 
-  const tabs: TabGroup[] = WORKSPACE_NAV.map((entry) => {
+  const access = await getAccess({ workspaceId: workspace.id });
+
+  const tabs: TabGroup[] = WORKSPACE_NAV.filter((entry) =>
+    navEntryAllowed(access.has, entry),
+  ).map((entry) => {
     const href = workspacePath(workspace.id, entry.section);
     return {
       href,

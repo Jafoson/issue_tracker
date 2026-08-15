@@ -41,17 +41,30 @@ export interface NavEntry {
   icon: string;
   labelKey: NavLabelKey;
   /**
-   * Recht, ohne das der Eintrag nicht erscheint. Ohne Angabe steht er allen
-   * offen, die den Bereich überhaupt betreten dürfen.
+   * Recht(e), ohne die der Eintrag nicht erscheint. Ohne Angabe steht er allen
+   * offen, die den Bereich überhaupt betreten dürfen. Mehrere Rechte sind ein
+   * ODER — der Eintrag erscheint, sobald eines davon greift (z. B. "Einstellungen":
+   * sichtbar für wer auch immer dort etwas ändern kann, egal was).
    *
-   * Nur die Plattform-Bereiche nutzen das bisher, und dort ist es keine
-   * Kosmetik: die Rollen dieser Ebene sind ausdrücklich verschieden geschnitten
-   * (`lib/rbac/roles.ts`) — Support sieht in die Mandanten, verwaltet aber keine
-   * Konten. Ein Eintrag, der beim Anklicken auf eine 403-Seite führt, wäre die
-   * schlechtere Antwort darauf. **Die Sichtbarkeit ist trotzdem kein Schutz**;
-   * geprüft wird in `features/admin/queries.ts`, bei jeder Abfrage neu.
+   * Geprüft wird das über `navEntryAllowed()`. Die Sichtbarkeit ist trotzdem
+   * kein Schutz — nur Höflichkeit, kein Eintrag, der beim Anklicken auf eine
+   * 403-Seite führt. Die eigentliche Prüfung sitzt in der Abfrage dahinter
+   * (`features/admin/queries.ts`, `features/workspaces/queries.ts`, …), bei
+   * jedem Aufruf neu.
    */
-  permission?: Permission;
+  permission?: Permission | Permission[];
+}
+
+/** Darf ein Nav-Eintrag angeboten werden? Kein Recht verlangt = immer ja. */
+export function navEntryAllowed(
+  has: (permission: Permission) => boolean,
+  entry: Pick<NavEntry, "permission">,
+): boolean {
+  if (!entry.permission) return true;
+  const required = Array.isArray(entry.permission)
+    ? entry.permission
+    : [entry.permission];
+  return required.some(has);
 }
 
 /**
@@ -90,9 +103,24 @@ export const GLOBAL_NAV: NavEntry[] = [
  * Einstellungen erreichbar, dieselbe Ansicht in einem anderen Rahmen.
  */
 export const WORKSPACE_NAV: NavEntry[] = [
-  { section: "members", icon: "lucide:users", labelKey: "members" },
+  {
+    section: "members",
+    icon: "lucide:users",
+    labelKey: "members",
+    permission: "member.view",
+  },
+  // Teams bekommen kein Gate: ohne team.view.all sieht man die eigenen statt
+  // aller (`getWorkspaceTeamsView`) — der Tab bleibt sichtbar, nur der Inhalt
+  // ist gefiltert.
   { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
-  { section: "settings", icon: "lucide:settings", labelKey: "settings" },
+  {
+    section: "settings",
+    icon: "lucide:settings",
+    labelKey: "settings",
+    // Sichtbar, sobald irgendetwas darin änderbar ist — sonst wäre der Tab nur
+    // eine Sackgasse aus lauter schreibgeschützten Ansichten.
+    permission: ["role.manage", "label.create", "workspace.update"],
+  },
 ];
 
 /** Real route with its own tab metadata, but not (yet) linked from the Sidebar. */
@@ -255,7 +283,12 @@ export const PROJECT_SETTINGS_NAV: NavEntry[] = [
   // sucht sie mal beim Projekt und mal in dessen Einstellungen — beides führt
   // hin. Erst die Leute, dann ihre Rechte, dann die Labels.
   { section: "members", icon: "lucide:users", labelKey: "members" },
-  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
+  {
+    section: "roles",
+    icon: "lucide:shield-check",
+    labelKey: "roles",
+    permission: "role.manage",
+  },
   { section: "labels", icon: "lucide:tag", labelKey: "labels" },
 ];
 
@@ -274,8 +307,18 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
   { section: "projects", icon: "lucide:folders", labelKey: "projects" },
   { section: "labels", icon: "lucide:tag", labelKey: "labels" },
   { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
-  { section: "roles", icon: "lucide:shield-check", labelKey: "roles" },
-  { section: "members", icon: "lucide:users", labelKey: "members" },
+  {
+    section: "roles",
+    icon: "lucide:shield-check",
+    labelKey: "roles",
+    permission: "role.manage",
+  },
+  {
+    section: "members",
+    icon: "lucide:users",
+    labelKey: "members",
+    permission: "member.view",
+  },
 ];
 
 /**

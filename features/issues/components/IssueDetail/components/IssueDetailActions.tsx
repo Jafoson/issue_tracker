@@ -92,6 +92,8 @@ export function CopyLinkButton({
 
 interface IssueActionsMenuProps {
   onDelete: () => void;
+  /** `issue.access.canDelete` — ohne `issue.delete.any`/`.own` bleibt das Menü weg. */
+  canDelete: boolean;
 }
 
 /**
@@ -100,9 +102,17 @@ interface IssueActionsMenuProps {
  * Der Weg auf die Vollseite stand hier einmal als Eintrag — er ist jetzt ein
  * eigener Knopf daneben (`OpenPageButton`), und zweimal dieselbe Aktion in
  * derselben Zeile wäre nur Rauschen.
+ *
+ * Aktuell der einzige Eintrag ist Löschen — ohne `canDelete` bliebe ein Menü
+ * mit nichts drin, das rendert das Menü also gleich gar nicht.
  */
-export function IssueActionsMenu({ onDelete }: IssueActionsMenuProps) {
+export function IssueActionsMenu({
+  onDelete,
+  canDelete,
+}: IssueActionsMenuProps) {
   const t = useTranslations();
+
+  if (!canDelete) return null;
 
   const items = [
     {

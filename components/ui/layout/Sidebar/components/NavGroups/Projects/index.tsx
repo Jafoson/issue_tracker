@@ -5,6 +5,7 @@ import {
   getWorkspaceProjects,
 } from "@/features/workspaces/queries";
 import { PROJECT_NAV, PROJECT_OVERVIEW_NAV, projectPath } from "@/lib/nav";
+import { getAccess } from "@/lib/permissions";
 import styles from "../../../sidebar.module.scss";
 import TabList, { type TabGroup } from "../components/TabList";
 
@@ -13,7 +14,10 @@ export default async function NavGroupProjects() {
   const workspace = await getCurrentWorkspace();
   if (!workspace) return null;
 
-  const projects = await getWorkspaceProjects();
+  const [projects, access] = await Promise.all([
+    getWorkspaceProjects(),
+    getAccess({ workspaceId: workspace.id }),
+  ]);
 
   // Die Projektzeile trägt `/*` und ist damit markiert, solange man irgendwo im
   // Projekt steht — ausgewertet wird das Muster in `lib/nav.ts` (`isNavActive`).
@@ -47,7 +51,9 @@ export default async function NavGroupProjects() {
     <>
       <div className={styles.titleWrapper}>
         <span>{t("settings.projects")}</span>
-        <NewProjectButton workspaceId={workspace.id} compact />
+        {access.has("project.create") && (
+          <NewProjectButton workspaceId={workspace.id} compact />
+        )}
       </div>
       <div className={styles.projectTabsWrapper}>
         <TabList tabs={projectTabs} />

@@ -11,6 +11,8 @@ interface IssueDescriptionProps {
   description: PMDoc;
   /** Für die Vorschläge hinter `@` und `#` im Beschreibungstext. */
   data: IssueEditorData;
+  /** `!issue.access.canEdit` — ohne `issue.update.any`/`.own` nur Anzeige, kein Editor. */
+  readOnly?: boolean;
   onPatch: (patch: IssuePatch) => void;
 }
 
@@ -22,6 +24,7 @@ interface IssueDescriptionProps {
 export function IssueDescription({
   description,
   data,
+  readOnly,
   onPatch,
 }: IssueDescriptionProps) {
   const t = useTranslations();
@@ -40,6 +43,7 @@ export function IssueDescription({
         placeholder={t("placeholders.editDescription")}
         saveLabel={t("actions.save")}
         cancelLabel={t("actions.cancel")}
+        readOnly={readOnly}
         onCommit={(value) => onPatch({ description: value })}
       />
     </section>

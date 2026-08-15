@@ -32,6 +32,7 @@ import {
   currentUserCanEnterWorkspace,
   currentUserId,
   hasPermission,
+  visibleProjectIds,
 } from "@/lib/permissions";
 import {
   DEFAULT_PROJECT_ROLE_KEY,
@@ -991,7 +992,11 @@ async function wsAttentionFor(
 async function wsProfileFor(
   workspaceId: string,
 ): Promise<WorkspaceProfile | null> {
-  const access = await accessFor(await currentUserId(), { workspaceId });
+  const userId = await currentUserId();
+  const access = await accessFor(userId, { workspaceId });
+  // Dieselbe Sichtbarkeitsregel wie überall (`getProjects`): der Steckbrief ist
+  // nur eine andere Darstellung, kein eigener Weg an private Projekte vorbei.
+  const visible = await visibleProjectIds(workspaceId);
 
   const [workspace, assignableProjectRoles] = await Promise.all([
     db.workspace.findUnique({
@@ -1015,6 +1020,7 @@ async function wsProfileFor(
           orderBy: { name: "asc" },
         },
         projects: {
+          where: { id: { in: [...visible] } },
           select: { id: true, name: true, slug: true, color: true },
           orderBy: { name: "asc" },
         },
@@ -1038,15 +1044,28 @@ async function wsProfileFor(
   ]);
   if (!workspace) return null;
 
+  const canViewMembers = access.has("member.view");
+  // Dieselbe ODER-Regel wie beim Einstellungen-Tab (`WORKSPACE_NAV` in
+  // lib/nav.ts) — hier dupliziert statt importiert, weil `wsProfileFor` reine
+  // Serverdaten liefert und `navEntryAllowed` an eine konkrete `NavEntry` hängt.
+  const canViewSettings =
+    access.has("role.manage") ||
+    access.has("label.create") ||
+    access.has("workspace.update");
+
   return {
     desc: workspace.desc,
     createdAt: workspace.createdAt.getTime(),
     canUpdate: access.has("workspace.update"),
-    roles: groupByRole(
-      workspace.members,
-      WS_CONTRIBUTOR_RANK,
-      WS_ROSTER_ROLE_KEYS,
-    ),
+    canViewMembers,
+    canViewSettings,
+    // Derselbe Namen-und-E-Mail-Steckbrief wie im Mitglieder-Tab — ohne
+    // `member.view` bleibt er leer, sonst wäre das Ausblenden des Tabs
+    // wirkungslos (die Übersicht zeigt ihn sonst jedem, der den Workspace
+    // betreten darf).
+    roles: canViewMembers
+      ? groupByRole(workspace.members, WS_CONTRIBUTOR_RANK, WS_ROSTER_ROLE_KEYS)
+      : [],
     memberCount: workspace.members.length,
     teams: workspace.teams,
     projects: workspace.projects satisfies WorkspaceProjectSummary[],

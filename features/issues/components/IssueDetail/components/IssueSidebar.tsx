@@ -4,14 +4,14 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Resizer } from "@/components/ui/layout/Resizer/Resizer";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
-import type { Issue } from "@/types";
+import type { IssueDetail } from "@/types";
 import styles from "../issueDetail.module.scss";
 import { IssueLabels } from "./IssueLabels";
 import { IssueMeta } from "./IssueMeta";
 import { IssueProperties } from "./IssueProperties";
 
 interface IssueSidebarProps {
-  issue: Issue;
+  issue: IssueDetail;
   data: IssueComposerData;
   /**
    * Ausgangsbreite in px. Die Vollseite gibt eine größere vor als der Dialog —

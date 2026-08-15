@@ -63,3 +63,25 @@ export interface Issue {
   project: string;
   type: string;
 }
+
+/**
+ * Was der aktuelle Benutzer mit diesem einen Issue darf — abhängig von Rolle
+ * UND Eigentümerschaft (`issue.update.own`/`issue.delete.own` greifen nur für
+ * Reporter/Assignee), deshalb je Issue berechnet statt aus der Rolle allein
+ * ableitbar. Spiegelt genau die Prüfungen in `updateIssue`/`deleteIssue`
+ * (`features/issues/actions.ts`) — die Detailansicht bietet keine Bedienung
+ * an, die der Server ohnehin ablehnen würde.
+ */
+export interface IssueAccess {
+  /** `issue.update.any` oder (`issue.update.own` und Reporter/Assignee). */
+  canEdit: boolean;
+  /** `canEdit` UND `issue.assign` — nur relevant, wenn `canEdit` schon gilt. */
+  canAssign: boolean;
+  /** `issue.delete.any` oder (`issue.delete.own` und Reporter/Assignee). */
+  canDelete: boolean;
+}
+
+/** Ein Issue, wie es die Detailansicht (Panel, Dialog, Vollseite) lädt. */
+export interface IssueDetail extends Issue {
+  access: IssueAccess;
+}
