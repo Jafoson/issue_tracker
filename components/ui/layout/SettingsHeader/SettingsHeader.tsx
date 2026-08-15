@@ -1,17 +1,20 @@
 import { Icon } from "@iconify/react";
 import { Link } from "@/i18n/navigation";
-import type { SettingsScopeEntry, SettingsScopeKey } from "@/lib/nav";
+import type { SettingsScopeKey, VisibleSettingsScopeEntry } from "@/lib/nav";
 import styles from "./settingsHeader.module.scss";
 
 interface Props {
-  /** Fertig gebaut vom Layout — `settingsScopeItems` in `lib/nav.ts`. */
-  items: SettingsScopeEntry[];
+  /**
+   * Fertig gebaut und gefiltert vom Layout — `settingsScopeItems()` plus
+   * `visibleSettingsScope()` in `lib/nav.ts`. Nur, was ohne Berechtigung ODER
+   * ohne Adresse fehlt: das Layout lässt diese Komponente ganz weg, sobald
+   * nur noch ein Segment übrig bliebe (siehe dort).
+   */
+  items: VisibleSettingsScopeEntry[];
   /** Der Bereich, in dem man gerade steht. */
   active: SettingsScopeKey;
   /** Benennt den Umschalter für Screenreader, z. B. „Einstellungsbereich". */
   label: string;
-  /** Steht an einem Bereich ohne Ziel — sagt, warum er nicht öffnet. */
-  unavailableHint?: string;
 }
 
 /**
@@ -33,12 +36,7 @@ interface Props {
  * Zeile kein `"use client"` — welcher Bereich gilt, weiß das Layout, das sie
  * rendert, und nicht der Browser.
  */
-export function SettingsHeader({
-  items,
-  active,
-  label,
-  unavailableHint,
-}: Props) {
+export function SettingsHeader({ items, active, label }: Props) {
   return (
     <header className={styles.bar}>
       <nav className={styles.scope} aria-label={label}>
@@ -49,22 +47,6 @@ export function SettingsHeader({
               {item.label}
             </>
           );
-
-          // Ohne Ziel bleibt der Platz stehen: der Umschalter behält seine drei
-          // Felder, und wer kein Projekt sieht, sieht wenigstens, dass es
-          // diesen Bereich gibt.
-          if (!item.href) {
-            return (
-              <span
-                key={item.key}
-                className={`${styles.segment} ${styles.dead}`}
-                title={unavailableHint}
-                aria-disabled="true"
-              >
-                {content}
-              </span>
-            );
-          }
 
           const isActive = item.key === active;
           return (

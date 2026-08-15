@@ -139,18 +139,3 @@
   }
 }
 
-/* Kein Ziel — etwa „Projekt" in einem Workspace ohne sichtbares Projekt. Der
-   Platz bleibt, die Einladung fällt weg. */
-.dead {
-  opacity: var(--opacity-disabled);
-  cursor: not-allowed;
-
-  &::after {
-    display: none;
-  }
-
-  &:hover {
-    color: var(--on-surface-variant);
-  }
-}
-

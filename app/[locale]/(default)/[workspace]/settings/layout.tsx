@@ -14,8 +14,11 @@ import {
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import {
   navEntryAllowed,
+  PROJECT_SETTINGS_PERMISSIONS,
   settingsScopeItems,
+  visibleSettingsScope,
   WORKSPACE_SETTINGS_NAV,
+  WORKSPACE_SETTINGS_PERMISSIONS,
   workspaceSettingsPath,
 } from "@/lib/nav";
 import { getAccess } from "@/lib/permissions";
@@ -48,7 +51,8 @@ export default async function WorkspaceSettingsLayout({
     getAccess({ workspaceId: workspace }),
     // Nur für den Umschalter: von hier führt kein Projekt-Kontext weiter, also
     // öffnet „Projekt" das erste sichtbare (die Liste ist nach Namen sortiert).
-    // Sieht man keines, bleibt der Knopf stumpf.
+    // Sieht man keines oder keines mit eigener Hürde, fällt das Segment weg
+    // (`visibleSettingsScope`).
     getWorkspaceProjects(),
     // Für den Wechsler im Kopf der Leiste — dieselbe Liste, die auch der
     // Wechsler der Seitenleiste zeigt.
@@ -66,15 +70,28 @@ export default async function WorkspaceSettingsLayout({
     href: workspaceSettingsPath(ws.id, ""),
   }));
 
-  const scope = settingsScopeItems({
-    workspaceId: workspace,
-    projectSlug: projects[0]?.slug,
-    labels: {
-      workspace: t("settings.scopeWorkspace"),
-      project: t("settings.scopeProject"),
-      account: t("settings.scopeAccount"),
+  const firstProject = projects[0];
+  const projectAccess = firstProject
+    ? await getAccess({ projectId: firstProject.id })
+    : null;
+
+  const scope = visibleSettingsScope(
+    settingsScopeItems({
+      workspaceId: workspace,
+      projectSlug: firstProject?.slug,
+      labels: {
+        workspace: t("settings.scopeWorkspace"),
+        project: t("settings.scopeProject"),
+        account: t("settings.scopeAccount"),
+      },
+    }),
+    {
+      workspace: WORKSPACE_SETTINGS_PERMISSIONS.some(access.has),
+      project: projectAccess
+        ? PROJECT_SETTINGS_PERMISSIONS.some(projectAccess.has)
+        : false,
     },
-  });
+  );
 
   // Rollen und Mitglieder sind die einzigen Bereiche mit eigener Hürde
   // (`role.manage` bzw. `member.view`) — die übrigen bleiben auch ohne
@@ -89,12 +106,15 @@ export default async function WorkspaceSettingsLayout({
 
   return (
     <div className={styles.shell}>
-      <SettingsHeader
-        items={scope}
-        active="workspace"
-        label={t("settings.scopeLabel")}
-        unavailableHint={t("settings.scopeNoProject")}
-      />
+      {/* Nur "Persönlich" übrig heißt: nichts zum Umschalten — dann bliebe die
+          Leiste ein einzelnes, aktives Segment ohne echte Wahl. */}
+      {scope.length > 1 && (
+        <SettingsHeader
+          items={scope}
+          active="workspace"
+          label={t("settings.scopeLabel")}
+        />
+      )}
       <div className={styles.body}>
         <SettingsNav
           subject={current.name}

@@ -14,8 +14,11 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import {
   navEntryAllowed,
   PROJECT_SETTINGS_NAV,
+  PROJECT_SETTINGS_PERMISSIONS,
   projectSettingsPath,
   settingsScopeItems,
+  visibleSettingsScope,
+  WORKSPACE_SETTINGS_PERMISSIONS,
 } from "@/lib/nav";
 import { getAccess } from "@/lib/permissions";
 import styles from "./settings.module.scss";
@@ -44,23 +47,30 @@ export default async function ProjectSettingsLayout({
   const project = projects.find((p) => p.slug === projectSlug);
   if (!project) notFound();
 
-  const [t, access] = await Promise.all([
+  const [t, access, workspaceAccess] = await Promise.all([
     getTranslations(),
     getAccess({ projectId: project.id }),
+    getAccess({ workspaceId: workspace }),
   ]);
   if (!access.has("project.view")) notFound();
 
   // Hier ist das Projekt bekannt — der Umschalter führt zurück auf genau das,
   // in dem man gerade steht, und nicht auf ein beliebiges anderes.
-  const scope = settingsScopeItems({
-    workspaceId: workspace,
-    projectSlug,
-    labels: {
-      workspace: t("settings.scopeWorkspace"),
-      project: t("settings.scopeProject"),
-      account: t("settings.scopeAccount"),
+  const scope = visibleSettingsScope(
+    settingsScopeItems({
+      workspaceId: workspace,
+      projectSlug,
+      labels: {
+        workspace: t("settings.scopeWorkspace"),
+        project: t("settings.scopeProject"),
+        account: t("settings.scopeAccount"),
+      },
+    }),
+    {
+      workspace: WORKSPACE_SETTINGS_PERMISSIONS.some(workspaceAccess.has),
+      project: PROJECT_SETTINGS_PERMISSIONS.some(access.has),
     },
-  });
+  );
 
   // Der Kopf der Leiste wechselt das Projekt und bleibt dabei in den
   // Einstellungen — über Workspace-Grenzen hinweg, denn ein Projekt sucht man
@@ -88,11 +98,14 @@ export default async function ProjectSettingsLayout({
 
   return (
     <div className={styles.shell}>
-      <SettingsHeader
-        items={scope}
-        active="project"
-        label={t("settings.scopeLabel")}
-      />
+      {/* Nur "Persönlich" übrig heißt: nichts zum Umschalten. */}
+      {scope.length > 1 && (
+        <SettingsHeader
+          items={scope}
+          active="project"
+          label={t("settings.scopeLabel")}
+        />
+      )}
       <div className={styles.body}>
         <SettingsNav
           subject={project.name}

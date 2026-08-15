@@ -171,6 +171,12 @@ export interface ProjectProfile {
    * eine Seite führte, an der nichts zu ändern ist.
    */
   canUpdate: boolean;
+  /**
+   * `role.manage` ODER `label.create` ODER `project.update` — dieselbe Hürde
+   * wie beim Einstellungen-Tab (`lib/nav.ts`, `PROJECT_NAV`). Ohne eines der
+   * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
+   */
+  canViewSettings: boolean;
   /** Wer Zugriff hat, nach Rollen gruppiert. Stärkste Rolle zuerst. */
   roles: ProjectRoleGroup[];
   /** Wie viele Personen insgesamt — die Summe über alle Gruppen. */

@@ -132,12 +132,18 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
   // (`PROJECT_NAV`) — ein Bereich soll nicht davon abhängen, durch welche Tür
   // man ihn betritt. Die Adressen baut die Seite, weil nur sie den Workspace
   // kennt.
-  const shortcuts = [
-    { key: "board", icon: "lucide:square-kanban", href: links.board },
-    { key: "issues", icon: "lucide:list", href: links.list },
-    { key: "members", icon: "lucide:users", href: links.members },
-    { key: "settings", icon: "lucide:settings", href: links.settings },
-  ] as const;
+  //
+  // Ohne canViewSettings bliebe die Kachel sonst die einzige Tür zu den
+  // Einstellungen, obwohl derselbe Tab in der Seitenleiste (`PROJECT_NAV`)
+  // längst ausgeblendet ist.
+  const shortcuts = (
+    [
+      { key: "board", icon: "lucide:square-kanban", href: links.board },
+      { key: "issues", icon: "lucide:list", href: links.list },
+      { key: "members", icon: "lucide:users", href: links.members },
+      { key: "settings", icon: "lucide:settings", href: links.settings },
+    ] as const
+  ).filter((s) => s.key !== "settings" || profile.canViewSettings);
 
   // Zwei Arten, eine Rolle zu zeigen — die Gruppen kommen fertig sortiert vom
   // Server, hier wird nur getrennt, wer einzeln genannt wird und wer in der

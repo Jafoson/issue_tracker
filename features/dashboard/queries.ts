@@ -28,6 +28,10 @@ import {
 import { db } from "@/lib/db";
 import { Prisma } from "@/lib/generated/prisma/client";
 import {
+  PROJECT_SETTINGS_PERMISSIONS,
+  WORKSPACE_SETTINGS_PERMISSIONS,
+} from "@/lib/nav";
+import {
   accessFor,
   currentUserCanEnterWorkspace,
   currentUserId,
@@ -596,6 +600,7 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
     createdAt: project.createdAt.getTime(),
     createdBy: project.createdBy ? mapUser(project.createdBy) : null,
     canUpdate: access.has("project.update"),
+    canViewSettings: PROJECT_SETTINGS_PERMISSIONS.some(access.has),
     roles: groupByRole(project.members),
     memberCount: project.members.length,
     teams: project.teams.map((entry) => entry.team),
@@ -1045,13 +1050,7 @@ async function wsProfileFor(
   if (!workspace) return null;
 
   const canViewMembers = access.has("member.view");
-  // Dieselbe ODER-Regel wie beim Einstellungen-Tab (`WORKSPACE_NAV` in
-  // lib/nav.ts) — hier dupliziert statt importiert, weil `wsProfileFor` reine
-  // Serverdaten liefert und `navEntryAllowed` an eine konkrete `NavEntry` hängt.
-  const canViewSettings =
-    access.has("role.manage") ||
-    access.has("label.create") ||
-    access.has("workspace.update");
+  const canViewSettings = WORKSPACE_SETTINGS_PERMISSIONS.some(access.has);
 
   return {
     desc: workspace.desc,

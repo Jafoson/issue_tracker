@@ -4,7 +4,12 @@ import {
   getCurrentWorkspace,
   getWorkspaceProjects,
 } from "@/features/workspaces/queries";
-import { PROJECT_NAV, PROJECT_OVERVIEW_NAV, projectPath } from "@/lib/nav";
+import {
+  navEntryAllowed,
+  PROJECT_NAV,
+  PROJECT_OVERVIEW_NAV,
+  projectPath,
+} from "@/lib/nav";
 import { getAccess } from "@/lib/permissions";
 import styles from "../../../sidebar.module.scss";
 import TabList, { type TabGroup } from "../components/TabList";
@@ -19,17 +24,27 @@ export default async function NavGroupProjects() {
     getAccess({ workspaceId: workspace.id }),
   ]);
 
+  // Je Projekt seine eigene Rolle — die Sichtbarkeit von "Einstellungen"
+  // (`role.manage`/`label.create`/`project.update`) hängt an der Projektrolle,
+  // nicht an der Workspace-Rolle darüber.
+  const projectAccess = await Promise.all(
+    projects.map((p) => getAccess({ projectId: p.id })),
+  );
+
   // Die Projektzeile trägt `/*` und ist damit markiert, solange man irgendwo im
   // Projekt steht — ausgewertet wird das Muster in `lib/nav.ts` (`isNavActive`).
-  const projectTabs: TabGroup[] = projects.map((p) => {
+  const projectTabs: TabGroup[] = projects.map((p, i) => {
     const projPath = projectPath(workspace.id, p.slug, "");
+    const pAccess = projectAccess[i];
     return {
       href: `${projPath}/${PROJECT_OVERVIEW_NAV.section}`,
       activeHref: `${projPath}/*`,
       label: p.name,
       color: p.color,
       group: [
-        ...PROJECT_NAV.map((entry) => {
+        ...PROJECT_NAV.filter((entry) =>
+          navEntryAllowed(pAccess.has, entry),
+        ).map((entry) => {
           const href = projectPath(workspace.id, p.slug, entry.section);
           return {
             href,

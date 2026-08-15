@@ -11,8 +11,12 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import {
   ACCOUNT_SETTINGS_NAV,
   accountPath,
+  PROJECT_SETTINGS_PERMISSIONS,
   settingsScopeItems,
+  visibleSettingsScope,
+  WORKSPACE_SETTINGS_PERMISSIONS,
 } from "@/lib/nav";
+import { getAccess } from "@/lib/permissions";
 import { fullName } from "@/lib/utils/string";
 import styles from "./account.module.scss";
 
@@ -41,24 +45,39 @@ export default async function AccountLayout({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const [t, profile, projects] = await Promise.all([
+  const [t, profile, projects, workspaceAccess] = await Promise.all([
     getTranslations(),
     getMyProfile(),
     // Nur für den Umschalter, siehe Workspace-Layout: „Projekt" öffnet das erste
-    // sichtbare, und ohne eines bleibt der Knopf stumpf.
+    // sichtbare, und ohne eines (oder ohne Berechtigung darin) fällt das
+    // Segment weg (`visibleSettingsScope`).
     getWorkspaceProjects(),
+    getAccess({ workspaceId: workspace }),
   ]);
   if (!profile) notFound();
 
-  const scope = settingsScopeItems({
-    workspaceId: workspace,
-    projectSlug: projects[0]?.slug,
-    labels: {
-      workspace: t("settings.scopeWorkspace"),
-      project: t("settings.scopeProject"),
-      account: t("settings.scopeAccount"),
+  const firstProject = projects[0];
+  const projectAccess = firstProject
+    ? await getAccess({ projectId: firstProject.id })
+    : null;
+
+  const scope = visibleSettingsScope(
+    settingsScopeItems({
+      workspaceId: workspace,
+      projectSlug: firstProject?.slug,
+      labels: {
+        workspace: t("settings.scopeWorkspace"),
+        project: t("settings.scopeProject"),
+        account: t("settings.scopeAccount"),
+      },
+    }),
+    {
+      workspace: WORKSPACE_SETTINGS_PERMISSIONS.some(workspaceAccess.has),
+      project: projectAccess
+        ? PROJECT_SETTINGS_PERMISSIONS.some(projectAccess.has)
+        : false,
     },
-  });
+  );
 
   const items: SettingsNavItem[] = ACCOUNT_SETTINGS_NAV.map((entry) => ({
     href: accountPath(workspace, entry.section),
@@ -68,12 +87,14 @@ export default async function AccountLayout({
 
   return (
     <div className={styles.shell}>
-      <SettingsHeader
-        items={scope}
-        active="account"
-        label={t("settings.scopeLabel")}
-        unavailableHint={t("settings.scopeNoProject")}
-      />
+      {/* Nur "Persönlich" übrig heißt: nichts zum Umschalten. */}
+      {scope.length > 1 && (
+        <SettingsHeader
+          items={scope}
+          active="account"
+          label={t("settings.scopeLabel")}
+        />
+      )}
       <div className={styles.body}>
         <SettingsNav
           subject={fullName(profile)}

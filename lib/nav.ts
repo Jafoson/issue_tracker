@@ -95,6 +95,25 @@ export const GLOBAL_NAV: NavEntry[] = [
 ];
 
 /**
+ * Wer eines dieser Rechte trägt, kann in den Einstellungen des jeweiligen
+ * Scopes etwas ändern — sonst wären sie nur schreibgeschützte Ansichten.
+ * Dieselbe Regel entscheidet über den Tab in der Seitenleiste
+ * (`WORKSPACE_NAV`/`PROJECT_NAV`) UND über das Segment im Umschalter
+ * (`SettingsHeader`, siehe die drei `settings/layout.tsx`) — eine Quelle für
+ * beide, statt die Liste zweimal zu pflegen.
+ */
+export const WORKSPACE_SETTINGS_PERMISSIONS: Permission[] = [
+  "role.manage",
+  "label.create",
+  "workspace.update",
+];
+export const PROJECT_SETTINGS_PERMISSIONS: Permission[] = [
+  "role.manage",
+  "label.create",
+  "project.update",
+];
+
+/**
  * Sidebar "Workspace" group — workspace administration.
  *
  * Rollen stehen hier nicht mehr: sie sind eine Einrichtungsfrage und liegen in
@@ -117,9 +136,7 @@ export const WORKSPACE_NAV: NavEntry[] = [
     section: "settings",
     icon: "lucide:settings",
     labelKey: "settings",
-    // Sichtbar, sobald irgendetwas darin änderbar ist — sonst wäre der Tab nur
-    // eine Sackgasse aus lauter schreibgeschützten Ansichten.
-    permission: ["role.manage", "label.create", "workspace.update"],
+    permission: WORKSPACE_SETTINGS_PERMISSIONS,
   },
 ];
 
@@ -240,7 +257,12 @@ export const PROJECT_NAV: NavEntry[] = [
   { section: "", icon: "lucide:square-kanban", labelKey: "board" },
   { section: "list", icon: "lucide:list", labelKey: "issues" },
   { section: "members", icon: "lucide:users", labelKey: "members" },
-  { section: "settings", icon: "lucide:settings", labelKey: "settings" },
+  {
+    section: "settings",
+    icon: "lucide:settings",
+    labelKey: "settings",
+    permission: PROJECT_SETTINGS_PERMISSIONS,
+  },
 ];
 
 /**
@@ -369,12 +391,15 @@ export interface SettingsScopeEntry {
   label: string;
   icon: string;
   /**
-   * Wohin der Bereich führt. Fehlt die Adresse, gibt es dort nichts zu sehen —
-   * der Umschalter zeigt den Bereich dann stumpf, statt ihn zu verschweigen:
-   * eine Lücke im Dreiklang wäre schwerer zu deuten als ein toter Knopf.
+   * Wohin der Bereich führt. Fehlt die Adresse — kein Projekt im Kontext —,
+   * fällt der Eintrag bei `visibleSettingsScope()` ganz heraus, statt ihn tot
+   * anzuzeigen.
    */
   href?: string;
 }
+
+/** Wie `SettingsScopeEntry`, nur nach dem Filtern: die Adresse steht fest. */
+export type VisibleSettingsScopeEntry = SettingsScopeEntry & { href: string };
 
 /**
  * Die Ziele des Bereichsumschalters — jeweils die Allgemein-Seite des Bereichs.
@@ -424,6 +449,26 @@ export function settingsScopeItems({
       href: workspaceSettingsPath(workspaceId, ""),
     },
   ];
+}
+
+/**
+ * Die Kandidaten aus `settingsScopeItems()` auf das, was wirklich zur Wahl
+ * steht: "Persönlich" immer, "Projekt"/"Workspace" nur mit Adresse UND
+ * Berechtigung (`WORKSPACE_SETTINGS_PERMISSIONS`/`PROJECT_SETTINGS_PERMISSIONS`,
+ * je vom Layout aufgelöst — diese Funktion kennt selbst keine Rechte).
+ *
+ * Bleibt am Ende nur "Persönlich" übrig, hat der Umschalter nichts mehr zum
+ * Umschalten — die Layouts lassen `SettingsHeader` dann ganz weg.
+ */
+export function visibleSettingsScope(
+  items: SettingsScopeEntry[],
+  allowed: { workspace: boolean; project: boolean },
+): VisibleSettingsScopeEntry[] {
+  return items.filter((item): item is VisibleSettingsScopeEntry => {
+    if (!item.href) return false;
+    if (item.key === "account") return true;
+    return allowed[item.key];
+  });
 }
 
 export function adminPath(section: string): string {
