@@ -280,6 +280,10 @@ export function defaultProjectRoleKeyOf(
 
 /** Rolle, die jedes neue Konto bekommt. */
 export const DEFAULT_PLATFORM_ROLE_KEY = "platform_member";
+/** Verwaltet die Plattform — Stammdaten und Sperren jedes Workspace, kein Inhaltszugriff. */
+export const PLATFORM_ADMIN_ROLE_KEY = "platform_admin";
+/** Trägt `tenant.access` — Support-Durchgriff in jeden Workspace. */
+export const PLATFORM_SUPPORT_ROLE_KEY = "platform_support";
 /** Rolle, die der Ersteller eines Workspace bekommt. */
 export const OWNER_ROLE_KEY = "owner";
 /** Workspace-Rolle für frisch Eingeladene, solange nichts anderes gewählt wird. */

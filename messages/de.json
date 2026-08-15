@@ -793,6 +793,8 @@
     "noLabels": "Hier werden keine Labels angeboten.",
     "noProjects": "Dieser Workspace hat noch keine Projekte.",
     "allMembers": "Alle Mitglieder und ihre Rollen",
+    "platformAccess": "Zugriff über die Plattform",
+    "platformAccessHint": "Kein Mitglied — Zugriff über die Plattform-Rolle",
     "labelOwn": "Gehört diesem Projekt",
     "labelShared": "Kommt aus dem Workspace",
     "goOn": "Weiter zu",

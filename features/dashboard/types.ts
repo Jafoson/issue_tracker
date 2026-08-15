@@ -238,7 +238,12 @@ export interface WorkspaceProfile {
   createdAt: number;
   /** `workspace.update` — ob der Bearbeiten-Knopf in der Kopfkarte erscheint. */
   canUpdate: boolean;
-  /** `member.view` — ob `roles` den Namen/E-Mail-Steckbrief zeigt oder leer bleibt. */
+  /**
+   * `member.view` — ob `roles` die volle Besetzung zeigt (Member/Viewer/Guest)
+   * oder nur noch die Leitung. Steuert auch, ob `memberCount` und der Link zur
+   * vollen Mitgliederliste erscheinen — die Seite dahinter bleibt ohne dieses
+   * Recht ohnehin gesperrt.
+   */
   canViewMembers: boolean;
   /**
    * `role.manage` ODER `label.create` ODER `workspace.update` — dieselbe Hürde
@@ -246,8 +251,20 @@ export interface WorkspaceProfile {
    * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
    */
   canViewSettings: boolean;
-  /** Leer ohne `member.view`, auch bei `memberCount > 0` — siehe `canViewMembers`. */
+  /**
+   * Wer führt, steht immer da (`distinguished`) — wer nur mitarbeitet oder
+   * mitliest, nur mit `member.view` (siehe `canViewMembers`). Ohne das Recht
+   * enthält die Liste ausschließlich die ausgezeichneten Gruppen.
+   */
   roles: WorkspaceRoleGroup[];
+  /**
+   * `platform_admin`/`platform_support` mit Durchgriff auf diesen Workspace,
+   * ohne eigene `WorkspaceMember`-Zeile — sonst blieben sie im Steckbrief
+   * unsichtbar, obwohl sie mehr können als fast jeder in `roles`. Wie die
+   * Leitung dort unabhängig von `member.view` sichtbar. Zählt nicht in
+   * `memberCount` — das bleibt die Größe der tatsächlichen Mitgliedschaft.
+   */
+  platformStaff: WorkspaceRoleGroup[];
   memberCount: number;
   teams: ProjectTeam[];
   projects: WorkspaceProjectSummary[];

@@ -16,6 +16,7 @@ import type {
   WorkspaceDashboardView,
   WorkspaceProfile,
   WorkspaceProjectSummary,
+  WorkspaceRoleGroup,
 } from "@/features/dashboard/types";
 import { resolveLayout } from "@/features/dashboard/widgets";
 import { getPriorities, getStatuses } from "@/features/issues/queries";
@@ -41,6 +42,8 @@ import {
 import {
   DEFAULT_PROJECT_ROLE_KEY,
   DEFAULT_WORKSPACE_ROLE_KEY,
+  PLATFORM_ADMIN_ROLE_KEY,
+  PLATFORM_SUPPORT_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,
   PROJECT_GUEST_ROLE_KEY,
   PROJECT_VIEWER_ROLE_KEY,
@@ -110,6 +113,67 @@ const ROSTER_ROLE_KEYS = new Set<string>([
   PROJECT_GUEST_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,
 ]);
+
+/**
+ * Plattform-Rollen mit echtem Durchgriff auf jeden Workspace: `platform_admin`
+ * (Stammdaten, Sperren — `workspace.suspend`, `project.metadata.manage`) und
+ * `platform_support` (`tenant.access`, jeder Inhalt). Beide tragen dafür keine
+ * `WorkspaceMember`-Zeile (siehe `prisma/seed.ts`, u18) und blieben im
+ * Steckbrief sonst spurlos, obwohl sie mehr können als fast jeder, der dort
+ * steht.
+ */
+const PLATFORM_STAFF_ROLE_KEYS = [
+  PLATFORM_ADMIN_ROLE_KEY,
+  PLATFORM_SUPPORT_ROLE_KEY,
+];
+
+/**
+ * Farblich auf Höhe von Owner/Admin (`roleColor`, Rang ≥ 5) — derselbe
+ * Anspruch, nur nicht dieselbe Skala: der Rang aus `lib/rbac/roles.ts` zählt
+ * unter Plattform-Rollen (0 bis 2), nicht neben Workspace-Rollen.
+ */
+const PLATFORM_STAFF_RANK_OFFSET = 5;
+
+/**
+ * `platform_admin`/`platform_support` neben den eigentlichen Mitgliedern —
+ * eigene Gruppen statt ein Eintrag in `groupByRole`, weil hier keine
+ * `WorkspaceMember`-Zeile zugrunde liegt. Wer beides zugleich ist (der
+ * Ersteller, siehe Seed), steht schon in den Mitgliedern und fällt hier über
+ * `excludeIds` heraus, statt doppelt aufzutauchen.
+ */
+async function platformStaffFor(
+  excludeIds: Set<string>,
+): Promise<WorkspaceRoleGroup[]> {
+  const staff = await db.user.findMany({
+    where: {
+      deactivatedAt: null,
+      platformRole: { key: { in: PLATFORM_STAFF_ROLE_KEYS } },
+    },
+    select: {
+      ...USER_SELECT,
+      platformRole: { select: { key: true, name: true, rank: true } },
+    },
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+  });
+
+  const groups = new Map<string, WorkspaceRoleGroup>();
+  for (const user of staff) {
+    if (excludeIds.has(user.id) || !user.platformRole) continue;
+    const existing = groups.get(user.platformRole.key);
+    if (existing) {
+      existing.members.push(mapUser(user));
+      continue;
+    }
+    groups.set(user.platformRole.key, {
+      key: user.platformRole.key,
+      name: user.platformRole.name,
+      rank: user.platformRole.rank + PLATFORM_STAFF_RANK_OFFSET,
+      distinguished: true,
+      members: [mapUser(user)],
+    });
+  }
+  return [...groups.values()].sort((a, b) => b.rank - a.rank);
+}
 
 /** Dasselbe eine Ebene höher — die Mitarbeit im Workspace statt im Projekt. */
 const WS_CONTRIBUTOR_RANK =
@@ -1052,19 +1116,32 @@ async function wsProfileFor(
   const canViewMembers = access.has("member.view");
   const canViewSettings = WORKSPACE_SETTINGS_PERMISSIONS.some(access.has);
 
+  // Wer führt, ist keine geschützte Information — anders als die volle
+  // Besetzung (Member/Viewer/Guest) bleibt die Leitung auch ohne `member.view`
+  // sichtbar, sonst wüsste niemand im Workspace, wer dort das Sagen hat. Die
+  // Belegschaft dahinter (`rest` in der Ansicht) fällt unten über den Filter
+  // ohnehin weg, weil nur noch `distinguished` übrig bleibt.
+  const roles = groupByRole(
+    workspace.members,
+    WS_CONTRIBUTOR_RANK,
+    WS_ROSTER_ROLE_KEYS,
+  );
+  const platformStaff = await platformStaffFor(
+    new Set(workspace.members.map((m) => m.user.id)),
+  );
+
   return {
     desc: workspace.desc,
     createdAt: workspace.createdAt.getTime(),
     canUpdate: access.has("workspace.update"),
     canViewMembers,
     canViewSettings,
-    // Derselbe Namen-und-E-Mail-Steckbrief wie im Mitglieder-Tab — ohne
-    // `member.view` bleibt er leer, sonst wäre das Ausblenden des Tabs
-    // wirkungslos (die Übersicht zeigt ihn sonst jedem, der den Workspace
-    // betreten darf).
-    roles: canViewMembers
-      ? groupByRole(workspace.members, WS_CONTRIBUTOR_RANK, WS_ROSTER_ROLE_KEYS)
-      : [],
+    // Ohne `member.view` nur die Leitung (`distinguished`) — der
+    // Namen-und-E-Mail-Steckbrief der übrigen Mitglieder bleibt weg, sonst
+    // wäre das Ausblenden des Tabs wirkungslos (die Übersicht zeigte ihn sonst
+    // jedem, der den Workspace betreten darf).
+    roles: canViewMembers ? roles : roles.filter((r) => r.distinguished),
+    platformStaff,
     memberCount: workspace.members.length,
     teams: workspace.teams,
     projects: workspace.projects satisfies WorkspaceProjectSummary[],

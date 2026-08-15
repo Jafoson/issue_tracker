@@ -317,16 +317,27 @@ export function WorkspaceProfileView({
         </div>
       </div>
 
-      {/* Die Mitglieder als eigene Spalte rechts — ohne member.view ganz weg,
-          nicht nur leer, sonst bliebe Namen-und-E-Mail-Steckbrief hinter
-          einer Karte mit korrekter Kopfzahl versteckt statt wirklich verborgen. */}
-      {profile.canViewMembers && (
+      {/* Die Mitglieder als eigene Spalte rechts. Ohne `member.view` bleibt nur
+          die Leitung (`named`) und der Plattform-Zugriff übrig — `profile.roles`
+          ist dafür serverseitig schon gefiltert (`wsProfileFor`). Ganz weg fällt
+          die Spalte erst, wenn wirklich nichts davon übrig bleibt. Kopfzahl und
+          Link zur vollen Liste bleiben an `canViewMembers` hängen: die Seite
+          dahinter ist ohne das Recht ohnehin gesperrt, und die Zahl verriete die
+          volle Besetzung, die genau hier nicht gezeigt werden soll. */}
+      {(profile.canViewMembers ||
+        named.length > 0 ||
+        profile.platformStaff.length > 0) && (
         <aside className={styles.side}>
           <Card
             title={t("nav.members")}
-            count={profile.memberCount}
-            empty={profile.memberCount === 0}
+            count={profile.canViewMembers ? profile.memberCount : undefined}
+            empty={
+              profile.canViewMembers &&
+              profile.memberCount === 0 &&
+              profile.platformStaff.length === 0
+            }
             footer={
+              profile.canViewMembers &&
               profile.memberCount > 0 && (
                 <Link href={links.members} className={styles.cardLink}>
                   {t("dashboard.allMembers")}
@@ -335,7 +346,9 @@ export function WorkspaceProfileView({
               )
             }
           >
-            {profile.memberCount === 0 ? (
+            {profile.canViewMembers &&
+            profile.memberCount === 0 &&
+            profile.platformStaff.length === 0 ? (
               t("dashboard.noMembers")
             ) : (
               <>
@@ -386,6 +399,41 @@ export function WorkspaceProfileView({
                     </ul>
                   </div>
                 ))}
+
+                {profile.platformStaff.length > 0 && (
+                  <div className={styles.roleBlock}>
+                    <span
+                      className={styles.subLabel}
+                      title={t("dashboard.platformAccessHint")}
+                    >
+                      {t("dashboard.platformAccess")}
+                    </span>
+                    <ul className={styles.people}>
+                      {profile.platformStaff.flatMap((role) =>
+                        role.members.map((member) => (
+                          <li key={member.id} className={styles.person}>
+                            <Avatar avatar={member} size={28} />
+                            <span className={styles.personText}>
+                              <span className={styles.personName}>
+                                <span>{fullName(member)}</span>
+                                <Label
+                                  size="sm"
+                                  filled
+                                  color={roleColor(role.rank)}
+                                >
+                                  {role.name}
+                                </Label>
+                              </span>
+                              <span className={styles.personMeta}>
+                                {member.email}
+                              </span>
+                            </span>
+                          </li>
+                        )),
+                      )}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
           </Card>
