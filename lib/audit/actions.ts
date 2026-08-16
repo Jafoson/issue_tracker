@@ -45,6 +45,33 @@ export const AUDIT_ACTIONS = {
   "workspace.deleted": "Workspace gelöscht",
   "mail.template.updated": "Mail-Vorlage bearbeitet",
   "mail.template.reset": "Mail-Vorlage auf Standard zurückgesetzt",
+
+  // ── Alltägliches in Projekt und Workspace ──────────────────────────────────
+  //
+  // Anders als der Rest dieser Liste sind das keine sicherheitsrelevanten
+  // Vorgänge, sondern der Lebenszyklus dessen, womit Projekt- und
+  // Workspace-Übersicht ihren Aktivitäts-Feed füllen (`features/audit`).
+  // Anlegen/Entfernen für die meisten Objekte — bei Issues zusätzlich ein
+  // grober Bearbeitungs-Verlauf (welcher Aspekt sich änderte, nicht wie:
+  // kein Vorher/Nachher, das wäre ein Diff und kein Protokolleintrag).
+  "project.created": "Projekt angelegt",
+  "member.added": "Mitglied zum Workspace hinzugefügt",
+  "member.removed": "Mitglied aus dem Workspace entfernt",
+  "project.member.added": "Mitglied zum Projekt hinzugefügt",
+  "project.member.removed": "Mitglied aus dem Projekt entfernt",
+  "project.member.role.changed": "Rolle im Projekt geändert",
+  "issue.created": "Aufgabe angelegt",
+  "issue.deleted": "Aufgabe gelöscht",
+  "issue.assigned": "Aufgabe zugewiesen",
+  "issue.unassigned": "Zuweisung entfernt",
+  "issue.title.changed": "Titel geändert",
+  "issue.description.changed": "Beschreibung geändert",
+  "issue.status.changed": "Status geändert",
+  "issue.priority.changed": "Priorität geändert",
+  "issue.type.changed": "Typ geändert",
+  "issue.labels.changed": "Labels geändert",
+  "label.created": "Label angelegt",
+  "label.deleted": "Label gelöscht",
 } as const;
 
 export type AuditAction = keyof typeof AUDIT_ACTIONS;
@@ -75,13 +102,61 @@ export type AuditTargetType =
   | "project"
   | "workspace"
   | "role"
-  | "mailTemplate";
+  | "mailTemplate"
+  | "issue"
+  | "label";
 
 export interface AuditTarget {
   type: AuditTargetType;
   id: string;
   /** Wie das Ziel zur Tatzeit hieß. */
   label: string;
+}
+
+/**
+ * Nur der Name aus `actorLabel` (das Format ist immer "Vorname Nachname
+ * (E-Mail)") — der Avatar braucht die Initialen, nicht die Adresse in Klammern
+ * dahinter. Eine getippte Adresse ohne Konto (fehlgeschlagene Anmeldung) trägt
+ * ohnehin keine Klammer und kommt unverändert durch.
+ */
+export function actorDisplayName(actorLabel: string): string {
+  return actorLabel.replace(/\s*\([^)]*\)\s*$/, "");
+}
+
+/** Ein Kürzel wie `MOB-1` am Anfang von `targetLabel` — Issue-Vorgänge
+ * (`features/issues/actions.ts#issueRef`), gefolgt von `: ` und optional
+ * einem „Alt → Neu". */
+const REF_PATTERN = /^([A-Z0-9]{1,4}-\d+)(?:: ([\s\S]*))?$/;
+
+export interface ParsedTargetLabel {
+  /** Das Kürzel, falls `targetLabel` damit beginnt — sonst `undefined`. */
+  ref?: string;
+  /** Der alte Wert, wenn der Rest ein „Alt → Neu" ist. */
+  before?: string;
+  /** Der neue Wert (bei „Alt → Neu") oder der ganze Rest ohne Kürzel. */
+  after?: string;
+}
+
+/**
+ * Zerlegt `targetLabel` in Kürzel, Vorher und Nachher — für eine Anzeige, die
+ * nicht als ein ununterscheidbarer Fließtext daherkommt (`TargetLabel` in
+ * `features/audit/components/AuditLog/AuditLog.tsx`). Reine Zeichenkettenarbeit,
+ * bewusst getrennt von der React-Komponente: so lässt sie sich prüfen, ohne
+ * etwas zu rendern.
+ */
+export function parseTargetLabel(text: string): ParsedTargetLabel {
+  const match = text.match(REF_PATTERN);
+  const ref = match?.[1];
+  const rest = match ? match[2] : text;
+  if (!rest) return { ref };
+
+  const arrowIdx = rest.indexOf(" → ");
+  if (arrowIdx === -1) return { ref, after: rest };
+  return {
+    ref,
+    before: rest.slice(0, arrowIdx),
+    after: rest.slice(arrowIdx + 3),
+  };
 }
 
 /**
@@ -97,10 +172,52 @@ export interface AuditEntry {
   action: string;
   actorId: string | null;
   actorLabel: string;
+  /** Kontofarbe zur Tatzeit, für den Avatar — `null` ohne Konto (fehlgeschlagene
+   * Anmeldung) oder wenn es inzwischen gelöscht ist. */
+  actorColor: string | null;
   targetType: string | null;
   targetId: string | null;
   targetLabel: string | null;
+  /** Kontofarbe der Person in `targetLabel`, wenn das Ziel selbst keine ist
+   * (z. B. die/der Zugewiesene bei einem Issue) — sonst `null`. */
+  personColor: string | null;
   workspaceId: string | null;
   projectId: string | null;
   reason: string | null;
+  /**
+   * Rohdaten je nach Vorgang — bei den meisten Zeilen ungenutzt. Bei Status-,
+   * Prioritäts- und Labelwechsel eines Issues trägt es Render-Hinweise (Icon,
+   * Farbe), die `TargetLabel` ausliest — siehe `PriorityChangeMeta`,
+   * `StatusChangeMeta`, `LabelsChangeMeta`. Ungeprüft: geschrieben wird es nur
+   * von `features/issues/actions.ts`, in genau dieser Form.
+   */
+  meta: unknown;
+}
+
+/** `meta` bei `issue.priority.changed` — Prioritäts-Id reicht, das Symbol
+ * kommt aus `PriorityIcon` (feste Zuordnung, keine Farbe nötig). */
+export interface PriorityChangeMeta {
+  from: number;
+  to: number;
+}
+
+/** `meta` bei `issue.status.changed` — Farbe eingefroren wie `actorColor`,
+ * weil `Status.color` sich ändern kann. */
+export interface StatusChangeMeta {
+  from: string;
+  to: string;
+  fromColor: string | null;
+  toColor: string | null;
+}
+
+export interface LabelChangeItem {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/** `meta` bei `issue.labels.changed`. */
+export interface LabelsChangeMeta {
+  added: LabelChangeItem[];
+  removed: LabelChangeItem[];
 }

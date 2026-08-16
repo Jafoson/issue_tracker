@@ -1,0 +1,51 @@
+/* Scrollt nicht selbst — die Karte drumherum tut das schon
+   (`.card[data-scroll]` in `projectProfileView.module.scss` /
+   `workspaceProfileView.module.scss`), genau wie bei den Personen-Listen der
+   Mitgliederkarte. Zwei verschachtelte Scrollbereiche wären zwei Bildläufe
+   für dieselbe Liste. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--on-surface-variant);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--outline);
+}

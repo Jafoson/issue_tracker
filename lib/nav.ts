@@ -34,6 +34,7 @@ export type NavLabelKey =
   | "overview"
   | "users"
   | "audit"
+  | "activity"
   | "mailTemplates";
 
 export interface NavEntry {
@@ -312,6 +313,12 @@ export const PROJECT_SETTINGS_NAV: NavEntry[] = [
     permission: "role.manage",
   },
   { section: "labels", icon: "lucide:tag", labelKey: "labels" },
+  {
+    section: "activity",
+    icon: "lucide:scroll-text",
+    labelKey: "activity",
+    permission: "audit.view",
+  },
 ];
 
 /**
@@ -340,6 +347,12 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
     icon: "lucide:users",
     labelKey: "members",
     permission: "member.view",
+  },
+  {
+    section: "activity",
+    icon: "lucide:scroll-text",
+    labelKey: "activity",
+    permission: "audit.view",
   },
 ];
 
@@ -482,6 +495,12 @@ export function projectPath(
 ): string {
   const base = `/${workspaceId}/project/${slug}`;
   return section ? `${base}/${section}` : base;
+}
+
+/** Die Vollseite eines Issues — `/<workspaceId>/issue/<ref>`, klein geschrieben
+ * wie überall sonst, wo ein Kürzel in der Adresse steht. */
+export function issuePath(workspaceId: string, ref: string): string {
+  return `/${workspaceId}/issue/${ref.toLowerCase()}`;
 }
 
 /** Ein Bereich der Projekteinstellungen. Leere Sektion = Allgemein. */

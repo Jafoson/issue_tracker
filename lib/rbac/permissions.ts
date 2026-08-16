@@ -126,12 +126,13 @@ export const PERMISSIONS = {
     desc: "Status, Prioritäten und Issue-Typen verwalten",
     scopes: WORKSPACE_ONLY,
   },
-  // In beiden Scopes derselbe Key, zwei Ausschnitte desselben Protokolls: auf
-  // der Plattform das ganze, im Workspace nur, was dort geschah. Den Ausschnitt
-  // setzt nicht die Permission, sondern die Abfrage (`lib/audit.ts`).
+  // Derselbe Key in allen drei Scopes, drei Ausschnitte desselben Protokolls:
+  // auf der Plattform das ganze, im Workspace nur, was dort geschah, im
+  // Projekt nur, was dort geschah. Den Ausschnitt setzt nicht die Permission,
+  // sondern die Abfrage (`lib/audit/index.ts`).
   "audit.view": {
     desc: "Audit-Log einsehen",
-    scopes: ["PLATFORM", "WORKSPACE"],
+    scopes: ["PLATFORM", "WORKSPACE", "PROJECT"],
   },
 
   // ── Rollen ──────────────────────────────────────────────────────────────────

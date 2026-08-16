@@ -12,6 +12,8 @@ const mockTx = {
 mock.module("@/lib/db", () => ({
   db: {
     workspaceMember: { findUnique: mockWorkspaceMemberFindUnique },
+    user: { findUnique: mock() },
+    auditLog: { create: mock(async () => ({})) },
     $transaction: mockTransaction,
   },
 }));
@@ -74,6 +76,7 @@ function reset() {
   });
   mockWorkspaceMemberFindUnique.mockResolvedValue({
     role: { key: "member", rank: 2 },
+    user: { firstName: "Ada", lastName: "Lovelace" },
   });
 }
 

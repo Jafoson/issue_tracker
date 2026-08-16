@@ -19,6 +19,7 @@ import { RangePicker } from "@/components/ui/charts/RangePicker/RangePicker";
 import { ScopePicker } from "@/components/ui/charts/ScopePicker/ScopePicker";
 import { StackedBar } from "@/components/ui/charts/StackedBar/StackedBar";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import type { ActivityView } from "@/features/audit/queries";
 import {
   resetWorkspaceDashboardLayout,
   saveWorkspaceDashboardLayout,
@@ -57,7 +58,11 @@ interface Props extends WorkspaceDashboardView {
     members: string;
     teams: string;
     settings: string;
+    /** Die volle, filterbare Liste — die Aktivitäts-Karte der Übersicht zeigt nur einen Ausschnitt. */
+    activity: string;
   };
+  /** Für die Aktivitäts-Karte der Übersicht — bereits auf `audit.view` gefiltert (`getWorkspaceActivity`). */
+  activity: ActivityView;
 }
 
 const REASON_ICONS = {
@@ -87,6 +92,7 @@ export function WorkspaceDashboard({
   view,
   issueBase,
   links,
+  activity,
 }: Props) {
   const t = useTranslations();
   const format = useFormatter();
@@ -476,6 +482,7 @@ export function WorkspaceDashboard({
             profile={profile}
             stats={data.stats}
             links={links}
+            activity={activity}
           />
         )}
       </div>

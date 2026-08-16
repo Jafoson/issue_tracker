@@ -29,6 +29,7 @@
     "dashboard": "Dashboard",
     "users": "Users",
     "audit": "Audit log",
+    "activity": "Activity",
     "mailTemplates": "Mail templates"
   },
   "actions": {
@@ -695,6 +696,8 @@
   "audit": {
     "desc": "Who signed in, who granted whom rights, who deleted something — and every emergency access.",
     "loudOnly": "Interventions only",
+    "filterAction": "Event",
+    "allActions": "All",
     "colAction": "Event",
     "colActor": "Who",
     "colReason": "Reason",
@@ -717,7 +720,25 @@
       "workspaceUnsuspended": "Workspace unsuspended",
       "workspaceDeleted": "Workspace deleted",
       "mailTemplateUpdated": "Mail template edited",
-      "mailTemplateReset": "Mail template reset"
+      "mailTemplateReset": "Mail template reset",
+      "projectCreated": "Project created",
+      "memberAdded": "Member added",
+      "memberRemoved": "Member removed",
+      "projectMemberAdded": "Added to project",
+      "projectMemberRemoved": "Removed from project",
+      "projectMemberRoleChanged": "Project role changed",
+      "issueCreated": "Issue created",
+      "issueDeleted": "Issue deleted",
+      "issueAssigned": "Assigned",
+      "issueUnassigned": "Unassigned",
+      "issueTitleChanged": "Title changed",
+      "issueDescriptionChanged": "Description changed",
+      "issueStatusChanged": "Status changed",
+      "issuePriorityChanged": "Priority changed",
+      "issueTypeChanged": "Type changed",
+      "issueLabelsChanged": "Labels changed",
+      "labelCreated": "Label created",
+      "labelDeleted": "Label deleted"
     }
   },
   "dashboard": {
@@ -796,7 +817,9 @@
     "noTeams": "No team works on this project.",
     "noLabels": "No labels are offered here.",
     "noProjects": "This workspace has no projects yet.",
+    "noActivity": "Nothing here yet.",
     "allMembers": "All members and their roles",
+    "allActivity": "All activity",
     "platformAccess": "Access through the platform",
     "platformAccessHint": "Not a member — access through their platform role",
     "labelOwn": "Belongs to this project",

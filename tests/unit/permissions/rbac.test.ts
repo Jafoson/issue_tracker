@@ -115,7 +115,6 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
     for (const key of [
       "workspace.update",
       "config.manage",
-      "audit.view",
       "project.create",
       "project.view.all",
       "team.create",
@@ -123,6 +122,14 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
       expect(isPermissionAllowedIn(key, "WORKSPACE")).toBe(true);
       expect(isPermissionAllowedIn(key, "PROJECT")).toBe(false);
     }
+  });
+
+  // `audit.view` gilt inzwischen in allen drei Scopes — derselbe Key, drei
+  // Ausschnitte desselben Protokolls (siehe `lib/rbac/permissions.ts`).
+  it("gibt `audit.view` in Plattform, Workspace und Projekt", () => {
+    expect(isPermissionAllowedIn("audit.view", "PLATFORM")).toBe(true);
+    expect(isPermissionAllowedIn("audit.view", "WORKSPACE")).toBe(true);
+    expect(isPermissionAllowedIn("audit.view", "PROJECT")).toBe(true);
   });
 
   it("gibt `role.manage` in allen drei Scopes", () => {

@@ -48,6 +48,7 @@ mock.module("@/lib/db", () => ({
     },
     userPreferences: { findMany: mockUserPreferencesFindMany },
     notification: { createMany: mockNotificationCreateMany },
+    auditLog: { create: mock(async () => ({})) },
     $transaction: mockTransaction,
   },
 }));
@@ -415,7 +416,10 @@ describe("removeProjectMember()", () => {
   });
 
   it("entfernt den Projekt-Eintrag — und damit den Zugriff", async () => {
-    mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 3 } });
+    mockProjectMemberFindUnique.mockResolvedValue({
+      role: { rank: 3 },
+      user: { firstName: "Ada", lastName: "Lovelace" },
+    });
     expect(await removeProjectMember(PROJECT, "u-1")).toEqual({ ok: true });
     expect(mockProjectMemberDelete).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-1" } },
@@ -455,7 +459,11 @@ describe("inviteProjectMember()", () => {
   });
 
   it("hängt einen bestehenden Account direkt ans Projekt", async () => {
-    mockUserFindUnique.mockResolvedValue({ id: "u-9" });
+    mockUserFindUnique.mockResolvedValue({
+      id: "u-9",
+      firstName: "Ada",
+      lastName: "Lovelace",
+    });
     mockProjectMemberFindUnique.mockResolvedValue(null);
 
     const result = await inviteProjectMember({
@@ -468,7 +476,7 @@ describe("inviteProjectMember()", () => {
     // Adresse normalisiert, kein neuer Account.
     expect(mockUserFindUnique).toHaveBeenCalledWith({
       where: { email: "ada@example.com" },
-      select: { id: true },
+      select: { id: true, firstName: true, lastName: true },
     });
     expect(mockProjectMemberCreate).toHaveBeenCalledWith({
       data: {

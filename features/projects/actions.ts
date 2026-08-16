@@ -149,6 +149,14 @@ export async function createProject(data: {
     }
   });
 
+  await recordAudit({
+    action: "project.created",
+    actorId: session.userId,
+    target: { type: "project", id, label: name },
+    workspaceId: data.workspaceId,
+    projectId: id,
+  });
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -463,6 +471,28 @@ export async function addProjectMembers(data: {
     })),
   );
 
+  // Erscheint dank gesetzter `workspaceId` **und** `projectId` sowohl im
+  // Projekt- als auch im Workspace-Aktivitäts-Feed — genau die Frage „wer hat
+  // wen in welches Projekt aufgenommen".
+  const addedUsers = await db.user.findMany({
+    where: { id: { in: newlyAdded } },
+    select: { id: true, firstName: true, lastName: true },
+  });
+  for (const user of addedUsers) {
+    await recordAudit({
+      action: "project.member.added",
+      actorId: guard.actorId,
+      target: {
+        type: "user",
+        id: user.id,
+        label: `${user.firstName} ${user.lastName}`.trim(),
+      },
+      workspaceId: guard.workspaceId,
+      projectId: data.projectId,
+      meta: { role: role.name },
+    });
+  }
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -512,6 +542,25 @@ export async function setProjectMemberRole(
     text: role.name,
   });
 
+  const changedUser = await db.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true },
+  });
+  await recordAudit({
+    action: "project.member.role.changed",
+    actorId: guard.actorId,
+    target: {
+      type: "user",
+      id: userId,
+      label: changedUser
+        ? `${changedUser.firstName} ${changedUser.lastName}`.trim()
+        : userId,
+    },
+    workspaceId: guard.workspaceId,
+    projectId,
+    meta: { to: role.name },
+  });
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -539,7 +588,10 @@ export async function removeProjectMember(
 
   const target = await db.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
-    select: { role: { select: { rank: true } } },
+    select: {
+      role: { select: { rank: true } },
+      user: { select: { firstName: true, lastName: true } },
+    },
   });
   if (!target) return { error: "This person is not a member of the project." };
   if (target.role.rank > guard.actorRank)
@@ -560,6 +612,18 @@ export async function removeProjectMember(
     workspaceId: guard.workspaceId,
     projectId,
     actorId: guard.actorId,
+  });
+
+  await recordAudit({
+    action: "project.member.removed",
+    actorId: guard.actorId,
+    target: {
+      type: "user",
+      id: userId,
+      label: `${target.user.firstName} ${target.user.lastName}`.trim(),
+    },
+    workspaceId: guard.workspaceId,
+    projectId,
   });
 
   revalidatePath("/", "layout");
@@ -597,7 +661,7 @@ export async function inviteProjectMember(data: {
 
   const existing = await db.user.findUnique({
     where: { email },
-    select: { id: true },
+    select: { id: true, firstName: true, lastName: true },
   });
 
   if (existing) {
@@ -628,6 +692,19 @@ export async function inviteProjectMember(data: {
       workspaceId: guard.workspaceId,
       projectId: data.projectId,
       text: role.name,
+    });
+
+    await recordAudit({
+      action: "project.member.added",
+      actorId: guard.actorId,
+      target: {
+        type: "user",
+        id: existing.id,
+        label: `${existing.firstName} ${existing.lastName}`.trim(),
+      },
+      workspaceId: guard.workspaceId,
+      projectId: data.projectId,
+      meta: { role: role.name },
     });
 
     revalidatePath("/", "layout");

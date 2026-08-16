@@ -325,6 +325,19 @@
   }
 }
 
+/* Die Aktivitäts-Karte: `.side` streckt die Mitgliederkarte automatisch
+   (`align-items: stretch` in `.page`), aber `.main` ist eine Flex-Spalte ohne
+   fremdbestimmte Höhe — hier muss die Karte selbst sagen, dass sie sich den
+   Rest nimmt. `flex: 1` verteilt den Platz, der nach Kopfkarte, Eckdaten und
+   Teams/Labels noch da ist; `min-height: 0` verhindert, dass die automatische
+   Mindesthöhe (sonst die Inhaltsgröße) das Wachsen blockiert. Ergibt nur
+   zusammen mit `[data-scroll]` einen Sinn — sonst gäbe es nichts, das die
+   Höhe wieder einfängt. */
+.card[data-grow] {
+  flex: 1;
+  min-height: 0;
+}
+
 .cardHead {
   display: flex;
   align-items: center;

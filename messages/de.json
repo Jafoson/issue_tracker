@@ -29,6 +29,7 @@
     "dashboard": "Dashboard",
     "users": "Benutzer",
     "audit": "Protokoll",
+    "activity": "Aktivität",
     "mailTemplates": "Mail-Vorlagen"
   },
   "actions": {
@@ -695,6 +696,8 @@
   "audit": {
     "desc": "Wer war da, wer hat wem Rechte gegeben, wer hat etwas gelöscht — und jeder Notfall-Zugriff.",
     "loudOnly": "Nur Eingriffe",
+    "filterAction": "Vorgang",
+    "allActions": "Alle",
     "colAction": "Vorgang",
     "colActor": "Wer",
     "colReason": "Begründung",
@@ -717,7 +720,25 @@
       "workspaceUnsuspended": "Workspace entsperrt",
       "workspaceDeleted": "Workspace gelöscht",
       "mailTemplateUpdated": "Mail-Vorlage bearbeitet",
-      "mailTemplateReset": "Mail-Vorlage zurückgesetzt"
+      "mailTemplateReset": "Mail-Vorlage zurückgesetzt",
+      "projectCreated": "Projekt angelegt",
+      "memberAdded": "Mitglied hinzugefügt",
+      "memberRemoved": "Mitglied entfernt",
+      "projectMemberAdded": "Zum Projekt hinzugefügt",
+      "projectMemberRemoved": "Aus dem Projekt entfernt",
+      "projectMemberRoleChanged": "Rolle im Projekt geändert",
+      "issueCreated": "Aufgabe angelegt",
+      "issueDeleted": "Aufgabe gelöscht",
+      "issueAssigned": "Zugewiesen",
+      "issueUnassigned": "Zuweisung entfernt",
+      "issueTitleChanged": "Titel geändert",
+      "issueDescriptionChanged": "Beschreibung geändert",
+      "issueStatusChanged": "Status geändert",
+      "issuePriorityChanged": "Priorität geändert",
+      "issueTypeChanged": "Typ geändert",
+      "issueLabelsChanged": "Labels geändert",
+      "labelCreated": "Label angelegt",
+      "labelDeleted": "Label gelöscht"
     }
   },
   "dashboard": {
@@ -796,7 +817,9 @@
     "noTeams": "Kein Team arbeitet an diesem Projekt.",
     "noLabels": "Hier werden keine Labels angeboten.",
     "noProjects": "Dieser Workspace hat noch keine Projekte.",
+    "noActivity": "Noch nichts los.",
     "allMembers": "Alle Mitglieder und ihre Rollen",
+    "allActivity": "Alle Aktivitäten",
     "platformAccess": "Zugriff über die Plattform",
     "platformAccessHint": "Kein Mitglied — Zugriff über die Plattform-Rolle",
     "labelOwn": "Gehört diesem Projekt",

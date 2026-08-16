@@ -7,6 +7,8 @@ import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { Label } from "@/components/ui/atoms/Label/Label";
+import { ActivityFeed } from "@/features/audit/components/ActivityFeed/ActivityFeed";
+import type { ActivityView } from "@/features/audit/queries";
 import type {
   DashboardStats,
   WorkspaceProfile,
@@ -32,7 +34,12 @@ interface Props {
     members: string;
     teams: string;
     settings: string;
+    /** Die volle, filterbare Liste — die Karte unten zeigt nur einen Ausschnitt. */
+    activity: string;
   };
+  /** Ausschnitt des Aktivitäts-Protokolls — ohne `audit.view` schon auf die
+   * eigenen Einträge gefiltert (`getWorkspaceActivity`). */
+  activity: ActivityView;
 }
 
 interface CardProps {
@@ -51,6 +58,14 @@ interface CardProps {
    * dass man sich erst an ihnen vorbeischrollen muss.
    */
   scrollBody?: boolean;
+  /**
+   * Für die Aktivitäts-Karte: sie nimmt sich den Platz, der nach Kopfkarte,
+   * Eckdaten und Teams/Projekte in `.main` noch übrig ist. `.main` ist eine
+   * Flex-Spalte ohne fremdbestimmte Höhe — anders als `.side`, das `.page`
+   * per `align-items: stretch` automatisch dehnt. Ergibt nur zusammen mit
+   * `scrollBody` einen Sinn.
+   */
+  grow?: boolean;
   footer?: ReactNode;
   children: ReactNode;
 }
@@ -62,6 +77,7 @@ function Card({
   dashed,
   action,
   scrollBody,
+  grow,
   footer,
   children,
 }: CardProps) {
@@ -71,6 +87,7 @@ function Card({
       data-empty={empty || undefined}
       data-dashed={dashed || undefined}
       data-scroll={scrollBody || undefined}
+      data-grow={grow || undefined}
     >
       <div className={styles.cardHead}>
         <h3 className={styles.cardTitle}>
@@ -99,6 +116,7 @@ export function WorkspaceProfileView({
   profile,
   stats,
   links,
+  activity,
 }: Props) {
   const t = useTranslations();
   const format = useFormatter();
@@ -331,6 +349,35 @@ export function WorkspaceProfileView({
             )}
           </Card>
         </div>
+
+        {/* ── Aktivität ── Wer hat welches Projekt angelegt, wen aufgenommen,
+            usw. Immer sichtbar, aber ohne `audit.view` schon serverseitig auf
+            die eigenen Einträge gefiltert (`getWorkspaceActivity`). */}
+        <Card
+          title={t("nav.activity")}
+          count={activity.entries.length}
+          empty={activity.entries.length === 0}
+          scrollBody
+          grow
+          footer={
+            activity.canViewAll &&
+            activity.entries.length > 0 && (
+              <Link href={links.activity} className={styles.cardLink}>
+                {t("dashboard.allActivity")}
+                <Icon icon="lucide:arrow-right" width={13} />
+              </Link>
+            )
+          }
+        >
+          {activity.entries.length === 0 ? (
+            t("dashboard.noActivity")
+          ) : (
+            <ActivityFeed
+              entries={activity.entries}
+              workspaceSlug={workspaceSlug}
+            />
+          )}
+        </Card>
       </div>
 
       {/* Die Mitglieder als eigene Spalte rechts. Ohne `member.view` bleibt nur

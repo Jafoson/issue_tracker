@@ -2,10 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import type { IssuePatch } from "@/features/issues/types";
+import { recordAudit } from "@/lib/audit";
+import type {
+  LabelChangeItem,
+  LabelsChangeMeta,
+  StatusChangeMeta,
+} from "@/lib/audit/actions";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { notify } from "@/lib/notify";
 import {
+  currentUserId,
   hasPermission,
   PermissionError,
   requirePermission,
@@ -44,18 +51,189 @@ async function issueContext(id: string) {
   const issue = await db.issue.findUnique({
     where: { id },
     select: {
+      key: true,
       projectId: true,
       reporterId: true,
       assigneeId: true,
       status: true,
+      priority: true,
+      type: true,
+      labels: true,
       closedAt: true,
       title: true,
       description: true,
-      project: { select: { workspaceId: true } },
+      project: { select: { workspaceId: true, prefix: true } },
     },
   });
   if (!issue) throw new PermissionError("issue.update.any");
   return issue;
+}
+
+type IssueAuditCtx = {
+  key: number;
+  projectId: string;
+  title: string;
+  project: { workspaceId: string; prefix: string };
+};
+
+/** `MOB-1` — dieselbe Kennung wie überall sonst in der Oberfläche, statt des
+ * (womöglich langen oder inzwischen geänderten) Titels. */
+function issueRef(issue: { key: number; project: { prefix: string } }) {
+  return `${issue.project.prefix}-${issue.key}`;
+}
+
+/**
+ * Ein Protokolleintrag für ein Issue — dieselben drei Angaben (Ziel,
+ * Workspace, Projekt) für jeden der grob unterschiedenen Bearbeitungs-Anlässe
+ * unten, deshalb hier gebündelt statt an jeder Stelle wiederholt.
+ *
+ * `detail` ist bewusst optional: bei manchen Anlässen (Zuweisung entfernt,
+ * Beschreibung geändert) sagt schon der Vorgang selbst genug, und das Kürzel
+ * allein identifiziert das Ticket.
+ *
+ * Das „Grob" gilt für den Anlass (welcher Aspekt sich änderte), nicht für die
+ * Beschriftung selbst: wo es einen sinnvollen alten und neuen Wert gibt (Status,
+ * Priorität, Typ, Labels, Titel), steht „Alt → Neu" direkt in `targetLabel` —
+ * dieselbe Auskunft, die ein Audit-Log laut gängiger Praxis geben soll, nur
+ * ohne eigene Spalte dafür. Die Oberfläche (`AuditLog`/`ActivityFeed`) zerlegt
+ * „Kürzel: Alt → Neu" beim Anzeigen wieder in seine Teile. `meta` trägt
+ * dieselben Werte zusätzlich roh (nicht in der Liste sichtbar, aber in der
+ * Datenbank nachvollziehbar).
+ */
+async function recordIssueAudit(
+  action:
+    | "issue.created"
+    | "issue.deleted"
+    | "issue.assigned"
+    | "issue.unassigned"
+    | "issue.title.changed"
+    | "issue.description.changed"
+    | "issue.status.changed"
+    | "issue.priority.changed"
+    | "issue.type.changed"
+    | "issue.labels.changed",
+  id: string,
+  issue: { projectId: string; project: { workspaceId: string } } & Parameters<
+    typeof issueRef
+  >[0],
+  actorId: string,
+  detail?: string,
+  meta?: object,
+  /** Kontofarbe der/des Zugewiesenen, für den Avatar neben ihrem Namen in
+   * `detail` — das Ziel selbst ist das Issue, nicht sie. */
+  personColor?: string | null,
+) {
+  const ref = issueRef(issue);
+  await recordAudit({
+    action,
+    actorId,
+    target: { type: "issue", id, label: detail ? `${ref}: ${detail}` : ref },
+    workspaceId: issue.project.workspaceId,
+    projectId: issue.projectId,
+    ...(meta !== undefined ? { meta: meta as Prisma.InputJsonValue } : {}),
+    ...(personColor !== undefined ? { personColor } : {}),
+  });
+}
+
+/** Name und Farbe eines Status — die Farbe geht mit ins Protokoll (eingefroren,
+ * wie `actorColor`), damit `StatusIcon` sie zeigen kann, ohne den Katalog zum
+ * Lesezeitpunkt erneut zu befragen. */
+async function statusInfo(
+  id: string,
+): Promise<{ name: string; color: string } | null> {
+  return db.status.findUnique({
+    where: { id },
+    select: { name: true, color: true },
+  });
+}
+
+async function priorityName(id: number): Promise<string | null> {
+  return (
+    (await db.priority.findUnique({ where: { id }, select: { name: true } }))
+      ?.name ?? null
+  );
+}
+
+async function issueTypeName(id: string): Promise<string | null> {
+  return (
+    (await db.issueType.findUnique({ where: { id }, select: { name: true } }))
+      ?.name ?? null
+  );
+}
+
+/** Statuswechsel protokollieren — geteilt von `moveIssue`, `reorderIssue` und `updateIssue`. */
+async function recordStatusChangeAudit(
+  id: string,
+  issue: IssueAuditCtx,
+  actorId: string,
+  from: string,
+  to: string,
+) {
+  const [fromInfo, toInfo] = await Promise.all([
+    statusInfo(from),
+    statusInfo(to),
+  ]);
+  const meta: StatusChangeMeta = {
+    from,
+    to,
+    fromColor: fromInfo?.color ?? null,
+    toColor: toInfo?.color ?? null,
+  };
+  await recordIssueAudit(
+    "issue.status.changed",
+    id,
+    issue,
+    actorId,
+    `${fromInfo?.name ?? from} → ${toInfo?.name ?? to}`,
+    meta,
+  );
+}
+
+/** Welche Labels dazukamen und welche weg sind — nicht nur „etwas hat sich geändert". */
+async function recordLabelsChangeAudit(
+  id: string,
+  issue: IssueAuditCtx,
+  actorId: string,
+  before: string[],
+  after: string[],
+) {
+  const beforeSet = new Set(before);
+  const afterSet = new Set(after);
+  const added = after.filter((labelId) => !beforeSet.has(labelId));
+  const removed = before.filter((labelId) => !afterSet.has(labelId));
+  if (added.length === 0 && removed.length === 0) return;
+
+  const rows = await db.label.findMany({
+    where: { id: { in: [...added, ...removed] } },
+    select: { id: true, name: true, color: true },
+  });
+  const itemFor = (labelId: string): LabelChangeItem =>
+    rows.find((r) => r.id === labelId) ?? {
+      id: labelId,
+      name: labelId,
+      color: "#8a9099",
+    };
+  const parts = [
+    added.length > 0
+      ? `+ ${added.map((l) => itemFor(l).name).join(", ")}`
+      : null,
+    removed.length > 0
+      ? `− ${removed.map((l) => itemFor(l).name).join(", ")}`
+      : null,
+  ].filter((p): p is string => p !== null);
+  const meta: LabelsChangeMeta = {
+    added: added.map(itemFor),
+    removed: removed.map(itemFor),
+  };
+
+  await recordIssueAudit(
+    "issue.labels.changed",
+    id,
+    issue,
+    actorId,
+    parts.join(" / "),
+    meta,
+  );
 }
 
 /**
@@ -162,6 +340,9 @@ export async function moveIssue(id: string, status: string) {
     data: { status, ...closedPatch(issue, status) },
   });
   await notifyStatusChange(id, issue, actorId, status);
+  if (status !== issue.status) {
+    await recordStatusChangeAudit(id, issue, actorId, issue.status, status);
+  }
   await revalidate();
 }
 
@@ -183,6 +364,9 @@ export async function reorderIssue(id: string, status: string, rank: number) {
     data: { status, rank, ...closedPatch(issue, status) },
   });
   await notifyStatusChange(id, issue, actorId, status);
+  if (status !== issue.status) {
+    await recordStatusChangeAudit(id, issue, actorId, issue.status, status);
+  }
   await revalidate();
 }
 
@@ -257,6 +441,116 @@ export async function updateIssue(id: string, patch: IssuePatch) {
     );
   }
 
+  // ── Grob protokollieren, was sich geändert hat ──
+  //
+  // Ein Eintrag je geändertem Aspekt, nicht ein Feld-für-Feld-Diff: „Titel
+  // geändert" sagt genug, der alte Text gehört nicht ins Protokoll. Jeder
+  // Vergleich läuft gegen den Stand von `issue` (vor diesem Patch) — ein
+  // erneutes Speichern desselben Werts (Picker ohne echte Änderung) erzeugt
+  // damit keine Zeile.
+  if (patch.assignee !== undefined && patch.assignee !== issue.assigneeId) {
+    if (patch.assignee) {
+      const [assignee, previous] = await Promise.all([
+        db.user.findUnique({
+          where: { id: patch.assignee },
+          select: { firstName: true, lastName: true, color: true },
+        }),
+        // Wer die Aufgabe vorher hatte — steht mit in der Zeile, sonst sähe
+        // eine Umverteilung wie eine Erstzuweisung aus.
+        issue.assigneeId
+          ? db.user.findUnique({
+              where: { id: issue.assigneeId },
+              select: { firstName: true, lastName: true },
+            })
+          : null,
+      ]);
+      const assigneeName = assignee
+        ? `${assignee.firstName} ${assignee.lastName}`.trim()
+        : patch.assignee;
+      const previousName = previous
+        ? `${previous.firstName} ${previous.lastName}`.trim()
+        : null;
+      await recordIssueAudit(
+        "issue.assigned",
+        id,
+        issue,
+        actorId,
+        previousName ? `${previousName} → ${assigneeName}` : assigneeName,
+        undefined,
+        assignee?.color ?? null,
+      );
+    } else {
+      await recordIssueAudit("issue.unassigned", id, issue, actorId);
+    }
+  }
+
+  if (patch.title !== undefined && patch.title !== issue.title) {
+    await recordIssueAudit(
+      "issue.title.changed",
+      id,
+      issue,
+      actorId,
+      `${issue.title} → ${patch.title}`,
+    );
+  }
+
+  if (
+    patch.description !== undefined &&
+    JSON.stringify(patch.description) !== JSON.stringify(issue.description)
+  ) {
+    await recordIssueAudit("issue.description.changed", id, issue, actorId);
+  }
+
+  if (patch.status !== undefined && patch.status !== issue.status) {
+    await recordStatusChangeAudit(
+      id,
+      issue,
+      actorId,
+      issue.status,
+      patch.status,
+    );
+  }
+
+  if (patch.priority !== undefined && patch.priority !== issue.priority) {
+    const [fromName, toName] = await Promise.all([
+      priorityName(issue.priority),
+      priorityName(patch.priority),
+    ]);
+    await recordIssueAudit(
+      "issue.priority.changed",
+      id,
+      issue,
+      actorId,
+      `${fromName ?? issue.priority} → ${toName ?? patch.priority}`,
+      { from: issue.priority, to: patch.priority },
+    );
+  }
+
+  if (patch.type !== undefined && patch.type !== issue.type) {
+    const [fromName, toName] = await Promise.all([
+      issueTypeName(issue.type),
+      issueTypeName(patch.type),
+    ]);
+    await recordIssueAudit(
+      "issue.type.changed",
+      id,
+      issue,
+      actorId,
+      `${fromName ?? issue.type} → ${toName ?? patch.type}`,
+      { from: issue.type, to: patch.type },
+    );
+  }
+
+  if (patch.labels !== undefined) {
+    await recordLabelsChangeAudit(
+      id,
+      issue,
+      actorId,
+      issue.labels,
+      patch.labels,
+    );
+  }
+
   await revalidate();
 }
 
@@ -278,10 +572,10 @@ export async function createIssue(data: {
 
   // Atomically claim the next key for this project. The counter only ever
   // increments, so deleted keys are never reused and each key stays unique.
-  const { lastIssueKey, workspaceId } = await db.project.update({
+  const { lastIssueKey, workspaceId, prefix } = await db.project.update({
     where: { id: data.projectId },
     data: { lastIssueKey: { increment: 1 } },
-    select: { lastIssueKey: true, workspaceId: true },
+    select: { lastIssueKey: true, workspaceId: true, prefix: true },
   });
   const id = uid("i");
   await db.issue.create({
@@ -327,6 +621,18 @@ export async function createIssue(data: {
     userId,
   );
 
+  await recordIssueAudit(
+    "issue.created",
+    id,
+    {
+      key: lastIssueKey,
+      projectId: data.projectId,
+      project: { workspaceId, prefix },
+    },
+    userId,
+    data.title,
+  );
+
   await revalidate();
 }
 
@@ -341,6 +647,7 @@ export async function createLabel(data: {
   // wird im Projekt-Kontext, geschrieben würde sonst woanders. Ein Aufruf mit
   // fremder `workspaceId` legt damit kein Label im fremden Mandanten mehr an.
   let workspaceId = data.workspaceId;
+  let actorId: string;
 
   if (data.projectId) {
     const project = await db.project.findUnique({
@@ -350,9 +657,11 @@ export async function createLabel(data: {
     if (!project) throw new PermissionError("label.create");
     workspaceId = project.workspaceId;
 
-    await requirePermission("label.create", { projectId: data.projectId });
+    actorId = await requirePermission("label.create", {
+      projectId: data.projectId,
+    });
   } else {
-    await requirePermission("label.create", { workspaceId });
+    actorId = await requirePermission("label.create", { workspaceId });
   }
 
   const slug = await uniqueLabelSlug(workspaceId, data.name);
@@ -368,6 +677,15 @@ export async function createLabel(data: {
         : {}),
     },
   });
+
+  await recordAudit({
+    action: "label.created",
+    actorId,
+    target: { type: "label", id: label.id, label: label.name },
+    workspaceId,
+    projectId: data.projectId ?? null,
+  });
+
   await revalidate();
   return {
     id: label.id,
@@ -397,7 +715,7 @@ type LabelResult = { ok: true } | { error: string };
 async function labelScope(labelId: string) {
   const label = await db.label.findUnique({
     where: { id: labelId },
-    select: { id: true, workspaceId: true, projectId: true },
+    select: { id: true, name: true, workspaceId: true, projectId: true },
   });
   if (!label) return null;
 
@@ -473,6 +791,14 @@ export async function deleteLabel(labelId: string): Promise<LabelResult> {
     db.label.delete({ where: { id: labelId } }),
   ]);
 
+  await recordAudit({
+    action: "label.deleted",
+    actorId: await currentUserId(),
+    target: { type: "label", id: labelId, label: scoped.label.name },
+    workspaceId: scoped.label.workspaceId,
+    projectId: scoped.label.projectId,
+  });
+
   await revalidate();
   return { ok: true };
 }
@@ -536,7 +862,7 @@ export async function setLabelHidden(
 
 export async function deleteIssue(id: string) {
   const issue = await issueContext(id);
-  await requirePermissionOr([
+  const actorId = await requirePermissionOr([
     {
       permission: "issue.delete.any",
       ctx: { projectId: issue.projectId },
@@ -548,6 +874,9 @@ export async function deleteIssue(id: string) {
     },
   ]);
   await db.issue.delete({ where: { id } });
+
+  await recordIssueAudit("issue.deleted", id, issue, actorId, issue.title);
+
   await revalidate();
 }
 

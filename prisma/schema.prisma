@@ -822,12 +822,24 @@ model AuditLog {
   actorId    String?
   /// Name und Adresse zur Tatzeit, damit die Zeile für sich lesbar bleibt.
   actorLabel String
+  /// Kontofarbe zur Tatzeit, für den Avatar in der Liste — genau wie
+  /// `actorLabel` eingefroren, nicht bei jedem Lesen neu aufgelöst. Null ohne
+  /// `actorId` (fehlgeschlagene Anmeldung) oder bei einem gelöschten Konto.
+  actorColor String?
 
   /// Woran gehandelt wurde. Frei gehalten (`user`, `project`, `workspace`,
   /// `role`), damit eine neue Objektart keine neue Spalte braucht.
   targetType  String?
   targetId    String?
   targetLabel String?
+
+  /// Kontofarbe der Person, um die es in `targetLabel` geht, wenn das Ziel
+  /// selbst keine Person ist (z. B. „Issue MOB-5 an Camila Santos zugewiesen" —
+  /// Ziel ist das Issue, nicht Camila). Eingefroren wie `actorColor`. Bei
+  /// Zielen, die schon selbst eine Person sind, bleibt sie leer — dort steht
+  /// die Auskunft im Namen (`actorLabel`-Pendant gibt es dafür nicht, das Ziel
+  /// braucht keinen zweiten Namen).
+  personColor String?
 
   /// Wo es geschah — für die Einordnung, nicht für einen Join.
   workspaceId String?
@@ -846,6 +858,7 @@ model AuditLog {
   @@index([action, createdAt(sort: Desc)])
   @@index([actorId, createdAt(sort: Desc)])
   @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
 }
 
 // ─── Mail-Vorlagen (Admin-Override) ────────────────────────────────────────────

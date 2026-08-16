@@ -18,6 +18,8 @@ mock.module("@/lib/db", () => ({
   db: {
     project: { findUnique: mockProjectFindUnique, create: mockProjectCreate },
     workspaceMember: { findUnique: mock() },
+    user: { findUnique: mock() },
+    auditLog: { create: mock(async () => ({})) },
     $transaction: mockTransaction,
   },
 }));

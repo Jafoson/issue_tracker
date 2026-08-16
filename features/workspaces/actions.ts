@@ -781,7 +781,10 @@ export async function removeMember(workspaceId: string, userId: string) {
 
   const target = await db.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
-    select: { role: { select: { key: true, rank: true } } },
+    select: {
+      role: { select: { key: true, rank: true } },
+      user: { select: { firstName: true, lastName: true } },
+    },
   });
   if (!target) throw new PermissionError(guard);
 
@@ -803,6 +806,17 @@ export async function removeMember(workspaceId: string, userId: string) {
   // unerreichbar: `canEnterWorkspace` sperrt den Workspace schon aus, bevor
   // sie die Inbox überhaupt sehen könnte.
   await sendMemberRemovedEmail({ userId, workspaceId, actorId });
+
+  await recordAudit({
+    action: "member.removed",
+    actorId,
+    target: {
+      type: "user",
+      id: userId,
+      label: `${target.user.firstName} ${target.user.lastName}`.trim(),
+    },
+    workspaceId,
+  });
 
   revalidatePath("/", "layout");
 }
@@ -859,7 +873,7 @@ export async function inviteWorkspaceMember(data: {
 
   const existing = await db.user.findUnique({
     where: { email },
-    select: { id: true },
+    select: { id: true, firstName: true, lastName: true },
   });
 
   if (existing) {
@@ -891,6 +905,18 @@ export async function inviteWorkspaceMember(data: {
       actorId,
       workspaceId,
       text: role.name,
+    });
+
+    await recordAudit({
+      action: "member.added",
+      actorId,
+      target: {
+        type: "user",
+        id: existing.id,
+        label: `${existing.firstName} ${existing.lastName}`.trim(),
+      },
+      workspaceId,
+      meta: { role: role.name },
     });
 
     revalidatePath("/", "layout");

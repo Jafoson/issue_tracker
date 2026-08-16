@@ -4,6 +4,16 @@ mock.module("@/lib/db", () => ({
   db: {
     issue: { findUnique: mock(), update: mock(), create: mock() },
     project: { update: mock() },
+    user: { findUnique: mock() },
+    auditLog: { create: mock(async () => ({})) },
+    // Nicht Gegenstand dieser Datei — `moveIssue`/`updateIssue` schlagen dafür
+    // Namen nach, wenn sich Status/Priorität/Typ/Labels ändern (grobes
+    // Protokoll, `recordIssueAudit` & Co.). `null` ist ein gültiges Ergebnis
+    // (unbekannte Id), die Zeile fällt dann auf die rohe Id zurück.
+    status: { findUnique: mock(async () => null) },
+    priority: { findUnique: mock(async () => null) },
+    issueType: { findUnique: mock(async () => null) },
+    label: { findMany: mock(async () => []) },
   },
 }));
 
@@ -34,7 +44,13 @@ function issue(status: string, closedAt: Date | null) {
     reporterId: "u1",
     assigneeId: null,
     status,
+    priority: 2,
+    type: "task",
+    labels: [] as string[],
     closedAt,
+    title: "Titel",
+    description: null,
+    project: { workspaceId: "ws1" },
   };
 }
 

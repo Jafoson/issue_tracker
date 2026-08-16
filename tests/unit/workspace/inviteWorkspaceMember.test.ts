@@ -26,6 +26,7 @@ mock.module("@/lib/db", () => ({
     workspaceMember: { findUnique: mockWorkspaceMemberFindUnique },
     userPreferences: { findMany: mockUserPreferencesFindMany },
     notification: { createMany: mockNotificationCreateMany },
+    auditLog: { create: mock(async () => ({})) },
     $transaction: mockTransaction,
   },
 }));
@@ -61,6 +62,15 @@ mock.module("@/lib/user-defaults", () => ({
   pickUserColor: () => "#6e63e6",
 }));
 
+// `@/lib/project-membership` wird auch von `teams.test.ts` und
+// `removeMember.test.ts` im selben Prozess komplett gemockt (geteilter
+// Modul-Cache, siehe CLAUDE.md) — hier deshalb selbst mocken, statt auf die
+// echte Implementierung zu vertrauen.
+const mockEnrollInWorkspaceProjects = mock();
+mock.module("@/lib/project-membership", () => ({
+  enrollInWorkspaceProjects: mockEnrollInWorkspaceProjects,
+}));
+
 import { inviteWorkspaceMember } from "@/features/workspaces/actions";
 
 const WS = "acme";
@@ -90,6 +100,7 @@ function reset() {
     mockCan,
     mockCurrentUserId,
     mockAccessFor,
+    mockEnrollInWorkspaceProjects,
   ]) {
     m.mockReset();
   }
@@ -103,7 +114,6 @@ function reset() {
   mockTx.workspaceMember.findUnique.mockResolvedValue({
     role: { permissions: [{ permissionKey: "issue.create" }] },
   });
-  mockTx.project.findMany.mockResolvedValue([{ id: "p-1" }]);
   mockTransaction.mockImplementation(
     async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx),
   );
@@ -196,7 +206,10 @@ describe("inviteWorkspaceMember() — bekanntes Konto", () => {
     });
     expect(mockTx.invitation.create).not.toHaveBeenCalled();
     // Und es landet in den öffentlichen Projekten.
-    expect(mockTx.projectMember.createMany).toHaveBeenCalled();
+    expect(mockEnrollInWorkspaceProjects).toHaveBeenCalledWith(mockTx, {
+      workspaceId: WS,
+      userId: "u-1",
+    });
   });
 
   it("merkt, wenn die Person schon dabei ist", async () => {

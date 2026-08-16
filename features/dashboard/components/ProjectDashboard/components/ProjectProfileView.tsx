@@ -7,6 +7,8 @@ import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import buttonStyles from "@/components/ui/atoms/Button/button.module.scss";
 import { Label } from "@/components/ui/atoms/Label/Label";
+import { ActivityFeed } from "@/features/audit/components/ActivityFeed/ActivityFeed";
+import type { ActivityView } from "@/features/audit/queries";
 import type {
   DashboardStats,
   ProjectProfile,
@@ -32,7 +34,12 @@ interface Props {
     settings: string;
     /** Die Teamverwaltung liegt eine Ebene höher — Teams gehören dem Workspace. */
     teams: string;
+    /** Die volle, filterbare Liste — die Karte unten zeigt nur einen Ausschnitt. */
+    activity: string;
   };
+  /** Ausschnitt des Aktivitäts-Protokolls — ohne `audit.view` schon auf die
+   * eigenen Einträge gefiltert (`getProjectActivity`). */
+  activity: ActivityView;
 }
 
 interface CardProps {
@@ -55,6 +62,16 @@ interface CardProps {
    * dass man sich erst an ihnen vorbeischrollen muss.
    */
   scrollBody?: boolean;
+  /**
+   * Für die Aktivitäts-Karte: sie nimmt sich den Platz, der nach Kopfkarte,
+   * Eckdaten und Teams/Labels in `.main` noch übrig ist, statt mit ihrem
+   * Inhalt zu wachsen — genau die Rolle, die `align-items: stretch` in
+   * `.side` für die Mitgliederkarte schon automatisch übernimmt. `.main` ist
+   * aber eine Flex-Spalte ohne fremdbestimmte Höhe, deshalb hier ausdrücklich.
+   * Ergibt nur zusammen mit `scrollBody` Sinn: sonst wüchse die Karte selbst
+   * immer weiter mit ihrem Inhalt.
+   */
+  grow?: boolean;
   /** Knopf oben rechts neben Titel und Zahl, z. B. zum Anlegen oder Verwalten. */
   action?: ReactNode;
   footer?: ReactNode;
@@ -67,6 +84,7 @@ function Card({
   empty,
   dashed,
   scrollBody,
+  grow,
   action,
   footer,
   children,
@@ -77,6 +95,7 @@ function Card({
       data-empty={empty || undefined}
       data-dashed={dashed || undefined}
       data-scroll={scrollBody || undefined}
+      data-grow={grow || undefined}
     >
       <div className={styles.cardHead}>
         <h3 className={styles.cardTitle}>
@@ -124,6 +143,7 @@ export function ProjectProfileView({
   profile,
   stats,
   links,
+  activity,
 }: Props) {
   const t = useTranslations();
   const format = useFormatter();
@@ -377,6 +397,36 @@ export function ProjectProfileView({
             )}
           </Card>
         </div>
+
+        {/* ── Aktivität ── Wer hat wann was getan: Mitglieder, Issues, Labels.
+            Immer sichtbar, aber ohne `audit.view` schon serverseitig auf die
+            eigenen Einträge gefiltert (`getProjectActivity`) — kein
+            Berechtigungs-Gate hier, nur ein anderer Ausschnitt. */}
+        <Card
+          title={t("nav.activity")}
+          count={activity.entries.length}
+          empty={activity.entries.length === 0}
+          scrollBody
+          grow
+          footer={
+            activity.canViewAll &&
+            activity.entries.length > 0 && (
+              <Link href={links.activity} className={styles.cardLink}>
+                {t("dashboard.allActivity")}
+                <Icon icon="lucide:arrow-right" width={13} />
+              </Link>
+            )
+          }
+        >
+          {activity.entries.length === 0 ? (
+            t("dashboard.noActivity")
+          ) : (
+            <ActivityFeed
+              entries={activity.entries}
+              workspaceSlug={workspaceId}
+            />
+          )}
+        </Card>
       </div>
 
       {/* Die Mitglieder als eigene Spalte rechts. */}

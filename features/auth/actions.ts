@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { openInvitation } from "@/lib/invitations";
 import { enrollInWorkspaceProjects } from "@/lib/project-membership";
@@ -132,6 +133,8 @@ export async function acceptInvitation(
 
   const passwordHash = await bcrypt.hash(password, 12);
 
+  let joined = false;
+
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: invitation.userId },
@@ -162,6 +165,7 @@ export async function acceptInvitation(
         workspaceId: invitation.workspaceId,
         userId: invitation.userId,
       });
+      joined = true;
     }
 
     await tx.invitation.update({
@@ -169,6 +173,22 @@ export async function acceptInvitation(
       data: { acceptedAt: new Date() },
     });
   });
+
+  if (joined) {
+    // Erst jetzt ist die Mitgliedschaft wirklich da — die Person nimmt ihre
+    // eigene Einladung an, ist also zugleich Akteur und Ziel. Außerhalb der
+    // Transaktion: ein klemmendes Protokoll soll die Annahme nicht verhindern.
+    await recordAudit({
+      action: "member.added",
+      actorId: invitation.userId,
+      target: {
+        type: "user",
+        id: invitation.userId,
+        label: `${firstName} ${lastName}`.trim(),
+      },
+      workspaceId: invitation.workspaceId,
+    });
+  }
 
   try {
     await signIn("credentials", {

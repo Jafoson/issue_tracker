@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getWorkspaceActivity } from "@/features/audit/queries";
 import { WorkspaceDashboard } from "@/features/dashboard/components/WorkspaceDashboard/WorkspaceDashboard";
 import {
   getMyWorkspaceDashboardLayout,
@@ -35,6 +36,8 @@ export default async function WorkspaceOverviewPage({
   const data = await getWorkspaceDashboard(workspace, range);
   if (!data) notFound();
 
+  const activity = await getWorkspaceActivity(workspace, 8);
+
   return (
     <WorkspaceDashboard
       {...data}
@@ -47,7 +50,9 @@ export default async function WorkspaceOverviewPage({
         members: workspacePath(workspace, "members"),
         teams: workspacePath(workspace, "teams"),
         settings: workspaceSettingsPath(workspace, ""),
+        activity: workspaceSettingsPath(workspace, "activity"),
       }}
+      activity={activity}
     />
   );
 }

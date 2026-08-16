@@ -19,6 +19,7 @@ import { RangePicker } from "@/components/ui/charts/RangePicker/RangePicker";
 import { ScopePicker } from "@/components/ui/charts/ScopePicker/ScopePicker";
 import { StackedBar } from "@/components/ui/charts/StackedBar/StackedBar";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import type { ActivityView } from "@/features/audit/queries";
 import {
   resetDashboardLayout,
   saveDashboardLayout,
@@ -62,7 +63,11 @@ interface Props extends ProjectDashboardView {
     settings: string;
     /** Die Teamverwaltung liegt eine Ebene höher — Teams gehören dem Workspace. */
     teams: string;
+    /** Die volle, filterbare Liste — die Aktivitäts-Karte der Übersicht zeigt nur einen Ausschnitt. */
+    activity: string;
   };
+  /** Für die Aktivitäts-Karte der Übersicht — bereits auf `audit.view` gefiltert (`getProjectActivity`). */
+  activity: ActivityView;
 }
 
 /** Die Zeichen der drei Gründe in „Braucht Aufmerksamkeit". */
@@ -129,6 +134,7 @@ export function ProjectDashboard({
   issueBase,
   workspaceId,
   links,
+  activity,
 }: Props) {
   const t = useTranslations();
   const format = useFormatter();
@@ -607,6 +613,7 @@ export function ProjectDashboard({
             profile={profile}
             stats={data.stats}
             links={links}
+            activity={activity}
           />
         )}
       </div>

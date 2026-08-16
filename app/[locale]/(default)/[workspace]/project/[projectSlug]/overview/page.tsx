@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getProjectActivity } from "@/features/audit/queries";
 import { ProjectDashboard } from "@/features/dashboard/components/ProjectDashboard/ProjectDashboard";
 import {
   getMyDashboardLayout,
@@ -62,6 +63,10 @@ export default async function ProjectDashboardPage({
   const data = await getProjectDashboard(project.id, range, scope);
   if (!data) notFound();
 
+  // Nur ein Ausschnitt für die Karte in der Übersicht — die volle Liste steht
+  // unter den Einstellungen (`.../settings/activity`).
+  const activity = await getProjectActivity(project.id, 8);
+
   return (
     <ProjectDashboard
       {...data}
@@ -74,7 +79,9 @@ export default async function ProjectDashboardPage({
         members: projectPath(workspace, projectSlug, "members"),
         settings: projectSettingsPath(workspace, projectSlug, ""),
         teams: workspaceSettingsPath(workspace, "teams"),
+        activity: projectSettingsPath(workspace, projectSlug, "activity"),
       }}
+      activity={activity}
     />
   );
 }

@@ -271,6 +271,14 @@
   }
 }
 
+/* Die Aktivitäts-Karte: wie in `ProjectProfileView` (siehe dort für die
+   Begründung) — `.main` streckt hier nichts von selbst, deshalb nimmt sich
+   die Karte mit `flex: 1` ausdrücklich den Rest der Spalte. */
+.card[data-grow] {
+  flex: 1;
+  min-height: 0;
+}
+
 .cardHead {
   display: flex;
   align-items: center;
