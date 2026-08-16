@@ -639,10 +639,11 @@ export function groupByRole(
  * sie unter „Mitglieder" (`getProjectMembersView`).
  */
 async function profileFor(projectId: string): Promise<ProjectProfile | null> {
+  const userId = await currentUserId();
   // Dieselbe Erlaubnis, die auch die Einstellungsseite prüft
   // (`getProjectSettingsView`) — der Knopf soll genau dort erscheinen, wo er
   // auch zu etwas führt.
-  const access = await accessFor(await currentUserId(), { projectId });
+  const access = await accessFor(userId, { projectId });
 
   const project = await db.project.findUnique({
     where: { id: projectId },
@@ -651,6 +652,7 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
       prefix: true,
       visibility: true,
       createdAt: true,
+      workspaceId: true,
       createdBy: { select: USER_SELECT },
       members: {
         select: {
@@ -665,7 +667,7 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
         },
       },
       labels: {
-        select: { id: true, name: true, color: true },
+        select: { id: true, name: true, color: true, slug: true },
         orderBy: { name: "asc" },
       },
     },
@@ -681,8 +683,15 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
       workspace: { projects: { some: { id: projectId } } },
       hiddenIn: { none: { projectId } },
     },
-    select: { id: true, name: true, color: true },
+    select: { id: true, name: true, color: true, slug: true },
     orderBy: { name: "asc" },
+  });
+
+  // `team.project.manage` ist eine Workspace-Permission (Teams gehören dem
+  // Workspace, nicht dem Projekt) — im Projekt-Kontext gibt es sie gar nicht,
+  // deshalb ein zweiter, workspace-bezogener Blick.
+  const wsAccess = await accessFor(userId, {
+    workspaceId: project.workspaceId,
   });
 
   return {
@@ -694,6 +703,8 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
     canUpdate: access.has("project.update"),
     canViewSettings: PROJECT_SETTINGS_PERMISSIONS.some(access.has),
     canViewAllStats: access.has("dashboard.view.all"),
+    canCreateLabel: access.has("label.create"),
+    canManageTeams: wsAccess.has("team.project.manage"),
     roles: groupByRole(project.members),
     memberCount: project.members.length,
     teams: project.teams.map((entry) => entry.team),

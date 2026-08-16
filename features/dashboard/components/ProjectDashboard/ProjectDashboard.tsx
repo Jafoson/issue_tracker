@@ -52,12 +52,16 @@ interface Props extends ProjectDashboardView {
   view: ProjectView;
   /** Basisadresse für Aufgaben: `/<workspace>/issue`. */
   issueBase: string;
+  /** Für den Label-Dialog in der Übersicht — `LabelModal` braucht ihn direkt. */
+  workspaceId: string;
   /** Adressen der Nachbarbereiche dieses Projekts. */
   links: {
     board: string;
     list: string;
     members: string;
     settings: string;
+    /** Die Teamverwaltung liegt eine Ebene höher — Teams gehören dem Workspace. */
+    teams: string;
   };
 }
 
@@ -123,6 +127,7 @@ export function ProjectDashboard({
   hidden,
   view,
   issueBase,
+  workspaceId,
   links,
 }: Props) {
   const t = useTranslations();
@@ -598,6 +603,7 @@ export function ProjectDashboard({
         ) : (
           <ProjectProfileView
             project={project}
+            workspaceId={workspaceId}
             profile={profile}
             stats={data.stats}
             links={links}

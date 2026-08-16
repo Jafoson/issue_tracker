@@ -9,7 +9,11 @@ import { toProjectView } from "@/features/dashboard/view";
 import { getWorkspaceProjects } from "@/features/workspaces/queries";
 import { toRange } from "@/lib/buckets";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
-import { projectPath, projectSettingsPath } from "@/lib/nav";
+import {
+  projectPath,
+  projectSettingsPath,
+  workspaceSettingsPath,
+} from "@/lib/nav";
 
 export const dynamic = "force-dynamic";
 
@@ -63,11 +67,13 @@ export default async function ProjectDashboardPage({
       {...data}
       view={view}
       issueBase={`/${workspace}/issue`}
+      workspaceId={workspace}
       links={{
         board: projectPath(workspace, projectSlug, ""),
         list: projectPath(workspace, projectSlug, "list"),
         members: projectPath(workspace, projectSlug, "members"),
         settings: projectSettingsPath(workspace, projectSlug, ""),
+        teams: workspaceSettingsPath(workspace, "teams"),
       }}
     />
   );

@@ -4,19 +4,24 @@ import { Icon } from "@iconify/react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { Button } from "@/components/ui/atoms/Button/Button";
+import buttonStyles from "@/components/ui/atoms/Button/button.module.scss";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import type {
   DashboardStats,
   ProjectProfile,
 } from "@/features/dashboard/types";
-import { Link } from "@/i18n/navigation";
+import { LabelModal } from "@/features/issues/components/LabelModal/LabelModal";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useModal } from "@/lib/context";
 import { roleColor } from "@/lib/rbac";
 import { fullName } from "@/lib/utils/string";
 import styles from "./projectProfileView.module.scss";
 
 interface Props {
-  /** Name und Farbe stehen in der Kopfkarte — das Zeichen des Projekts. */
-  project: { name: string; color: string };
+  /** Name, Farbe und Id stehen in der Kopfkarte bzw. brauchen den Label-Dialog. */
+  project: { id: string; name: string; color: string };
+  workspaceId: string;
   profile: ProjectProfile;
   stats: DashboardStats;
   /** Adressen der Nachbarbereiche — die Kachelreihe unten verlinkt sie. */
@@ -25,6 +30,8 @@ interface Props {
     list: string;
     members: string;
     settings: string;
+    /** Die Teamverwaltung liegt eine Ebene höher — Teams gehören dem Workspace. */
+    teams: string;
   };
 }
 
@@ -48,6 +55,8 @@ interface CardProps {
    * dass man sich erst an ihnen vorbeischrollen muss.
    */
   scrollBody?: boolean;
+  /** Knopf oben rechts neben Titel und Zahl, z. B. zum Anlegen oder Verwalten. */
+  action?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 }
@@ -58,6 +67,7 @@ function Card({
   empty,
   dashed,
   scrollBody,
+  action,
   footer,
   children,
 }: CardProps) {
@@ -68,10 +78,13 @@ function Card({
       data-dashed={dashed || undefined}
       data-scroll={scrollBody || undefined}
     >
-      <h3 className={styles.cardTitle}>
-        {title}
-        {count !== undefined && <span className={styles.count}>{count}</span>}
-      </h3>
+      <div className={styles.cardHead}>
+        <h3 className={styles.cardTitle}>
+          {title}
+          {count !== undefined && <span className={styles.count}>{count}</span>}
+        </h3>
+        {action}
+      </div>
       <div className={styles.cardBody}>{children}</div>
       {footer}
     </section>
@@ -105,9 +118,27 @@ function Card({
  * Steckbrief mehr — man schlägt ihn gerade deshalb nach, weil immer dasselbe
  * darin steht.
  */
-export function ProjectProfileView({ project, profile, stats, links }: Props) {
+export function ProjectProfileView({
+  project,
+  workspaceId,
+  profile,
+  stats,
+  links,
+}: Props) {
   const t = useTranslations();
   const format = useFormatter();
+  const router = useRouter();
+  const { openModal } = useModal();
+
+  const openNewLabel = () =>
+    openModal(({ close }) => (
+      <LabelModal
+        workspaceId={workspaceId}
+        projectId={project.id}
+        onDone={() => router.refresh()}
+        close={close}
+      />
+    ));
 
   const created = format.dateTime(new Date(profile.createdAt), {
     day: "numeric",
@@ -248,6 +279,26 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
             count={profile.teams.length}
             empty={profile.teams.length === 0}
             dashed
+            action={
+              // Teams gehören dem Workspace — verwaltet werden sie also dort,
+              // nicht im Projekt. Der Pfeil sagt das: er führt hinaus, ist
+              // aber kein Anlegen-Knopf wie bei Labels.
+              profile.canManageTeams && (
+                <Link
+                  href={links.teams}
+                  className={[
+                    buttonStyles.btn,
+                    buttonStyles.text,
+                    buttonStyles.sm,
+                    buttonStyles.iconOnly,
+                  ].join(" ")}
+                  aria-label={t("actions.edit")}
+                  title={t("actions.edit")}
+                >
+                  <Icon icon="lucide:arrow-right" width={15} />
+                </Link>
+              )
+            }
           >
             {profile.teams.length === 0 ? (
               t("dashboard.noTeams")
@@ -275,6 +326,18 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
             count={profile.labels.length}
             empty={profile.labels.length === 0}
             dashed
+            action={
+              profile.canCreateLabel && (
+                <Button
+                  variant="text"
+                  size="sm"
+                  icon={<Icon icon="lucide:plus" width={15} />}
+                  aria-label={t("projectLabels.newLabel")}
+                  title={t("projectLabels.newLabel")}
+                  onClick={openNewLabel}
+                />
+              )
+            }
           >
             {profile.labels.length === 0 ? (
               t("dashboard.noLabels")
@@ -282,12 +345,14 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
               <ul className={styles.rows}>
                 {profile.labels.map((label) => (
                   <li key={label.id}>
-                    {/* Derselbe Unterschied wie in den Label-Einstellungen
-                        (eigen/geteilt), jetzt nur noch über den Titel-Tooltip
-                        statt gefüllt/umrandet — die Zeile selbst sieht aus wie
-                        jede andere hier. */}
-                    <span
-                      className={styles.row}
+                    {/* Ein Klick filtert das Board auf genau dieses Label —
+                        dieselbe Sprache wie überall: die URL trägt den Slug,
+                        nicht die Id (`lib/filter-slugs.ts`). Derselbe
+                        Unterschied wie in den Label-Einstellungen (eigen/
+                        geteilt) steht weiterhin im Titel-Tooltip. */}
+                    <Link
+                      href={`${links.board}?label=${label.slug}`}
+                      className={`${styles.row} ${styles.rowLink}`}
                       title={t(
                         label.own
                           ? "dashboard.labelOwn"
@@ -300,7 +365,12 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
                         aria-hidden="true"
                       />
                       {label.name}
-                    </span>
+                      <Icon
+                        icon="lucide:arrow-right"
+                        width={13}
+                        className={styles.rowArrow}
+                      />
+                    </Link>
                   </li>
                 ))}
               </ul>

@@ -129,6 +129,8 @@ export interface ProjectLabel {
   id: string;
   name: string;
   color: string;
+  /** Der URL-Slug — Filter stehen als Slug in der Adresse, nicht als Id. */
+  slug: string;
   /** Gehört dem Projekt allein, nicht dem ganzen Workspace. */
   own: boolean;
 }
@@ -192,6 +194,16 @@ export interface ProjectProfile {
    * erzwingt das) — hier steht nur, ob sie überhaupt wählen darf.
    */
   canViewAllStats: boolean;
+  /** `label.create` — ob die Labels-Karte einen Hinzufügen-Knopf zeigt. */
+  canCreateLabel: boolean;
+  /**
+   * `team.project.manage` — ob die Teams-Karte einen Pfeil zur Teamverwaltung
+   * zeigt. Eine Workspace-Permission, geprüft im Workspace-Kontext: Teams
+   * gehören dem Workspace, nicht dem Projekt, und werden auch dort verwaltet
+   * (`workspaceSettingsPath(workspaceId, "teams")`) — dieselbe Karte kann also
+   * nur verlinken, nicht selbst bearbeiten.
+   */
+  canManageTeams: boolean;
   /** Wer Zugriff hat, nach Rollen gruppiert. Stärkste Rolle zuerst. */
   roles: ProjectRoleGroup[];
   /** Wie viele Personen insgesamt — die Summe über alle Gruppen. */

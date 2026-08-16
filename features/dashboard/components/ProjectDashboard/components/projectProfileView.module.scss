@@ -325,6 +325,13 @@
   }
 }
 
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .cardTitle {
   display: flex;
   align-items: center;
@@ -502,6 +509,32 @@
   font-size: var(--text-sm);
   font-weight: 550;
   color: var(--on-surface);
+  text-decoration: none;
+}
+
+/* Label-Zeilen sind Links (Board, gefiltert auf genau dieses Label),
+   Team-Zeilen nicht — nur die anklickbaren bekommen Hover und Pfeil. */
+.rowLink {
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.rowLink:hover {
+  background: var(--surface-container-low);
+  border-color: var(--on-surface-variant);
+}
+
+.rowArrow {
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--outline);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.12s, transform 0.12s;
+}
+
+.rowLink:hover .rowArrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* Das Kürzel trägt die Farbe des Teams, nicht die ganze Zeile: als Fläche
