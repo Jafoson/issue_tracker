@@ -33,6 +33,17 @@
   gap: 8px;
 }
 
+/* Der Hinweis, dass hier nur die eigenen Zahlen stehen — knapp, keine eigene
+   Karte: er soll auffallen, nicht die Seite dominieren. */
+.scopeHint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -32,6 +32,17 @@
   gap: 8px;
 }
 
+/* Der Hinweis, dass hier nur die eigenen Zahlen stehen — knapp, keine eigene
+   Karte: er soll auffallen, nicht die Seite dominieren. */
+.scopeHint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
 /* ── Das Raster der Bausteine ───────────────────────────────────────────────
 
    Zwei Spuren, in die sich die Bausteine nach ihrer Breite einordnen: `full`

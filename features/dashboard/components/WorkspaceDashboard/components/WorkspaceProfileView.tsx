@@ -179,7 +179,14 @@ export function WorkspaceProfileView({
             {profile.desc ? (
               <p className={styles.desc}>{profile.desc}</p>
             ) : (
-              <p className={styles.descEmpty}>{t("dashboard.noDescription")}</p>
+              // Wie in `ProjectProfileView`: ohne `canUpdate` gibt es keinen
+              // „Bearbeiten"-Knopf, zu dem der Platzhalter einladen könnte —
+              // dann bleibt nur der Name.
+              profile.canUpdate && (
+                <p className={styles.descEmpty}>
+                  {t("dashboard.noDescription")}
+                </p>
+              )
             )}
           </div>
 

@@ -1,3 +1,4 @@
+import type { DashboardScope } from "@/features/dashboard/scope";
 import type { WidgetKey } from "@/features/dashboard/widgets";
 import type { BucketUnit, RangeKey } from "@/lib/buckets";
 import type { User } from "@/types";
@@ -100,6 +101,13 @@ export interface AttentionIssue extends DashboardIssue {
 export interface ProjectDashboardData {
   range: RangeKey;
   unit: BucketUnit;
+  /**
+   * Auf wen sich diese Zahlen beziehen — "all" (das ganze Projekt bzw.
+   * Workspace) oder "mine" (nur die eigenen Aufgaben). Der tatsächlich
+   * angewandte Umfang, nicht der angefragte: wer `dashboard.view.all` nicht
+   * trägt, bekommt hier immer "mine", egal was `?scope=` in der Adresse sagt.
+   */
+  scope: DashboardScope;
   stats: DashboardStats;
   statuses: StatusSlice[];
   priorities: PrioritySlice[];
@@ -177,6 +185,13 @@ export interface ProjectProfile {
    * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
    */
   canViewSettings: boolean;
+  /**
+   * `dashboard.view.all` — ob der Umschalter zwischen „eigene" und „ganzes
+   * Projekt" auf dem Dashboard erscheint. Ohne diese Berechtigung sieht die
+   * Person ihr Dashboard ohnehin nur mit `scope: "mine"` (`getProjectDashboard`
+   * erzwingt das) — hier steht nur, ob sie überhaupt wählen darf.
+   */
+  canViewAllStats: boolean;
   /** Wer Zugriff hat, nach Rollen gruppiert. Stärkste Rolle zuerst. */
   roles: ProjectRoleGroup[];
   /** Wie viele Personen insgesamt — die Summe über alle Gruppen. */
@@ -251,6 +266,8 @@ export interface WorkspaceProfile {
    * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
    */
   canViewSettings: boolean;
+  /** `dashboard.view.all` — siehe `ProjectProfile.canViewAllStats`. */
+  canViewAllStats: boolean;
   /**
    * Wer führt, steht immer da (`distinguished`) — wer nur mitarbeitet oder
    * mitliest, nur mit `member.view` (siehe `canViewMembers`). Ohne das Recht

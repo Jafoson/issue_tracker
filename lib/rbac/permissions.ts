@@ -191,6 +191,17 @@ export const PERMISSIONS = {
     scopes: PROJECT_ONLY,
   },
 
+  // ── Dashboard ───────────────────────────────────────────────────────────────
+  //
+  // Ohne diese Permission sieht eine Person auf dem Dashboard nur, was sich auf
+  // sie selbst bezieht (ihre zugewiesenen Issues) — kein verstecktes Gate,
+  // sondern gefilterte statt gesperrte Zahlen, siehe `getProjectDashboard` /
+  // `getWorkspaceDashboard`.
+  "dashboard.view.all": {
+    desc: "Sieht die Dashboard-Zahlen des ganzen Projekts bzw. Workspace, nicht nur die eigenen",
+    scopes: WORKSPACE_AND_PROJECT,
+  },
+
   // ── Teams ───────────────────────────────────────────────────────────────────
   //
   // Ohne dieses Recht sieht man nur die Teams, in denen man selbst Mitglied

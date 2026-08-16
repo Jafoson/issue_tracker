@@ -16,18 +16,21 @@ import {
   ColumnChart,
 } from "@/components/ui/charts/ColumnChart/ColumnChart";
 import { RangePicker } from "@/components/ui/charts/RangePicker/RangePicker";
+import { ScopePicker } from "@/components/ui/charts/ScopePicker/ScopePicker";
 import { StackedBar } from "@/components/ui/charts/StackedBar/StackedBar";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import {
   resetWorkspaceDashboardLayout,
   saveWorkspaceDashboardLayout,
   setWorkspaceDashboardRange,
+  setWorkspaceDashboardScope,
 } from "@/features/dashboard/actions";
 import { CustomizeDialog } from "@/features/dashboard/components/CustomizeDialog/CustomizeDialog";
 import {
   IssueList,
   ReasonBadge,
 } from "@/features/dashboard/components/IssueList/IssueList";
+import type { DashboardScope } from "@/features/dashboard/scope";
 import type { WorkspaceDashboardView } from "@/features/dashboard/types";
 import type { WidgetKey } from "@/features/dashboard/widgets";
 import { widgetDef } from "@/features/dashboard/widgets";
@@ -94,16 +97,29 @@ export function WorkspaceDashboard({
   const [asTable, setAsTable] = useState(false);
 
   /** Übersicht kennt keinen Zeitraum und bekommt die blanke Adresse; das Dashboard trägt ihn immer. */
-  const urlWith = (nextView: WorkspaceView, range?: RangeKey) => {
+  const urlWith = (
+    nextView: WorkspaceView,
+    patch?: { range?: RangeKey; scope?: DashboardScope },
+  ) => {
     if (nextView === "profile") return links.overview;
-    const next = new URLSearchParams({ range: range ?? data.range });
+    const next = new URLSearchParams({
+      range: patch?.range ?? data.range,
+      scope: patch?.scope ?? data.scope,
+    });
     return `${links.dashboard}?${next}`;
   };
 
   const pickRange = (range: RangeKey) => {
     startTransition(async () => {
-      router.replace(urlWith("dashboard", range));
+      router.replace(urlWith("dashboard", { range }));
       await setWorkspaceDashboardRange(workspace.id, range);
+    });
+  };
+
+  const pickScope = (scope: DashboardScope) => {
+    startTransition(async () => {
+      router.replace(urlWith("dashboard", { scope }));
+      await setWorkspaceDashboardScope(workspace.id, scope);
     });
   };
 
@@ -355,6 +371,12 @@ export function WorkspaceDashboard({
 
   const isDashboard = view === "dashboard";
 
+  // Wie in `ProjectDashboard`: Auslastung ist eine Verteilung über mehrere
+  // Personen und hat bezogen auf nur die eigene keine Antwort mehr. Nur die
+  // Zeichnung blendet ihn aus, die gespeicherte Anordnung bleibt unberührt.
+  const visibleOrder =
+    data.scope === "mine" ? order.filter((key) => key !== "workload") : order;
+
   return (
     <>
       <PageHeader
@@ -398,6 +420,15 @@ export function WorkspaceDashboard({
               labelFor={(range) => t(`dashboard.range_${range}`)}
             />
 
+            {profile.canViewAllStats && (
+              <ScopePicker
+                value={data.scope}
+                onChange={pickScope}
+                label={t("dashboard.scope")}
+                labelFor={(scope) => t(`dashboard.scope_${scope}`)}
+              />
+            )}
+
             <div className={styles.tools}>
               <Chip
                 type="filter"
@@ -419,9 +450,16 @@ export function WorkspaceDashboard({
           </div>
         )}
 
+        {isDashboard && data.scope === "mine" && (
+          <p className={styles.scopeHint}>
+            <Icon icon="lucide:user" width={14} />
+            {t("dashboard.scopeMineHint")}
+          </p>
+        )}
+
         {isDashboard ? (
           <div className={styles.grid} data-loading={isPending || undefined}>
-            {order.map((key) => (
+            {visibleOrder.map((key) => (
               <div
                 key={key}
                 className={styles.cell}

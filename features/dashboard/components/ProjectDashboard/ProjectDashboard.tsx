@@ -16,12 +16,14 @@ import {
   ColumnChart,
 } from "@/components/ui/charts/ColumnChart/ColumnChart";
 import { RangePicker } from "@/components/ui/charts/RangePicker/RangePicker";
+import { ScopePicker } from "@/components/ui/charts/ScopePicker/ScopePicker";
 import { StackedBar } from "@/components/ui/charts/StackedBar/StackedBar";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import {
   resetDashboardLayout,
   saveDashboardLayout,
   setDashboardRange,
+  setDashboardScope,
   setDashboardView,
 } from "@/features/dashboard/actions";
 import { CustomizeDialog } from "@/features/dashboard/components/CustomizeDialog/CustomizeDialog";
@@ -29,6 +31,7 @@ import {
   IssueList,
   ReasonBadge,
 } from "@/features/dashboard/components/IssueList/IssueList";
+import type { DashboardScope } from "@/features/dashboard/scope";
 import type { ProjectDashboardView } from "@/features/dashboard/types";
 import {
   DEFAULT_PROJECT_VIEW,
@@ -139,13 +142,18 @@ export function ProjectDashboard({
    * zurück zur Übersicht und wieder zum Dashboard geht, stünde erneut auf der
    * Vorgabe.
    */
-  const urlWith = (patch: { view?: ProjectView; range?: RangeKey }) => {
+  const urlWith = (patch: {
+    view?: ProjectView;
+    range?: RangeKey;
+    scope?: DashboardScope;
+  }) => {
     const nextView = patch.view ?? view;
     if (nextView === DEFAULT_PROJECT_VIEW) return pathname;
 
     const next = new URLSearchParams({
       view: nextView,
       range: patch.range ?? data.range,
+      scope: patch.scope ?? data.scope,
     });
     return `${pathname}?${next}`;
   };
@@ -158,6 +166,13 @@ export function ProjectDashboard({
       // Und nebenbei merken, womit dieses Dashboard künftig aufgehen soll. Wer
       // einmal auf „12 Monate" stellt, meint selten nur diesen einen Aufruf.
       await setDashboardRange(project.id, range);
+    });
+  };
+
+  const pickScope = (scope: DashboardScope) => {
+    startTransition(async () => {
+      router.replace(urlWith({ scope }));
+      await setDashboardScope(project.id, scope);
     });
   };
 
@@ -461,6 +476,13 @@ export function ProjectDashboard({
 
   const isDashboard = view === "dashboard";
 
+  // Auslastung ist eine Frage der Verteilung über mehrere Personen — bezogen
+  // auf nur die eigene Person hat sie keine Antwort mehr. Nur die Zeichnung
+  // blendet ihn aus, die gespeicherte Anordnung bleibt unberührt: schaltet
+  // jemand zurück auf „Alle", steht der Baustein wieder da, wo er stand.
+  const visibleOrder =
+    data.scope === "mine" ? order.filter((key) => key !== "workload") : order;
+
   return (
     <>
       <PageHeader
@@ -518,6 +540,18 @@ export function ProjectDashboard({
               labelFor={(range) => t(`dashboard.range_${range}`)}
             />
 
+            {/* Nur, wer `dashboard.view.all` trägt, darf zwischen den eigenen
+                und den Zahlen des ganzen Projekts wählen — für alle anderen
+                ist `data.scope` ohnehin fest auf "mine" (`getProjectDashboard`). */}
+            {profile.canViewAllStats && (
+              <ScopePicker
+                value={data.scope}
+                onChange={pickScope}
+                label={t("dashboard.scope")}
+                labelFor={(scope) => t(`dashboard.scope_${scope}`)}
+              />
+            )}
+
             <div className={styles.tools}>
               <Chip
                 type="filter"
@@ -539,12 +573,19 @@ export function ProjectDashboard({
           </div>
         )}
 
+        {isDashboard && data.scope === "mine" && (
+          <p className={styles.scopeHint}>
+            <Icon icon="lucide:user" width={14} />
+            {t("dashboard.scopeMineHint")}
+          </p>
+        )}
+
         {/* Während neue Zahlen geladen werden, bleibt das alte Bild stehen und
             tritt zurück. Ein Skelett an dieser Stelle wäre ein Sprung im
             Layout und ein Blitzen bei jedem Klick. */}
         {isDashboard ? (
           <div className={styles.grid} data-loading={isPending || undefined}>
-            {order.map((key) => (
+            {visibleOrder.map((key) => (
               <div
                 key={key}
                 className={styles.cell}

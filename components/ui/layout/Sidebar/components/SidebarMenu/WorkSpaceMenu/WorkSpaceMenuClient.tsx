@@ -63,7 +63,11 @@ export function WorkspaceMenuClient({
             variant="ghost"
             full
             textAlign="left"
-            className={ws.id === workspace.id ? styles.active : ""}
+            // Dieselbe Markierung wie in jedem anderen Dropdown/Menü
+            // (`NavLink`, `ScopePicker`, `RangePicker`): `data-active` statt
+            // einer eigenen Klasse, damit der aktive Eintrag hier genauso
+            // aussieht wie überall sonst.
+            data-active={ws.id === workspace.id ? "true" : undefined}
             onClick={() => goTo(ws.id)}
           >
             <Avatar avatar={{ name: ws.name, color: ws.color }} />

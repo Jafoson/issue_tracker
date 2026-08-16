@@ -26,6 +26,11 @@ interface UserMenuClientProps {
   settingsHref: string | null;
   /** Weg zur Inbox. `null` aus demselben Grund wie `settingsHref`. */
   inboxHref: string | null;
+  /**
+   * Weg in die Plattformverwaltung. `null` ohne `platform.access` — dann fehlt
+   * der Eintrag ganz, statt ihn nur auszugrauen (siehe `UserMenu`).
+   */
+  adminHref: string | null;
   /** Ungelesene Benachrichtigungen im aktiven Workspace. */
   unreadCount: number;
 }
@@ -33,8 +38,8 @@ interface UserMenuClientProps {
 /**
  * Das eigene Menü unten in der Seitenleiste.
  *
- * Zwei Einträge, in dieser Reihenfolge: erst die eigenen Einstellungen — das ist
- * der Weg, den man regelmäßig geht —, dann das Abmelden. Zwischen beiden eine
+ * Einträge, die weiterführen, zuerst — Einstellungen, dann (für die wenigsten)
+ * die Plattformverwaltung —, dann das Abmelden. Zwischen beiden Gruppen eine
  * Linie: das eine führt weiter, das andere hinaus, und beides direkt
  * untereinander wäre eine Einladung zum Verklicken.
  */
@@ -42,6 +47,7 @@ function UserMenuClient({
   me,
   settingsHref,
   inboxHref,
+  adminHref,
   unreadCount,
 }: UserMenuClientProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -90,13 +96,13 @@ function UserMenuClient({
         side="bottom"
         width={210}
       >
-        <>
-          {settingsHref && (
-            <>
-              {/* Dieselbe Zeile wie in der Seitenleiste und in den
-                  Einstellungsleisten — ein Menüeintrag, der woandershin führt,
-                  ist ein Link und soll sich auch so verhalten (Mittelklick,
-                  „in neuem Tab öffnen"). */}
+        {(settingsHref || adminHref) && (
+          <>
+            {/* Dieselbe Zeile wie in der Seitenleiste und in den
+                Einstellungsleisten — ein Menüeintrag, der woandershin führt,
+                ist ein Link und soll sich auch so verhalten (Mittelklick,
+                „in neuem Tab öffnen"). */}
+            {settingsHref && (
               <NavLink
                 href={settingsHref}
                 activeHref={`${settingsHref}/*`}
@@ -104,23 +110,32 @@ function UserMenuClient({
                 label={t("settings")}
                 onClick={() => setOpen(false)}
               />
-              <hr className={styles.divider} />
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="lg"
-            full
-            icon={<Icon icon="lucide:log-out" height={16} />}
-            textAlign="left"
-            onClick={() => {
-              logout();
-              setOpen(false);
-            }}
-          >
-            {t("signOut")}
-          </Button>
-        </>
+            )}
+            {adminHref && (
+              <NavLink
+                href={adminHref}
+                activeHref={`${adminHref}/*`}
+                icon="lucide:shield"
+                label={t("admin")}
+                onClick={() => setOpen(false)}
+              />
+            )}
+            <hr className={styles.divider} />
+          </>
+        )}
+        <Button
+          variant="ghost"
+          size="lg"
+          full
+          icon={<Icon icon="lucide:log-out" height={16} />}
+          textAlign="left"
+          onClick={() => {
+            logout();
+            setOpen(false);
+          }}
+        >
+          {t("signOut")}
+        </Button>
       </Popover>
     </div>
   );

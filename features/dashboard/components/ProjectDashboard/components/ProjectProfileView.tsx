@@ -183,9 +183,16 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
             {profile.desc ? (
               <p className={styles.desc}>{profile.desc}</p>
             ) : (
-              // Nur der Platzhalter, kein zweiter Weg zum Ändern: der steht als
-              // „Bearbeiten" schon am rechten Rand derselben Karte.
-              <p className={styles.descEmpty}>{t("dashboard.noDescription")}</p>
+              profile.canUpdate && (
+                // Nur der Platzhalter, kein zweiter Weg zum Ändern: der steht
+                // als „Bearbeiten" schon am rechten Rand derselben Karte. Ohne
+                // dieses Recht gibt es dort keinen Knopf — der Platzhalter
+                // lädt dann zu nichts ein und bleibt weg, es steht nur der
+                // Name.
+                <p className={styles.descEmpty}>
+                  {t("dashboard.noDescription")}
+                </p>
+              )
             )}
           </div>
 

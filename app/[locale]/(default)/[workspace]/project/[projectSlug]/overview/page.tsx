@@ -4,6 +4,7 @@ import {
   getMyDashboardLayout,
   getProjectDashboard,
 } from "@/features/dashboard/queries";
+import { toDashboardScope } from "@/features/dashboard/scope";
 import { toProjectView } from "@/features/dashboard/view";
 import { getWorkspaceProjects } from "@/features/workspaces/queries";
 import { toRange } from "@/lib/buckets";
@@ -31,10 +32,14 @@ export default async function ProjectDashboardPage({
   searchParams,
 }: {
   params: Promise<{ workspace: string; projectSlug: string }>;
-  searchParams: Promise<{ range?: string; view?: string }>;
+  searchParams: Promise<{ range?: string; view?: string; scope?: string }>;
 }) {
   const { workspace, projectSlug } = await params;
-  const { range: rangeParam, view: viewParam } = await searchParams;
+  const {
+    range: rangeParam,
+    view: viewParam,
+    scope: scopeParam,
+  } = await searchParams;
   setCurrentWorkspaceId(workspace);
 
   const projects = await getWorkspaceProjects();
@@ -48,8 +53,9 @@ export default async function ProjectDashboardPage({
 
   const range = toRange(rangeParam ?? stored.range ?? undefined);
   const view = toProjectView(viewParam, stored.view);
+  const scope = toDashboardScope(scopeParam, stored.scope);
 
-  const data = await getProjectDashboard(project.id, range);
+  const data = await getProjectDashboard(project.id, range, scope);
   if (!data) notFound();
 
   return (

@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import type { DashboardScope } from "@/features/dashboard/scope";
 import type {
   AttentionIssue,
   AttentionReason,
@@ -237,27 +238,36 @@ async function statsFor(
   projectId: string,
   from: Date,
   to: Date,
+  assigneeId: string | null,
 ): Promise<DashboardStats> {
   const window = { gte: from, lt: to };
+  // Bei "mine" auf die eigenen Aufgaben verengt; bei "all" (`null`) unverändert.
+  const mine = assigneeId ? { assigneeId } : {};
 
   const [total, open, inProgress, inReview, created, urgent, urgentUnassigned] =
     await Promise.all([
-      db.issue.count({ where: { projectId } }),
-      db.issue.count({ where: { projectId, status: { notIn: CLOSED } } }),
-      db.issue.count({ where: { projectId, status: "in_progress" } }),
-      db.issue.count({ where: { projectId, status: "in_review" } }),
-      db.issue.count({ where: { projectId, created: window } }),
+      db.issue.count({ where: { projectId, ...mine } }),
       db.issue.count({
-        where: { projectId, status: { notIn: CLOSED }, priority: 4 },
+        where: { projectId, status: { notIn: CLOSED }, ...mine },
       }),
+      db.issue.count({ where: { projectId, status: "in_progress", ...mine } }),
+      db.issue.count({ where: { projectId, status: "in_review", ...mine } }),
+      db.issue.count({ where: { projectId, created: window, ...mine } }),
       db.issue.count({
-        where: {
-          projectId,
-          status: { notIn: CLOSED },
-          priority: 4,
-          assigneeId: null,
-        },
+        where: { projectId, status: { notIn: CLOSED }, priority: 4, ...mine },
       }),
+      // Zugewiesen und zugleich unzugewiesen widerspricht sich — im eigenen
+      // Umfang ist die Antwort immer 0, ohne dass es dafür eine Abfrage bräuchte.
+      assigneeId
+        ? Promise.resolve(0)
+        : db.issue.count({
+            where: {
+              projectId,
+              status: { notIn: CLOSED },
+              priority: 4,
+              assigneeId: null,
+            },
+          }),
     ]);
 
   // Zahl und Mittelwert der geschlossenen Aufgaben in einem Zug: beide lesen
@@ -272,6 +282,7 @@ async function statsFor(
      WHERE "projectId" = ${projectId}
        AND "closedAt" >= ${from}
        AND "closedAt" <  ${to}
+       AND (${assigneeId}::text IS NULL OR "assigneeId" = ${assigneeId})
   `;
 
   return {
@@ -303,12 +314,13 @@ async function statsFor(
 async function statusesFor(
   projectId: string,
   workspaceId: string,
+  assigneeId: string | null,
 ): Promise<StatusSlice[]> {
   const [statuses, rows] = await Promise.all([
     getStatuses(workspaceId),
     db.issue.groupBy({
       by: ["status"],
-      where: { projectId },
+      where: { projectId, ...(assigneeId ? { assigneeId } : {}) },
       _count: { _all: true },
     }),
   ]);
@@ -333,12 +345,17 @@ async function statusesFor(
 async function prioritiesFor(
   projectId: string,
   workspaceId: string,
+  assigneeId: string | null,
 ): Promise<PrioritySlice[]> {
   const [priorities, rows] = await Promise.all([
     getPriorities(workspaceId),
     db.issue.groupBy({
       by: ["priority"],
-      where: { projectId, status: { notIn: CLOSED } },
+      where: {
+        projectId,
+        status: { notIn: CLOSED },
+        ...(assigneeId ? { assigneeId } : {}),
+      },
       _count: { _all: true },
     }),
   ]);
@@ -374,6 +391,7 @@ async function throughputFor(
   from: Date,
   to: Date,
   keys: string[],
+  assigneeId: string | null,
 ): Promise<ThroughputPoint[]> {
   const countsIn = async (column: "created" | "closedAt") => {
     const rows = await db.$queryRaw<{ bucket: Date; count: bigint }[]>`
@@ -383,6 +401,7 @@ async function throughputFor(
        WHERE "projectId" = ${projectId}
          AND ${Prisma.raw(`"${column}"`)} >= ${from}
          AND ${Prisma.raw(`"${column}"`)} <  ${to}
+         AND (${assigneeId}::text IS NULL OR "assigneeId" = ${assigneeId})
        GROUP BY 1
     `;
     return new Map(
@@ -415,10 +434,17 @@ async function throughputFor(
  * Projekt verlassen hat, aber noch auf Aufgaben steht, verschwände sonst aus
  * der Rechnung, obwohl seine Arbeit liegen bleibt.
  */
-async function workloadFor(projectId: string): Promise<WorkloadRow[]> {
+async function workloadFor(
+  projectId: string,
+  assigneeId: string | null,
+): Promise<WorkloadRow[]> {
   const rows = await db.issue.groupBy({
     by: ["assigneeId", "status"],
-    where: { projectId, status: { notIn: CLOSED } },
+    where: {
+      projectId,
+      status: { notIn: CLOSED },
+      ...(assigneeId ? { assigneeId } : {}),
+    },
     _count: { _all: true },
   });
   if (rows.length === 0) return [];
@@ -483,6 +509,7 @@ async function attentionFor(
   projectId: string,
   prefix: string,
   statusColors: Map<string, string>,
+  assigneeId: string | null,
 ): Promise<AttentionIssue[]> {
   const staleBefore = new Date(Date.now() - STALE_DAYS * 86400_000);
 
@@ -490,6 +517,7 @@ async function attentionFor(
     where: {
       projectId,
       status: { notIn: CLOSED },
+      ...(assigneeId ? { assigneeId } : {}),
       OR: [
         { priority: { gte: 3 } },
         { status: "in_progress", updated: { lt: staleBefore } },
@@ -665,6 +693,7 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
     createdBy: project.createdBy ? mapUser(project.createdBy) : null,
     canUpdate: access.has("project.update"),
     canViewSettings: PROJECT_SETTINGS_PERMISSIONS.some(access.has),
+    canViewAllStats: access.has("dashboard.view.all"),
     roles: groupByRole(project.members),
     memberCount: project.members.length,
     teams: project.teams.map((entry) => entry.team),
@@ -692,9 +721,12 @@ export const getMyDashboardLayout = cache(
     hidden: string[];
     range: string | null;
     view: string | null;
+    scope: string | null;
   }> => {
     const session = await getSession();
-    if (!session) return { order: [], hidden: [], range: null, view: null };
+    if (!session) {
+      return { order: [], hidden: [], range: null, view: null, scope: null };
+    }
 
     const row = await db.dashboardPreference.findUnique({
       where: { userId_projectId: { userId: session.userId, projectId } },
@@ -704,6 +736,7 @@ export const getMyDashboardLayout = cache(
       hidden: row?.hidden ?? [],
       range: row?.range ?? null,
       view: row?.view ?? null,
+      scope: row?.scope ?? null,
     };
   },
 );
@@ -724,9 +757,11 @@ export const getProjectDashboard = cache(
   async (
     projectId: string,
     range: RangeKey,
+    scope: DashboardScope = "all",
   ): Promise<ProjectDashboardView | null> => {
     if (!(await hasPermission("project.view", { projectId }))) return null;
-    if (!(await currentUserId())) return null;
+    const userId = await currentUserId();
+    if (!userId) return null;
 
     const project = await db.project.findUnique({
       where: { id: projectId },
@@ -743,19 +778,29 @@ export const getProjectDashboard = cache(
 
     const window = windowFor(range);
 
+    // Wer `dashboard.view.all` nicht trägt, sieht nur die eigenen Zahlen —
+    // unabhängig davon, was `scope` verlangt. `effectiveScope` landet in
+    // `data.scope` und ist damit immer das, was tatsächlich geliefert wurde.
+    const canViewAll = await hasPermission("dashboard.view.all", {
+      projectId,
+    });
+    const effectiveScope: DashboardScope = canViewAll ? scope : "mine";
+    const assigneeId = effectiveScope === "mine" ? userId : null;
+
     const [stats, statuses, priorities, throughput, workload, profile, layout] =
       await Promise.all([
-        statsFor(projectId, window.from, window.to),
-        statusesFor(projectId, project.workspaceId),
-        prioritiesFor(projectId, project.workspaceId),
+        statsFor(projectId, window.from, window.to, assigneeId),
+        statusesFor(projectId, project.workspaceId, assigneeId),
+        prioritiesFor(projectId, project.workspaceId, assigneeId),
         throughputFor(
           projectId,
           window.unit,
           window.from,
           window.to,
           window.keys,
+          assigneeId,
         ),
-        workloadFor(projectId),
+        workloadFor(projectId, assigneeId),
         profileFor(projectId),
         getMyDashboardLayout(projectId),
       ]);
@@ -767,6 +812,7 @@ export const getProjectDashboard = cache(
       projectId,
       project.prefix,
       new Map(statuses.map((status) => [status.id, status.color])),
+      assigneeId,
     );
 
     const resolved = resolveLayout(layout.order, layout.hidden);
@@ -774,6 +820,7 @@ export const getProjectDashboard = cache(
     const data: ProjectDashboardData = {
       range,
       unit: window.unit,
+      scope: effectiveScope,
       stats,
       statuses,
       priorities,
@@ -830,28 +877,34 @@ async function wsStatsFor(
   workspaceId: string,
   from: Date,
   to: Date,
+  assigneeId: string | null,
 ): Promise<DashboardStats> {
   const window = { gte: from, lt: to };
   const project = { workspaceId };
+  const mine = assigneeId ? { assigneeId } : {};
 
   const [total, open, inProgress, inReview, created, urgent, urgentUnassigned] =
     await Promise.all([
-      db.issue.count({ where: { project } }),
-      db.issue.count({ where: { project, status: { notIn: CLOSED } } }),
-      db.issue.count({ where: { project, status: "in_progress" } }),
-      db.issue.count({ where: { project, status: "in_review" } }),
-      db.issue.count({ where: { project, created: window } }),
+      db.issue.count({ where: { project, ...mine } }),
       db.issue.count({
-        where: { project, status: { notIn: CLOSED }, priority: 4 },
+        where: { project, status: { notIn: CLOSED }, ...mine },
       }),
+      db.issue.count({ where: { project, status: "in_progress", ...mine } }),
+      db.issue.count({ where: { project, status: "in_review", ...mine } }),
+      db.issue.count({ where: { project, created: window, ...mine } }),
       db.issue.count({
-        where: {
-          project,
-          status: { notIn: CLOSED },
-          priority: 4,
-          assigneeId: null,
-        },
+        where: { project, status: { notIn: CLOSED }, priority: 4, ...mine },
       }),
+      assigneeId
+        ? Promise.resolve(0)
+        : db.issue.count({
+            where: {
+              project,
+              status: { notIn: CLOSED },
+              priority: 4,
+              assigneeId: null,
+            },
+          }),
     ]);
 
   const [cycle] = await db.$queryRaw<
@@ -864,6 +917,7 @@ async function wsStatsFor(
      WHERE p."workspaceId" = ${workspaceId}
        AND i."closedAt" >= ${from}
        AND i."closedAt" <  ${to}
+       AND (${assigneeId}::text IS NULL OR i."assigneeId" = ${assigneeId})
   `;
 
   return {
@@ -880,12 +934,18 @@ async function wsStatsFor(
   };
 }
 
-async function wsStatusesFor(workspaceId: string): Promise<StatusSlice[]> {
+async function wsStatusesFor(
+  workspaceId: string,
+  assigneeId: string | null,
+): Promise<StatusSlice[]> {
   const [statuses, rows] = await Promise.all([
     getStatuses(workspaceId),
     db.issue.groupBy({
       by: ["status"],
-      where: { project: { workspaceId } },
+      where: {
+        project: { workspaceId },
+        ...(assigneeId ? { assigneeId } : {}),
+      },
       _count: { _all: true },
     }),
   ]);
@@ -900,12 +960,19 @@ async function wsStatusesFor(workspaceId: string): Promise<StatusSlice[]> {
   }));
 }
 
-async function wsPrioritiesFor(workspaceId: string): Promise<PrioritySlice[]> {
+async function wsPrioritiesFor(
+  workspaceId: string,
+  assigneeId: string | null,
+): Promise<PrioritySlice[]> {
   const [priorities, rows] = await Promise.all([
     getPriorities(workspaceId),
     db.issue.groupBy({
       by: ["priority"],
-      where: { project: { workspaceId }, status: { notIn: CLOSED } },
+      where: {
+        project: { workspaceId },
+        status: { notIn: CLOSED },
+        ...(assigneeId ? { assigneeId } : {}),
+      },
       _count: { _all: true },
     }),
   ]);
@@ -928,6 +995,7 @@ async function wsThroughputFor(
   from: Date,
   to: Date,
   keys: string[],
+  assigneeId: string | null,
 ): Promise<ThroughputPoint[]> {
   const countsIn = async (column: "created" | "closedAt") => {
     const rows = await db.$queryRaw<{ bucket: Date; count: bigint }[]>`
@@ -938,6 +1006,7 @@ async function wsThroughputFor(
        WHERE p."workspaceId" = ${workspaceId}
          AND ${Prisma.raw(`i."${column}"`)} >= ${from}
          AND ${Prisma.raw(`i."${column}"`)} <  ${to}
+         AND (${assigneeId}::text IS NULL OR i."assigneeId" = ${assigneeId})
        GROUP BY 1
     `;
     return new Map(
@@ -957,10 +1026,17 @@ async function wsThroughputFor(
   }));
 }
 
-async function wsWorkloadFor(workspaceId: string): Promise<WorkloadRow[]> {
+async function wsWorkloadFor(
+  workspaceId: string,
+  assigneeId: string | null,
+): Promise<WorkloadRow[]> {
   const rows = await db.issue.groupBy({
     by: ["assigneeId", "status"],
-    where: { project: { workspaceId }, status: { notIn: CLOSED } },
+    where: {
+      project: { workspaceId },
+      status: { notIn: CLOSED },
+      ...(assigneeId ? { assigneeId } : {}),
+    },
     _count: { _all: true },
   });
   if (rows.length === 0) return [];
@@ -1001,6 +1077,7 @@ async function wsWorkloadFor(workspaceId: string): Promise<WorkloadRow[]> {
 async function wsAttentionFor(
   workspaceId: string,
   statusColors: Map<string, string>,
+  assigneeId: string | null,
 ): Promise<AttentionIssue[]> {
   const staleBefore = new Date(Date.now() - STALE_DAYS * 86400_000);
 
@@ -1008,6 +1085,7 @@ async function wsAttentionFor(
     where: {
       project: { workspaceId },
       status: { notIn: CLOSED },
+      ...(assigneeId ? { assigneeId } : {}),
       OR: [
         { priority: { gte: 3 } },
         { status: "in_progress", updated: { lt: staleBefore } },
@@ -1136,6 +1214,7 @@ async function wsProfileFor(
     canUpdate: access.has("workspace.update"),
     canViewMembers,
     canViewSettings,
+    canViewAllStats: access.has("dashboard.view.all"),
     // Ohne `member.view` nur die Leitung (`distinguished`) — der
     // Namen-und-E-Mail-Steckbrief der übrigen Mitglieder bleibt weg, sonst
     // wäre das Ausblenden des Tabs wirkungslos (die Übersicht zeigte ihn sonst
@@ -1158,9 +1237,16 @@ async function wsProfileFor(
 export const getMyWorkspaceDashboardLayout = cache(
   async (
     workspaceId: string,
-  ): Promise<{ order: string[]; hidden: string[]; range: string | null }> => {
+  ): Promise<{
+    order: string[];
+    hidden: string[];
+    range: string | null;
+    scope: string | null;
+  }> => {
     const session = await getSession();
-    if (!session) return { order: [], hidden: [], range: null };
+    if (!session) {
+      return { order: [], hidden: [], range: null, scope: null };
+    }
 
     const row = await db.workspaceDashboardPreference.findUnique({
       where: { userId_workspaceId: { userId: session.userId, workspaceId } },
@@ -1169,6 +1255,7 @@ export const getMyWorkspaceDashboardLayout = cache(
       order: row?.order ?? [],
       hidden: row?.hidden ?? [],
       range: row?.range ?? null,
+      scope: row?.scope ?? null,
     };
   },
 );
@@ -1178,9 +1265,11 @@ export const getWorkspaceDashboard = cache(
   async (
     workspaceId: string,
     range: RangeKey,
+    scope: DashboardScope = "all",
   ): Promise<WorkspaceDashboardView | null> => {
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
-    if (!(await currentUserId())) return null;
+    const userId = await currentUserId();
+    if (!userId) return null;
 
     const workspace = await db.workspace.findUnique({
       where: { id: workspaceId },
@@ -1190,19 +1279,26 @@ export const getWorkspaceDashboard = cache(
 
     const window = windowFor(range);
 
+    const canViewAll = await hasPermission("dashboard.view.all", {
+      workspaceId,
+    });
+    const effectiveScope: DashboardScope = canViewAll ? scope : "mine";
+    const assigneeId = effectiveScope === "mine" ? userId : null;
+
     const [stats, statuses, priorities, throughput, workload, profile, layout] =
       await Promise.all([
-        wsStatsFor(workspaceId, window.from, window.to),
-        wsStatusesFor(workspaceId),
-        wsPrioritiesFor(workspaceId),
+        wsStatsFor(workspaceId, window.from, window.to, assigneeId),
+        wsStatusesFor(workspaceId, assigneeId),
+        wsPrioritiesFor(workspaceId, assigneeId),
         wsThroughputFor(
           workspaceId,
           window.unit,
           window.from,
           window.to,
           window.keys,
+          assigneeId,
         ),
-        wsWorkloadFor(workspaceId),
+        wsWorkloadFor(workspaceId, assigneeId),
         wsProfileFor(workspaceId),
         getMyWorkspaceDashboardLayout(workspaceId),
       ]);
@@ -1211,6 +1307,7 @@ export const getWorkspaceDashboard = cache(
     const attention = await wsAttentionFor(
       workspaceId,
       new Map(statuses.map((status) => [status.id, status.color])),
+      assigneeId,
     );
 
     const resolved = resolveLayout(layout.order, layout.hidden);
@@ -1218,6 +1315,7 @@ export const getWorkspaceDashboard = cache(
     const data: WorkspaceDashboardData = {
       range,
       unit: window.unit,
+      scope: effectiveScope,
       stats,
       statuses,
       priorities,

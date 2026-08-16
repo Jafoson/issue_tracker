@@ -3,7 +3,8 @@ import type { PersonAvatarData } from "@/components/ui/atoms/Avatar/Avatar";
 import { getUnreadNotificationCount } from "@/features/notifications/queries";
 import { getMyWorkspaces } from "@/features/workspaces/queries";
 import { getCurrentWorkspaceId } from "@/lib/current-workspace";
-import { accountPath, workspacePath } from "@/lib/nav";
+import { accountPath, adminPath, workspacePath } from "@/lib/nav";
+import { getAccess, PLATFORM } from "@/lib/permissions";
 import UserMenuClient from "./UserMenuClient";
 
 export async function UserMenu() {
@@ -36,11 +37,20 @@ export async function UserMenu() {
     ? await getUnreadNotificationCount(workspaceId)
     : 0;
 
+  // Der Weg in die Plattformverwaltung — nur für die, die `platform.access`
+  // tragen. Für alle anderen gibt es ihn nicht: das Layout unter `/admin`
+  // antwortet auf einen Aufruf ohne dieses Recht mit `notFound`, damit die
+  // bloße Existenz des Bereichs nicht verrät, wer ihn öffnen darf. Ein
+  // sichtbarer Eintrag, der ins Nichts führt, wäre genau diese Verrat-Lücke.
+  const access = await getAccess(PLATFORM);
+  const adminHref = access.has("platform.access") ? adminPath("") : null;
+
   return (
     <UserMenuClient
       me={me}
       settingsHref={workspaceId ? accountPath(workspaceId, "") : null}
       inboxHref={workspaceId ? workspacePath(workspaceId, "inbox") : null}
+      adminHref={adminHref}
       unreadCount={unreadCount}
     />
   );

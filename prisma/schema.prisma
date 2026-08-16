@@ -204,6 +204,12 @@ model DashboardPreference {
   /// öffnet.
   view String @default("profile")
 
+  /// Mit welchem Umfang das Dashboard aufgeht — "all" | "mine". Wer
+  /// `dashboard.view.all` nicht trägt, bekommt beim Lesen ohnehin "mine"
+  /// erzwungen (siehe `getProjectDashboard`); hier steht nur, womit es für die
+  /// aufgeht, die überhaupt wählen dürfen.
+  scope String @default("all")
+
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -228,6 +234,10 @@ model WorkspaceDashboardPreference {
 
   /// Der Zeitraum, mit dem das Dashboard aufgeht — "7d" | "30d" | "90d" | "12m".
   range String @default("30d")
+
+  /// Mit welchem Umfang das Dashboard aufgeht — "all" | "mine". Dasselbe Feld
+  /// wie `DashboardPreference.scope` eine Ebene tiefer.
+  scope String @default("all")
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

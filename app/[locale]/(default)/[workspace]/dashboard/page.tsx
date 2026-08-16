@@ -4,6 +4,7 @@ import {
   getMyWorkspaceDashboardLayout,
   getWorkspaceDashboard,
 } from "@/features/dashboard/queries";
+import { toDashboardScope } from "@/features/dashboard/scope";
 import { toRange } from "@/lib/buckets";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { workspacePath, workspaceSettingsPath } from "@/lib/nav";
@@ -22,16 +23,17 @@ export default async function WorkspaceDashboardPage({
   searchParams,
 }: {
   params: Promise<{ workspace: string }>;
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; scope?: string }>;
 }) {
   const { workspace } = await params;
-  const { range: rangeParam } = await searchParams;
+  const { range: rangeParam, scope: scopeParam } = await searchParams;
   setCurrentWorkspaceId(workspace);
 
   const stored = await getMyWorkspaceDashboardLayout(workspace);
   const range = toRange(rangeParam ?? stored.range ?? undefined);
+  const scope = toDashboardScope(scopeParam, stored.scope);
 
-  const data = await getWorkspaceDashboard(workspace, range);
+  const data = await getWorkspaceDashboard(workspace, range, scope);
   if (!data) notFound();
 
   return (

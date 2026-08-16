@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { DASHBOARD_SCOPES } from "@/features/dashboard/scope";
 import { PROJECT_VIEWS } from "@/features/dashboard/view";
 import { isWidgetKey } from "@/features/dashboard/widgets";
 import { RANGES, type RangeKey } from "@/lib/buckets";
@@ -29,7 +30,13 @@ const NOT_ALLOWED = "You cannot change this dashboard.";
  */
 async function write(
   projectId: string,
-  data: { hidden?: string[]; order?: string[]; range?: string; view?: string },
+  data: {
+    hidden?: string[];
+    order?: string[];
+    range?: string;
+    view?: string;
+    scope?: string;
+  },
 ): Promise<Result> {
   const session = await getSession();
   if (!session) return { error: NOT_ALLOWED };
@@ -100,6 +107,30 @@ export async function setDashboardView(
 }
 
 /**
+ * Der Umfang, mit dem dieses Dashboard künftig aufgeht — "all" oder "mine".
+ *
+ * `"all"` verlangt `dashboard.view.all`: ohne die Berechtigung zeigt der
+ * Umschalter gar nicht erst, aber ein direkter Aufruf dieser Aktion soll die
+ * gespeicherte Zeile nicht auf einen Umfang setzen, den die Person beim Lesen
+ * ohnehin nicht bekäme (`getProjectDashboard` erzwingt dort "mine").
+ */
+export async function setDashboardScope(
+  projectId: string,
+  scope: string,
+): Promise<Result> {
+  if (!(DASHBOARD_SCOPES as readonly string[]).includes(scope)) {
+    return { error: `Unknown scope: ${scope}` };
+  }
+  if (
+    scope === "all" &&
+    !(await hasPermission("dashboard.view.all", { projectId }))
+  ) {
+    return { error: NOT_ALLOWED };
+  }
+  return write(projectId, { scope });
+}
+
+/**
  * Zurück auf die Vorgabe — die Zeile verschwindet.
  *
  * Löschen und nicht „alle Vorgabewerte hineinschreiben": eine Zeile, die genau
@@ -127,7 +158,7 @@ export async function resetDashboardLayout(projectId: string): Promise<Result> {
 
 async function writeWorkspace(
   workspaceId: string,
-  data: { hidden?: string[]; order?: string[]; range?: string },
+  data: { hidden?: string[]; order?: string[]; range?: string; scope?: string },
 ): Promise<Result> {
   const session = await getSession();
   if (!session) return { error: NOT_ALLOWED };
@@ -164,6 +195,23 @@ export async function setWorkspaceDashboardRange(
     return { error: `Unknown range: ${range}` };
   }
   return writeWorkspace(workspaceId, { range: range as RangeKey });
+}
+
+/** Der Umfang, mit dem dieses Workspace-Dashboard künftig aufgeht — das Gegenstück zu `setDashboardScope`. */
+export async function setWorkspaceDashboardScope(
+  workspaceId: string,
+  scope: string,
+): Promise<Result> {
+  if (!(DASHBOARD_SCOPES as readonly string[]).includes(scope)) {
+    return { error: `Unknown scope: ${scope}` };
+  }
+  if (
+    scope === "all" &&
+    !(await hasPermission("dashboard.view.all", { workspaceId }))
+  ) {
+    return { error: NOT_ALLOWED };
+  }
+  return writeWorkspace(workspaceId, { scope });
 }
 
 export async function resetWorkspaceDashboardLayout(
