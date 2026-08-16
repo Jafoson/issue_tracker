@@ -8,6 +8,22 @@
   gap: 16px;
 }
 
+/* Die Übersicht passt sich der verfügbaren Höhe an, statt die Seite scrollen
+   zu lassen — `ProjectProfileView` verteilt den Platz selbst und lässt lange
+   Listen (Mitglieder, Teams, Labels) in sich selbst scrollen
+   (`projectProfileView.module.scss`, `.main`/`.card[data-scroll]`). Nur bis zu
+   der Breite, ab der die Spalten dort ohnehin untereinander stehen: gestapelt
+   braucht die Seite wieder so viel Höhe, wie ihr Inhalt vorgibt. */
+.body[data-view="profile"] {
+  overflow: hidden;
+}
+
+@media (max-width: 1120px) {
+  .body[data-view="profile"] {
+    overflow-y: auto;
+  }
+}
+
 /* Der Farbpunkt des Projekts, dasselbe Zeichen wie in der Seitenleiste und in
    der Reiterleiste — ein Projekt sieht überall gleich aus. */
 .dot {

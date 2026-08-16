@@ -527,7 +527,7 @@ export function ProjectDashboard({
         }
       />
 
-      <div className={styles.body}>
+      <div className={styles.body} data-view={view}>
         {/* Eine Reihe, über allem, was sie betrifft — und nur dort, wo sie
             etwas bewirkt. Die Übersicht kennt keinen Zeitraum, keine
             Tabellenansicht und nichts zum Anpassen. */}

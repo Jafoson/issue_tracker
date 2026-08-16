@@ -410,7 +410,7 @@ export function WorkspaceDashboard({
         }
       />
 
-      <div className={styles.body}>
+      <div className={styles.body} data-view={view}>
         {isDashboard && (
           <div className={styles.controls}>
             <RangePicker

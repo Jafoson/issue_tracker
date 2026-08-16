@@ -9,30 +9,37 @@
 .page {
   display: grid;
   /* Links alles, was das Projekt selbst beschreibt, rechts die Mitglieder.
-     Die Mitgliederspalte in einem festen Band statt als Bruchteil: als `1.4fr`
-     wüchse sie auf einem sehr breiten Schirm auf 700px mit, und ein Name mit
-     Adresse braucht keine 700px. Unter 300px bräche dagegen die Zeile aus Name
-     und Rollen-Chip um. Der Prozentwert dazwischen lässt sie mitatmen. */
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 28%, 400px);
-  /* Oben die beiden Spalten, unten die Wege hinaus. `1fr` für die obere Zeile
-     zusammen mit `flex: 1` heißt: die Ansicht nimmt sich die ganze Höhe, die
-     der scrollende Bereich hergibt, und „Weiter zu" sitzt an deren Ende statt
-     mitten in einer schwarzen Fläche. Reicht der Inhalt darüber hinaus, wächst
-     die Zeile mit — `flex-basis: 0` schrumpft nichts unter seinen Inhalt,
-     solange `min-height` bei `auto` bleibt. */
-  grid-template-rows: 1fr auto;
+     Die Mitgliederspalte als Bruchteil statt fester Breite: sie nimmt sich den
+     Anteil, den der freie Platz hergibt, und wächst auf einem breiten Schirm
+     mit statt bei 400px zu enden, wo daneben noch reichlich Luft ist. Unter
+     300px bräche die Zeile aus Name und Rollen-Chip um, deshalb die Untergrenze. */
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 28%);
+  /* Oben die beiden Spalten, unten die Wege hinaus. `minmax(0, 1fr)` statt
+     nacktem `1fr`: die obere Zeile darf auf die Höhe schrumpfen, die
+     `projectDashboard.module.scss` (`.body[data-view="profile"]`) hergibt,
+     statt mit ihrem Inhalt zu wachsen — die Seite selbst überläuft nicht mehr,
+     lange Listen scrollen stattdessen in `.main` bzw. der Mitgliederkarte
+     (`.card[data-scroll]`) für sich. „Weiter zu" bleibt dabei immer ganz zu
+     sehen: `auto` nimmt sich genau die Höhe, die es braucht. */
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 20px 12px;
   align-items: stretch;
   width: 100%;
+  min-height: 0;
   flex: 1;
 }
 
-/* Die linke Spalte: Kopfkarte, Eckdaten, Teams und Labels untereinander. */
+/* Die linke Spalte: Kopfkarte, Eckdaten, Teams und Labels untereinander. Scrollt
+   für sich, wenn sie höher wird als die Zeile hergibt (viele Teams/Labels) —
+   dieselbe Kette wie bei der Mitgliederkarte (`.card[data-scroll]`), nur ohne
+   eigenes Feld: hier gibt es keinen Fuß, der stehen bleiben müsste. */
 .main {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Die Mitgliederkarte füllt ihre Spalte über die ganze Höhe. Als Flex-Behälter,
@@ -41,6 +48,10 @@
 .side {
   display: flex;
   min-width: 0;
+  /* Dieselbe Kette wie bei `.card[data-scroll]`: ohne `min-height: 0` bliebe
+     die automatische Mindesthöhe an der Inhaltsgröße hängen und `stretch`
+     liefe ins Leere. */
+  min-height: 0;
 }
 
 .side > * {
@@ -275,10 +286,43 @@
 
 /* Listen-Cards (Teams, Labels) tragen den gestrichelten Rahmen immer, nicht
    nur solange sie leer sind — dieselbe Hülle wie im Workspace-Steckbrief
-   (`WorkspaceProfileView`), die Liste selbst liefert den Inhalt. */
+   (`WorkspaceProfileView`), die Liste selbst liefert den Inhalt.
+
+   Dieselbe feste Höhe wie `.rows` (drei Zeilen), unabhängig davon, wie viele
+   Einträge tatsächlich da sind — sonst steht neben einer Karte mit neun
+   Labels eine mit einem Team, halb so hoch, und die Reihe wirkt zerrissen
+   statt aufgeräumt. Mit einem Eintrag oder leer bleibt darunter Luft, mit vier
+   oder mehr scrollt `.rows` in sich selbst. */
 .card[data-dashed] {
   border-style: dashed;
   background: none;
+
+  .cardBody {
+    height: calc(3 * 38px + 2 * 7px);
+  }
+}
+
+/* Der Platzhaltersatz („Keine Teams" etc.) bekommt dieselbe Höhe erst hier,
+   mittig statt oben klebend — bei einer Liste braucht es das nicht, die
+   Zeilen füllen die Höhe selbst. */
+.card[data-dashed][data-empty] .cardBody {
+  display: flex;
+  align-items: center;
+}
+
+/* Die Mitgliederkarte: `align-items: stretch` (`.page`) dehnt sie schon auf
+   die Höhe der linken Spalte — ohne `min-height: 0` in dieser Kette würde ihr
+   Inhalt trotzdem darüber hinaus wachsen (die automatische Mindesthöhe eines
+   Flex-Elements ist sonst seine Inhaltsgröße). Nur `.cardBody` scrollt; Titel
+   und „Alle Mitglieder" bleiben stehen. */
+.card[data-scroll] {
+  min-height: 0;
+
+  .cardBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
 }
 
 .cardTitle {
@@ -427,6 +471,12 @@
 
 /* ── Teams und Labels ─────────────────────────────────────────────────────── */
 
+/* Feste statt maximale Höhe für drei Zeilen — eine Zeile ist 38px hoch (9px
+   Polster oben und unten, 1px Rahmen, dazwischen eine Zeile Text auf
+   `--text-sm`/`--leading-normal`). Fest, damit ein Team allein nicht in einer
+   flacheren Karte steht als neun Labels daneben (siehe `.card[data-dashed]
+   .cardBody`, dieselbe Höhe eine Ebene höher). Ab vier Einträgen scrollt die
+   Liste in sich selbst, statt die Karte weiter zu strecken. */
 .rows {
   display: flex;
   flex-direction: column;
@@ -434,6 +484,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  height: calc(3 * 38px + 2 * 7px);
+  overflow-y: auto;
 }
 
 /* Jede Zeile wie ein Outline-Button (`Button/button.module.scss` `.outline`):

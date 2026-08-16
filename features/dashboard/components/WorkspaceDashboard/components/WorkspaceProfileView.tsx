@@ -44,6 +44,13 @@ interface CardProps {
   dashed?: boolean;
   /** Knopf oben rechts neben Titel und Zahl, z. B. zum Anlegen. */
   action?: ReactNode;
+  /**
+   * Für die Mitgliederkarte: der Inhalt scrollt in sich selbst, statt die
+   * Karte (und mit ihr die ganze Seite) beliebig in die Länge zu ziehen — bei
+   * vielen Mitgliedern bleiben Titel und „Alle Mitglieder" so erreichbar, ohne
+   * dass man sich erst an ihnen vorbeischrollen muss.
+   */
+  scrollBody?: boolean;
   footer?: ReactNode;
   children: ReactNode;
 }
@@ -54,6 +61,7 @@ function Card({
   empty,
   dashed,
   action,
+  scrollBody,
   footer,
   children,
 }: CardProps) {
@@ -62,6 +70,7 @@ function Card({
       className={styles.card}
       data-empty={empty || undefined}
       data-dashed={dashed || undefined}
+      data-scroll={scrollBody || undefined}
     >
       <div className={styles.cardHead}>
         <h3 className={styles.cardTitle}>
@@ -343,6 +352,7 @@ export function WorkspaceProfileView({
               profile.memberCount === 0 &&
               profile.platformStaff.length === 0
             }
+            scrollBody
             footer={
               profile.canViewMembers &&
               profile.memberCount > 0 && (

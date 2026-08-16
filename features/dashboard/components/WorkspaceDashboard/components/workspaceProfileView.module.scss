@@ -3,24 +3,36 @@
    die Begründung jeder Regel. */
 .page {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 28%, 400px);
-  grid-template-rows: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 28%);
+  /* `minmax(0, 1fr)` statt nacktem `1fr` — siehe `ProjectProfileView` für die
+     Begründung: die Seite selbst überläuft nicht mehr, lange Listen scrollen
+     stattdessen in `.main` bzw. der Mitgliederkarte (`.card[data-scroll]`). */
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 20px 12px;
   align-items: stretch;
   width: 100%;
+  min-height: 0;
   flex: 1;
 }
 
+/* Scrollt für sich, wenn sie höher wird als die Zeile hergibt — dieselbe Kette
+   wie bei der Mitgliederkarte, nur ohne eigenes Feld. */
 .main {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .side {
   display: flex;
   min-width: 0;
+  /* Dieselbe Kette wie bei `.card[data-scroll]`: ohne `min-height: 0` bliebe
+     die automatische Mindesthöhe an der Inhaltsgröße hängen und `stretch`
+     liefe ins Leere. */
+  min-height: 0;
 }
 
 .side > * {
@@ -227,10 +239,36 @@
 
 /* Listen-Cards (Teams, Projekte) tragen den gestrichelten Rahmen immer, nicht
    nur solange sie leer sind — die Liste selbst liefert den Inhalt, die Card
-   bleibt reine Hülle. */
+   bleibt reine Hülle.
+
+   Dieselbe feste Höhe wie `.rows` (drei Zeilen), unabhängig von der Zahl der
+   Einträge — wie in `ProjectProfileView` (siehe dort für die Begründung). */
 .card[data-dashed] {
   border-style: dashed;
   background: none;
+
+  .cardBody {
+    height: calc(3 * 38px + 2 * 7px);
+  }
+}
+
+.card[data-dashed][data-empty] .cardBody {
+  display: flex;
+  align-items: center;
+}
+
+/* Die Mitgliederkarte: wie in `ProjectProfileView` (siehe dort für die
+   Begründung) hält `min-height: 0` in dieser Kette die Karte bei der Höhe, auf
+   die `align-items: stretch` (`.page`) sie schon dehnt. Nur `.cardBody`
+   scrollt; Titel und „Alle Mitglieder" bleiben stehen. */
+.card[data-scroll] {
+  min-height: 0;
+
+  .cardBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
 }
 
 .cardHead {
@@ -373,7 +411,10 @@
   white-space: nowrap;
 }
 
-/* ── Teams und Projekte als Liste ── */
+/* ── Teams und Projekte als Liste ──
+   Feste statt maximale Höhe für drei Zeilen — wie in `ProjectProfileView`
+   (siehe dort für die Rechnung und die Begründung, warum fest statt maximal).
+   Ab vier Einträgen scrollt die Liste in sich selbst. */
 .rows {
   display: flex;
   flex-direction: column;
@@ -381,6 +422,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  height: calc(3 * 38px + 2 * 7px);
+  overflow-y: auto;
 }
 
 /* Jede Zeile wie ein Outline-Button (`Button/button.module.scss` `.outline`):

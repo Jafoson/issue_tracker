@@ -41,16 +41,32 @@ interface CardProps {
   /** Gestrichelter Rahmen unabhängig vom Inhalt — für Listen-Cards, die immer
    * so aussehen sollen, nicht nur wenn sie leer sind (wie im Workspace-Steckbrief). */
   dashed?: boolean;
+  /**
+   * Für die Mitgliederkarte: der Inhalt scrollt in sich selbst, statt die
+   * Karte (und mit ihr die ganze Seite) beliebig in die Länge zu ziehen — bei
+   * vielen Mitgliedern bleiben Titel und „Alle Mitglieder" so erreichbar, ohne
+   * dass man sich erst an ihnen vorbeischrollen muss.
+   */
+  scrollBody?: boolean;
   footer?: ReactNode;
   children: ReactNode;
 }
 
-function Card({ title, count, empty, dashed, footer, children }: CardProps) {
+function Card({
+  title,
+  count,
+  empty,
+  dashed,
+  scrollBody,
+  footer,
+  children,
+}: CardProps) {
   return (
     <section
       className={styles.card}
       data-empty={empty || undefined}
       data-dashed={dashed || undefined}
+      data-scroll={scrollBody || undefined}
     >
       <h3 className={styles.cardTitle}>
         {title}
@@ -299,6 +315,7 @@ export function ProjectProfileView({ project, profile, stats, links }: Props) {
           title={t("nav.members")}
           count={profile.memberCount}
           empty={profile.memberCount === 0}
+          scrollBody
           footer={
             profile.memberCount > 0 && (
               <Link href={links.members} className={styles.cardLink}>

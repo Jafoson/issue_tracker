@@ -13,6 +13,20 @@
   gap: 16px;
 }
 
+/* Wie in `ProjectDashboard/projectDashboard.module.scss`: die Übersicht passt
+   sich der verfügbaren Höhe an, statt die Seite scrollen zu lassen —
+   `WorkspaceProfileView` lässt lange Listen in sich selbst scrollen. Nur bis
+   zu der Breite, ab der die Spalten dort untereinander stehen. */
+.body[data-view="profile"] {
+  overflow: hidden;
+}
+
+@media (max-width: 1120px) {
+  .body[data-view="profile"] {
+    overflow-y: auto;
+  }
+}
+
 .dot {
   width: 9px;
   height: 9px;
