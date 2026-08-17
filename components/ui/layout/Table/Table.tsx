@@ -159,6 +159,12 @@ export function Table<T>({
     .filter(Boolean)
     .join(" ");
 
+  // Scrollt eine Karte selbst, brauchen Rundung und Scrollbalken getrennte
+  // Elemente: der native Balken rundet seine eigene Ecke nicht mit, die Karte
+  // sähe rechts sonst eckig aus, sobald sie überläuft. `cardFrame` übernimmt
+  // Rahmen und Rundung von außen, ohne selbst zu scrollen.
+  const cardFill = variant === "card" && Boolean(fill);
+
   // Die Spaltenbreiten sind Daten, kein Aussehen — deshalb als Custom Property
   // ins Stylesheet gereicht statt als Klasse pro Layout.
   const trackStyle = {
@@ -179,7 +185,7 @@ export function Table<T>({
   // Ohne Zeilen gibt es nichts auszurichten: der Ersatzinhalt steht für sich,
   // nicht in den Spalten der Tabelle.
   if (isEmpty && empty) {
-    return (
+    const emptyEl = (
       <div
         className={[
           styles.empty,
@@ -193,9 +199,14 @@ export function Table<T>({
         {empty}
       </div>
     );
+    return cardFill ? (
+      <div className={styles.cardFrame}>{emptyEl}</div>
+    ) : (
+      emptyEl
+    );
   }
 
-  return (
+  const tableEl = (
     // Die Rollen wirken doppelt gemoppelt, sind es aber nicht: Browser leiten
     // die Tabellensemantik aus dem Layout ab und verwerfen sie, sobald
     // `display` überschrieben wird — hier durch das Grid. Ohne die Rollen
@@ -384,4 +395,6 @@ export function Table<T>({
       )}
     </table>
   );
+
+  return cardFill ? <div className={styles.cardFrame}>{tableEl}</div> : tableEl;
 }

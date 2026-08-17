@@ -535,3 +535,29 @@ tbody.group {
   border-top: none;
 }
 
+/* Scrollt eine Karte selbst (`.card.fill`), dürfen Rundung und Scrollbalken
+   nicht auf demselben Element liegen: den nativen Balken rundet der Browser
+   nicht mit, die Karte sähe rechts eckig aus, sobald sie überläuft. Dieser
+   Rahmen übernimmt Rand, Grund und Rundung von außen und beschneidet — er
+   scrollt selbst nicht, das bleibt Sache der Karte darin. */
+.cardFrame {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--table-surface, var(--background));
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+}
+
+/* Die Karte darin liefert nur noch den Scrollbereich — Rand, Grund und
+   Rundung trägt jetzt der Rahmen, sonst stünde ein doppelter Rand da. */
+.cardFrame > :is(.card, .empty) {
+  flex: 1;
+  min-height: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
