@@ -723,6 +723,7 @@
       "mailTemplateUpdated": "Mail-Vorlage bearbeitet",
       "mailTemplateReset": "Mail-Vorlage zurückgesetzt",
       "projectCreated": "Projekt angelegt",
+      "projectVisibilityChanged": "Sichtbarkeit geändert",
       "memberAdded": "Mitglied hinzugefügt",
       "memberRemoved": "Mitglied entfernt",
       "projectMemberAdded": "Zum Projekt hinzugefügt",

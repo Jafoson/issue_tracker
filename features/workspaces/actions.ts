@@ -762,7 +762,7 @@ export async function setMemberRole(
   // sieht, in welche Richtung es ging.
   const target_ = await db.user.findUnique({
     where: { id: userId },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, color: true },
   });
   await recordAudit({
     action: "member.role.changed",
@@ -774,6 +774,7 @@ export async function setMemberRole(
         ? `${target_.firstName} ${target_.lastName}`.trim()
         : userId,
     },
+    personColor: target_?.color ?? null,
     workspaceId,
     meta: { from: target.role.key, to: roleKey },
   });
@@ -796,7 +797,7 @@ export async function removeMember(workspaceId: string, userId: string) {
     where: { workspaceId_userId: { workspaceId, userId } },
     select: {
       role: { select: { key: true, rank: true } },
-      user: { select: { firstName: true, lastName: true } },
+      user: { select: { firstName: true, lastName: true, color: true } },
     },
   });
   if (!target) throw new PermissionError(guard);
@@ -828,6 +829,7 @@ export async function removeMember(workspaceId: string, userId: string) {
       id: userId,
       label: `${target.user.firstName} ${target.user.lastName}`.trim(),
     },
+    personColor: target.user.color,
     workspaceId,
   });
 
@@ -886,7 +888,7 @@ export async function inviteWorkspaceMember(data: {
 
   const existing = await db.user.findUnique({
     where: { email },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, color: true },
   });
 
   if (existing) {
@@ -928,6 +930,7 @@ export async function inviteWorkspaceMember(data: {
         id: existing.id,
         label: `${existing.firstName} ${existing.lastName}`.trim(),
       },
+      personColor: existing.color,
       workspaceId,
       meta: { role: role.name },
     });

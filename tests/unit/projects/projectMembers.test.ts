@@ -476,7 +476,7 @@ describe("inviteProjectMember()", () => {
     // Adresse normalisiert, kein neuer Account.
     expect(mockUserFindUnique).toHaveBeenCalledWith({
       where: { email: "ada@example.com" },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, firstName: true, lastName: true, color: true },
     });
     expect(mockProjectMemberCreate).toHaveBeenCalledWith({
       data: {

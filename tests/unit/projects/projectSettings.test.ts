@@ -9,6 +9,7 @@ const mockIssueDeleteMany = mock();
 const mockWorkspaceMemberFindMany = mock();
 const mockProjectMemberCreateMany = mock();
 const mockTransaction = mock();
+const mockAuditLogCreate = mock();
 
 const mockTx = {
   issue: { deleteMany: mockIssueDeleteMany },
@@ -25,7 +26,7 @@ mock.module("@/lib/db", () => ({
     },
     issue: { deleteMany: mockIssueDeleteMany },
     user: { findUnique: mock(async () => null) },
-    auditLog: { create: mock(async () => ({})) },
+    auditLog: { create: mockAuditLogCreate },
     workspaceMember: { findMany: mockWorkspaceMemberFindMany },
     projectMember: { createMany: mockProjectMemberCreateMany },
     $transaction: mockTransaction,
@@ -68,15 +69,18 @@ function reset() {
     mockTransaction,
     mockCan,
     mockCurrentUserId,
+    mockAuditLogCreate,
   ]) {
     m.mockReset();
   }
 
   mockCurrentUserId.mockResolvedValue(ACTOR);
   mockCan.mockResolvedValue(true);
+  mockAuditLogCreate.mockResolvedValue({});
   mockProjectFindUnique.mockResolvedValue({
     workspaceId: WS,
     name: "Web App",
+    visibility: "private",
     _count: { issues: 12, members: 4 },
   });
   mockProjectUpdate.mockResolvedValue({ id: PROJECT, workspaceId: WS });
@@ -180,11 +184,39 @@ describe("updateProject() — Sichtbarkeit", () => {
   });
 
   it("wirft beim Wechsel auf privat niemanden hinaus", async () => {
+    mockProjectFindUnique.mockResolvedValue({
+      workspaceId: WS,
+      name: "Web App",
+      visibility: "public",
+      _count: { issues: 12, members: 4 },
+    });
     await updateProject(PROJECT, { visibility: "private" });
     expect(mockProjectUpdate.mock.calls[0][0].data.visibility).toBe("private");
     // Keine Aufnahme, aber auch kein Entfernen: die Tabelle bleibt, wie sie ist.
     expect(mockWorkspaceMemberFindMany).not.toHaveBeenCalled();
     expect(mockProjectMemberCreateMany).not.toHaveBeenCalled();
+  });
+
+  it("protokolliert den Wechsel — der Feed fürs Workspace-Aktivitäts-Log", async () => {
+    // Default-Mock steht auf "private", also ein echter Wechsel.
+    await updateProject(PROJECT, { visibility: "public" });
+    expect(mockAuditLogCreate).toHaveBeenCalledTimes(1);
+    const entry = mockAuditLogCreate.mock.calls[0][0].data;
+    expect(entry.action).toBe("project.visibility.changed");
+    expect(entry.workspaceId).toBe(WS);
+    expect(entry.projectId).toBe(PROJECT);
+    expect(entry.meta).toEqual({ from: "private", to: "public" });
+  });
+
+  it("protokolliert nichts, wenn sich die Sichtbarkeit nicht ändert", async () => {
+    // Default-Mock steht schon auf "private" — derselbe Wert ist kein Wechsel.
+    await updateProject(PROJECT, { visibility: "private" });
+    expect(mockAuditLogCreate).not.toHaveBeenCalled();
+  });
+
+  it("protokolliert nichts, wenn die Sichtbarkeit gar nicht angefasst wird", async () => {
+    await updateProject(PROJECT, { name: "Neuer Name" });
+    expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
 });
 

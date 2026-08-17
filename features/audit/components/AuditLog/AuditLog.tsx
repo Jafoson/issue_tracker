@@ -29,7 +29,7 @@ import {
   type StatusChangeMeta,
   toAuditAction,
 } from "@/lib/audit/actions";
-import { issuePath } from "@/lib/nav";
+import { issuePath, projectPath } from "@/lib/nav";
 import { useTimeAgo } from "@/lib/utils/useTimeAgo";
 import styles from "./auditLog.module.scss";
 
@@ -129,6 +129,10 @@ export const AUDIT_ACTION_META = {
     message: "mailTemplateReset",
   },
   "project.created": { icon: "lucide:folder-plus", message: "projectCreated" },
+  "project.visibility.changed": {
+    icon: "lucide:eye",
+    message: "projectVisibilityChanged",
+  },
   "member.added": { icon: "lucide:user-plus", message: "memberAdded" },
   "member.removed": { icon: "lucide:user-minus", message: "memberRemoved" },
   "project.member.added": {
@@ -215,6 +219,27 @@ export function auditActionMeta(action: string) {
  * hinzugekommene gefüllt, entfernte durchgestrichen. Fehlt `meta` (Zeilen von
  * vor dieser Änderung), bleibt es beim reinen Text.
  */
+/** Vorgänge, bei denen das Ziel selbst das Projekt ist — `text` ist hier
+ * bereits der Projektname, kein „Alt → Neu". Der ganze Text wird zum Link. */
+const PROJECT_IS_TARGET: ReadonlySet<string> = new Set([
+  "project.created",
+  "project.archived",
+  "project.unarchived",
+  "project.deleted",
+  "project.owner.changed",
+  "project.visibility.changed",
+  "project.breakglass",
+]);
+
+/** Vorgänge, deren Ziel eine Person ist, die aber einem Projekt zugeordnet
+ * bleibt — im Workspace-weiten Feed sonst nicht erkennbar, zu welchem
+ * Projekt „Zum Projekt hinzugefügt" gehört. Bekommen einen eigenen Chip. */
+const PROJECT_IS_CONTEXT: ReadonlySet<string> = new Set([
+  "project.member.added",
+  "project.member.removed",
+  "project.member.role.changed",
+]);
+
 interface TargetLabelProps {
   text: string;
   action: string;
@@ -224,6 +249,9 @@ interface TargetLabelProps {
   personColor?: string | null;
   /** Verlinkt das Kürzel zum Issue. Ohne sie steht es als reiner Text da. */
   workspaceSlug?: string;
+  /** Aktuelles Projekt hinter `projectId` — für den Link bei
+   * `PROJECT_IS_TARGET`/`PROJECT_IS_CONTEXT` (`lib/audit/index.ts`). */
+  projectRef?: { slug: string; name: string } | null;
 }
 
 export function TargetLabel({
@@ -232,6 +260,7 @@ export function TargetLabel({
   meta,
   personColor,
   workspaceSlug,
+  projectRef,
 }: TargetLabelProps) {
   const { ref, before, after } = parseTargetLabel(text);
   if (!ref && !after) return null;
@@ -245,6 +274,25 @@ export function TargetLabel({
       <span className={styles.ref}>{ref}</span>
     )
   ) : null;
+
+  const projectLink =
+    workspaceSlug && projectRef ? (
+      <Link
+        href={projectPath(workspaceSlug, projectRef.slug, "overview")}
+        className={styles.projectRef}
+      >
+        <Icon icon="lucide:folder" width={11} />
+        {projectRef.name}
+      </Link>
+    ) : null;
+
+  if (PROJECT_IS_TARGET.has(action)) {
+    return (
+      <span className={styles.targetLabel}>
+        {projectLink ?? <span className={styles.changeAfter}>{after}</span>}
+      </span>
+    );
+  }
 
   if (action === "issue.labels.changed") {
     const labels = meta as LabelsChangeMeta | undefined;
@@ -335,6 +383,7 @@ export function TargetLabel({
           {after}
         </span>
       )}
+      {PROJECT_IS_CONTEXT.has(action) && projectLink}
     </span>
   );
 }
@@ -417,6 +466,7 @@ export function AuditLog({
                 meta={row.meta}
                 personColor={row.personColor}
                 workspaceSlug={workspaceSlug}
+                projectRef={row.projectRef}
               />
             )}
           </span>

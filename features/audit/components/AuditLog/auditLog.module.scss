@@ -90,6 +90,30 @@ a.ref:hover {
   background: var(--surface-container-highest);
 }
 
+/* Verweist auf das Projekt, zu dem die Zeile gehört — als eigener Vorgang
+   (`project.created` u. Ä., dann der ganze Text) oder als Zusatz neben einer
+   Person (`project.member.*`, dann als Chip danach). Der Ordner-Icon macht auf
+   den ersten Blick klar, dass hier ein Projekt gemeint ist, nicht eine weitere
+   Person oder ein Issue. */
+.projectRef {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  font-size: var(--text-xs);
+  font-weight: 550;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+a.projectRef:hover {
+  background: var(--surface-container-highest);
+  color: var(--on-surface);
+}
+
 .changeBefore {
   display: inline-flex;
   align-items: center;

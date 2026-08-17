@@ -723,6 +723,7 @@
       "mailTemplateUpdated": "Mail template edited",
       "mailTemplateReset": "Mail template reset",
       "projectCreated": "Project created",
+      "projectVisibilityChanged": "Visibility changed",
       "memberAdded": "Member added",
       "memberRemoved": "Member removed",
       "projectMemberAdded": "Added to project",

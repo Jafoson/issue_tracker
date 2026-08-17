@@ -55,6 +55,7 @@ export const AUDIT_ACTIONS = {
   // grober Bearbeitungs-Verlauf (welcher Aspekt sich änderte, nicht wie:
   // kein Vorher/Nachher, das wäre ein Diff und kein Protokolleintrag).
   "project.created": "Projekt angelegt",
+  "project.visibility.changed": "Sichtbarkeit geändert",
   "member.added": "Mitglied zum Workspace hinzugefügt",
   "member.removed": "Mitglied aus dem Workspace entfernt",
   "project.member.added": "Mitglied zum Projekt hinzugefügt",
@@ -192,6 +193,14 @@ export interface AuditEntry {
    * von `features/issues/actions.ts`, in genau dieser Form.
    */
   meta: unknown;
+  /**
+   * Slug und Name des Projekts hinter `projectId`, live nachgeschlagen wie
+   * `actorColor` in `withCurrentColor` (`lib/audit/index.ts`) — nicht
+   * eingefroren, weil es nur für einen Link taugen muss, nicht für
+   * Zeitzeugenschaft. `null` ohne `projectId` oder wenn das Projekt inzwischen
+   * gelöscht ist; die Zeile bleibt dann unverlinkter Text.
+   */
+  projectRef: { slug: string; name: string } | null;
 }
 
 /** `meta` bei `issue.priority.changed` — Prioritäts-Id reicht, das Symbol

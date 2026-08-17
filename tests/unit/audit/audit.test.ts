@@ -8,6 +8,7 @@ const mockAuditFindMany = mock();
 const mockAuditCount = mock();
 const mockUserFindUnique = mock();
 const mockUserFindMany = mock();
+const mockProjectFindMany = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -17,6 +18,7 @@ mock.module("@/lib/db", () => ({
       count: mockAuditCount,
     },
     user: { findUnique: mockUserFindUnique, findMany: mockUserFindMany },
+    project: { findMany: mockProjectFindMany },
   },
 }));
 
@@ -41,6 +43,7 @@ beforeEach(() => {
     color: "#6e63e6",
   });
   mockUserFindMany.mockResolvedValue([]);
+  mockProjectFindMany.mockResolvedValue([]);
 });
 
 describe("Schreiben", () => {
@@ -140,10 +143,27 @@ describe("Lesen", () => {
     expect(args.select.actorColor).toBe(true);
   });
 
-  it("schränkt auf einen Workspace ein, wenn einer verlangt wird", async () => {
+  it("schränkt auf einen Workspace ein und blendet Projekt-Tagesgeschäft aus", async () => {
+    // Ohne projectId ist das der Workspace-Feed: Issues und projektgebundene
+    // Labels gehören zu einem einzelnen Projekt, nicht zum Workspace als
+    // Ganzes, auch wenn sie `workspaceId` tragen (siehe `whereFor`).
     await listAudit({ workspaceId: "ws1" });
     expect(mockAuditFindMany.mock.calls[0][0].where).toEqual({
       workspaceId: "ws1",
+      NOT: [
+        { action: { startsWith: "issue." } },
+        { action: "label.created", projectId: { not: null } },
+        { action: "label.deleted", projectId: { not: null } },
+      ],
+    });
+  });
+
+  it("lässt Issue- und Label-Vorgänge im Projekt-Feed unberührt", async () => {
+    // Mit projectId (Projekt-Feed) greift der Workspace-Ausschluss nicht —
+    // dort gehören Issues und Labels gerade hin.
+    await listAudit({ projectId: "p1" });
+    expect(mockAuditFindMany.mock.calls[0][0].where).toEqual({
+      projectId: "p1",
     });
   });
 
@@ -182,6 +202,45 @@ describe("Lesen", () => {
     await listAudit();
 
     expect(mockUserFindMany).not.toHaveBeenCalled();
+  });
+
+  it("löst das Projekt hinter `projectId` für den Link auf", async () => {
+    mockAuditFindMany.mockResolvedValue([
+      { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: "p1" },
+    ]);
+    mockProjectFindMany.mockResolvedValue([
+      { id: "p1", slug: "mobile", name: "Mobile App" },
+    ]);
+
+    const entries = await listAudit();
+
+    expect(mockProjectFindMany.mock.calls[0][0].where.id.in).toEqual(["p1"]);
+    expect(entries[0].projectRef).toEqual({
+      slug: "mobile",
+      name: "Mobile App",
+    });
+  });
+
+  it("lässt `projectRef` leer, wenn keine Zeile eine `projectId` trägt", async () => {
+    mockAuditFindMany.mockResolvedValue([
+      { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: null },
+    ]);
+
+    const entries = await listAudit();
+
+    expect(mockProjectFindMany).not.toHaveBeenCalled();
+    expect(entries[0].projectRef).toBeNull();
+  });
+
+  it("lässt `projectRef` leer, wenn das Projekt inzwischen gelöscht ist", async () => {
+    mockAuditFindMany.mockResolvedValue([
+      { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: "p-weg" },
+    ]);
+    mockProjectFindMany.mockResolvedValue([]);
+
+    const entries = await listAudit();
+
+    expect(entries[0].projectRef).toBeNull();
   });
 });
 

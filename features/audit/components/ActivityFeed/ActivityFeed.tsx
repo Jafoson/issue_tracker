@@ -48,6 +48,7 @@ export function ActivityFeed({ entries, workspaceSlug }: Props) {
                     meta={entry.meta}
                     personColor={entry.personColor}
                     workspaceSlug={workspaceSlug}
+                    projectRef={entry.projectRef}
                   />
                 )}
               </span>

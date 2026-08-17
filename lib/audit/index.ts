@@ -153,7 +153,19 @@ export interface AuditFilter {
   cursor?: string;
 }
 
+/**
+ * Issue-Vorgänge und projektgebundene Label-Vorgänge tragen `workspaceId`
+ * genauso wie `projectId` (siehe `recordIssueAudit` und `createLabel` in
+ * `features/issues/actions.ts`) — nicht, weil sie zum Workspace als Ganzes
+ * gehörten, sondern damit sie im Projekt-Feed erscheinen, dessen Query nur
+ * `projectId` kennt. Im Workspace-Feed (`workspaceId` ohne `projectId`) wären
+ * sie dagegen das Tagesgeschäft jedes einzelnen Projekts, nicht des
+ * Workspace — und würden ihn zuspammen. Ein Label ohne `projectId` entsteht
+ * direkt im Workspace-Kontext (`WorkspaceLabels`) und bleibt sichtbar.
+ */
 function whereFor(filter: AuditFilter): Prisma.AuditLogWhereInput {
+  const workspaceFeed = filter.workspaceId && !filter.projectId;
+
   return {
     ...(filter.workspaceId ? { workspaceId: filter.workspaceId } : {}),
     ...(filter.projectId ? { projectId: filter.projectId } : {}),
@@ -164,6 +176,15 @@ function whereFor(filter: AuditFilter): Prisma.AuditLogWhereInput {
           OR: [
             { actorId: filter.selfOnly },
             { targetType: "user", targetId: filter.selfOnly },
+          ],
+        }
+      : {}),
+    ...(workspaceFeed
+      ? {
+          NOT: [
+            { action: { startsWith: "issue." } },
+            { action: "label.created", projectId: { not: null } },
+            { action: "label.deleted", projectId: { not: null } },
           ],
         }
       : {}),
@@ -208,7 +229,13 @@ export async function listAudit(
       meta: true,
     },
   });
-  return withCurrentColor(entries);
+  // `projectRef` ist keine Spalte — Platzhalter, den `withProjectRef` befüllt,
+  // genau wie `withCurrentColor` es mit fehlender `actorColor` tut.
+  const withPlaceholder: AuditEntry[] = entries.map((entry) => ({
+    ...entry,
+    projectRef: null,
+  }));
+  return withProjectRef(await withCurrentColor(withPlaceholder));
 }
 
 /**
@@ -237,6 +264,37 @@ async function withCurrentColor(entries: AuditEntry[]): Promise<AuditEntry[]> {
   return entries.map((entry) =>
     entry.actorColor === null && entry.actorId && colorOf.has(entry.actorId)
       ? { ...entry, actorColor: colorOf.get(entry.actorId) as string }
+      : entry,
+  );
+}
+
+/**
+ * Ergänzt Slug und Name des Projekts, zu dem die Zeile gehört — für den Link
+ * in `TargetLabel` (`AuditLog`/`ActivityFeed`). Kein Fremdschlüssel auf
+ * `AuditLog` (siehe `prisma/schema.prisma`), also ist das hier der einzige
+ * Weg zu einem klickbaren Projekt: eine gebündelte Nachfrage, nicht anders als
+ * `withCurrentColor` nebenan. Ein inzwischen gelöschtes Projekt liefert
+ * `null` — die Zeile bleibt dann unverlinkter Text statt eines toten Links.
+ */
+async function withProjectRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
+  const projectIds = [
+    ...new Set(
+      entries.filter((e) => e.projectId).map((e) => e.projectId as string),
+    ),
+  ];
+  if (projectIds.length === 0) return entries;
+
+  const projects = await db.project.findMany({
+    where: { id: { in: projectIds } },
+    select: { id: true, slug: true, name: true },
+  });
+  const refOf = new Map(
+    projects.map((p) => [p.id, { slug: p.slug, name: p.name }]),
+  );
+
+  return entries.map((entry) =>
+    entry.projectId && refOf.has(entry.projectId)
+      ? { ...entry, projectRef: refOf.get(entry.projectId) ?? null }
       : entry,
   );
 }

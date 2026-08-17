@@ -177,13 +177,21 @@ export async function createProject(data: {
 async function requireProjectManage(
   projectId: string,
   permission: "project.update" | "project.delete",
-): Promise<{ workspaceId: string; actorId: string } | { error: string }> {
+): Promise<
+  | {
+      workspaceId: string;
+      actorId: string;
+      name: string;
+      visibility: ProjectVisibility;
+    }
+  | { error: string }
+> {
   const actorId = await currentUserId();
   if (!actorId) return { error: "You must be logged in." };
 
   const project = await db.project.findUnique({
     where: { id: projectId },
-    select: { workspaceId: true },
+    select: { workspaceId: true, name: true, visibility: true },
   });
   if (!project) return { error: "This project no longer exists." };
 
@@ -196,7 +204,12 @@ async function requireProjectManage(
     };
   }
 
-  return { workspaceId: project.workspaceId, actorId };
+  return {
+    workspaceId: project.workspaceId,
+    actorId,
+    name: project.name,
+    visibility: project.visibility,
+  };
 }
 
 /**
@@ -258,11 +271,25 @@ export async function updateProject(
       ...(data.color !== undefined ? { color: data.color } : {}),
       ...(data.visibility !== undefined ? { visibility: data.visibility } : {}),
     },
-    select: { id: true, workspaceId: true },
+    select: { id: true, workspaceId: true, name: true },
   });
 
   if (data.visibility === "public") {
     await enrollWorkspaceMembers(db, project);
+  }
+
+  // Eigener Vorgang statt eines allgemeinen "project.updated": nur die
+  // Sichtbarkeit ist im Workspace-Aktivitäts-Feed von Belang (`whereFor` in
+  // `lib/audit/index.ts`), Name/Farbe/Kürzel sind reine Projekt-Kosmetik.
+  if (data.visibility !== undefined && guard.visibility !== data.visibility) {
+    await recordAudit({
+      action: "project.visibility.changed",
+      actorId: guard.actorId,
+      target: { type: "project", id: projectId, label: project.name },
+      workspaceId: project.workspaceId,
+      projectId,
+      meta: { from: guard.visibility, to: data.visibility },
+    });
   }
 
   revalidatePath("/", "layout");
@@ -486,7 +513,7 @@ export async function addProjectMembers(data: {
   // wen in welches Projekt aufgenommen".
   const addedUsers = await db.user.findMany({
     where: { id: { in: newlyAdded } },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, color: true },
   });
   for (const user of addedUsers) {
     await recordAudit({
@@ -497,6 +524,7 @@ export async function addProjectMembers(data: {
         id: user.id,
         label: `${user.firstName} ${user.lastName}`.trim(),
       },
+      personColor: user.color,
       workspaceId: guard.workspaceId,
       projectId: data.projectId,
       meta: { role: role.name },
@@ -554,7 +582,7 @@ export async function setProjectMemberRole(
 
   const changedUser = await db.user.findUnique({
     where: { id: userId },
-    select: { firstName: true, lastName: true },
+    select: { firstName: true, lastName: true, color: true },
   });
   await recordAudit({
     action: "project.member.role.changed",
@@ -566,6 +594,7 @@ export async function setProjectMemberRole(
         ? `${changedUser.firstName} ${changedUser.lastName}`.trim()
         : userId,
     },
+    personColor: changedUser?.color ?? null,
     workspaceId: guard.workspaceId,
     projectId,
     meta: { to: role.name },
@@ -600,7 +629,7 @@ export async function removeProjectMember(
     where: { projectId_userId: { projectId, userId } },
     select: {
       role: { select: { rank: true } },
-      user: { select: { firstName: true, lastName: true } },
+      user: { select: { firstName: true, lastName: true, color: true } },
     },
   });
   if (!target) return { error: "This person is not a member of the project." };
@@ -632,6 +661,7 @@ export async function removeProjectMember(
       id: userId,
       label: `${target.user.firstName} ${target.user.lastName}`.trim(),
     },
+    personColor: target.user.color,
     workspaceId: guard.workspaceId,
     projectId,
   });
@@ -671,7 +701,7 @@ export async function inviteProjectMember(data: {
 
   const existing = await db.user.findUnique({
     where: { email },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, color: true },
   });
 
   if (existing) {
@@ -712,6 +742,7 @@ export async function inviteProjectMember(data: {
         id: existing.id,
         label: `${existing.firstName} ${existing.lastName}`.trim(),
       },
+      personColor: existing.color,
       workspaceId: guard.workspaceId,
       projectId: data.projectId,
       meta: { role: role.name },
