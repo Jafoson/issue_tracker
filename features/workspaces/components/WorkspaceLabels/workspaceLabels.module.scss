@@ -1,9 +1,9 @@
-/* Dieselbe Aufteilung wie in den übrigen Bereichen der Einstellungen: die Seite
-   scrollt, die Tabellen darin nicht — und beide nehmen die volle Breite. */
+/* Nicht die Seite scrollt, sondern jede Tabelle für sich (`fill`) — beide
+   Abschnitte teilen sich die verfügbare Höhe gleich auf (zwei `flex: 1`-Kinder
+   in derselben Spalte), unabhängig davon, wie viele Zeilen jede gerade zeigt. */
 .content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   padding: 12px 24px 32px;
   display: flex;
   flex-direction: column;
@@ -36,6 +36,8 @@
 }
 
 .group {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;

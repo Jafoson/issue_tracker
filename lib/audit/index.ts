@@ -149,6 +149,8 @@ export interface AuditFilter {
   selfOnly?: string;
   /** Wie viele Zeilen höchstens. Vorgabe 100, Obergrenze 500. */
   limit?: number;
+  /** Nachladen ab (ausschließlich) dieser Id, für Infinite Scroll. */
+  cursor?: string;
 }
 
 function whereFor(filter: AuditFilter): Prisma.AuditLogWhereInput {
@@ -184,6 +186,7 @@ export async function listAudit(
     where: whereFor(filter),
     orderBy: { createdAt: "desc" },
     take,
+    ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
     select: {
       id: true,
       createdAt: true,

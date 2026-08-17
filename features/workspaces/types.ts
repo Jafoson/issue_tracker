@@ -73,7 +73,13 @@ export interface WorkspaceProjectRow {
 }
 
 export interface WorkspaceProjectsView {
+  /** Die eine Liste, wenn `seesAllProjects` nicht gilt — sonst leer, siehe
+   * `publicRows`/`privateRows`. */
   rows: WorkspaceProjectRow[];
+  /** Nur bei `seesAllProjects`: die offenen Projekte. */
+  publicRows: WorkspaceProjectRow[];
+  /** Nur bei `seesAllProjects`: die privaten Projekte. */
+  privateRows: WorkspaceProjectRow[];
   /** `project.create` — ein neues Projekt im Workspace anlegen. */
   canCreate: boolean;
   /**
@@ -85,6 +91,12 @@ export interface WorkspaceProjectsView {
    * zufällig Mitglied ist — eine Überschrift, die mehr verspricht als sie hält.
    */
   seesAllProjects: boolean;
+  /** Cursor für `rows` (ohne `seesAllProjects`), sonst `null`. */
+  nextCursor: string | null;
+  /** Cursor für `publicRows`, sonst `null`. */
+  publicNextCursor: string | null;
+  /** Cursor für `privateRows`, sonst `null`. */
+  privateNextCursor: string | null;
 }
 
 /** Ein Label, wie die Verwaltungsseite des Workspace es zeigt. */
@@ -119,6 +131,10 @@ export interface WorkspaceLabelsView {
   canUpdate: boolean;
   /** `label.delete` im Workspace-Scope. */
   canDelete: boolean;
+  /** Cursor für `own`, `null` wenn schon alles geladen ist. */
+  ownNextCursor: string | null;
+  /** Cursor für `fromProjects`, `null` wenn schon alles geladen ist. */
+  fromProjectsNextCursor: string | null;
 }
 
 /**
@@ -177,6 +193,9 @@ export interface WorkspaceTeamsView {
   canManageMembers: boolean;
   /** `team.project.manage` — welche Projekte zum Team gehören, mit welcher Rolle. */
   canManageProjects: boolean;
+  /** Id des letzten Teams dieser Seite, für `loadMoreWorkspaceTeams` — `null`,
+   * wenn `rows` schon alles ist. */
+  nextCursor: string | null;
 }
 
 /** Ein Mitglied des Workspace, wie seine Zeile es zeigt. */
@@ -209,4 +228,7 @@ export interface WorkspaceMembersView {
   canSetRole: boolean;
   /** `member.remove` */
   canRemove: boolean;
+  /** Id des letzten Mitglieds dieser Seite, für `loadMoreWorkspaceMembers` —
+   * `null`, wenn `rows` schon alles ist. */
+  nextCursor: string | null;
 }

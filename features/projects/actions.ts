@@ -1,7 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { ProjectVisibility } from "@/features/projects/types";
+import {
+  getProjectLabelsView,
+  getProjectMembersView,
+  getProjectsOverview,
+  type ProjectOverviewRow,
+} from "@/features/projects/queries";
+import type {
+  ProjectLabelRow,
+  ProjectMemberRow,
+  ProjectVisibility,
+} from "@/features/projects/types";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
@@ -798,4 +808,47 @@ export async function inviteProjectMember(data: {
 
   revalidatePath("/", "layout");
   return { ok: true, inviteUrl, mailSent: isMailConfigured() };
+}
+
+/** Eine weitere Seite Projekte fürs Infinite Scroll in `ProjectOverview`. */
+export async function loadMoreProjectsOverview(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: ProjectOverviewRow[]; nextCursor: string | null }> {
+  const view = await getProjectsOverview(workspaceId, cursor);
+  return { items: view.rows, nextCursor: view.nextCursor };
+}
+
+/** Eine weitere Seite der eigenen Projekt-Labels fürs Infinite Scroll in
+ * `ProjectLabels`. */
+export async function loadMoreProjectLabels(
+  projectId: string,
+  cursor: string,
+): Promise<{ items: ProjectLabelRow[]; nextCursor: string | null }> {
+  const view = await getProjectLabelsView(projectId, cursor);
+  return view
+    ? { items: view.own, nextCursor: view.ownNextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Spiegelbild von `loadMoreProjectLabels`, für die geerbten Workspace-Labels. */
+export async function loadMoreProjectInheritedLabels(
+  projectId: string,
+  cursor: string,
+): Promise<{ items: ProjectLabelRow[]; nextCursor: string | null }> {
+  const view = await getProjectLabelsView(projectId, undefined, cursor);
+  return view
+    ? { items: view.inherited, nextCursor: view.inheritedNextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Eine weitere Seite fürs Infinite Scroll in `ProjectMembers`. */
+export async function loadMoreProjectMembers(
+  projectId: string,
+  cursor: string,
+): Promise<{ items: ProjectMemberRow[]; nextCursor: string | null }> {
+  const view = await getProjectMembersView(projectId, cursor);
+  return view
+    ? { items: view.rows, nextCursor: view.nextCursor }
+    : { items: [], nextCursor: null };
 }

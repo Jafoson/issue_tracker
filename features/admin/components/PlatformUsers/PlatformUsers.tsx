@@ -13,7 +13,9 @@ import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { setPlatformRole, setUserActive } from "@/features/admin/actions";
 import type {
@@ -30,6 +32,12 @@ interface Props {
   roles: PlatformRoleOption[];
   /** Die eigene Id — die eigene Zeile lässt sich nicht anfassen. */
   currentUserId: string;
+  nextCursor: string | null;
+  /** Lädt die nächste Seite ab einem Cursor (`loadMoreUsers`,
+   * `features/admin/actions.ts`). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: PlatformUser[]; nextCursor: string | null }>;
 }
 
 /**
@@ -47,13 +55,25 @@ interface Props {
  * erfährt auf dieser Ebene niemand, und mehr gibt der Server auch nicht heraus
  * (`features/admin/queries.ts`).
  */
-export function PlatformUsers({ users, roles, currentUserId }: Props) {
+export function PlatformUsers({
+  users,
+  roles,
+  currentUserId,
+  nextCursor,
+  loadMore,
+}: Props) {
   const t = useTranslations();
   const router = useRouter();
   const confirm = useConfirm();
   const timeAgo = useTimeAgo();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: users,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   const run = (action: () => Promise<{ ok: true } | { error: string }>) =>
     startTransition(async () => {
@@ -244,7 +264,7 @@ export function PlatformUsers({ users, roles, currentUserId }: Props) {
       <PageHeader
         divider={false}
         title={t("nav.users")}
-        count={users.length}
+        count={items.length}
         description={t("platform.usersDesc")}
       />
 
@@ -257,10 +277,11 @@ export function PlatformUsers({ users, roles, currentUserId }: Props) {
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.users")}
           columns={columns}
-          rows={sortRows(users)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.id}
           empty={
@@ -268,6 +289,9 @@ export function PlatformUsers({ users, roles, currentUserId }: Props) {
               icon={<Icon icon="lucide:users" width={32} />}
               title={t("platform.usersEmpty")}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

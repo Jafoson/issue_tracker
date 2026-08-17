@@ -32,6 +32,13 @@ interface TableBaseProps<T> {
   label?: string;
   /** Ersatzinhalt, wenn keine einzige Zeile vorhanden ist. */
   empty?: ReactNode;
+  /**
+   * Zusätzliche Zeile am Ende, im selben Scroll-Bereich wie die Zeilen davor —
+   * für den Rand des Infinite Scroll (`LoadMoreSentinel`). Bei `fill` sitzt er
+   * sonst außerhalb der scrollenden Fläche und bekäme nie mit, dass jemand ans
+   * Ende blättert.
+   */
+  footer?: ReactNode;
   /** Füllt den verfügbaren Platz eines Flex-Containers und scrollt selbst. */
   fill?: boolean;
   /**
@@ -122,6 +129,7 @@ export function Table<T>({
   isRowActive,
   label,
   empty,
+  footer,
   fill,
   variant = "plain",
   dnd,
@@ -360,6 +368,20 @@ export function Table<T>({
             })}
         </tbody>
       ))}
+
+      {footer && (
+        <tfoot className={styles.footerGroup} role="rowgroup">
+          <tr className={styles.footerRow} role="row">
+            <td
+              className={styles.footerCell}
+              role="cell"
+              colSpan={columns.length}
+            >
+              {footer}
+            </td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }

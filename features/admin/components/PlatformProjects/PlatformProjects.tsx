@@ -10,7 +10,9 @@ import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { reassignProject, setProjectArchived } from "@/features/admin/actions";
 import type { PlatformProject } from "@/features/admin/queries";
@@ -31,6 +33,12 @@ interface Props {
   owners: OwnerOption[];
   canManage: boolean;
   canBreakGlass: boolean;
+  nextCursor: string | null;
+  /** Lädt die nächste Seite ab einem Cursor (`loadMoreProjects`,
+   * `features/admin/actions.ts`). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: PlatformProject[]; nextCursor: string | null }>;
 }
 
 /**
@@ -53,6 +61,8 @@ export function PlatformProjects({
   owners,
   canManage,
   canBreakGlass,
+  nextCursor,
+  loadMore,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -60,6 +70,12 @@ export function PlatformProjects({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: projects,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   const run = (action: () => Promise<{ ok: true } | { error: string }>) =>
     startTransition(async () => {
@@ -247,7 +263,7 @@ export function PlatformProjects({
       <PageHeader
         divider={false}
         title={t("nav.projects")}
-        count={projects.length}
+        count={items.length}
         description={t("platform.projectsDesc")}
       />
 
@@ -260,10 +276,11 @@ export function PlatformProjects({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.projects")}
           columns={columns}
-          rows={sortRows(projects)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.id}
           empty={
@@ -271,6 +288,9 @@ export function PlatformProjects({
               icon={<Icon icon="lucide:folders" width={32} />}
               title={t("platform.projectsEmpty")}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

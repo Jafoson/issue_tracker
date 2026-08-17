@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ACTIVITY_OVERVIEW_LIMIT } from "@/features/audit/constants";
 import { getProjectActivity } from "@/features/audit/queries";
 import { ProjectDashboard } from "@/features/dashboard/components/ProjectDashboard/ProjectDashboard";
 import {
@@ -65,7 +66,10 @@ export default async function ProjectDashboardPage({
 
   // Nur ein Ausschnitt für die Karte in der Übersicht — die volle Liste steht
   // unter den Einstellungen (`.../settings/activity`).
-  const activity = await getProjectActivity(project.id, 8);
+  const activity = await getProjectActivity(
+    project.id,
+    ACTIVITY_OVERVIEW_LIMIT,
+  );
 
   return (
     <ProjectDashboard

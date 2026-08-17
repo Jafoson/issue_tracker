@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteProject } from "@/features/projects/actions";
 import { CreateProjectModal } from "@/features/projects/components/CreateProjectModal/CreateProjectModal";
@@ -24,8 +26,19 @@ import { projectPath } from "@/lib/nav";
 import { EditProjectModal } from "./components/EditProjectModal";
 import styles from "./workspaceProjects.module.scss";
 
+type LoadMoreProjects = (
+  cursor: string,
+) => Promise<{ items: WorkspaceProjectRow[]; nextCursor: string | null }>;
+
 interface Props extends WorkspaceProjectsView {
   workspaceId: string;
+  /** Lädt die nächste Seite der einen Liste (ohne `seesAllProjects`),
+   * `loadMoreWorkspaceProjects` in `features/workspaces/actions.ts`. */
+  loadMore: LoadMoreProjects;
+  /** Lädt die nächste Seite der offenen Projekte (bei `seesAllProjects`). */
+  loadMorePublic: LoadMoreProjects;
+  /** Lädt die nächste Seite der privaten Projekte (bei `seesAllProjects`). */
+  loadMorePrivate: LoadMoreProjects;
 }
 
 /**
@@ -54,9 +67,17 @@ interface Props extends WorkspaceProjectsView {
  */
 export function WorkspaceProjects({
   rows,
+  publicRows,
+  privateRows,
   canCreate,
   seesAllProjects,
   workspaceId,
+  nextCursor,
+  publicNextCursor,
+  privateNextCursor,
+  loadMore,
+  loadMorePublic,
+  loadMorePrivate,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -64,6 +85,24 @@ export function WorkspaceProjects({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  // Immer alle drei — welche davon etwas anzeigt, entscheidet erst das Rendern
+  // weiter unten (`seesAllProjects`). Hooks lassen sich nicht bedingt aufrufen.
+  const singleScroll = useInfiniteScroll({
+    initialItems: rows,
+    initialCursor: nextCursor,
+    loadMore,
+  });
+  const publicScroll = useInfiniteScroll({
+    initialItems: publicRows,
+    initialCursor: publicNextCursor,
+    loadMore: loadMorePublic,
+  });
+  const privateScroll = useInfiniteScroll({
+    initialItems: privateRows,
+    initialCursor: privateNextCursor,
+    loadMore: loadMorePrivate,
+  });
 
   const done = () => {
     setError("");
@@ -214,54 +253,28 @@ export function WorkspaceProjects({
     },
   ];
 
-  // Zwei Tabellen, zwei Sortierungen — wie bei den Labels: die Listen stehen
-  // nebeneinander und sollen sich einzeln ordnen lassen. Ungruppiert trägt die
-  // erste die ganze Liste, die zweite entfällt.
-  const openList = useTableSort(columns);
-  const privateList = useTableSort(columns);
-
-  // Offen zuerst: das ist der Normalfall eines Workspace und die längere Liste.
-  // Eine leere Hälfte fällt weg — eine Überschrift ohne Zeilen darunter
-  // behauptet eine Aufteilung, die es gerade nicht gibt.
-  const sections = seesAllProjects
-    ? [
-        {
-          id: "public",
-          heading: {
-            icon: "lucide:globe",
-            title: t("workspaceProjects.publicGroup"),
-            desc: t("workspaceProjects.publicDesc"),
-          },
-          rows: rows.filter((row) => row.visibility === "public"),
-          list: openList,
-        },
-        {
-          id: "private",
-          heading: {
-            icon: "lucide:lock",
-            title: t("workspaceProjects.privateGroup"),
-            desc: t("workspaceProjects.privateDesc"),
-          },
-          rows: rows.filter((row) => row.visibility === "private"),
-          list: privateList,
-        },
-      ].filter((section) => section.rows.length > 0)
-    : // Ohne Aufteilung bleibt es die eine Liste, die sie vorher war: keine
-      // Überschrift, kein Vorspann.
-      [{ id: "all", heading: null, rows, list: openList }];
+  // Drei Sortierungen für drei mögliche Tabellen — wie bei den Labels: die
+  // Listen stehen nebeneinander und sollen sich einzeln ordnen lassen.
+  const singleSort = useTableSort(columns);
+  const publicSort = useTableSort(columns);
+  const privateSort = useTableSort(columns);
 
   // Die Zeile führt ins Projekt — als Link, damit Tastatur, Mittelklick und
-  // „in neuem Tab öffnen" mitkommen. Beide Tabellen benutzen denselben.
+  // „in neuem Tab öffnen" mitkommen. Alle Tabellen benutzen denselben.
   const rowOverlay = (row: WorkspaceProjectRow) => (
     <Link href={projectPath(workspaceId, row.slug, "")} aria-label={row.name} />
   );
+
+  const totalCount = seesAllProjects
+    ? publicScroll.items.length + privateScroll.items.length
+    : singleScroll.items.length;
 
   return (
     <>
       <PageHeader
         divider={false}
         title={t("nav.projects")}
-        count={rows.length}
+        count={totalCount}
         description={t("workspaceProjects.subtitle")}
         actions={newButton}
       />
@@ -277,12 +290,12 @@ export function WorkspaceProjects({
         {/* Gibt es gar kein Projekt, bleibt eine Tabelle stehen — die leere
             Seite gehört ihr, und zwei Überschriften über nichts wären zwei zu
             viel. */}
-        {rows.length === 0 ? (
+        {totalCount === 0 ? (
           <Table
             variant="card"
             label={t("nav.projects")}
             columns={columns}
-            rows={rows}
+            rows={[]}
             getRowKey={(row) => row.id}
             empty={
               <EmptyState
@@ -293,40 +306,115 @@ export function WorkspaceProjects({
               />
             }
           />
-        ) : (
-          sections.map((section) => (
-            <section key={section.id} className={styles.group}>
-              {section.heading && (
-                <>
-                  {/* Das Schloss bzw. die Weltkugel steht dabei, weil „privat"
-                      ein Zustand ist und kein Titel. */}
-                  <h2 className={styles.groupTitle}>
-                    <Icon
-                      icon={section.heading.icon}
-                      width={15}
-                      className={styles.groupIcon}
-                      aria-hidden
-                    />
-                    {section.heading.title}
-                    <span className={styles.groupCount}>
-                      {section.rows.length}
-                    </span>
-                  </h2>
-                  <p className={styles.groupDesc}>{section.heading.desc}</p>
-                </>
-              )}
+        ) : seesAllProjects ? (
+          <>
+            {/* Offen zuerst: das ist der Normalfall eines Workspace und die
+                längere Liste. Eine leere Hälfte fällt weg — eine Überschrift
+                ohne Zeilen darunter behauptet eine Aufteilung, die es gerade
+                nicht gibt. */}
+            {publicScroll.items.length > 0 && (
+              <section className={styles.group}>
+                {/* Das Schloss bzw. die Weltkugel steht dabei, weil „privat"
+                    ein Zustand ist und kein Titel. */}
+                <h2 className={styles.groupTitle}>
+                  <Icon
+                    icon="lucide:globe"
+                    width={15}
+                    className={styles.groupIcon}
+                    aria-hidden
+                  />
+                  {t("workspaceProjects.publicGroup")}
+                  <span className={styles.groupCount}>
+                    {publicScroll.items.length}
+                  </span>
+                </h2>
+                <p className={styles.groupDesc}>
+                  {t("workspaceProjects.publicDesc")}
+                </p>
 
-              <Table
-                variant="card"
-                label={section.heading?.title ?? t("nav.projects")}
-                columns={columns}
-                rows={section.list.sortRows(section.rows)}
-                sort={section.list.sort}
-                getRowKey={(row) => row.id}
-                rowOverlay={rowOverlay}
-              />
-            </section>
-          ))
+                <Table
+                  fill
+                  variant="card"
+                  label={t("workspaceProjects.publicGroup")}
+                  columns={columns}
+                  rows={publicSort.sortRows(publicScroll.items)}
+                  sort={publicSort.sort}
+                  getRowKey={(row) => row.id}
+                  rowOverlay={rowOverlay}
+                  footer={
+                    publicScroll.cursor && (
+                      <LoadMoreSentinel
+                        ref={publicScroll.sentinelRef}
+                        loading={publicScroll.loading}
+                      />
+                    )
+                  }
+                />
+              </section>
+            )}
+
+            {privateScroll.items.length > 0 && (
+              <section className={styles.group}>
+                <h2 className={styles.groupTitle}>
+                  <Icon
+                    icon="lucide:lock"
+                    width={15}
+                    className={styles.groupIcon}
+                    aria-hidden
+                  />
+                  {t("workspaceProjects.privateGroup")}
+                  <span className={styles.groupCount}>
+                    {privateScroll.items.length}
+                  </span>
+                </h2>
+                <p className={styles.groupDesc}>
+                  {t("workspaceProjects.privateDesc")}
+                </p>
+
+                <Table
+                  fill
+                  variant="card"
+                  label={t("workspaceProjects.privateGroup")}
+                  columns={columns}
+                  rows={privateSort.sortRows(privateScroll.items)}
+                  sort={privateSort.sort}
+                  getRowKey={(row) => row.id}
+                  rowOverlay={rowOverlay}
+                  footer={
+                    privateScroll.cursor && (
+                      <LoadMoreSentinel
+                        ref={privateScroll.sentinelRef}
+                        loading={privateScroll.loading}
+                      />
+                    )
+                  }
+                />
+              </section>
+            )}
+          </>
+        ) : (
+          // Ohne Aufteilung bleibt es die eine Liste, die sie vorher war: keine
+          // Überschrift, kein Vorspann.
+          <section className={styles.group}>
+            <Table
+              fill
+              variant="card"
+              label={t("nav.projects")}
+              columns={columns}
+              rows={singleSort.sortRows(singleScroll.items)}
+              sort={singleSort.sort}
+              getRowKey={(row) => row.id}
+              rowOverlay={rowOverlay}
+              footer={
+                singleScroll.cursor && (
+                  <LoadMoreSentinel
+                    ref={singleScroll.sentinelRef}
+                    loading={singleScroll.loading}
+                  />
+                )
+              }
+            />
+          </section>
         )}
       </div>
     </>

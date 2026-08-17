@@ -78,7 +78,8 @@
     "reorderCancelled": "Verschieben abgebrochen. {name} bleibt, wo es war.",
     "reorderDropped": "{name} abgelegt: Position {position} von {total} in {group}.",
     "reorderGrabbed": "{name} aufgenommen. Mit den Pfeiltasten verschieben, mit Leertaste ablegen, mit Escape abbrechen.",
-    "reorderMoved": "Position {position} von {total} in {group}."
+    "reorderMoved": "Position {position} von {total} in {group}.",
+    "loadingMore": "Weitere Einträge werden geladen …"
   },
   "placeholders": {
     "search": "Suchen…",

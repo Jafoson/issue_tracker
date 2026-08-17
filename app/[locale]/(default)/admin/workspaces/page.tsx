@@ -1,3 +1,4 @@
+import { loadMoreWorkspaces } from "@/features/admin/actions";
 import { PlatformWorkspaces } from "@/features/admin/components/PlatformWorkspaces/PlatformWorkspaces";
 import { getAllWorkspaces } from "@/features/admin/queries";
 import { getAccess, PLATFORM } from "@/lib/permissions";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
  * trotzdem dort noch einmal (`features/admin/actions.ts`).
  */
 export default async function AdminWorkspacesPage() {
-  const [workspaces, access] = await Promise.all([
+  const [{ rows: workspaces, nextCursor }, access] = await Promise.all([
     getAllWorkspaces(),
     getAccess(PLATFORM),
   ]);
@@ -23,6 +24,8 @@ export default async function AdminWorkspacesPage() {
       workspaces={workspaces}
       canSuspend={access.has("workspace.suspend")}
       canDelete={access.has("workspace.delete")}
+      nextCursor={nextCursor}
+      loadMore={loadMoreWorkspaces}
     />
   );
 }

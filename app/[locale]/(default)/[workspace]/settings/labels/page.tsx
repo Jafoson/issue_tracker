@@ -1,4 +1,8 @@
 import { notFound } from "next/navigation";
+import {
+  loadMoreWorkspaceLabels,
+  loadMoreWorkspaceProjectLabels,
+} from "@/features/workspaces/actions";
 import { WorkspaceLabels } from "@/features/workspaces/components/WorkspaceLabels/WorkspaceLabels";
 import { getWorkspaceLabelsView } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -23,5 +27,15 @@ export default async function WorkspaceLabelsPage({
   const view = await getWorkspaceLabelsView();
   if (!view) notFound();
 
-  return <WorkspaceLabels {...view} workspaceId={workspace} />;
+  return (
+    <WorkspaceLabels
+      {...view}
+      workspaceId={workspace}
+      loadMoreOwn={loadMoreWorkspaceLabels.bind(null, workspace)}
+      loadMoreFromProjects={loadMoreWorkspaceProjectLabels.bind(
+        null,
+        workspace,
+      )}
+    />
+  );
 }

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { loadMoreWorkspaceTeams } from "@/features/workspaces/actions";
 import { WorkspaceTeams } from "@/features/workspaces/components/WorkspaceTeams/WorkspaceTeams";
 import { getWorkspaceTeamsView } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -22,5 +23,11 @@ export default async function TeamsPage({
   const view = await getWorkspaceTeamsView();
   if (!view) notFound();
 
-  return <WorkspaceTeams {...view} workspaceId={workspace} />;
+  return (
+    <WorkspaceTeams
+      {...view}
+      workspaceId={workspace}
+      loadMore={loadMoreWorkspaceTeams.bind(null, workspace)}
+    />
+  );
 }

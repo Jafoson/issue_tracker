@@ -1,5 +1,4 @@
-/* Die Karte darunter hat ihre eigene Höhe — gescrollt wird die Seite, nicht
-   die Tabelle. Sonst klebte der Rahmen am unteren Bildrand fest. */
+/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
 .content {
   /* Eine Mitgliederzeile trägt zwei Textzeilen neben dem Avatar. Sie bekommt
      deutlich mehr Luft als die einzeilige Vorgabe der Tabelle — die Liste ist
@@ -9,8 +8,10 @@
 
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   padding: 12px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Auslöser des Rollen-Menüs: der Pfeil steht neben der Rolle, nicht in ihr —

@@ -5,7 +5,9 @@ import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { NewProjectButton } from "@/features/projects/components/NewProjectButton/NewProjectButton";
 import type { ProjectOverviewRow } from "@/features/projects/queries";
@@ -18,6 +20,12 @@ interface Props {
   rows: ProjectOverviewRow[];
   canCreate: boolean;
   workspaceId: string;
+  nextCursor: string | null;
+  /** Lädt die nächste Seite ab einem Cursor (`loadMoreProjectsOverview`,
+   * `features/projects/actions.ts`, an `workspaceId` gebunden). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: ProjectOverviewRow[]; nextCursor: string | null }>;
 }
 
 /**
@@ -33,8 +41,20 @@ interface Props {
  * `features/workspaces/components/WorkspaceProjects` — dort stehen Stift und
  * Papierkorb, dort auch die Zahlen. Die Zeile hier führt einfach ins Projekt.
  */
-export function ProjectOverview({ rows, canCreate, workspaceId }: Props) {
+export function ProjectOverview({
+  rows,
+  canCreate,
+  workspaceId,
+  nextCursor,
+  loadMore,
+}: Props) {
   const t = useTranslations();
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: rows,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   const newButton = canCreate && <NewProjectButton workspaceId={workspaceId} />;
 
@@ -110,17 +130,18 @@ export function ProjectOverview({ rows, canCreate, workspaceId }: Props) {
       <PageHeader
         divider={false}
         title={t("nav.projects")}
-        count={rows.length}
+        count={items.length}
         description={t("projects.subtitle")}
         actions={newButton}
       />
 
       <div className={styles.content}>
         <Table
+          fill
           variant="card"
           label={t("nav.projects")}
           columns={columns}
-          rows={sortRows(rows)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.id}
           // Die Zeile führt ins Projekt — als Link, damit Tastatur, Mittelklick
@@ -138,6 +159,9 @@ export function ProjectOverview({ rows, canCreate, workspaceId }: Props) {
               description={t("workspaceProjects.emptyDesc")}
               action={newButton}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

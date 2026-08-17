@@ -28,6 +28,8 @@ import type {
 } from "@/features/workspaces/types";
 import { getCurrentWorkspaceId } from "@/lib/current-workspace";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
+import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import {
   accessFor,
   currentUserCanEnterWorkspace,
@@ -255,83 +257,147 @@ export const getWorkspaceSettingsView = cache(
  * nicht alle ändern. Die Leitung des Workspace greift über `project.admin.all`
  * ohnehin überall durch — auch das entscheidet der Resolver, nicht diese Liste.
  */
+const workspaceProjectSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  prefix: true,
+  color: true,
+  desc: true,
+  visibility: true,
+  _count: { select: { issues: true, members: true } },
+  // Nur die ersten vier: mehr zeigt der Avatar-Stapel ohnehin nicht, und die
+  // Gesamtzahl steht daneben (`_count.members`).
+  members: {
+    select: {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          color: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: [{ user: { firstName: "asc" } }, { user: { lastName: "asc" } }],
+    take: 4,
+  },
+} satisfies Prisma.ProjectSelect;
+
+async function toWorkspaceProjectRows(
+  projects: Prisma.ProjectGetPayload<{
+    select: typeof workspaceProjectSelect;
+  }>[],
+  userId: string | null,
+): Promise<WorkspaceProjectRow[]> {
+  return Promise.all(
+    projects.map(async (project): Promise<WorkspaceProjectRow> => {
+      const access = await accessFor(userId, { projectId: project.id });
+      return {
+        id: project.id,
+        name: project.name,
+        slug: project.slug,
+        prefix: project.prefix,
+        color: project.color,
+        desc: project.desc,
+        visibility: project.visibility as ProjectVisibility,
+        issueCount: project._count.issues,
+        memberCount: project._count.members,
+        members: project.members.map((m) => ({
+          ...m.user,
+          image: m.user.image ?? undefined,
+        })),
+        canUpdate: access.has("project.update"),
+        canDelete: access.has("project.delete"),
+      };
+    }),
+  );
+}
+
 export const getWorkspaceProjectsView = cache(
-  async (): Promise<WorkspaceProjectsView | null> => {
+  async (
+    cursor?: string,
+    publicCursor?: string,
+    privateCursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<WorkspaceProjectsView | null> => {
     const workspaceId = requireWorkspaceId();
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
     const userId = await currentUserId();
     const visible = await visibleProjectIds(workspaceId);
+    const access = await accessFor(userId, { workspaceId });
+    // Dieselben Generalschlüssel, die `accessibleProjectIds` alle Projekte
+    // aufschließen — nur hier im Workspace-Scope gefragt, wo Support ohnehin
+    // jedes Recht trägt. Wer sie hat, darf die Liste nach Sichtbarkeit trennen.
+    const seesAllProjects =
+      access.has("project.view.all") || access.has("project.admin.all");
+    const canCreate = access.has("project.create");
+
+    if (seesAllProjects) {
+      const [publicProjects, privateProjects] = await Promise.all([
+        db.project.findMany({
+          where: {
+            workspaceId,
+            id: { in: [...visible] },
+            visibility: "public",
+          },
+          select: workspaceProjectSelect,
+          orderBy: { name: "asc" },
+          take: limit,
+          ...(publicCursor ? { cursor: { id: publicCursor }, skip: 1 } : {}),
+        }),
+        db.project.findMany({
+          where: {
+            workspaceId,
+            id: { in: [...visible] },
+            visibility: "private",
+          },
+          select: workspaceProjectSelect,
+          orderBy: { name: "asc" },
+          take: limit,
+          ...(privateCursor ? { cursor: { id: privateCursor }, skip: 1 } : {}),
+        }),
+      ]);
+
+      return {
+        rows: [],
+        publicRows: await toWorkspaceProjectRows(publicProjects, userId),
+        privateRows: await toWorkspaceProjectRows(privateProjects, userId),
+        canCreate,
+        seesAllProjects,
+        nextCursor: null,
+        publicNextCursor:
+          publicProjects.length === limit
+            ? publicProjects[publicProjects.length - 1].id
+            : null,
+        privateNextCursor:
+          privateProjects.length === limit
+            ? privateProjects[privateProjects.length - 1].id
+            : null,
+      };
+    }
 
     const projects = await db.project.findMany({
       where: { workspaceId, id: { in: [...visible] } },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        prefix: true,
-        color: true,
-        desc: true,
-        visibility: true,
-        _count: { select: { issues: true, members: true } },
-        // Nur die ersten vier: mehr zeigt der Avatar-Stapel ohnehin nicht, und
-        // die Gesamtzahl steht daneben (`_count.members`).
-        members: {
-          select: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                color: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: [
-            { user: { firstName: "asc" } },
-            { user: { lastName: "asc" } },
-          ],
-          take: 4,
-        },
-      },
+      select: workspaceProjectSelect,
       orderBy: { name: "asc" },
+      take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
-    const rows: WorkspaceProjectRow[] = await Promise.all(
-      projects.map(async (project): Promise<WorkspaceProjectRow> => {
-        const access = await accessFor(userId, { projectId: project.id });
-        return {
-          id: project.id,
-          name: project.name,
-          slug: project.slug,
-          prefix: project.prefix,
-          color: project.color,
-          desc: project.desc,
-          visibility: project.visibility as ProjectVisibility,
-          issueCount: project._count.issues,
-          memberCount: project._count.members,
-          members: project.members.map((m) => ({
-            ...m.user,
-            image: m.user.image ?? undefined,
-          })),
-          canUpdate: access.has("project.update"),
-          canDelete: access.has("project.delete"),
-        };
-      }),
-    );
-
-    const access = await accessFor(userId, { workspaceId });
     return {
-      rows,
-      canCreate: access.has("project.create"),
-      // Dieselben Generalschlüssel, die `accessibleProjectIds` alle Projekte
-      // aufschließen — nur hier im Workspace-Scope gefragt, wo Support ohnehin
-      // jedes Recht trägt. Wer sie hat, hat oben die vollständige Liste bekommen
-      // und darf sie deshalb nach Sichtbarkeit trennen.
-      seesAllProjects:
-        access.has("project.view.all") || access.has("project.admin.all"),
+      rows: await toWorkspaceProjectRows(projects, userId),
+      publicRows: [],
+      privateRows: [],
+      canCreate,
+      seesAllProjects,
+      nextCursor:
+        projects.length === limit ? projects[projects.length - 1].id : null,
+      publicNextCursor: null,
+      privateNextCursor: null,
     };
   },
 );
@@ -345,21 +411,38 @@ export const getWorkspaceProjectsView = cache(
  * ein Projekt-Label nicht (`features/issues/actions.ts`, `labelScope`).
  */
 export const getWorkspaceLabelsView = cache(
-  async (): Promise<WorkspaceLabelsView | null> => {
+  async (
+    ownCursor?: string,
+    fromProjectsCursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<WorkspaceLabelsView | null> => {
     const workspaceId = requireWorkspaceId();
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
-    const [labels, tagged, hidden] = await Promise.all([
+    const labelSelect = {
+      id: true,
+      name: true,
+      slug: true,
+      color: true,
+      project: { select: { name: true, slug: true } },
+    } as const;
+
+    const [ownLabels, projectLabels, tagged, hidden] = await Promise.all([
       db.label.findMany({
-        where: { workspaceId },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          color: true,
-          project: { select: { name: true, slug: true } },
-        },
+        where: { workspaceId, projectId: null },
+        select: labelSelect,
         orderBy: { name: "asc" },
+        take: limit,
+        ...(ownCursor ? { cursor: { id: ownCursor }, skip: 1 } : {}),
+      }),
+      db.label.findMany({
+        where: { workspaceId, projectId: { not: null } },
+        select: labelSelect,
+        orderBy: { name: "asc" },
+        take: limit,
+        ...(fromProjectsCursor
+          ? { cursor: { id: fromProjectsCursor }, skip: 1 }
+          : {}),
       }),
       // `Issue.labels` ist ein ID-Array ohne Fremdschlüssel — zählen lässt es
       // sich nur, indem man die Arrays des Workspace einmal durchgeht.
@@ -380,7 +463,7 @@ export const getWorkspaceLabelsView = cache(
     }
     const hiddenIn = new Map(hidden.map((h) => [h.labelId, h._count.labelId]));
 
-    const toRow = (l: (typeof labels)[number]): WorkspaceLabelRow => ({
+    const toRow = (l: (typeof ownLabels)[number]): WorkspaceLabelRow => ({
       id: l.id,
       name: l.name,
       slug: l.slug,
@@ -395,11 +478,17 @@ export const getWorkspaceLabelsView = cache(
     const access = await accessFor(await currentUserId(), { workspaceId });
 
     return {
-      own: labels.filter((l) => !l.project).map(toRow),
-      fromProjects: labels.filter((l) => l.project).map(toRow),
+      own: ownLabels.map(toRow),
+      fromProjects: projectLabels.map(toRow),
       canCreate: access.has("label.create"),
       canUpdate: access.has("label.update"),
       canDelete: access.has("label.delete"),
+      ownNextCursor:
+        ownLabels.length === limit ? ownLabels[ownLabels.length - 1].id : null,
+      fromProjectsNextCursor:
+        projectLabels.length === limit
+          ? projectLabels[projectLabels.length - 1].id
+          : null,
     };
   },
 );
@@ -415,7 +504,10 @@ export const getWorkspaceLabelsView = cache(
  * Rechte entscheiden nur über das Ändern.
  */
 export const getWorkspaceTeamsView = cache(
-  async (): Promise<WorkspaceTeamsView | null> => {
+  async (
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<WorkspaceTeamsView | null> => {
     const workspaceId = requireWorkspaceId();
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
@@ -446,6 +538,8 @@ export const getWorkspaceTeamsView = cache(
             },
           },
           orderBy: { name: "asc" },
+          take: limit,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         }),
         getMembers(workspaceId),
         db.project.findMany({
@@ -531,6 +625,7 @@ export const getWorkspaceTeamsView = cache(
       canDelete: access.has("team.delete"),
       canManageMembers: access.has("team.member.manage"),
       canManageProjects: access.has("team.project.manage"),
+      nextCursor: teams.length === limit ? teams[teams.length - 1].id : null,
     };
   },
 );
@@ -545,7 +640,10 @@ export const getWorkspaceTeamsView = cache(
  * über `tenant.access`), käme sonst zu einer Auswahl, die jede Action ablehnt.
  */
 export const getWorkspaceMembersView = cache(
-  async (): Promise<WorkspaceMembersView | null> => {
+  async (
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<WorkspaceMembersView | null> => {
     const workspaceId = requireWorkspaceId();
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
 
@@ -564,6 +662,13 @@ export const getWorkspaceMembersView = cache(
           { user: { firstName: "asc" } },
           { user: { lastName: "asc" } },
         ],
+        take: limit,
+        ...(cursor
+          ? {
+              cursor: { workspaceId_userId: { workspaceId, userId: cursor } },
+              skip: 1,
+            }
+          : {}),
       }),
       db.team.findMany({
         where: { workspaceId },
@@ -628,6 +733,14 @@ export const getWorkspaceMembersView = cache(
         ? roles.filter((r) => r.id !== OWNER_ROLE_KEY && r.rank <= actorRank)
         : [];
 
-    return { rows, assignableRoles, canInvite, canSetRole, canRemove };
+    return {
+      rows,
+      assignableRoles,
+      canInvite,
+      canSetRole,
+      canRemove,
+      nextCursor:
+        rowsRaw.length === limit ? rowsRaw[rowsRaw.length - 1].userId : null,
+    };
   },
 );

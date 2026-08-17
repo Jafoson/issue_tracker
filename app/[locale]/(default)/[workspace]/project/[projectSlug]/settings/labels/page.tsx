@@ -1,4 +1,8 @@
 import { notFound } from "next/navigation";
+import {
+  loadMoreProjectInheritedLabels,
+  loadMoreProjectLabels,
+} from "@/features/projects/actions";
 import { ProjectLabels } from "@/features/projects/components/ProjectLabels/ProjectLabels";
 import { getProjectLabelsView } from "@/features/projects/queries";
 import { getWorkspaceProjects } from "@/features/workspaces/queries";
@@ -34,6 +38,8 @@ export default async function ProjectLabelsPage({
       projectName={project.name}
       workspaceId={workspace}
       {...view}
+      loadMoreOwn={loadMoreProjectLabels.bind(null, project.id)}
+      loadMoreInherited={loadMoreProjectInheritedLabels.bind(null, project.id)}
     />
   );
 }

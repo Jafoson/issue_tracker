@@ -10,7 +10,9 @@ import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteTeam } from "@/features/workspaces/actions";
 import type {
@@ -24,6 +26,11 @@ import styles from "./workspaceTeams.module.scss";
 
 interface Props extends WorkspaceTeamsView {
   workspaceId: string;
+  /** Lädt die nächste Seite ab einem Cursor (`loadMoreWorkspaceTeams`,
+   * `features/workspaces/actions.ts`, an `workspaceId` gebunden). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: WorkspaceTeamRow[]; nextCursor: string | null }>;
 }
 
 /**
@@ -45,6 +52,8 @@ export function WorkspaceTeams({
   canManageMembers,
   canManageProjects,
   workspaceId,
+  nextCursor,
+  loadMore,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -52,6 +61,12 @@ export function WorkspaceTeams({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: rows,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   // Anlegen und Ändern führen durch denselben Dialog: es sind dieselben Felder,
   // und ein zweiter Dialog wäre eine zweite Stelle, die man pflegen muss.
@@ -240,7 +255,7 @@ export function WorkspaceTeams({
       <PageHeader
         divider={false}
         title={t("nav.teams")}
-        count={rows.length}
+        count={items.length}
         description={t("workspaceTeams.subtitle")}
         actions={newButton}
       />
@@ -254,10 +269,11 @@ export function WorkspaceTeams({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.teams")}
           columns={columns}
-          rows={sortRows(rows)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.id}
           empty={
@@ -267,6 +283,9 @@ export function WorkspaceTeams({
               description={t("workspaceTeams.emptyDesc")}
               action={newButton}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

@@ -1,4 +1,9 @@
 import { notFound } from "next/navigation";
+import {
+  loadMorePrivateWorkspaceProjects,
+  loadMorePublicWorkspaceProjects,
+  loadMoreWorkspaceProjects,
+} from "@/features/workspaces/actions";
 import { WorkspaceProjects } from "@/features/workspaces/components/WorkspaceProjects/WorkspaceProjects";
 import { getWorkspaceProjectsView } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -23,5 +28,13 @@ export default async function WorkspaceProjectsPage({
   const view = await getWorkspaceProjectsView();
   if (!view) notFound();
 
-  return <WorkspaceProjects {...view} workspaceId={workspace} />;
+  return (
+    <WorkspaceProjects
+      {...view}
+      workspaceId={workspace}
+      loadMore={loadMoreWorkspaceProjects.bind(null, workspace)}
+      loadMorePublic={loadMorePublicWorkspaceProjects.bind(null, workspace)}
+      loadMorePrivate={loadMorePrivateWorkspaceProjects.bind(null, workspace)}
+    />
+  );
 }

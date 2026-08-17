@@ -9,7 +9,9 @@ import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteLabel } from "@/features/issues/actions";
 import { LabelModal } from "@/features/issues/components/LabelModal/LabelModal";
@@ -22,8 +24,18 @@ import { useModal } from "@/lib/context";
 import { projectSettingsPath } from "@/lib/nav";
 import styles from "./workspaceLabels.module.scss";
 
+type LoadMoreLabels = (
+  cursor: string,
+) => Promise<{ items: WorkspaceLabelRow[]; nextCursor: string | null }>;
+
 interface Props extends WorkspaceLabelsView {
   workspaceId: string;
+  /** Lädt die nächste Seite der eigenen Labels (`loadMoreWorkspaceLabels`,
+   * `features/workspaces/actions.ts`, an `workspaceId` gebunden). */
+  loadMoreOwn: LoadMoreLabels;
+  /** Spiegelbild von `loadMoreOwn`, für die geerbten Projekt-Labels
+   * (`loadMoreWorkspaceProjectLabels`). */
+  loadMoreFromProjects: LoadMoreLabels;
 }
 
 /**
@@ -44,6 +56,10 @@ export function WorkspaceLabels({
   canUpdate,
   canDelete,
   workspaceId,
+  ownNextCursor,
+  fromProjectsNextCursor,
+  loadMoreOwn,
+  loadMoreFromProjects,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -51,6 +67,17 @@ export function WorkspaceLabels({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const ownScroll = useInfiniteScroll({
+    initialItems: own,
+    initialCursor: ownNextCursor,
+    loadMore: loadMoreOwn,
+  });
+  const fromProjectsScroll = useInfiniteScroll({
+    initialItems: fromProjects,
+    initialCursor: fromProjectsNextCursor,
+    loadMore: loadMoreFromProjects,
+  });
 
   const openEditor = (label?: WorkspaceLabelRow) =>
     openModal(({ close }) => (
@@ -217,7 +244,7 @@ export function WorkspaceLabels({
       <PageHeader
         divider={false}
         title={t("nav.labels")}
-        count={own.length}
+        count={ownScroll.items.length}
         description={t("workspaceLabels.subtitle")}
         actions={newButton}
       />
@@ -231,10 +258,11 @@ export function WorkspaceLabels({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.labels")}
           columns={ownColumns}
-          rows={ownSort.sortRows(own)}
+          rows={ownSort.sortRows(ownScroll.items)}
           sort={ownSort.sort}
           getRowKey={(row) => row.id}
           empty={
@@ -245,9 +273,17 @@ export function WorkspaceLabels({
               action={newButton}
             />
           }
+          footer={
+            ownScroll.cursor && (
+              <LoadMoreSentinel
+                ref={ownScroll.sentinelRef}
+                loading={ownScroll.loading}
+              />
+            )
+          }
         />
 
-        {fromProjects.length > 0 && (
+        {fromProjectsScroll.items.length > 0 && (
           <section className={styles.group}>
             <h2 className={styles.groupTitle}>
               {t("workspaceLabels.fromProjectsTitle")}
@@ -257,10 +293,11 @@ export function WorkspaceLabels({
             </p>
 
             <Table
+              fill
               variant="card"
               label={t("workspaceLabels.fromProjectsTitle")}
               columns={projectColumns}
-              rows={projectSort.sortRows(fromProjects)}
+              rows={projectSort.sortRows(fromProjectsScroll.items)}
               sort={projectSort.sort}
               getRowKey={(row) => row.id}
               // Geändert wird ein Projekt-Label dort, wo es hingehört — die
@@ -276,6 +313,14 @@ export function WorkspaceLabels({
                     aria-label={row.name}
                   />
                 ) : null
+              }
+              footer={
+                fromProjectsScroll.cursor && (
+                  <LoadMoreSentinel
+                    ref={fromProjectsScroll.sentinelRef}
+                    loading={fromProjectsScroll.loading}
+                  />
+                )
               }
             />
           </section>

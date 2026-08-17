@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { loadMoreWorkspaceActivity } from "@/features/audit/actions";
 import { AuditLog } from "@/features/audit/components/AuditLog/AuditLog";
 import { getWorkspaceActivity } from "@/features/audit/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -25,11 +26,13 @@ export default async function WorkspaceActivityPage({
   ]);
   if (!access.has("audit.view")) notFound();
 
-  const { entries } = await getWorkspaceActivity(workspace);
+  const { entries, nextCursor } = await getWorkspaceActivity(workspace);
 
   return (
     <AuditLog
       entries={entries}
+      nextCursor={nextCursor}
+      loadMore={loadMoreWorkspaceActivity.bind(null, workspace)}
       title={t("nav.activity")}
       description={t("audit.desc")}
       workspaceSlug={workspace}

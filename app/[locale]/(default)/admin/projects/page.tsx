@@ -1,3 +1,4 @@
+import { loadMoreProjects } from "@/features/admin/actions";
 import {
   type OwnerOption,
   PlatformProjects,
@@ -20,9 +21,11 @@ export default async function AdminProjectsPage() {
   const access = await getAccess(PLATFORM);
   const canManage = access.has("project.metadata.manage");
 
-  const [projects, users] = await Promise.all([
+  const [{ rows: projects, nextCursor }, { rows: users }] = await Promise.all([
     getAllProjects(),
-    canManage && access.has("user.manage") ? getAllUsers() : [],
+    canManage && access.has("user.manage")
+      ? getAllUsers()
+      : { rows: [], nextCursor: null },
   ]);
 
   const owners: OwnerOption[] = users
@@ -39,6 +42,8 @@ export default async function AdminProjectsPage() {
       owners={owners}
       canManage={canManage}
       canBreakGlass={access.has("project.breakglass")}
+      nextCursor={nextCursor}
+      loadMore={loadMoreProjects}
     />
   );
 }

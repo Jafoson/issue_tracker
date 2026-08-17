@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { loadMoreUsers } from "@/features/admin/actions";
 import { PlatformUsers } from "@/features/admin/components/PlatformUsers/PlatformUsers";
 import { getAllUsers, getPlatformRoles } from "@/features/admin/queries";
+import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import { currentUserId } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +20,18 @@ export default async function AdminUsersPage() {
   const userId = await currentUserId();
   if (!userId) notFound();
 
-  const [users, roles] = await Promise.all([getAllUsers(), getPlatformRoles()]);
+  const [{ rows: users, nextCursor }, roles] = await Promise.all([
+    getAllUsers(undefined, TABLE_PAGE_SIZE),
+    getPlatformRoles(),
+  ]);
 
-  return <PlatformUsers users={users} roles={roles} currentUserId={userId} />;
+  return (
+    <PlatformUsers
+      users={users}
+      roles={roles}
+      currentUserId={userId}
+      nextCursor={nextCursor}
+      loadMore={loadMoreUsers}
+    />
+  );
 }

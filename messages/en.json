@@ -78,7 +78,8 @@
     "reorderCancelled": "Move cancelled. {name} stays where it was.",
     "reorderDropped": "{name} dropped: position {position} of {total} in {group}.",
     "reorderGrabbed": "{name} grabbed. Use the arrow keys to move, space to drop, escape to cancel.",
-    "reorderMoved": "Position {position} of {total} in {group}."
+    "reorderMoved": "Position {position} of {total} in {group}.",
+    "loadingMore": "Loading more entries…"
   },
   "placeholders": {
     "search": "Search…",

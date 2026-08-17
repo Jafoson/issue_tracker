@@ -8,6 +8,7 @@ import type {
 } from "@/features/projects/types";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import {
   accessFor,
   assignmentCeiling,
@@ -41,6 +42,9 @@ export interface ProjectOverviewView {
   rows: ProjectOverviewRow[];
   /** `project.create` — ob der Knopf im Seitenkopf erscheint. */
   canCreate: boolean;
+  /** Id des letzten Projekts dieser Seite, für `loadMoreProjectsOverview` —
+   * `null`, wenn `rows` schon alles ist. */
+  nextCursor: string | null;
 }
 
 /**
@@ -55,7 +59,11 @@ export interface ProjectOverviewView {
  * Sichtbarkeitsregel schon beantwortet: was hier steht, darf man sehen.
  */
 export const getProjectsOverview = cache(
-  async (workspaceId: string): Promise<ProjectOverviewView> => {
+  async (
+    workspaceId: string,
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<ProjectOverviewView> => {
     const userId = await currentUserId();
     const access = await accessFor(userId, { workspaceId });
     const canCreate = access.has("project.create");
@@ -63,10 +71,12 @@ export const getProjectsOverview = cache(
     // Dieselbe Sichtbarkeitsregel wie überall — die Übersicht ist nur eine
     // andere Darstellung der Liste aus `getProjects`.
     const visible = await visibleProjectIds(workspaceId);
-    if (visible.size === 0) return { rows: [], canCreate };
+    if (visible.size === 0) return { rows: [], canCreate, nextCursor: null };
 
     const projects = await db.project.findMany({
       where: { workspaceId, id: { in: [...visible] } },
+      take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: {
         id: true,
         name: true,
@@ -118,7 +128,12 @@ export const getProjectsOverview = cache(
       };
     });
 
-    return { rows, canCreate };
+    return {
+      rows,
+      canCreate,
+      nextCursor:
+        projects.length === limit ? projects[projects.length - 1].id : null,
+    };
   },
 );
 
@@ -215,7 +230,11 @@ const memberRoleSelect = {
 } as const satisfies Prisma.RoleDefaultArgs;
 
 export const getProjectMembersView = cache(
-  async (projectId: string): Promise<ProjectMembersView | null> => {
+  async (
+    projectId: string,
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<ProjectMembersView | null> => {
     const project = await db.project.findUnique({
       where: { id: projectId },
       select: { workspaceId: true },
@@ -366,8 +385,16 @@ export const getProjectMembersView = cache(
       assignableRoles.at(-1)?.id ??
       "";
 
+    // Kein DB-Cursor: `rows` entsteht aus zwei vollständig gelesenen Quellen
+    // im Speicher (oben), nicht aus einer Abfrage mit eigenem `take`/`cursor`.
+    // Die Seite selbst bleibt trotzdem billig — bei „ein paar Dutzend
+    // Mitgliedern" kostet das erneute Zusammensetzen beim Nachladen nichts,
+    // was eine echte DB-Pagination hier rechtfertigen würde.
+    const offset = cursor ? Number.parseInt(cursor, 10) : 0;
+    const page = rows.slice(offset, offset + limit);
+
     return {
-      rows,
+      rows: page,
       candidates: canAdd ? candidates : [],
       assignableRoles,
       defaultRole,
@@ -375,6 +402,7 @@ export const getProjectMembersView = cache(
       canSetRole,
       canRemove,
       canInvite: canAdd,
+      nextCursor: offset + limit < rows.length ? String(offset + limit) : null,
     };
   },
 );
@@ -391,7 +419,12 @@ export const getProjectMembersView = cache(
  * Projekts auftauchen kann — anfassen lässt es sich nur dort, wo es hingehört.
  */
 export const getProjectLabelsView = cache(
-  async (projectId: string): Promise<ProjectLabelsView | null> => {
+  async (
+    projectId: string,
+    ownCursor?: string,
+    inheritedCursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<ProjectLabelsView | null> => {
     const project = await db.project.findUnique({
       where: { id: projectId },
       select: { workspaceId: true },
@@ -401,13 +434,20 @@ export const getProjectLabelsView = cache(
     const access = await accessFor(await currentUserId(), { projectId });
     if (!access.has("project.view")) return null;
 
-    const [labels, tagged, hidden] = await Promise.all([
+    const [ownLabels, inheritedLabels, tagged, hidden] = await Promise.all([
       db.label.findMany({
-        where: {
-          workspaceId: project.workspaceId,
-          OR: [{ projectId: null }, { projectId }],
-        },
+        where: { workspaceId: project.workspaceId, projectId },
         orderBy: { name: "asc" },
+        take: limit,
+        ...(ownCursor ? { cursor: { id: ownCursor }, skip: 1 } : {}),
+      }),
+      db.label.findMany({
+        where: { workspaceId: project.workspaceId, projectId: null },
+        orderBy: { name: "asc" },
+        take: limit,
+        ...(inheritedCursor
+          ? { cursor: { id: inheritedCursor }, skip: 1 }
+          : {}),
       }),
       // `Issue.labels` ist ein ID-Array ohne Fremdschlüssel — zählen lässt es
       // sich nur, indem man die Arrays dieses Projekts einmal durchgeht. Es
@@ -426,7 +466,7 @@ export const getProjectLabelsView = cache(
 
     const hiddenIds = new Set(hidden.map((h) => h.labelId));
 
-    const toRow = (l: (typeof labels)[number]): ProjectLabelRow => ({
+    const toRow = (l: (typeof ownLabels)[number]): ProjectLabelRow => ({
       id: l.id,
       name: l.name,
       slug: l.slug,
@@ -436,11 +476,17 @@ export const getProjectLabelsView = cache(
     });
 
     return {
-      own: labels.filter((l) => l.projectId).map(toRow),
-      inherited: labels.filter((l) => !l.projectId).map(toRow),
+      own: ownLabels.map(toRow),
+      inherited: inheritedLabels.map(toRow),
       canCreate: access.has("label.create"),
       canUpdate: access.has("label.update"),
       canDelete: access.has("label.delete"),
+      ownNextCursor:
+        ownLabels.length === limit ? ownLabels[ownLabels.length - 1].id : null,
+      inheritedNextCursor:
+        inheritedLabels.length === limit
+          ? inheritedLabels[inheritedLabels.length - 1].id
+          : null,
     };
   },
 );

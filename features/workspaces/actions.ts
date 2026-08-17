@@ -2,7 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
+import {
+  getWorkspaceLabelsView,
+  getWorkspaceMembersView,
+  getWorkspaceProjectsView,
+  getWorkspaceTeamsView,
+} from "@/features/workspaces/queries";
+import type {
+  WorkspaceLabelRow,
+  WorkspaceMemberRow,
+  WorkspaceProjectRow,
+  WorkspaceTeamRow,
+} from "@/features/workspaces/types";
 import { recordAudit } from "@/lib/audit";
+import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
 import {
@@ -963,4 +976,100 @@ export async function inviteWorkspaceMember(data: {
 
   revalidatePath("/", "layout");
   return { ok: true, inviteUrl, mailSent: isMailConfigured() };
+}
+
+/**
+ * Eine weitere Seite Mitglieder fürs Infinite Scroll in `WorkspaceMembers`.
+ *
+ * `setCurrentWorkspaceId` zuerst: der Request-Store (`lib/current-workspace`)
+ * ist request-scoped und wird sonst nur von der Route gesät — eine Server
+ * Function, die eine spätere Anfrage ist als das ursprüngliche Rendern der
+ * Seite, startet ohne ihn.
+ */
+export async function loadMoreWorkspaceMembers(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceMemberRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceMembersView(cursor);
+  return view
+    ? { items: view.rows, nextCursor: view.nextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Spiegelbild von `loadMoreWorkspaceMembers`, für `WorkspaceTeams`. */
+export async function loadMoreWorkspaceTeams(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceTeamRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceTeamsView(cursor);
+  return view
+    ? { items: view.rows, nextCursor: view.nextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Eine weitere Seite der eigenen Workspace-Labels fürs Infinite Scroll in
+ * `WorkspaceLabels`. */
+export async function loadMoreWorkspaceLabels(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceLabelRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceLabelsView(cursor);
+  return view
+    ? { items: view.own, nextCursor: view.ownNextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Spiegelbild von `loadMoreWorkspaceLabels`, für die geerbten Projekt-Labels. */
+export async function loadMoreWorkspaceProjectLabels(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceLabelRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceLabelsView(undefined, cursor);
+  return view
+    ? { items: view.fromProjects, nextCursor: view.fromProjectsNextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/**
+ * Eine weitere Seite fürs Infinite Scroll in `WorkspaceProjects` — für die
+ * eine Liste ohne `seesAllProjects`.
+ */
+export async function loadMoreWorkspaceProjects(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceProjectRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceProjectsView(cursor);
+  return view
+    ? { items: view.rows, nextCursor: view.nextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Spiegelbild von `loadMoreWorkspaceProjects`, für die offenen Projekte
+ * bei `seesAllProjects`. */
+export async function loadMorePublicWorkspaceProjects(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceProjectRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceProjectsView(undefined, cursor);
+  return view
+    ? { items: view.publicRows, nextCursor: view.publicNextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Spiegelbild von `loadMorePublicWorkspaceProjects`, für die privaten. */
+export async function loadMorePrivateWorkspaceProjects(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: WorkspaceProjectRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getWorkspaceProjectsView(undefined, undefined, cursor);
+  return view
+    ? { items: view.privateRows, nextCursor: view.privateNextCursor }
+    : { items: [], nextCursor: null };
 }

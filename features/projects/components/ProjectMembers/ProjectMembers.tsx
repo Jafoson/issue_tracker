@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import {
   addProjectMembers,
@@ -31,6 +33,11 @@ import styles from "./projectMembers.module.scss";
 interface ProjectMembersProps extends ProjectMembersView {
   projectId: string;
   projectName: string;
+  /** Lädt die nächste Seite ab einem Offset (`loadMoreProjectMembers`,
+   * `features/projects/actions.ts`, an `projectId` gebunden). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: ProjectMemberRow[]; nextCursor: string | null }>;
 }
 
 /**
@@ -50,12 +57,20 @@ export function ProjectMembers({
   canSetRole,
   canRemove,
   canInvite,
+  nextCursor,
+  loadMore,
 }: ProjectMembersProps) {
   const t = useTranslations();
   const router = useRouter();
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: rows,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   const run = (action: () => Promise<{ ok: true } | { error: string }>) =>
     startTransition(async () => {
@@ -272,7 +287,7 @@ export function ProjectMembers({
         divider={false}
         title={t("nav.members")}
         description={t("projectMembers.subtitle", {
-          count: rows.length,
+          count: items.length,
           project: projectName,
         })}
         actions={addButton}
@@ -287,10 +302,11 @@ export function ProjectMembers({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.members")}
           columns={columns}
-          rows={sortRows(rows)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => `${row.source}:${row.user.id}`}
           empty={
@@ -300,6 +316,9 @@ export function ProjectMembers({
               description={t("projectMembers.emptyDesc")}
               action={addButton}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

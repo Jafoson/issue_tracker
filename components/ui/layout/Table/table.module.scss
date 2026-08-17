@@ -154,6 +154,22 @@ tbody.group {
   }
 }
 
+/* Die Zeile für `footer` (`LoadMoreSentinel`) — anders als `.groupRow` nicht
+   klebend: sie steht am Ende der Liste und soll dort bleiben, nicht oben
+   hängen. */
+.footerGroup {
+  display: contents;
+}
+
+.footerRow {
+  grid-column: 1 / -1;
+  display: flex;
+}
+
+.footerCell {
+  display: contents;
+}
+
 .groupRow {
   grid-column: 1 / -1;
   position: sticky;

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { loadMoreWorkspaceMembers } from "@/features/workspaces/actions";
 import { WorkspaceMembers } from "@/features/workspaces/components/WorkspaceMembers/WorkspaceMembers";
 import { getWorkspaceMembersView } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -23,5 +24,11 @@ export default async function WorkspaceSettingsMembersPage({
   const view = await getWorkspaceMembersView();
   if (!view) notFound();
 
-  return <WorkspaceMembers {...view} workspaceId={workspace} />;
+  return (
+    <WorkspaceMembers
+      {...view}
+      workspaceId={workspace}
+      loadMore={loadMoreWorkspaceMembers.bind(null, workspace)}
+    />
+  );
 }

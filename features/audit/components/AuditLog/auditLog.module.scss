@@ -1,11 +1,11 @@
+/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`) — der Rest
+   bleibt stehen (Kopfzeile, Filter). */
 .content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   padding: 12px 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .filterSelect {

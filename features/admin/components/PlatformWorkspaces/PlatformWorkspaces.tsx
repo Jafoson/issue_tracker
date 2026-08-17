@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { setWorkspaceSuspended } from "@/features/admin/actions";
 import type { PlatformWorkspace } from "@/features/admin/queries";
@@ -22,6 +24,12 @@ interface Props {
   workspaces: PlatformWorkspace[];
   canSuspend: boolean;
   canDelete: boolean;
+  nextCursor: string | null;
+  /** Lädt die nächste Seite ab einem Cursor (`loadMoreWorkspaces`,
+   * `features/admin/actions.ts`). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: PlatformWorkspace[]; nextCursor: string | null }>;
 }
 
 /**
@@ -53,6 +61,8 @@ export function PlatformWorkspaces({
   workspaces,
   canSuspend,
   canDelete,
+  nextCursor,
+  loadMore,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -61,6 +71,12 @@ export function PlatformWorkspaces({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: workspaces,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   const run = (action: () => Promise<{ ok: true } | { error: string }>) =>
     startTransition(async () => {
@@ -236,7 +252,7 @@ export function PlatformWorkspaces({
       <PageHeader
         divider={false}
         title={t("nav.workspaces")}
-        count={workspaces.length}
+        count={items.length}
         description={t("platformWorkspaces.desc")}
       />
 
@@ -249,10 +265,11 @@ export function PlatformWorkspaces({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.workspaces")}
           columns={columns}
-          rows={sortRows(workspaces)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.id}
           empty={
@@ -260,6 +277,9 @@ export function PlatformWorkspaces({
               icon={<Icon icon="lucide:building-2" width={32} />}
               title={t("platformWorkspaces.empty")}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

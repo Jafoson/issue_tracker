@@ -1,11 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { loadMorePlatformActivity } from "@/features/admin/actions";
 import { AuditLog } from "@/features/audit/components/AuditLog/AuditLog";
 import type { AuditEntry } from "@/lib/audit/actions";
 
 interface Props {
   entries: AuditEntry[];
+  nextCursor: string | null;
 }
 
 /**
@@ -14,11 +16,13 @@ interface Props {
  * Dieselbe Anzeige tragen die Aktivitäts-Seiten von Projekt und Workspace unter
  * den Einstellungen, mit ihren eigenen Titeln.
  */
-export function PlatformAudit({ entries }: Props) {
+export function PlatformAudit({ entries, nextCursor }: Props) {
   const t = useTranslations();
   return (
     <AuditLog
       entries={entries}
+      nextCursor={nextCursor}
+      loadMore={loadMorePlatformActivity}
       title={t("nav.audit")}
       description={t("audit.desc")}
     />

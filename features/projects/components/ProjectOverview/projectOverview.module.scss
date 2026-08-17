@@ -1,12 +1,10 @@
-/* Dieselbe Aufteilung wie in den übrigen Listenseiten (Mitglieder, Teams): die
-   Seite scrollt, die Tabelle darin nicht. */
+/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
 .content {
   --table-row-height: 56px;
   --table-divider: var(--outline-variant);
 
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   padding: 12px 24px 32px;
   display: flex;
   flex-direction: column;

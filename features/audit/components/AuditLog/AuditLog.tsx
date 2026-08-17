@@ -8,7 +8,10 @@ import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
+import type { ActivityPage } from "@/features/audit/actions";
 import {
   PriorityIcon,
   StatusIcon,
@@ -37,6 +40,13 @@ interface Props {
   /** Um das Kürzel eines Issues zu verlinken (`TargetLabel`). Ohne sie — die
    * Plattform-Übersicht spannt über alle Workspaces — bleibt es reiner Text. */
   workspaceSlug?: string;
+  /** Id des letzten anfangs geladenen Eintrags — `null`, wenn `entries` schon
+   * alles ist. Steuert, ob überhaupt nachgeladen wird. */
+  nextCursor: string | null;
+  /** Lädt die nächste Seite ab einem Cursor — eine an Workspace bzw. Projekt
+   * gebundene Server Function (`loadMoreWorkspaceActivity`/
+   * `loadMoreProjectActivity` in `features/audit/actions.ts`). */
+  loadMore: (cursor: string) => Promise<ActivityPage>;
 }
 
 /**
@@ -347,18 +357,30 @@ export function AuditLog({
   title,
   description,
   workspaceSlug,
+  nextCursor,
+  loadMore,
 }: Props) {
   const t = useTranslations();
   const timeAgo = useTimeAgo();
   const [loudOnly, setLoudOnly] = useState(false);
   const [actionFilter, setActionFilter] = useState<string>("all");
 
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: entries,
+    initialCursor: nextCursor,
+    loadMore: (cursor) =>
+      loadMore(cursor).then((page) => ({
+        items: page.entries,
+        nextCursor: page.nextCursor,
+      })),
+  });
+
   const availableActions = useMemo(
-    () => [...new Set(entries.map((e) => e.action))],
-    [entries],
+    () => [...new Set(items.map((e) => e.action))],
+    [items],
   );
 
-  const rows = entries
+  const rows = items
     .filter((e) => !loudOnly || isLoud(e.action))
     .filter((e) => actionFilter === "all" || e.action === actionFilter);
 
@@ -498,6 +520,7 @@ export function AuditLog({
 
       <div className={styles.content}>
         <Table
+          fill
           variant="card"
           label={title}
           columns={columns}
@@ -509,6 +532,9 @@ export function AuditLog({
               title={t("audit.emptyTitle")}
               description={t("audit.emptyDesc")}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

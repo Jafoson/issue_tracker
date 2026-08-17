@@ -12,7 +12,9 @@ import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { removeMember, setMemberRole } from "@/features/workspaces/actions";
 import type {
@@ -27,6 +29,11 @@ import styles from "./workspaceMembers.module.scss";
 
 interface Props extends WorkspaceMembersView {
   workspaceId: string;
+  /** Lädt die nächste Seite ab einem Cursor (`loadMoreWorkspaceMembers`,
+   * `features/workspaces/actions.ts`, an `workspaceId` gebunden). */
+  loadMore: (
+    cursor: string,
+  ) => Promise<{ items: WorkspaceMemberRow[]; nextCursor: string | null }>;
 }
 
 /**
@@ -44,6 +51,8 @@ export function WorkspaceMembers({
   canSetRole,
   canRemove,
   workspaceId,
+  nextCursor,
+  loadMore,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -51,6 +60,12 @@ export function WorkspaceMembers({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const { items, cursor, loading, sentinelRef } = useInfiniteScroll({
+    initialItems: rows,
+    initialCursor: nextCursor,
+    loadMore,
+  });
 
   // `setMemberRole` und `removeMember` werfen, statt Fehler zurückzugeben —
   // sie hängen an Zeilenaktionen. Hier wird der Wurf abgefangen, damit die
@@ -240,7 +255,7 @@ export function WorkspaceMembers({
       <PageHeader
         divider={false}
         title={t("nav.members")}
-        count={rows.length}
+        count={items.length}
         description={t("workspaceMembers.subtitle")}
         actions={inviteButton}
       />
@@ -254,10 +269,11 @@ export function WorkspaceMembers({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.members")}
           columns={columns}
-          rows={sortRows(rows)}
+          rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.user.id}
           empty={
@@ -267,6 +283,9 @@ export function WorkspaceMembers({
               description={t("workspaceMembers.emptyDesc")}
               action={inviteButton}
             />
+          }
+          footer={
+            cursor && <LoadMoreSentinel ref={sentinelRef} loading={loading} />
           }
         />
       </div>

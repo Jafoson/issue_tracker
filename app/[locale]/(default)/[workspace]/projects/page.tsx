@@ -1,3 +1,4 @@
+import { loadMoreProjectsOverview } from "@/features/projects/actions";
 import { ProjectOverview } from "@/features/projects/components/ProjectOverview/ProjectOverview";
 import { getProjectsOverview } from "@/features/projects/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -20,13 +21,15 @@ export default async function ProjectsPage({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  const { rows, canCreate } = await getProjectsOverview(workspace);
+  const { rows, canCreate, nextCursor } = await getProjectsOverview(workspace);
 
   return (
     <ProjectOverview
       rows={rows}
       canCreate={canCreate}
       workspaceId={workspace}
+      nextCursor={nextCursor}
+      loadMore={loadMoreProjectsOverview.bind(null, workspace)}
     />
   );
 }

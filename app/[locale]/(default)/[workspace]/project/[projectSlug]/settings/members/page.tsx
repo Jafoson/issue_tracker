@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { loadMoreProjectMembers } from "@/features/projects/actions";
 import { ProjectMembers } from "@/features/projects/components/ProjectMembers/ProjectMembers";
 import { getProjectMembersView } from "@/features/projects/queries";
 import { getWorkspaceProjects } from "@/features/workspaces/queries";
@@ -36,6 +37,7 @@ export default async function ProjectSettingsMembersPage({
       projectId={project.id}
       projectName={project.name}
       {...view}
+      loadMore={loadMoreProjectMembers.bind(null, project.id)}
     />
   );
 }

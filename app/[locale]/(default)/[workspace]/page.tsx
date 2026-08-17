@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ACTIVITY_OVERVIEW_LIMIT } from "@/features/audit/constants";
 import { getWorkspaceActivity } from "@/features/audit/queries";
 import { WorkspaceDashboard } from "@/features/dashboard/components/WorkspaceDashboard/WorkspaceDashboard";
 import {
@@ -36,7 +37,10 @@ export default async function WorkspaceOverviewPage({
   const data = await getWorkspaceDashboard(workspace, range);
   if (!data) notFound();
 
-  const activity = await getWorkspaceActivity(workspace, 8);
+  const activity = await getWorkspaceActivity(
+    workspace,
+    ACTIVITY_OVERVIEW_LIMIT,
+  );
 
   return (
     <WorkspaceDashboard

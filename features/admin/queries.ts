@@ -1,5 +1,7 @@
 import { cache } from "react";
-import { type AuditAction, type AuditEntry, listAudit } from "@/lib/audit";
+import type { ActivityPage } from "@/features/audit/actions";
+import { ACTIVITY_PAGE_SIZE } from "@/features/audit/constants";
+import { type AuditAction, listAudit } from "@/lib/audit";
 import {
   type BucketUnit,
   bucketKey,
@@ -9,6 +11,7 @@ import {
 } from "@/lib/buckets";
 import { db } from "@/lib/db";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import { PLATFORM, requirePermission } from "@/lib/permissions";
 import { OWNER_ROLE_KEY } from "@/lib/rbac";
 
@@ -117,57 +120,74 @@ export const getCurrentUser = cache(
   },
 );
 
-export const getAllUsers = cache(async (): Promise<PlatformUser[]> => {
-  await requirePermission("user.manage", PLATFORM);
-  const rows = await db.user.findMany({
-    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      handle: true,
-      email: true,
-      color: true,
-      createdAt: true,
-      lastSeenAt: true,
-      deactivatedAt: true,
-      platformRole: platformRoleSelect,
-      // Nicht `passwordHash: true`. Prisma gäbe den Hash sonst bis in die
-      // Server Component, und von dort ist es ein Tippfehler bis in den Browser.
-      // Die Zählung beantwortet dieselbe Frage, ohne das Geheimnis anzufassen.
-      _count: { select: { workspaces: true } },
-      workspaces: { select: { pending: true } },
-    },
-  });
+/**
+ * Alle Konten, seitenweise. `limit` ungesetzt heißt unbegrenzt — so ruft es die
+ * Besitzer-Zuordnung in `AdminProjectsPage` auf, die jedes Konto zur Auswahl
+ * braucht, nicht nur die erste Seite. Die Benutzerverwaltung selbst
+ * (`AdminUsersPage`) setzt `limit` explizit für Infinite Scroll.
+ */
+export const getAllUsers = cache(
+  async (
+    cursor?: string,
+    limit?: number,
+  ): Promise<{ rows: PlatformUser[]; nextCursor: string | null }> => {
+    await requirePermission("user.manage", PLATFORM);
+    const rows = await db.user.findMany({
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+      ...(limit ? { take: limit } : {}),
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        handle: true,
+        email: true,
+        color: true,
+        createdAt: true,
+        lastSeenAt: true,
+        deactivatedAt: true,
+        platformRole: platformRoleSelect,
+        // Nicht `passwordHash: true`. Prisma gäbe den Hash sonst bis in die
+        // Server Component, und von dort ist es ein Tippfehler bis in den Browser.
+        // Die Zählung beantwortet dieselbe Frage, ohne das Geheimnis anzufassen.
+        _count: { select: { workspaces: true } },
+        workspaces: { select: { pending: true } },
+      },
+    });
 
-  // Getrennt geholt, weil `_count` keine Bedingung auf eine Spalte kennt und ein
-  // `null`-Vergleich in einer Auswahl nicht ausdrückbar ist.
-  const withPassword = new Set(
-    (
-      await db.user.findMany({
-        where: { passwordHash: { not: null } },
-        select: { id: true },
-      })
-    ).map((u) => u.id),
-  );
+    // Getrennt geholt, weil `_count` keine Bedingung auf eine Spalte kennt und
+    // ein `null`-Vergleich in einer Auswahl nicht ausdrückbar ist.
+    const withPassword = new Set(
+      (
+        await db.user.findMany({
+          where: { passwordHash: { not: null } },
+          select: { id: true },
+        })
+      ).map((u) => u.id),
+    );
 
-  return rows.map((u) => ({
-    id: u.id,
-    firstName: u.firstName,
-    lastName: u.lastName,
-    handle: u.handle,
-    email: u.email,
-    color: u.color,
-    platformRole: u.platformRole,
-    workspaceCount: u._count.workspaces,
-    createdAt: u.createdAt,
-    lastSeenAt: u.lastSeenAt,
-    deactivatedAt: u.deactivatedAt,
-    hasPassword: withPassword.has(u.id),
-    invitePending:
-      u.workspaces.length > 0 && u.workspaces.every((m) => m.pending),
-  }));
-});
+    return {
+      rows: rows.map((u) => ({
+        id: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        handle: u.handle,
+        email: u.email,
+        color: u.color,
+        platformRole: u.platformRole,
+        workspaceCount: u._count.workspaces,
+        createdAt: u.createdAt,
+        lastSeenAt: u.lastSeenAt,
+        deactivatedAt: u.deactivatedAt,
+        hasPassword: withPassword.has(u.id),
+        invitePending:
+          u.workspaces.length > 0 && u.workspaces.every((m) => m.pending),
+      })),
+      nextCursor:
+        limit && rows.length === limit ? rows[rows.length - 1].id : null,
+    };
+  },
+);
 
 /** Eine vergebbare Plattform-Rolle. */
 export interface PlatformRoleOption {
@@ -220,44 +240,54 @@ export interface PlatformProject {
   orphaned: boolean;
 }
 
-export const getAllProjects = cache(async (): Promise<PlatformProject[]> => {
-  await requirePermission("project.metadata.view", PLATFORM);
+export const getAllProjects = cache(
+  async (
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<{ rows: PlatformProject[]; nextCursor: string | null }> => {
+    await requirePermission("project.metadata.view", PLATFORM);
 
-  const rows = await db.project.findMany({
-    orderBy: [{ workspace: { name: "asc" } }, { name: "asc" }],
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      color: true,
-      visibility: true,
-      createdAt: true,
-      archivedAt: true,
-      workspace: {
-        select: { id: true, name: true, color: true, suspended: true },
+    const rows = await db.project.findMany({
+      orderBy: [{ workspace: { name: "asc" } }, { name: "asc" }],
+      take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        color: true,
+        visibility: true,
+        createdAt: true,
+        archivedAt: true,
+        workspace: {
+          select: { id: true, name: true, color: true, suspended: true },
+        },
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+        // Zählungen, keine Zeilen: die Oberfläche zeigt „14 Aufgaben", nicht deren
+        // Titel. Ein `select` auf `issues` stünde hier nie.
+        _count: { select: { members: true, issues: true } },
       },
-      createdBy: { select: { id: true, firstName: true, lastName: true } },
-      // Zählungen, keine Zeilen: die Oberfläche zeigt „14 Aufgaben", nicht deren
-      // Titel. Ein `select` auf `issues` stünde hier nie.
-      _count: { select: { members: true, issues: true } },
-    },
-  });
+    });
 
-  return rows.map((p) => ({
-    id: p.id,
-    name: p.name,
-    slug: p.slug,
-    color: p.color,
-    visibility: p.visibility,
-    createdAt: p.createdAt,
-    archivedAt: p.archivedAt,
-    workspace: p.workspace,
-    owner: p.createdBy,
-    memberCount: p._count.members,
-    issueCount: p._count.issues,
-    orphaned: p.createdBy === null || p._count.members === 0,
-  }));
-});
+    return {
+      rows: rows.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        color: p.color,
+        visibility: p.visibility,
+        createdAt: p.createdAt,
+        archivedAt: p.archivedAt,
+        workspace: p.workspace,
+        owner: p.createdBy,
+        memberCount: p._count.members,
+        issueCount: p._count.issues,
+        orphaned: p.createdBy === null || p._count.members === 0,
+      })),
+      nextCursor: rows.length === limit ? rows[rows.length - 1].id : null,
+    };
+  },
+);
 
 export const getPlatformStats = cache(async (): Promise<PlatformStats> => {
   await requirePlatformAccess();
@@ -305,9 +335,14 @@ export const getPlatformStats = cache(async (): Promise<PlatformStats> => {
  * die eigenen Zeilen — ein Protokoll, das seinen Leser ausspart, wäre keins.
  */
 export const getAuditEntries = cache(
-  async (limit = 200): Promise<AuditEntry[]> => {
+  async (limit = ACTIVITY_PAGE_SIZE): Promise<ActivityPage> => {
     await requirePermission("audit.view", PLATFORM);
-    return listAudit({ limit });
+    const entries = await listAudit({ limit });
+    return {
+      entries,
+      nextCursor:
+        entries.length === limit ? entries[entries.length - 1].id : null,
+    };
   },
 );
 
@@ -616,12 +651,17 @@ export interface PlatformWorkspace {
  * `workspace.delete` (siehe `features/admin/actions.ts`).
  */
 export const getAllWorkspaces = cache(
-  async (): Promise<PlatformWorkspace[]> => {
+  async (
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<{ rows: PlatformWorkspace[]; nextCursor: string | null }> => {
     await requirePlatformAccess();
 
     const [rows, activity] = await Promise.all([
       db.workspace.findMany({
         orderBy: { name: "asc" },
+        take: limit,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         select: {
           id: true,
           name: true,
@@ -663,18 +703,21 @@ export const getAllWorkspaces = cache(
       activity.map((row) => [row.workspaceId, row.last]),
     );
 
-    return rows.map((workspace) => ({
-      id: workspace.id,
-      name: workspace.name,
-      slug: workspace.slug,
-      color: workspace.color,
-      createdAt: workspace.createdAt,
-      suspended: workspace.suspended,
-      owner: workspace.members[0]?.user ?? null,
-      members: workspace._count.members,
-      projects: workspace._count.projects,
-      issues: workspace.projects.reduce((sum, p) => sum + p._count.issues, 0),
-      lastActivityAt: lastByWorkspace.get(workspace.id) ?? null,
-    }));
+    return {
+      rows: rows.map((workspace) => ({
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        color: workspace.color,
+        createdAt: workspace.createdAt,
+        suspended: workspace.suspended,
+        owner: workspace.members[0]?.user ?? null,
+        members: workspace._count.members,
+        projects: workspace._count.projects,
+        issues: workspace.projects.reduce((sum, p) => sum + p._count.issues, 0),
+        lastActivityAt: lastByWorkspace.get(workspace.id) ?? null,
+      })),
+      nextCursor: rows.length === limit ? rows[rows.length - 1].id : null,
+    };
   },
 );

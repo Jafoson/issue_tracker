@@ -9,7 +9,9 @@ import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { useConfirm } from "@/components/ui/layout/ConfirmDialog/ConfirmDialog";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { LoadMoreSentinel } from "@/components/ui/layout/Table/LoadMoreSentinel/LoadMoreSentinel";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
+import { useInfiniteScroll } from "@/components/ui/layout/Table/useInfiniteScroll";
 import { useTableSort } from "@/components/ui/layout/Table/useTableSort";
 import { deleteLabel, setLabelHidden } from "@/features/issues/actions";
 import { LabelModal } from "@/features/issues/components/LabelModal/LabelModal";
@@ -20,10 +22,20 @@ import type {
 import { useModal } from "@/lib/context";
 import styles from "./projectLabels.module.scss";
 
+type LoadMoreLabels = (
+  cursor: string,
+) => Promise<{ items: ProjectLabelRow[]; nextCursor: string | null }>;
+
 interface Props extends ProjectLabelsView {
   projectId: string;
   projectName: string;
   workspaceId: string;
+  /** Lädt die nächste Seite der eigenen Labels (`loadMoreProjectLabels`,
+   * `features/projects/actions.ts`, an `projectId` gebunden). */
+  loadMoreOwn: LoadMoreLabels;
+  /** Spiegelbild von `loadMoreOwn`, für die geerbten Workspace-Labels
+   * (`loadMoreProjectInheritedLabels`). */
+  loadMoreInherited: LoadMoreLabels;
 }
 
 /**
@@ -43,6 +55,10 @@ export function ProjectLabels({
   canCreate,
   canUpdate,
   canDelete,
+  ownNextCursor,
+  inheritedNextCursor,
+  loadMoreOwn,
+  loadMoreInherited,
 }: Props) {
   const t = useTranslations();
   const router = useRouter();
@@ -50,6 +66,17 @@ export function ProjectLabels({
   const { openModal } = useModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const ownScroll = useInfiniteScroll({
+    initialItems: own,
+    initialCursor: ownNextCursor,
+    loadMore: loadMoreOwn,
+  });
+  const inheritedScroll = useInfiniteScroll({
+    initialItems: inherited,
+    initialCursor: inheritedNextCursor,
+    loadMore: loadMoreInherited,
+  });
 
   const openEditor = (label?: ProjectLabelRow) =>
     openModal(({ close }) => (
@@ -230,7 +257,7 @@ export function ProjectLabels({
       <PageHeader
         divider={false}
         title={t("nav.labels")}
-        count={own.length}
+        count={ownScroll.items.length}
         description={t("projectLabels.subtitle", { project: projectName })}
         actions={newButton}
       />
@@ -244,10 +271,11 @@ export function ProjectLabels({
         )}
 
         <Table
+          fill
           variant="card"
           label={t("nav.labels")}
           columns={ownColumns}
-          rows={ownSort.sortRows(own)}
+          rows={ownSort.sortRows(ownScroll.items)}
           sort={ownSort.sort}
           getRowKey={(row) => row.id}
           empty={
@@ -258,21 +286,38 @@ export function ProjectLabels({
               action={newButton}
             />
           }
+          footer={
+            ownScroll.cursor && (
+              <LoadMoreSentinel
+                ref={ownScroll.sentinelRef}
+                loading={ownScroll.loading}
+              />
+            )
+          }
         />
 
-        {inherited.length > 0 && (
+        {inheritedScroll.items.length > 0 && (
           <section className={styles.inherited}>
             <h2 className={styles.groupTitle}>
               {t("projectLabels.inheritedTitle")}
             </h2>
 
             <Table
+              fill
               variant="card"
               label={t("projectLabels.inheritedTitle")}
               columns={inheritedColumns}
-              rows={inheritedSort.sortRows(inherited)}
+              rows={inheritedSort.sortRows(inheritedScroll.items)}
               sort={inheritedSort.sort}
               getRowKey={(row) => row.id}
+              footer={
+                inheritedScroll.cursor && (
+                  <LoadMoreSentinel
+                    ref={inheritedScroll.sentinelRef}
+                    loading={inheritedScroll.loading}
+                  />
+                )
+              }
             />
           </section>
         )}

@@ -1,13 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { recordAudit, recordAuditIn } from "@/lib/audit";
+import {
+  getAllProjects,
+  getAllUsers,
+  getAllWorkspaces,
+  type PlatformProject,
+  type PlatformUser,
+  type PlatformWorkspace,
+} from "@/features/admin/queries";
+import type { ActivityPage } from "@/features/audit/actions";
+import { ACTIVITY_PAGE_SIZE } from "@/features/audit/constants";
+import { listAudit, recordAudit, recordAuditIn } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import {
   assignmentCeiling,
   currentUserId,
   getAccess,
   PLATFORM,
+  requirePermission,
 } from "@/lib/permissions";
 import { PROJECT_ADMIN_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 
@@ -489,4 +501,44 @@ export async function deleteWorkspaceAsPlatform(
 
   await revalidate();
   return { ok: true };
+}
+
+/** Spiegelbild von `loadMoreWorkspaceActivity`/`loadMoreProjectActivity`
+ * (`features/audit/actions.ts`), für das Plattform-Protokoll. */
+export async function loadMorePlatformActivity(
+  cursor: string,
+): Promise<ActivityPage> {
+  await requirePermission("audit.view", PLATFORM);
+  const entries = await listAudit({ cursor, limit: ACTIVITY_PAGE_SIZE });
+  return {
+    entries,
+    nextCursor:
+      entries.length === ACTIVITY_PAGE_SIZE
+        ? entries[entries.length - 1].id
+        : null,
+  };
+}
+
+/** Eine weitere Seite fürs Infinite Scroll in `PlatformUsers`. */
+export async function loadMoreUsers(
+  cursor: string,
+): Promise<{ items: PlatformUser[]; nextCursor: string | null }> {
+  const { rows, nextCursor } = await getAllUsers(cursor, TABLE_PAGE_SIZE);
+  return { items: rows, nextCursor };
+}
+
+/** Eine weitere Seite fürs Infinite Scroll in `PlatformProjects`. */
+export async function loadMoreProjects(
+  cursor: string,
+): Promise<{ items: PlatformProject[]; nextCursor: string | null }> {
+  const { rows, nextCursor } = await getAllProjects(cursor);
+  return { items: rows, nextCursor };
+}
+
+/** Eine weitere Seite fürs Infinite Scroll in `PlatformWorkspaces`. */
+export async function loadMoreWorkspaces(
+  cursor: string,
+): Promise<{ items: PlatformWorkspace[]; nextCursor: string | null }> {
+  const { rows, nextCursor } = await getAllWorkspaces(cursor);
+  return { items: rows, nextCursor };
 }

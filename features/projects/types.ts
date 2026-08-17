@@ -91,6 +91,14 @@ export interface ProjectMembersView {
   canRemove: boolean;
   /** Darf per E-Mail einladen. Hängt am selben Recht wie `canAdd`. */
   canInvite: boolean;
+  /**
+   * Offset in die zusammengesetzte Liste (Projekt- und geerbte
+   * Workspace-Mitglieder), als String — `null`, wenn `rows` schon alles ist.
+   * Kein Datenbank-Cursor: die Liste entsteht aus zwei vollständig gelesenen
+   * Quellen im Speicher (`getProjectMembersView`), nicht aus einer einzigen
+   * Abfrage, die sich an einer Id fortsetzen ließe.
+   */
+  nextCursor: string | null;
 }
 
 /** Ein Label, wie die Verwaltungsseite eines Projekts es zeigt. */
@@ -131,4 +139,8 @@ export interface ProjectLabelsView {
   canUpdate: boolean;
   /** `label.delete` im Projekt-Scope. */
   canDelete: boolean;
+  /** Cursor für `own`, `null` wenn schon alles geladen ist. */
+  ownNextCursor: string | null;
+  /** Cursor für `inherited`, `null` wenn schon alles geladen ist. */
+  inheritedNextCursor: string | null;
 }

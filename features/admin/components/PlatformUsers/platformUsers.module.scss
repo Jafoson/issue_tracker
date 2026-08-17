@@ -1,8 +1,7 @@
-/* Der scrollende Teil unter der Kopfzeile — wie in den Einstellungsbereichen. */
+/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
 .content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   padding: 12px 24px 32px;
   display: flex;
   flex-direction: column;
