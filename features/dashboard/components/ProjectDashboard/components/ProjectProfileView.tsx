@@ -89,14 +89,8 @@ function Card({
   footer,
   children,
 }: CardProps) {
-  return (
-    <section
-      className={styles.card}
-      data-empty={empty || undefined}
-      data-dashed={dashed || undefined}
-      data-scroll={scrollBody || undefined}
-      data-grow={grow || undefined}
-    >
+  const content = (
+    <>
       <div className={styles.cardHead}>
         <h3 className={styles.cardTitle}>
           {title}
@@ -106,6 +100,26 @@ function Card({
       </div>
       <div className={styles.cardBody}>{children}</div>
       {footer}
+    </>
+  );
+
+  return (
+    <section
+      className={styles.card}
+      data-empty={empty || undefined}
+      data-dashed={dashed || undefined}
+      data-scroll={scrollBody || undefined}
+      data-grow={grow || undefined}
+    >
+      {/* Scrollt als Ganzes (Kopf, Liste, Fuß) statt nur die Zeilen dazwischen
+          — sonst deckt der Scrollbalken nicht die ganze Höhe der Karte ab.
+          Kopf und Fuß bleiben trotzdem stehen: `position: sticky`, siehe
+          `.card[data-scroll] .cardHead`/`.cardLink` im Stylesheet. */}
+      {scrollBody ? (
+        <div className={styles.cardScroll}>{content}</div>
+      ) : (
+        content
+      )}
     </section>
   );
 }

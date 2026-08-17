@@ -263,12 +263,15 @@
   align-items: start;
 }
 
+/* Seitlich ungepolstert: das Polster sitzt stattdessen auf den scrollenden
+   Kindern selbst (`.cardBody`, `.rows`) — säße es hier, läge der native
+   Scrollbalken mittig in dieser Lücke statt an der Kante der Karte. */
 .card {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  padding: 15px 17px 16px;
+  padding-block: 15px 16px;
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius);
   background: var(--surface);
@@ -293,12 +296,21 @@
    Labels eine mit einem Team, halb so hoch, und die Reihe wirkt zerrissen
    statt aufgeräumt. Mit einem Eintrag oder leer bleibt darunter Luft, mit vier
    oder mehr scrollt `.rows` in sich selbst. */
+/* Kein eigenes Polster mehr: die Liste (`.rows`) übernimmt es, damit ihr
+   Scrollbalken an der Kante der Karte sitzt statt in einer Lücke davor. Nur
+   ohne `.rows` — im leeren Zustand, wo der Platzhaltersatz direkt hier steht —
+   braucht `.cardBody` das Polster selbst zurück. */
 .card[data-dashed] {
   border-style: dashed;
   background: none;
 
   .cardBody {
     height: calc(3 * 38px + 2 * 7px);
+    padding-inline: 0;
+  }
+
+  &[data-empty] .cardBody {
+    padding-inline: 17px;
   }
 }
 
@@ -313,16 +325,39 @@
 /* Die Mitgliederkarte: `align-items: stretch` (`.page`) dehnt sie schon auf
    die Höhe der linken Spalte — ohne `min-height: 0` in dieser Kette würde ihr
    Inhalt trotzdem darüber hinaus wachsen (die automatische Mindesthöhe eines
-   Flex-Elements ist sonst seine Inhaltsgröße). Nur `.cardBody` scrollt; Titel
-   und „Alle Mitglieder" bleiben stehen. */
+   Flex-Elements ist sonst seine Inhaltsgröße).
+   Scrollen tut jetzt `.cardScroll` — Kopf, Liste *und* Fuß zusammen, statt nur
+   der Ausschnitt dazwischen: der native Balken deckt dadurch die ganze Höhe
+   der Karte ab (abzüglich ihres eigenen Polsters), nicht nur einen Streifen in
+   der Mitte. Titel und „Alle Mitglieder" bleiben trotzdem stehen — sie sind
+   `position: sticky` innerhalb desselben Scrollbereichs statt Geschwister
+   außerhalb davon. */
 .card[data-scroll] {
   min-height: 0;
+}
 
-  .cardBody {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-  }
+.cardScroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Braucht einen eigenen, deckenden Grund: sonst schimmern die Zeilen durch,
+   die beim Scrollen unter Kopf bzw. Fuß hindurchwandern. */
+.card[data-scroll] .cardHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+
+.card[data-scroll] .cardLink {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--surface);
 }
 
 /* Die Aktivitäts-Karte: `.side` streckt die Mitgliederkarte automatisch
@@ -343,6 +378,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-inline: 17px;
 }
 
 .cardTitle {
@@ -365,11 +401,16 @@
   color: var(--on-surface-variant);
 }
 
+/* Trägt selbst das Polster, das früher auf `.card` lag — nur so bleibt der
+   Scrollbalken bei `[data-scroll]` (`.cardBody` scrollt hier direkt) an der
+   Kante der Karte statt in einer Lücke davor. `[data-dashed]` nimmt es sich
+   weiter oben wieder weg, weil dort `.rows` das Scrollen übernimmt. */
 .cardBody {
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+  padding-inline: 17px;
 }
 
 /* Der Weg aus der Karte heraus steht an ihrem Fuß, abgesetzt durch eine Linie —
@@ -383,7 +424,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: auto;
+  margin-block-start: auto;
+  margin-inline: 17px;
   padding-top: 11px;
   border-top: 1px solid var(--outline-variant);
   font-size: var(--text-sm);
@@ -497,12 +539,15 @@
    flacheren Karte steht als neun Labels daneben (siehe `.card[data-dashed]
    .cardBody`, dieselbe Höhe eine Ebene höher). Ab vier Einträgen scrollt die
    Liste in sich selbst, statt die Karte weiter zu strecken. */
+/* Trägt das Polster jetzt selbst (statt von `.card` zu erben) — ihr eigener
+   Scrollbalken (ab vier Einträgen) landet dadurch innerhalb dieses Polsters,
+   an der Kante der Karte, statt in einer Lücke davor. */
 .rows {
   display: flex;
   flex-direction: column;
   gap: 7px;
   margin: 0;
-  padding: 0;
+  padding-inline: 17px;
   list-style: none;
   height: calc(3 * 38px + 2 * 7px);
   overflow-y: auto;
