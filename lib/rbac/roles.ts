@@ -60,6 +60,7 @@ const CONTRIBUTE: Permission[] = [
   "issue.update.own",
   "issue.delete.own",
   "issue.assign",
+  "issue.share.manage",
   "comment.create",
   "comment.delete.own",
   "label.create",

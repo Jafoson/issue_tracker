@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/atoms/Input/Input";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
 import {
+  addWorkspaceDomain,
   deleteWorkspace,
+  removeWorkspaceDomain,
   updateWorkspace,
 } from "@/features/workspaces/actions";
 import type { WorkspaceSettingsView } from "@/features/workspaces/types";
@@ -99,6 +101,13 @@ export function WorkspaceSettings({
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Domains schreiben sofort (eigene Server-Aktion, eigene Validierung —
+  // Sperrliste und Eindeutigkeit brauchen eine Serverantwort pro Eintrag), im
+  // Unterschied zu Name/Farbe/Links, die erst der "Speichern"-Knopf schreibt.
+  const [domains, setDomains] = useState<string[]>(workspace.domains);
+  const [domainInput, setDomainInput] = useState("");
+  const [domainError, setDomainError] = useState("");
+
   const linksChanged =
     JSON.stringify(links.map(({ label, url }) => ({ label, url }))) !==
     JSON.stringify(workspace.links.map(({ label, url }) => ({ label, url })));
@@ -162,6 +171,38 @@ export function WorkspaceSettings({
     openModal(({ close }) => <AddLinkDialog close={close} onAdd={addLink} />, {
       label: t("workspaceSettings.addLink"),
     });
+
+  const addDomain = () => {
+    const value = domainInput.trim();
+    if (!value || isPending) return;
+
+    startTransition(async () => {
+      const result = await addWorkspaceDomain(workspace.id, value);
+      if ("error" in result) {
+        setDomainError(result.error);
+        return;
+      }
+      setDomainError("");
+      setDomainInput("");
+      setDomains((current) =>
+        [...current, value.toLowerCase().replace(/^@/, "")].sort(),
+      );
+      router.refresh();
+    });
+  };
+
+  const removeDomain = (domain: string) => {
+    startTransition(async () => {
+      const result = await removeWorkspaceDomain(workspace.id, domain);
+      if ("error" in result) {
+        setDomainError(result.error);
+        return;
+      }
+      setDomainError("");
+      setDomains((current) => current.filter((d) => d !== domain));
+      router.refresh();
+    });
+  };
 
   const general: SettingRow[] = [
     {
@@ -383,6 +424,65 @@ export function WorkspaceSettings({
             {links.length === 0 && !canUpdate && (
               <span className={styles.linksEmpty}>
                 {t("workspaceSettings.linksEmpty")}
+              </span>
+            )}
+          </div>
+        </section>
+
+        <section className={styles.group}>
+          <h2 className={styles.groupTitle}>
+            {t("workspaceSettings.domains")}
+          </h2>
+          <p className={styles.groupDesc}>
+            {t("workspaceSettings.domainsDesc")}
+          </p>
+
+          {domainError && (
+            <p className={styles.error} role="alert">
+              <Icon icon="lucide:circle-alert" width={14} />
+              {domainError}
+            </p>
+          )}
+
+          <div className={styles.linksRow}>
+            {domains.map((domain) => (
+              <Chip
+                key={domain}
+                type="input"
+                icon={<Icon icon="lucide:at-sign" width={14} />}
+                onRemove={canUpdate ? () => removeDomain(domain) : undefined}
+                removeLabel={t("workspaceSettings.removeDomain")}
+                disabled={isPending}
+              >
+                {domain}
+              </Chip>
+            ))}
+
+            {canUpdate && (
+              <div className={styles.domainAdd}>
+                <Input
+                  aria-label={t("workspaceSettings.domainPlaceholder")}
+                  size="sm"
+                  placeholder={t("workspaceSettings.domainPlaceholder")}
+                  value={domainInput}
+                  disabled={isPending}
+                  onChange={(e) => setDomainInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addDomain()}
+                />
+                <Button
+                  variant="elevated"
+                  icon={<Icon icon="lucide:plus" width={14} />}
+                  disabled={isPending || !domainInput.trim()}
+                  onClick={addDomain}
+                >
+                  {t("workspaceSettings.addDomain")}
+                </Button>
+              </div>
+            )}
+
+            {domains.length === 0 && !canUpdate && (
+              <span className={styles.linksEmpty}>
+                {t("workspaceSettings.domainsEmpty")}
               </span>
             )}
           </div>

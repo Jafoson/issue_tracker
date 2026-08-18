@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { getProjects, getUserWorkspaces } from "@/features/issues/queries";
 import {
+  getPendingWorkspaceInvitationsView,
   getWorkspaceLabelsView,
   getWorkspaceMembersView,
   getWorkspaceProjectsView,
   getWorkspaceTeamsView,
 } from "@/features/workspaces/queries";
 import type {
+  PendingInvitationRow,
   WorkspaceLabelRow,
   WorkspaceMemberRow,
   WorkspaceProjectRow,
@@ -18,6 +20,12 @@ import { recordAudit } from "@/lib/audit";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
+import {
+  createInviteLink,
+  inviteLinkUrl,
+  redeemInviteLink,
+  resolveInviteLink,
+} from "@/lib/invite-links";
 import {
   isMailConfigured,
   sendInvitationEmail,
@@ -40,6 +48,7 @@ import {
 } from "@/lib/project-membership";
 import {
   DEFAULT_PLATFORM_ROLE_KEY,
+  DEFAULT_WORKSPACE_ROLE_KEY,
   OWNER_ROLE_KEY,
   systemRoleId,
 } from "@/lib/rbac";
@@ -336,6 +345,93 @@ export async function deleteWorkspace(
       members: doomed?._count.members ?? 0,
       projects: doomed?._count.projects ?? 0,
     },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// ─── Domain-Auto-Join ──────────────────────────────────────────────────────────
+//
+// Wer sich mit einer Adresse dieser Domain neu registriert (`register()`,
+// `features/auth/actions.ts`), tritt automatisch bei — ohne Einladungslink,
+// ohne `pending`. Zwei Wächter gegen Missbrauch: `domain @id` in
+// `WorkspaceDomain` verhindert, dass zwei Workspaces dieselbe Domain
+// beanspruchen; die Sperrliste unten verhindert, dass überhaupt jemand eine
+// öffentliche Freemail-Domain (die Fremde teilen) claimt. Keine
+// DNS-Verifizierung — wer `workspace.update` hat, kann jede nicht gesperrte,
+// noch freie Domain eintragen, auch eine, die ihm nicht gehört. Bekannte
+// Lücke, kein Ausbau in dieser Änderung.
+const BLOCKED_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "yahoo.com",
+  "icloud.com",
+  "me.com",
+  "protonmail.com",
+  "proton.me",
+  "gmx.de",
+  "gmx.net",
+  "web.de",
+  "aol.com",
+]);
+
+const DOMAIN_PATTERN =
+  /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+
+function normalizeDomain(input: string): string {
+  return input.trim().toLowerCase().replace(/^@/, "");
+}
+
+export async function addWorkspaceDomain(
+  workspaceId: string,
+  domain: string,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.update", { workspaceId })))
+    return { error: "You are not allowed to change this workspace." };
+
+  const normalized = normalizeDomain(domain);
+  if (!DOMAIN_PATTERN.test(normalized))
+    return { error: "Please enter a valid domain, e.g. acme.com." };
+  if (BLOCKED_EMAIL_DOMAINS.has(normalized))
+    return {
+      error: "This is a public email provider and cannot be claimed.",
+    };
+
+  const existing = await db.workspaceDomain.findUnique({
+    where: { domain: normalized },
+    select: { workspaceId: true },
+  });
+  if (existing) {
+    return existing.workspaceId === workspaceId
+      ? { error: "This domain is already added." }
+      : { error: "Another workspace already uses this domain." };
+  }
+
+  await db.workspaceDomain.create({
+    data: { domain: normalized, workspaceId },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeWorkspaceDomain(
+  workspaceId: string,
+  domain: string,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.update", { workspaceId })))
+    return { error: "You are not allowed to change this workspace." };
+
+  await db.workspaceDomain.deleteMany({
+    where: { domain: normalizeDomain(domain), workspaceId },
   });
 
   revalidatePath("/", "layout");
@@ -836,26 +932,51 @@ export async function removeMember(workspaceId: string, userId: string) {
   revalidatePath("/", "layout");
 }
 
+/** Obergrenze pro Aufruf — der einzige verfügbare Schutz, solange es im Repo
+ *  kein Rate-Limiting gibt (weder hier noch anderswo). */
+const MAX_BULK_INVITES = 50;
+
+type BulkInviteRow = { email: string; result: MemberResult };
+type BulkInviteResult = { rows: BulkInviteRow[] } | { error: string };
+
 /**
- * Lädt jemanden per E-Mail in den Workspace ein.
- *
- * Zwei Wege, je nachdem, ob es das Konto schon gibt:
- *
- *   bekannt    → Mitgliedschaft anlegen, fertig. Wer sich anmelden kann, braucht
- *                keine Einladung, nur einen Zugang.
- *   unbekannt  → Konto ohne Passwort, Mitgliedschaft `pending`, Einladungstoken.
- *                Erst das Annehmen macht daraus einen benutzbaren Zugang
- *                (`acceptInvitation`).
- *
- * In beiden Fällen kommt die Person in die öffentlichen Projekte des Workspace.
- * Bei einer offenen Einladung bleibt diese Zeile bis zur Annahme wirkungslos —
- * `lib/permissions.ts` gibt `pending` keine Rechte.
+ * Lädt jemanden per E-Mail in den Workspace ein. Dünner Wrapper um
+ * `inviteWorkspaceMembers` für eine einzelne Adresse.
  */
 export async function inviteWorkspaceMember(data: {
   workspaceId: string;
   email: string;
   role: string;
 }): Promise<MemberResult> {
+  const result = await inviteWorkspaceMembers({
+    workspaceId: data.workspaceId,
+    emails: [data.email],
+    role: data.role,
+  });
+  if ("error" in result) return result;
+  // `emails: [data.email]` liefert genau eine Zeile.
+  return (result.rows[0] as BulkInviteRow).result;
+}
+
+/**
+ * Lädt mehrere Adressen auf einmal in den Workspace ein.
+ *
+ * Rollenauflösung, Rang-Deckel und `member.invite`-Prüfung laufen einmal vor
+ * der Schleife statt pro Adresse — sonst kostet jede zusätzliche E-Mail eine
+ * weitere `role.findFirst`-Abfrage, und eine Rolle, die sich mitten in der
+ * Schleife ändert, ergäbe inkonsistente Teilergebnisse statt eines klaren
+ * Fehlschlags für den ganzen Aufruf.
+ *
+ * Pro Adresse steht danach ein eigenes Ergebnis — ob eine E-Mail schon
+ * Mitglied ist oder ein ungültiges Format hat, soll die übrigen nicht
+ * blockieren. Zwei Wege pro Adresse, je nachdem ob es das Konto schon gibt:
+ * siehe `inviteOneWorkspaceMember`.
+ */
+export async function inviteWorkspaceMembers(data: {
+  workspaceId: string;
+  emails: string[];
+  role: string;
+}): Promise<BulkInviteResult> {
   const { workspaceId } = data;
 
   const actorId = await currentUserId();
@@ -863,16 +984,20 @@ export async function inviteWorkspaceMember(data: {
   if (!(await can(actorId, "member.invite", { workspaceId })))
     return { error: "You are not allowed to invite people to this workspace." };
 
-  const email = data.email.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    return { error: "Please enter a valid email address." };
+  const emails = [...new Set(data.emails.map((e) => e.trim().toLowerCase()))];
+  if (emails.length === 0) return { error: "Add at least one email address." };
+  if (emails.length > MAX_BULK_INVITES)
+    return {
+      error: `You can invite at most ${MAX_BULK_INVITES} people at once.`,
+    };
 
-  // Niemand vergibt eine Rolle über der eigenen — dieselbe Regel wie in
-  // `setMemberRole`, hier nur für eine Person, die noch nicht dabei ist.
-  const access = await accessFor(actorId, { workspaceId });
-  const ceiling = assignmentCeiling(access, "WORKSPACE");
   if (data.role === OWNER_ROLE_KEY)
     return { error: "The owner role cannot be handed out." };
+
+  // Niemand vergibt eine Rolle über der eigenen — dieselbe Regel wie in
+  // `setMemberRole`, hier nur für Personen, die noch nicht dabei sind.
+  const access = await accessFor(actorId, { workspaceId });
+  const ceiling = assignmentCeiling(access, "WORKSPACE");
 
   const role = await db.role.findFirst({
     where: {
@@ -885,6 +1010,48 @@ export async function inviteWorkspaceMember(data: {
   if (!role) return { error: "Pick a valid role." };
   if (role.rank > ceiling)
     return { error: "You cannot assign a role above your own." };
+
+  const rows: BulkInviteRow[] = [];
+  for (const email of emails) {
+    rows.push({
+      email,
+      result: await inviteOneWorkspaceMember({
+        workspaceId,
+        email,
+        actorId,
+        role,
+      }),
+    });
+  }
+
+  revalidatePath("/", "layout");
+  return { rows };
+}
+
+/**
+ * Eine einzelne Adresse einladen — der Rumpf, den `inviteWorkspaceMembers`
+ * pro E-Mail wiederholt. Rolle und Berechtigung sind hier schon geklärt.
+ *
+ *   bekannt    → Mitgliedschaft anlegen, fertig. Wer sich anmelden kann, braucht
+ *                keine Einladung, nur einen Zugang.
+ *   unbekannt  → Konto ohne Passwort, Mitgliedschaft `pending`, Einladungstoken.
+ *                Erst das Annehmen macht daraus einen benutzbaren Zugang
+ *                (`acceptInvitation`).
+ *
+ * In beiden Fällen kommt die Person in die öffentlichen Projekte des Workspace.
+ * Bei einer offenen Einladung bleibt diese Zeile bis zur Annahme wirkungslos —
+ * `lib/permissions.ts` gibt `pending` keine Rechte.
+ */
+async function inviteOneWorkspaceMember(params: {
+  workspaceId: string;
+  email: string;
+  actorId: string;
+  role: { id: string; rank: number; name: string };
+}): Promise<MemberResult> {
+  const { workspaceId, email, actorId, role } = params;
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { error: "Please enter a valid email address." };
 
   const existing = await db.user.findUnique({
     where: { email },
@@ -935,7 +1102,6 @@ export async function inviteWorkspaceMember(data: {
       meta: { role: role.name },
     });
 
-    revalidatePath("/", "layout");
     return { ok: true };
   }
 
@@ -964,7 +1130,11 @@ export async function inviteWorkspaceMember(data: {
     });
     await enrollInWorkspaceProjects(tx, { workspaceId, userId: user.id });
 
-    return createInvitation(tx, { userId: user.id, workspaceId }, now);
+    return createInvitation(
+      tx,
+      { userId: user.id, workspaceId, invitedById: actorId },
+      now,
+    );
   });
 
   const inviteUrl = invitationUrl(token);
@@ -977,8 +1147,287 @@ export async function inviteWorkspaceMember(data: {
     inviteUrl,
   });
 
+  return { ok: true, inviteUrl, mailSent: isMailConfigured() };
+}
+
+/**
+ * Schickt eine offene Einladung erneut — neuer Token, neue Frist, dieselbe
+ * Person und Rolle. `createInvitation` löscht die alte Zeile selbst, bevor die
+ * neue entsteht (siehe `lib/invitations.ts`), also kein Sonderfall hier.
+ */
+export async function resendInvitation(token: string): Promise<MemberResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+
+  const invitation = await db.invitation.findUnique({
+    where: { token },
+    select: {
+      workspaceId: true,
+      projectId: true,
+      userId: true,
+      acceptedAt: true,
+      user: { select: { email: true } },
+    },
+  });
+  if (!invitation || invitation.acceptedAt)
+    return { error: "This invitation no longer exists." };
+
+  // Eine projektgebundene Einladung (Projekt-Gast) verwaltet, wer im Projekt
+  // einladen darf — nicht zwingend im Workspace, dieselbe Trennung wie in
+  // `inviteOneProjectMember`. Eine Workspace-weite Einladung braucht das
+  // Workspace-Recht.
+  const canManage = invitation.projectId
+    ? await can(actorId, "member.invite", { projectId: invitation.projectId })
+    : await can(actorId, "member.invite", {
+        workspaceId: invitation.workspaceId,
+      });
+  if (!canManage)
+    return { error: "You are not allowed to manage invitations here." };
+
+  // Die Rolle steht nicht auf der Einladung selbst, sondern auf der
+  // Mitgliedschaft, die beim ersten Einladen schon entstand.
+  const membership = invitation.projectId
+    ? await db.projectMember.findUnique({
+        where: {
+          projectId_userId: {
+            projectId: invitation.projectId,
+            userId: invitation.userId,
+          },
+        },
+        select: { role: { select: { name: true } } },
+      })
+    : await db.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: invitation.workspaceId,
+            userId: invitation.userId,
+          },
+        },
+        select: { role: { select: { name: true } } },
+      });
+  const roleName = membership?.role.name ?? "—";
+
+  const now = new Date();
+  const { token: newToken, expiresAt } = await db.$transaction((tx) =>
+    createInvitation(
+      tx,
+      {
+        userId: invitation.userId,
+        workspaceId: invitation.workspaceId,
+        projectId: invitation.projectId,
+        invitedById: actorId,
+      },
+      now,
+    ),
+  );
+
+  const inviteUrl = invitationUrl(newToken);
+  await sendInvitationEmail({
+    to: invitation.user.email,
+    workspaceId: invitation.workspaceId,
+    projectId: invitation.projectId,
+    inviterId: actorId,
+    roleName,
+    expiresAt,
+    inviteUrl,
+  });
+
   revalidatePath("/", "layout");
   return { ok: true, inviteUrl, mailSent: isMailConfigured() };
+}
+
+/**
+ * Zieht eine offene Einladung zurück.
+ *
+ * Räumt vollständig auf statt nur den Token zu löschen: die Mitgliedschaften,
+ * die das Einladen angelegt hat (Workspace- und alle Projekt-Zeilen in diesem
+ * Workspace — bei einem Gast nur die eine Projektzeile, sonst zusätzlich die
+ * öffentlichen Projekte aus `enrollInWorkspaceProjects`), und zuletzt das
+ * Schatten-Konto selbst, aber nur, wenn danach nirgends mehr etwas an ihm
+ * hängt und es kein Passwort hat. Sonst bliebe eine für immer unsichtbare
+ * Karteileiche stehen: ohne `Invitation`-Zeile taucht sie in keiner Übersicht
+ * mehr auf, ist aber nie ein nutzbarer Zugang geworden.
+ */
+export async function revokeInvitation(
+  token: string,
+): Promise<{ ok: true } | { error: string }> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+
+  const invitation = await db.invitation.findUnique({
+    where: { token },
+    select: {
+      workspaceId: true,
+      projectId: true,
+      userId: true,
+      acceptedAt: true,
+    },
+  });
+  if (!invitation || invitation.acceptedAt)
+    return { error: "This invitation no longer exists." };
+
+  const canManage = invitation.projectId
+    ? await can(actorId, "member.invite", { projectId: invitation.projectId })
+    : await can(actorId, "member.invite", {
+        workspaceId: invitation.workspaceId,
+      });
+  if (!canManage)
+    return { error: "You are not allowed to manage invitations here." };
+
+  const { workspaceId, userId } = invitation;
+
+  await db.$transaction(async (tx) => {
+    await tx.invitation.delete({ where: { token } });
+    await tx.workspaceMember.deleteMany({
+      where: { workspaceId, userId },
+    });
+    await tx.projectMember.deleteMany({
+      where: { userId, project: { workspaceId } },
+    });
+
+    const [wsCount, pmCount, user] = await Promise.all([
+      tx.workspaceMember.count({ where: { userId } }),
+      tx.projectMember.count({ where: { userId } }),
+      tx.user.findUnique({
+        where: { id: userId },
+        select: { passwordHash: true },
+      }),
+    ]);
+    if (wsCount === 0 && pmCount === 0 && user?.passwordHash === null) {
+      await tx.user.delete({ where: { id: userId } });
+    }
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Erstellt (oder erneuert) den teilbaren Einladungslink des Workspace für
+ * eine Rolle. Dieselbe Rechteprüfung wie beim E-Mail-Invite (`member.invite`,
+ * Rang-Deckel) — ein Link ist nur ein weiterer Weg, jemanden einzuladen,
+ * kein eigenes Recht.
+ */
+export async function createWorkspaceInviteLink(
+  workspaceId: string,
+  role: string,
+  expiresAt?: Date,
+): Promise<
+  { ok: true; url: string; expiresAt: Date | null } | { error: string }
+> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "member.invite", { workspaceId })))
+    return { error: "You are not allowed to invite people to this workspace." };
+  if (role === OWNER_ROLE_KEY)
+    return { error: "The owner role cannot be handed out." };
+
+  const access = await accessFor(actorId, { workspaceId });
+  const ceiling = assignmentCeiling(access, "WORKSPACE");
+  const roleRow = await db.role.findFirst({
+    where: {
+      scope: "WORKSPACE",
+      key: role,
+      OR: [{ system: true }, { workspaceId }],
+    },
+    select: { id: true, rank: true },
+  });
+  if (!roleRow) return { error: "Pick a valid role." };
+  if (roleRow.rank > ceiling)
+    return { error: "You cannot assign a role above your own." };
+
+  const { token, expiresAt: expiry } = await createInviteLink(
+    db,
+    {
+      workspaceId,
+      roleId: roleRow.id,
+      createdById: actorId,
+      expiresAt: expiresAt ?? null,
+    },
+    new Date(),
+  );
+
+  revalidatePath("/", "layout");
+  return { ok: true, url: inviteLinkUrl(token), expiresAt: expiry };
+}
+
+/**
+ * Widerruft einen Einladungslink — Workspace- oder Projekt-Scope, dieselbe
+ * Aktion für beide (die Berechtigung hängt vom `projectId` des Links ab,
+ * dieselbe Trennung wie bei `revokeInvitation`).
+ */
+export async function revokeInviteLink(
+  token: string,
+): Promise<{ ok: true } | { error: string }> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+
+  const link = await db.inviteLink.findUnique({
+    where: { token },
+    select: { workspaceId: true, projectId: true },
+  });
+  if (!link) return { error: "This link no longer exists." };
+
+  const canManage = link.projectId
+    ? await can(actorId, "member.invite", { projectId: link.projectId })
+    : await can(actorId, "member.invite", { workspaceId: link.workspaceId });
+  if (!canManage) return { error: "You are not allowed to manage this link." };
+
+  await db.inviteLink.update({
+    where: { token },
+    data: { revokedAt: new Date() },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Löst einen Einladungslink für die aktuell angemeldete Person ein.
+ *
+ * Ein Codepfad für beide Fälle, in denen die öffentliche `/join/[token]`-Seite
+ * ihn aufruft: bereits eingeloggt (Bestätigung "als X beitreten?") oder frisch
+ * über Login/Registrierung angekommen (derselbe Aufruf, nur später im
+ * Redirect-Flow). `redeemInviteLink` selbst ist idempotent — ein erneuter
+ * Aufruf für dieselbe Person ändert nichts mehr.
+ */
+export async function joinViaInviteLink(
+  token: string,
+): Promise<{ ok: true; workspaceId: string } | { error: string }> {
+  const userId = await currentUserId();
+  if (!userId) return { error: "You must be logged in." };
+
+  const now = new Date();
+  const link = await resolveInviteLink(db, token, now);
+  if (!link)
+    return { error: "This invite link is no longer valid. Ask for a new one." };
+
+  await db.$transaction(async (tx) => {
+    await redeemInviteLink(
+      tx,
+      link,
+      userId,
+      systemRoleId("WORKSPACE", DEFAULT_WORKSPACE_ROLE_KEY),
+    );
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: true, workspaceId: link.workspaceId };
+}
+
+/**
+ * Eine weitere Seite offener Einladungen fürs Infinite Scroll im
+ * "Einladungen"-Tab der Workspace-Einstellungen.
+ */
+export async function loadMorePendingWorkspaceInvitations(
+  workspaceId: string,
+  cursor: string,
+): Promise<{ items: PendingInvitationRow[]; nextCursor: string | null }> {
+  setCurrentWorkspaceId(workspaceId);
+  const view = await getPendingWorkspaceInvitationsView(cursor);
+  return view
+    ? { items: view.rows, nextCursor: view.nextCursor }
+    : { items: [], nextCursor: null };
 }
 
 /**

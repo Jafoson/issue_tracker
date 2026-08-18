@@ -46,7 +46,12 @@ export interface CreatedInvitation {
  */
 export async function createInvitation(
   db: Db,
-  data: { userId: string; workspaceId: string; projectId?: string | null },
+  data: {
+    userId: string;
+    workspaceId: string;
+    projectId?: string | null;
+    invitedById?: string | null;
+  },
   now: Date,
 ): Promise<CreatedInvitation> {
   await db.invitation.deleteMany({
@@ -66,6 +71,7 @@ export async function createInvitation(
       userId: data.userId,
       workspaceId: data.workspaceId,
       projectId: data.projectId ?? null,
+      invitedById: data.invitedById ?? null,
       expires,
     },
   });

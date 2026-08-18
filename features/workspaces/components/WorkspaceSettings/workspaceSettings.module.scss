@@ -40,6 +40,18 @@
   color: var(--error);
 }
 
+.groupDesc {
+  margin: 0 0 8px;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.domainAdd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Kein `Table` und keine Karte: Chips brauchen keine Fläche, sie tragen ihre
    eigene. Der „Hinzufügen“-Chip steht in derselben Reihe wie die vorhandenen
    Links — ein Chip mehr, keine Zeile für sich. */

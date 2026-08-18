@@ -22,14 +22,18 @@ import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
 import {
   addProjectMembers,
-  inviteProjectMember,
+  inviteProjectMembers,
 } from "@/features/projects/actions";
+import { parseEmailList } from "@/lib/utils/parse-emails";
 import { fullName } from "@/lib/utils/string";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import type { Role, User } from "@/types";
 import styles from "./addProjectMembersModal.module.scss";
 
 type Mode = "workspace" | "invite";
+
+type BulkResult = Awaited<ReturnType<typeof inviteProjectMembers>>;
+type BulkRow = Extract<BulkResult, { rows: unknown }>["rows"][number];
 
 interface AddProjectMembersModalProps {
   projectId: string;
@@ -69,16 +73,13 @@ export function AddProjectMembersModal({
   );
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [email, setEmail] = useState("");
+  const [emailsText, setEmailsText] = useState("");
   const [role, setRole] = useState(defaultRole);
   const [error, setError] = useState("");
-  // Entsteht beim Einladen einer unbekannten Adresse: das Konto hat kein
-  // Passwort, dieser Link ist der einzige Weg hinein. Er geht per Mail raus,
-  // wenn SMTP konfiguriert ist (`mailSent`) — der Dialog zeigt ihn trotzdem,
-  // statt zu schließen, für den Fall ohne Mailversand oder eine hakende
-  // Zustellung.
-  const [inviteUrl, setInviteUrl] = useState("");
-  const [mailSent, setMailSent] = useState(false);
+  // Entsteht beim Einladen unbekannter Adressen: die Konten haben kein
+  // Passwort, der jeweilige Link ist der einzige Weg hinein. Eine ungültige
+  // oder schon vergebene Adresse blockiert die übrigen Zeilen nicht.
+  const [rows, setRows] = useState<BulkRow[] | null>(null);
 
   const roleName = roles.find((r) => r.id === role)?.name ?? role;
 
@@ -96,37 +97,42 @@ export function AddProjectMembersModal({
       return next;
     });
 
+  const emails = parseEmailList(emailsText);
+  const done = rows !== null;
+
   const canSubmit =
     !isPending &&
     !!role &&
-    (mode === "workspace" ? selected.size > 0 : email.trim().length > 0);
+    (mode === "workspace" ? selected.size > 0 : emails.length > 0);
 
   const submit = () => {
     if (!canSubmit) return;
     setError("");
     startTransition(async () => {
-      const result =
-        mode === "workspace"
-          ? await addProjectMembers({
-              projectId,
-              userIds: [...selected],
-              role,
-            })
-          : await inviteProjectMember({ projectId, email, role });
+      if (mode === "workspace") {
+        const result = await addProjectMembers({
+          projectId,
+          userIds: [...selected],
+          role,
+        });
+        if ("error" in result) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        close();
+        return;
+      }
 
+      const result = await inviteProjectMembers({ projectId, emails, role });
       if ("error" in result) {
         setError(result.error);
         return;
       }
       router.refresh();
-      // Ein neu entstandenes Konto braucht seinen Einladungslink — der Dialog
+      // Neu entstandene Konten brauchen ihren Einladungslink — der Dialog
       // bleibt offen, bis er kopiert werden konnte.
-      if (result.inviteUrl) {
-        setInviteUrl(result.inviteUrl);
-        setMailSent(!!result.mailSent);
-        return;
-      }
-      close();
+      setRows(result.rows);
     });
   };
 
@@ -135,41 +141,75 @@ export function AddProjectMembersModal({
     close();
   };
 
-  useSubmitShortcut(inviteUrl ? finish : submit);
+  useSubmitShortcut(done ? finish : submit);
 
   return (
     <Modal width={520}>
       <ModalHeader
         leading={
           <Icon
-            icon={inviteUrl ? "lucide:mail-check" : "lucide:user-plus"}
+            icon={done ? "lucide:mail-check" : "lucide:user-plus"}
             width={16}
             className={styles.headerIcon}
           />
         }
         title={
-          inviteUrl
-            ? t("members.inviteLinkTitle")
+          done
+            ? t("members.inviteResultsTitle")
             : t("projectMembers.addTitle", { project: projectName })
         }
         onClose={finish}
         closeLabel={t("actions.close")}
       />
 
-      {inviteUrl ? (
+      {done ? (
         <ModalBody className={styles.body}>
-          <p className={styles.inviteLinkDesc}>
-            {t(
-              mailSent
-                ? "members.inviteLinkDescMailed"
-                : "members.inviteLinkDesc",
-            )}
-          </p>
-          <CopyField
-            value={inviteUrl}
-            copyLabel={t("members.inviteLinkCopy")}
-            copiedLabel={t("members.inviteLinkCopied")}
-          />
+          <ul className={styles.resultList}>
+            {rows.map((row) => (
+              <li key={row.email} className={styles.resultRow}>
+                <div className={styles.resultHead}>
+                  <Icon
+                    icon={
+                      "error" in row.result
+                        ? "lucide:circle-alert"
+                        : row.result.inviteUrl
+                          ? "lucide:mail"
+                          : "lucide:check"
+                    }
+                    width={14}
+                    className={
+                      "error" in row.result
+                        ? styles.resultIconError
+                        : styles.resultIconOk
+                    }
+                  />
+                  <span className={styles.resultEmail}>{row.email}</span>
+                </div>
+                {"error" in row.result ? (
+                  <p className={styles.resultError}>{row.result.error}</p>
+                ) : row.result.inviteUrl ? (
+                  <>
+                    <p className={styles.resultNote}>
+                      {t(
+                        row.result.mailSent
+                          ? "members.inviteMailedShort"
+                          : "members.inviteLinkOnlyShort",
+                      )}
+                    </p>
+                    <CopyField
+                      value={row.result.inviteUrl}
+                      copyLabel={t("members.inviteLinkCopy")}
+                      copiedLabel={t("members.inviteLinkCopied")}
+                    />
+                  </>
+                ) : (
+                  <p className={styles.resultNote}>
+                    {t("members.inviteAddedShort")}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         </ModalBody>
       ) : (
         <ModalBody className={styles.body}>
@@ -253,15 +293,20 @@ export function AddProjectMembersModal({
               </>
             )
           ) : (
-            <Input
-              autoFocus
-              label={t("fields.email")}
-              hint={t("projectMembers.inviteHint")}
-              placeholder="ada@example.com"
-              value={email}
-              spellCheck={false}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <div className={styles.field}>
+              <span className={styles.label}>{t("members.emailsLabel")}</span>
+              <textarea
+                className={styles.emailsInput}
+                placeholder={t("members.emailsPlaceholder")}
+                value={emailsText}
+                onChange={(e) => setEmailsText(e.target.value)}
+                rows={3}
+                spellCheck={false}
+              />
+              <span className={styles.hint}>
+                {t("projectMembers.inviteHint")} {t("members.emailsHint")}
+              </span>
+            </div>
           )}
 
           <div className={styles.roleRow}>
@@ -295,7 +340,7 @@ export function AddProjectMembersModal({
 
       <ModalFooter
         hint={
-          inviteUrl ? undefined : (
+          done ? undefined : (
             <ModalShortcut keys={["⌘", "↵"]}>
               {mode === "workspace"
                 ? t("projectMembers.toAdd")
@@ -304,7 +349,7 @@ export function AddProjectMembersModal({
           )
         }
       >
-        {inviteUrl ? (
+        {done ? (
           <Button variant="primary" onClick={finish}>
             {t("actions.close")}
           </Button>

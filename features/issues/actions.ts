@@ -10,6 +10,8 @@ import type {
 } from "@/lib/audit/actions";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { issueShareUrl, newIssueShareToken } from "@/lib/issue-share";
+import { sendIssueShareLinkEmail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
 import {
   currentUserId,
@@ -22,6 +24,7 @@ import { mentionedUserIds, toPlainText, toPreview } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/utils/id";
+import { isValidEmail } from "@/lib/utils/parse-emails";
 import { isClosedStatus } from "@/lib/workspace-defaults";
 
 async function revalidate() {
@@ -62,6 +65,7 @@ async function issueContext(id: string) {
       closedAt: true,
       title: true,
       description: true,
+      shareToken: true,
       project: { select: { workspaceId: true, prefix: true } },
     },
   });
@@ -111,7 +115,9 @@ async function recordIssueAudit(
     | "issue.status.changed"
     | "issue.priority.changed"
     | "issue.type.changed"
-    | "issue.labels.changed",
+    | "issue.labels.changed"
+    | "issue.shared"
+    | "issue.share.revoked",
   id: string,
   issue: { projectId: string; project: { workspaceId: string } } & Parameters<
     typeof issueRef
@@ -878,6 +884,117 @@ export async function deleteIssue(id: string) {
   await recordIssueAudit("issue.deleted", id, issue, actorId, issue.title);
 
   await revalidate();
+}
+
+/**
+ * Schaltet den öffentlichen Lese-Link eines Issues ein und erzeugt (oder
+ * erneuert) den Token. Wer den Link kennt, sieht Titel, Beschreibung, Status/
+ * Priorität/Typ/Labels und Kommentare — nichts, was `issue.share.manage`
+ * nicht selbst schon sehen darf, nur eben ohne Login (`/share/[token]`).
+ */
+export async function enableIssueShare(
+  id: string,
+): Promise<{ ok: true; url: string }> {
+  const issue = await issueContext(id);
+  const actorId = await requirePermission("issue.share.manage", {
+    projectId: issue.projectId,
+  });
+
+  const token = newIssueShareToken();
+  await db.issue.update({ where: { id }, data: { shareToken: token } });
+
+  await recordIssueAudit("issue.shared", id, issue, actorId);
+
+  await revalidate();
+  return { ok: true, url: issueShareUrl(token) };
+}
+
+/** Schaltet den öffentlichen Lese-Link wieder aus — der alte Token wird ungültig. */
+export async function disableIssueShare(id: string): Promise<{ ok: true }> {
+  const issue = await issueContext(id);
+  const actorId = await requirePermission("issue.share.manage", {
+    projectId: issue.projectId,
+  });
+
+  await db.issue.update({ where: { id }, data: { shareToken: null } });
+
+  await recordIssueAudit("issue.share.revoked", id, issue, actorId);
+
+  await revalidate();
+  return { ok: true };
+}
+
+/**
+ * Benachrichtigt ein Workspace-Mitglied über dieses Issue — in-app und, wenn
+ * die Person es so eingestellt hat, per Mail (`lib/notify`, Anlass
+ * "issueShared"). Anders als der öffentliche Link braucht es dafür keinen
+ * Token: die Person sieht das Issue über ihre eigene, ganz normale
+ * Berechtigung, genau wie bei einer Erwähnung — fehlt ihr die, läuft sie beim
+ * Öffnen in dieselbe Zugriffsschranke wie bei jeder anderen Erwähnung auch.
+ */
+export async function shareIssueWithMember(
+  id: string,
+  userId: string,
+  message?: string,
+): Promise<{ ok: true }> {
+  const issue = await issueContext(id);
+  const actorId = await requirePermission("issue.share.manage", {
+    projectId: issue.projectId,
+  });
+
+  await notify({
+    userId,
+    type: "issueShared",
+    actorId,
+    workspaceId: issue.project.workspaceId,
+    projectId: issue.projectId,
+    issueId: id,
+    text: message?.trim() ?? "",
+  });
+
+  return { ok: true };
+}
+
+/**
+ * Verschickt den öffentlichen Lese-Link per Mail an eine beliebige Adresse —
+ * anders als `shareIssueWithMember` kein Konto im System, deshalb über den
+ * `/share/[token]`-Weg statt der internen Issue-Seite. Ist das Teilen noch
+ * aus, schaltet der Versand es gleich mit ein (derselbe Token wie beim
+ * expliziten "Link erstellen") — eine Mail mit einem toten Link wäre sinnlos.
+ */
+export async function shareIssueByEmail(
+  id: string,
+  email: string,
+  message?: string,
+): Promise<{ ok: true; url: string } | { error: string }> {
+  const issue = await issueContext(id);
+  const actorId = await requirePermission("issue.share.manage", {
+    projectId: issue.projectId,
+  });
+
+  const to = email.trim().toLowerCase();
+  if (!isValidEmail(to)) return { error: "invalid-email" };
+
+  let token = issue.shareToken;
+  if (!token) {
+    token = newIssueShareToken();
+    await db.issue.update({ where: { id }, data: { shareToken: token } });
+    await recordIssueAudit("issue.shared", id, issue, actorId);
+    await revalidate();
+  }
+
+  const url = issueShareUrl(token);
+
+  await sendIssueShareLinkEmail({
+    to,
+    actorId,
+    issueIdentifier: `${issue.project.prefix}-${issue.key}`,
+    issueTitle: issue.title,
+    text: message?.trim() || undefined,
+    url,
+  });
+
+  return { ok: true, url };
 }
 
 export async function addComment(

@@ -45,6 +45,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   inviteEmail: true,
   roleInApp: true,
   roleEmail: true,
+  issueSharedInApp: true,
+  issueSharedEmail: true,
 };
 
 /**

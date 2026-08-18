@@ -14,9 +14,9 @@ import type { IssueDetail } from "@/types";
 import { IssueComments } from "./components/IssueComments";
 import { IssueDescription } from "./components/IssueDescription";
 import {
-  CopyLinkButton,
   IssueActionsMenu,
   OpenPageButton,
+  ShareIssueButton,
 } from "./components/IssueDetailActions";
 import { IssueLabels } from "./components/IssueLabels";
 import { IssueMeta } from "./components/IssueMeta";
@@ -119,10 +119,14 @@ export function IssueDetailView({
               workspaceId={data.workspaceId}
               identifier={identifier}
             />
-            <CopyLinkButton
-              workspaceId={data.workspaceId}
-              identifier={identifier}
-            />
+            {issue.access.canShare && (
+              <ShareIssueButton
+                issueId={issue.id}
+                shareUrl={issue.shareUrl}
+                members={data.members}
+                me={data.me}
+              />
+            )}
             <IssueActionsMenu
               onDelete={onDelete}
               canDelete={issue.access.canDelete}

@@ -19,8 +19,10 @@ export const MAIL_TEMPLATE_KEYS = [
   "notification.status",
   "notification.invite",
   "notification.role",
+  "notification.issueShared",
   "weeklyDigest",
   "issueUpdate",
+  "issueShare",
 ] as const;
 
 export type MailTemplateKey = (typeof MAIL_TEMPLATE_KEYS)[number];
@@ -185,6 +187,18 @@ export const MAIL_TEMPLATE_CATALOG: Record<MailTemplateKey, MailTemplateMeta> =
         { key: "text", description: "Neue Rolle" },
       ],
     },
+    "notification.issueShared": {
+      key: "notification.issueShared",
+      label: "Issue geteilt",
+      group: "Benachrichtigungen",
+      wired: true,
+      placeholders: [
+        ACTOR,
+        ISSUE_ID,
+        ISSUE_TITLE,
+        { key: "text", description: "Persönliche Nachricht (optional)" },
+      ],
+    },
     weeklyDigest: {
       key: "weeklyDigest",
       label: "Wöchentliche Zusammenfassung",
@@ -205,6 +219,18 @@ export const MAIL_TEMPLATE_CATALOG: Record<MailTemplateKey, MailTemplateMeta> =
       group: "Benachrichtigungen",
       wired: false,
       placeholders: [ACTOR, ISSUE_ID, ISSUE_TITLE],
+    },
+    issueShare: {
+      key: "issueShare",
+      label: "Öffentlicher Link per Mail",
+      group: "Benachrichtigungen",
+      wired: true,
+      placeholders: [
+        ACTOR,
+        ISSUE_ID,
+        ISSUE_TITLE,
+        { key: "text", description: "Persönliche Nachricht (optional)" },
+      ],
     },
   };
 

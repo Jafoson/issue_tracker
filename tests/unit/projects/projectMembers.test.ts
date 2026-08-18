@@ -15,6 +15,8 @@ const mockUserFindUnique = mock();
 const mockUserFindMany = mock();
 const mockUserPreferencesFindMany = mock();
 const mockNotificationCreateMany = mock();
+const mockInviteLinkUpdateMany = mock();
+const mockInviteLinkCreate = mock();
 const mockTransaction = mock();
 
 // Der Tx-Client für den Einladungsweg mit neuem Account: dort entstehen Konto,
@@ -49,6 +51,10 @@ mock.module("@/lib/db", () => ({
     userPreferences: { findMany: mockUserPreferencesFindMany },
     notification: { createMany: mockNotificationCreateMany },
     auditLog: { create: mock(async () => ({})) },
+    inviteLink: {
+      updateMany: mockInviteLinkUpdateMany,
+      create: mockInviteLinkCreate,
+    },
     $transaction: mockTransaction,
   },
 }));
@@ -85,7 +91,9 @@ mock.module("@/lib/user-defaults", () => ({
 
 import {
   addProjectMembers,
+  createProjectInviteLink,
   inviteProjectMember,
+  inviteProjectMembers,
   removeProjectMember,
   setProjectMemberRole,
 } from "@/features/projects/actions";
@@ -127,6 +135,8 @@ function reset() {
     mockUserFindMany,
     mockUserPreferencesFindMany,
     mockNotificationCreateMany,
+    mockInviteLinkUpdateMany,
+    mockInviteLinkCreate,
     mockTransaction,
     mockCan,
     mockCurrentUserId,
@@ -134,6 +144,8 @@ function reset() {
   ]) {
     m.mockReset();
   }
+  mockInviteLinkUpdateMany.mockResolvedValue({ count: 0 });
+  mockInviteLinkCreate.mockResolvedValue({});
 
   for (const group of Object.values(mockTx)) {
     for (const fn of Object.values(group)) {
@@ -581,5 +593,125 @@ describe("inviteProjectMember()", () => {
     expect(mockTx.projectMember.upsert).toHaveBeenCalled();
     // Auch ein Gast braucht seinen Einladungslink: das Konto ist neu.
     expect(mockTx.invitation.create).toHaveBeenCalled();
+  });
+});
+
+describe("inviteProjectMembers()", () => {
+  beforeEach(reset);
+
+  it("lädt mehrere Adressen ein und liefert ein Ergebnis pro Zeile", async () => {
+    mockUserFindUnique.mockImplementation(
+      async ({ where }: { where: { email: string } }) =>
+        where.email === "bekannt@example.com"
+          ? { id: "u-9", firstName: "Ada", lastName: "Lovelace" }
+          : null,
+    );
+    mockProjectMemberFindUnique.mockResolvedValue(null);
+
+    const result = await inviteProjectMembers({
+      projectId: PROJECT,
+      emails: ["bekannt@example.com", "neu@example.com"],
+      role: "contributor",
+    });
+
+    if ("error" in result) throw new Error("unerwarteter Fehler");
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toMatchObject({
+      email: "bekannt@example.com",
+      result: { ok: true },
+    });
+    expect(result.rows[1].email).toBe("neu@example.com");
+    expect(
+      "inviteUrl" in result.rows[1].result && result.rows[1].result.inviteUrl,
+    ).toContain("/invite/");
+  });
+
+  it("meldet eine ungültige Adresse nur für diese Zeile", async () => {
+    const result = await inviteProjectMembers({
+      projectId: PROJECT,
+      emails: ["keine-adresse", "neu@example.com"],
+      role: "contributor",
+    });
+
+    if ("error" in result) throw new Error("unerwarteter Fehler");
+    expect(result.rows[0].result).toEqual({
+      error: "Please enter a valid email address.",
+    });
+    expect(result.rows[1].result).toMatchObject({ ok: true });
+  });
+
+  it("deckelt die Anzahl pro Aufruf", async () => {
+    const emails = Array.from(
+      { length: 51 },
+      (_, i) => `person${i}@example.com`,
+    );
+    expect(
+      await inviteProjectMembers({
+        projectId: PROJECT,
+        emails,
+        role: "contributor",
+      }),
+    ).toEqual({ error: "You can invite at most 50 people at once." });
+  });
+
+  it("prüft die Workspace-Berechtigung für Neukonten nur einmal, nicht pro Adresse", async () => {
+    mockUserFindUnique.mockResolvedValue(null);
+
+    await inviteProjectMembers({
+      projectId: PROJECT,
+      emails: ["a@example.com", "b@example.com"],
+      role: "contributor",
+    });
+
+    // `can` wird für "member.invite" im Workspace genau einmal aufgerufen —
+    // nicht einmal pro neu angelegtem Konto.
+    const workspaceInviteChecks = mockCan.mock.calls.filter(
+      ([, permission]) => permission === "member.invite",
+    );
+    expect(workspaceInviteChecks).toHaveLength(1);
+  });
+});
+
+describe("createProjectInviteLink()", () => {
+  beforeEach(reset);
+
+  it("lehnt ab ohne member.invite im Projekt", async () => {
+    mockAccessFor.mockResolvedValue(access([], null));
+    expect(await createProjectInviteLink(PROJECT, "contributor")).toEqual({
+      error: "You are not allowed to manage members of this project.",
+    });
+    expect(mockInviteLinkCreate).not.toHaveBeenCalled();
+  });
+
+  it("vergibt keine Rolle über dem eigenen Rang", async () => {
+    mockAccessFor.mockResolvedValue(access(MANAGE, 2));
+    mockRoleFindFirst.mockResolvedValue({ id: "wsp:acme:admin", rank: 5 });
+    expect(await createProjectInviteLink(PROJECT, "admin")).toEqual({
+      error: "You cannot assign a role above your own.",
+    });
+  });
+
+  it("erzeugt einen Link und widerruft einen vorherigen für denselben Scope", async () => {
+    const result = await createProjectInviteLink(PROJECT, "contributor");
+
+    expect(result).toMatchObject({ ok: true });
+    expect("url" in result && result.url).toContain("/join/");
+    expect(mockInviteLinkUpdateMany).toHaveBeenCalledWith({
+      where: {
+        workspaceId: WS,
+        projectId: PROJECT,
+        roleId: "wsp:acme:contributor",
+        revokedAt: null,
+      },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(mockInviteLinkCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        workspaceId: WS,
+        projectId: PROJECT,
+        roleId: "wsp:acme:contributor",
+        createdById: ACTOR,
+      }),
+    });
   });
 });

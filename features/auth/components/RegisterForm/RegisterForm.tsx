@@ -9,10 +9,14 @@ import { useRouter } from "@/i18n/navigation";
 import styles from "./registerForm.module.scss";
 
 interface RegisterFormProps {
+  callbackUrl?: string;
   oauthProviders?: string[];
 }
 
-export function RegisterForm({ oauthProviders = [] }: RegisterFormProps) {
+export function RegisterForm({
+  callbackUrl,
+  oauthProviders = [],
+}: RegisterFormProps) {
   const t = useTranslations();
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -29,6 +33,7 @@ export function RegisterForm({ oauthProviders = [] }: RegisterFormProps) {
     fd.append("lastName", lastName.trim());
     fd.append("email", email.trim());
     fd.append("password", password);
+    if (callbackUrl) fd.append("callbackUrl", callbackUrl);
 
     startTransition(async () => {
       const result = await register(fd);

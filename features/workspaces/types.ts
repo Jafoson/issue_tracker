@@ -25,6 +25,9 @@ export interface WorkspaceSettingsView {
     memberCount: number;
     issueCount: number;
     links: WorkspaceLinkRow[];
+    /** E-Mail-Domains, über die neue Konten automatisch beitreten
+     * (`addWorkspaceDomain`/`removeWorkspaceDomain`). */
+    domains: string[];
   };
   /** `workspace.update` — Name, Farbe, Beschreibung und Links. */
   canUpdate: boolean;
@@ -231,4 +234,48 @@ export interface WorkspaceMembersView {
   /** Id des letzten Mitglieds dieser Seite, für `loadMoreWorkspaceMembers` —
    * `null`, wenn `rows` schon alles ist. */
   nextCursor: string | null;
+}
+
+/** Eine noch nicht angenommene Einladung, wie ihre Zeile sie zeigt. */
+export interface PendingInvitationRow {
+  token: string;
+  email: string;
+  /** Name des Schatten-Kontos — bis zur Annahme nur der lokale Teil der
+   * Adresse (siehe `inviteOneWorkspaceMember`), danach zeigt die Person
+   * ohnehin nicht mehr hier. */
+  firstName: string;
+  lastName: string;
+  roleName: string;
+  /** `null` bei Zeilen von vor der `invitedById`-Spalte oder wenn das
+   * einladende Konto seither gelöscht wurde. */
+  invitedByName: string | null;
+  createdAt: Date;
+  expires: Date;
+  expired: boolean;
+}
+
+export interface PendingInvitationsView {
+  rows: PendingInvitationRow[];
+  /** `member.invite` — dieselbe Berechtigung wie fürs Einladen selbst. */
+  canManage: boolean;
+  /** Token der letzten Zeile dieser Seite, für `loadMorePendingInvitations`
+   * — `null`, wenn `rows` schon alles ist. */
+  nextCursor: string | null;
+}
+
+/** Der teilbare Einladungslink eines Scopes (Workspace oder Projekt). */
+export interface ActiveInviteLink {
+  token: string;
+  url: string;
+  roleId: string;
+  roleName: string;
+  expiresAt: Date | null;
+}
+
+export interface InviteLinkView {
+  /** `null`, wenn (noch) kein Link aktiv ist. */
+  activeLink: ActiveInviteLink | null;
+  /** Rollen, die der aktuelle User vergeben darf. */
+  assignableRoles: Role[];
+  canManage: boolean;
 }

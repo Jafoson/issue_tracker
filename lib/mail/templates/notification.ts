@@ -32,6 +32,7 @@ const HEADING: Record<NotificationEvent, string> = {
   status: "Status geändert",
   invite: "Du bist jetzt Mitglied",
   role: "Deine Rolle wurde geändert",
+  issueShared: "Ein Issue wurde mit dir geteilt",
 };
 
 const CTA_LABEL: Record<NotificationEvent, string> = {
@@ -41,6 +42,7 @@ const CTA_LABEL: Record<NotificationEvent, string> = {
   status: "Issue öffnen",
   invite: "Mitglieder ansehen",
   role: "Mitglieder ansehen",
+  issueShared: "Issue öffnen",
 };
 
 const SUBJECT: Record<
@@ -58,6 +60,10 @@ const SUBJECT: Record<
   invite: (i) =>
     `Du bist jetzt Mitglied von ${i.project?.name ?? i.workspaceName}`,
   role: () => HEADING.role,
+  issueShared: (i) =>
+    i.issue
+      ? `${i.issue.identifier} wurde mit dir geteilt`
+      : HEADING.issueShared,
 };
 
 /** Die Einleitung unter der Überschrift, im Klartext (Default-Pfad). */
@@ -80,14 +86,21 @@ function defaultIntro(input: NotificationEmailInput): string {
       return `${input.actorLabel} hat dich als ${input.text} zu ${target} hinzugefügt.`;
     case "role":
       return `${input.actorLabel} hat deine Rolle in ${target} auf ${input.text} geändert.`;
+    case "issueShared":
+      return `${input.actorLabel} hat ${issueLabel} mit dir geteilt.`;
   }
 }
 
-/** Kommentar-/Erwähnungsvorschau als Zitat — nur bei den beiden Anlässen, bei
- *  denen `text` tatsächlich ein Textausschnitt ist, nicht ein Status- oder
- *  Rollenname. */
+/** Kommentar-/Erwähnungsvorschau bzw. persönliche Nachricht als Zitat — nur
+ *  bei den Anlässen, bei denen `text` tatsächlich ein Textausschnitt ist,
+ *  nicht ein Status- oder Rollenname. */
 function quoteFor(input: NotificationEmailInput): string | null {
-  if (input.type !== "comment" && input.type !== "mentioned") return null;
+  if (
+    input.type !== "comment" &&
+    input.type !== "mentioned" &&
+    input.type !== "issueShared"
+  )
+    return null;
   if (!input.text) return null;
   return input.text;
 }

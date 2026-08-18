@@ -14,6 +14,9 @@ import {
 } from "@/features/issues/queries";
 import type { ProjectVisibility } from "@/features/projects/types";
 import type {
+  InviteLinkView,
+  PendingInvitationRow,
+  PendingInvitationsView,
   ProjectWithWorkspace,
   TeamProjectRow,
   WorkspaceLabelRow,
@@ -29,9 +32,11 @@ import type {
 import { getCurrentWorkspaceId } from "@/lib/current-workspace";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { inviteLinkUrl } from "@/lib/invite-links";
 import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import {
   accessFor,
+  assignmentCeiling,
   currentUserCanEnterWorkspace,
   currentUserId,
   visibleProjectIds,
@@ -219,6 +224,10 @@ export const getWorkspaceSettingsView = cache(
           select: { id: true, label: true, url: true },
           orderBy: { position: "asc" },
         },
+        domains: {
+          select: { domain: true },
+          orderBy: { domain: "asc" },
+        },
       },
     });
     if (!workspace) return null;
@@ -242,6 +251,7 @@ export const getWorkspaceSettingsView = cache(
         memberCount: workspace._count.members,
         issueCount,
         links: workspace.links,
+        domains: workspace.domains.map((d) => d.domain),
       },
       canUpdate: access.has("workspace.update"),
       canDelete: access.has("workspace.delete"),
@@ -741,6 +751,126 @@ export const getWorkspaceMembersView = cache(
       canRemove,
       nextCursor:
         rowsRaw.length === limit ? rowsRaw[rowsRaw.length - 1].userId : null,
+    };
+  },
+);
+
+/**
+ * Offene Einladungen des Workspace — noch nicht angenommen, unabhängig davon,
+ * ob sie schon abgelaufen sind (die Zeile zeigt das, statt sie auszublenden).
+ *
+ * Nur die Workspace-weiten Einladungen: eine mit `projectId` gehört zu einem
+ * Projekt-Gast ohne Workspace-Mitgliedschaft (siehe `inviteOneProjectMember`)
+ * und läuft über `getPendingProjectInvitationsView` — dieselbe Trennung wie
+ * `whereFor()` im Audit-Log zwischen Workspace- und Projekt-Feed.
+ */
+export const getPendingWorkspaceInvitationsView = cache(
+  async (
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<PendingInvitationsView | null> => {
+    const workspaceId = requireWorkspaceId();
+    if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
+
+    const actorId = await currentUserId();
+    const access = await accessFor(actorId, { workspaceId });
+    if (!access.has("member.invite")) return null;
+
+    const now = new Date();
+    const invitations = await db.invitation.findMany({
+      where: { workspaceId, projectId: null, acceptedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      ...(cursor ? { cursor: { token: cursor }, skip: 1 } : {}),
+      select: {
+        token: true,
+        createdAt: true,
+        expires: true,
+        user: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+            workspaces: {
+              where: { workspaceId },
+              select: { role: { select: { name: true } } },
+            },
+          },
+        },
+        invitedBy: { select: { firstName: true, lastName: true } },
+      },
+    });
+
+    const rows: PendingInvitationRow[] = invitations.map((inv) => ({
+      token: inv.token,
+      email: inv.user.email,
+      firstName: inv.user.firstName,
+      lastName: inv.user.lastName,
+      roleName: inv.user.workspaces[0]?.role.name ?? "—",
+      invitedByName: inv.invitedBy
+        ? `${inv.invitedBy.firstName} ${inv.invitedBy.lastName}`.trim()
+        : null,
+      createdAt: inv.createdAt,
+      expires: inv.expires,
+      expired: inv.expires <= now,
+    }));
+
+    return {
+      rows,
+      canManage: access.has("member.invite"),
+      nextCursor:
+        invitations.length === limit
+          ? invitations[invitations.length - 1].token
+          : null,
+    };
+  },
+);
+
+/** Der teilbare Einladungslink des Workspace, samt der Rollen, die zur
+ *  Neuerstellung zur Auswahl stehen. */
+export const getWorkspaceInviteLinkView = cache(
+  async (): Promise<InviteLinkView | null> => {
+    const workspaceId = requireWorkspaceId();
+    if (!(await currentUserCanEnterWorkspace(workspaceId))) return null;
+
+    const actorId = await currentUserId();
+    const access = await accessFor(actorId, { workspaceId });
+    if (!access.has("member.invite")) return null;
+
+    const ceiling = assignmentCeiling(access, "WORKSPACE");
+    const now = new Date();
+
+    const [roles, link] = await Promise.all([
+      getRoles(workspaceId),
+      db.inviteLink.findFirst({
+        where: { workspaceId, projectId: null, revokedAt: null },
+        orderBy: { createdAt: "desc" },
+        select: {
+          token: true,
+          roleId: true,
+          expiresAt: true,
+          role: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    const active =
+      link && (!link.expiresAt || link.expiresAt > now)
+        ? {
+            token: link.token,
+            url: inviteLinkUrl(link.token),
+            roleId: link.roleId,
+            roleName: link.role.name,
+            expiresAt: link.expiresAt,
+          }
+        : null;
+
+    return {
+      activeLink: active,
+      assignableRoles: roles.filter(
+        (r) => r.id !== OWNER_ROLE_KEY && r.rank <= ceiling,
+      ),
+      canManage: true,
     };
   },
 );

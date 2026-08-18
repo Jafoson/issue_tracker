@@ -35,7 +35,8 @@ export type NavLabelKey =
   | "users"
   | "audit"
   | "activity"
-  | "mailTemplates";
+  | "mailTemplates"
+  | "invitations";
 
 export interface NavEntry {
   section: string;
@@ -307,6 +308,12 @@ export const PROJECT_SETTINGS_NAV: NavEntry[] = [
   // hin. Erst die Leute, dann ihre Rechte, dann die Labels.
   { section: "members", icon: "lucide:users", labelKey: "members" },
   {
+    section: "invitations",
+    icon: "lucide:mail",
+    labelKey: "invitations",
+    permission: "member.invite",
+  },
+  {
     section: "roles",
     icon: "lucide:shield-check",
     labelKey: "roles",
@@ -347,6 +354,12 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
     icon: "lucide:users",
     labelKey: "members",
     permission: "member.view",
+  },
+  {
+    section: "invitations",
+    icon: "lucide:mail",
+    labelKey: "invitations",
+    permission: "member.invite",
   },
   {
     section: "activity",

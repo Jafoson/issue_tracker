@@ -71,6 +71,8 @@ export const AUDIT_ACTIONS = {
   "issue.priority.changed": "Priorität geändert",
   "issue.type.changed": "Typ geändert",
   "issue.labels.changed": "Labels geändert",
+  "issue.shared": "Öffentlicher Link erstellt",
+  "issue.share.revoked": "Öffentlicher Link widerrufen",
   "label.created": "Label angelegt",
   "label.deleted": "Label gelöscht",
 } as const;

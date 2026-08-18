@@ -172,6 +172,11 @@ export const AUDIT_ACTION_META = {
   },
   "issue.type.changed": { icon: "lucide:shapes", message: "issueTypeChanged" },
   "issue.labels.changed": { icon: "lucide:tag", message: "issueLabelsChanged" },
+  "issue.shared": { icon: "lucide:link", message: "issueShared" },
+  "issue.share.revoked": {
+    icon: "lucide:link-2-off",
+    message: "issueShareRevoked",
+  },
   "label.created": { icon: "lucide:tag", message: "labelCreated" },
   "label.deleted": { icon: "lucide:tag", message: "labelDeleted" },
 } as const satisfies Record<

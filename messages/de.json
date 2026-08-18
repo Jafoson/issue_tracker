@@ -30,7 +30,8 @@
     "users": "Benutzer",
     "audit": "Protokoll",
     "activity": "Aktivität",
-    "mailTemplates": "Mail-Vorlagen"
+    "mailTemplates": "Mail-Vorlagen",
+    "invitations": "Einladungen"
   },
   "actions": {
     "addLabel": "Label hinzufügen",
@@ -169,13 +170,16 @@
     "removeTitle": "Mitglied entfernen",
     "activeProjects": "{count, plural, one {# aktives Projekt} other {# aktive Projekte}}",
     "inviteTitle": "Mitglied einladen",
-    "inviteDesc": "Die Person bekommt Zugriff auf diesen Workspace und seine öffentlichen Projekte.",
-    "inviteLinkTitle": "Einladung erstellt",
-    "inviteLinkDesc": "Es ist kein Mailversand eingerichtet — schicke diesen Link an die eingeladene Person. Er gilt 14 Tage.",
-    "inviteLinkDescMailed": "Die Einladung wurde per Mail verschickt. Alternativ kannst du auch diesen Link teilen — er gilt 14 Tage.",
+    "inviteDesc": "Trage eine oder mehrere Adressen ein — sie bekommen Zugriff auf diesen Workspace und seine öffentlichen Projekte.",
     "inviteLinkCopy": "Link kopieren",
     "inviteLinkCopied": "Kopiert",
-    "inviteAdded": "{email} ist jetzt im Workspace."
+    "emailsLabel": "E-Mail-Adressen",
+    "emailsPlaceholder": "ada@beispiel.de, alex@beispiel.de",
+    "emailsHint": "Mehrere Adressen mit Komma oder Zeilenumbruch trennen.",
+    "inviteResultsTitle": "Einladungen",
+    "inviteAddedShort": "Ist jetzt dabei.",
+    "inviteMailedShort": "Einladung per Mail verschickt.",
+    "inviteLinkOnlyShort": "Kein Mailversand eingerichtet — Link kopieren."
   },
   "projectMembers": {
     "subtitle": "{count, plural, one {# Person hat} other {# Personen haben}} Zugriff auf „{project}“. Rollen und Zugriff verwaltest du hier.",
@@ -201,6 +205,32 @@
     "addSelected": "{count, plural, =0 {Hinzufügen} one {# hinzufügen} other {# hinzufügen}}",
     "toAdd": "zum Hinzufügen",
     "toInvite": "zum Einladen"
+  },
+  "pendingInvitations": {
+    "subtitle": "Wer eingeladen wurde, aber noch nicht angenommen hat.",
+    "colEmail": "E-Mail",
+    "colInvitedBy": "Eingeladen von",
+    "colCreated": "Eingeladen am",
+    "colExpires": "Läuft ab",
+    "expired": "Abgelaufen",
+    "unknownInviter": "Unbekannt",
+    "resend": "Erneut senden",
+    "resent": "Neue Einladung an {email} erstellt.",
+    "revoke": "Zurückziehen",
+    "revokeTitle": "Einladung an {email} zurückziehen?",
+    "revokeDesc": "Der Link wird ungültig. Ein Konto, das nur für diese Einladung entstand, wird ebenfalls entfernt.",
+    "emptyTitle": "Keine offenen Einladungen",
+    "emptyDesc": "Alle, die eingeladen wurden, sind schon dabei."
+  },
+  "inviteLink": {
+    "title": "Einladungslink",
+    "desc": "Jeder mit diesem Link tritt mit der gewählten Rolle bei — ohne einzelne E-Mail.",
+    "activeMeta": "Rolle: {role} · läuft ab: {expiry}",
+    "never": "Nie",
+    "expires": "Gültig bis",
+    "expiresInDays": "{count, plural, one {# Tag} other {# Tage}}",
+    "generate": "Link erzeugen",
+    "revoke": "Widerrufen"
   },
   "projectSettings": {
     "saved": "Gespeichert",
@@ -409,7 +439,8 @@
       "inviteWorkspace": "{actor} hat dich in den Workspace aufgenommen",
       "inviteProject": "{actor} hat dich zum Projekt „{project}“ hinzugefügt",
       "roleWorkspace": "{actor} hat deine Rolle im Workspace zu „{role}“ geändert",
-      "roleProject": "{actor} hat deine Rolle im Projekt „{project}“ zu „{role}“ geändert"
+      "roleProject": "{actor} hat deine Rolle im Projekt „{project}“ zu „{role}“ geändert",
+      "issueShared": "{actor} hat {issue} mit dir geteilt"
     }
   },
   "palette": {
@@ -455,6 +486,37 @@
     "haveAccount": "Schon ein Konto?",
     "invalidTitle": "Diese Einladung gilt nicht mehr",
     "invalidText": "Der Link ist abgelaufen, wurde schon benutzt, oder es gibt ihn nicht. Bitte um eine neue Einladung — oder melde dich an, wenn du bereits ein Konto hast."
+  },
+  "join": {
+    "title": "{target} beitreten",
+    "chooseText": "Melde dich an oder erstelle ein Konto, um mit der Rolle „{role}“ beizutreten.",
+    "confirmText": "Als {user} mit der Rolle „{role}“ beitreten?",
+    "confirm": "Beitreten",
+    "invalidTitle": "Dieser Link gilt nicht mehr",
+    "invalidText": "Der Link ist abgelaufen, wurde widerrufen, oder es gibt ihn nicht. Bitte um einen neuen Link — oder melde dich an, wenn du bereits ein Konto hast."
+  },
+  "share": {
+    "invalidTitle": "Dieser Link gilt nicht mehr",
+    "invalidText": "Der Link wurde widerrufen, oder es gibt ihn nicht.",
+    "comments": "{count, plural, =0 {Kommentare} one {# Kommentar} other {# Kommentare}}",
+    "noComments": "Noch keine Kommentare.",
+    "footer": "Öffentlich geteilter, nur lesbarer Auszug dieser Aufgabe.",
+    "trigger": "Öffentlichen Link teilen",
+    "modalTitle": "Öffentlicher Link",
+    "modalDesc": "Wer den Link kennt, sieht Titel, Beschreibung, Status, Priorität, Typ, Labels und Kommentare — ohne Login und ohne Zuständigkeit.",
+    "enable": "Link erstellen",
+    "disable": "Teilen ausschalten",
+    "actionFailed": "Das hat nicht geklappt. Bitte erneut versuchen.",
+    "withMemberTitle": "Mit Workspace-Mitglied teilen",
+    "withMemberPlaceholder": "Person auswählen",
+    "withMemberMessagePlaceholder": "Nachricht (optional)",
+    "withMemberSend": "Teilen",
+    "withMemberSent": "Geteilt",
+    "byEmailTitle": "Per E-Mail teilen",
+    "byEmailPlaceholder": "E-Mail-Adresse",
+    "byEmailSend": "Senden",
+    "byEmailSent": "Gesendet",
+    "invalidEmail": "Bitte eine gültige E-Mail-Adresse eingeben."
   },
   "filters": {
     "statuses": "{count} Status",
@@ -564,6 +626,12 @@
     "linksInvalidUrl": "Die Adresse muss mit http:// oder https:// beginnen.",
     "addLink": "Link hinzufügen",
     "removeLink": "Link entfernen",
+    "domains": "Domain-Auto-Join",
+    "domainsDesc": "Wer sich mit einer Adresse dieser Domains neu registriert, tritt automatisch bei. Nur für Domains, die diesem Workspace tatsächlich gehören — es gibt keine Verifizierung.",
+    "domainPlaceholder": "firma.de",
+    "addDomain": "Hinzufügen",
+    "removeDomain": "Domain entfernen",
+    "domainsEmpty": "Keine Domain hinterlegt.",
     "content": "Inhalt",
     "projectsDesc": "Projekte in diesem Workspace, die du sehen darfst, verwaltest du unter „Projekte“.",
     "membersDesc": "Personen mit Zugang zu diesem Workspace.",
@@ -656,7 +724,8 @@
       "comment": "Neuer Kommentar",
       "status": "Status geändert",
       "invite": "Einladung",
-      "role": "Rolle geändert"
+      "role": "Rolle geändert",
+      "issueShared": "Issue geteilt"
     },
     "eventDesc": {
       "assigned": "Jemand hat dir eine Aufgabe zugewiesen.",
@@ -664,7 +733,8 @@
       "comment": "Neuer Kommentar an einer Aufgabe, an der du beteiligt bist.",
       "status": "Der Status einer deiner Aufgaben hat sich geändert.",
       "invite": "Du wurdest in einen Workspace oder ein Projekt aufgenommen.",
-      "role": "Deine Rolle in einem Workspace oder Projekt hat sich geändert."
+      "role": "Deine Rolle in einem Workspace oder Projekt hat sich geändert.",
+      "issueShared": "Jemand hat ein Issue direkt mit dir geteilt."
     },
     "securityDesc": "Womit du hereinkommst.",
     "passwordDesc": "Zum Ändern brauchst du dein aktuelles Passwort.",
@@ -739,6 +809,8 @@
       "issuePriorityChanged": "Priorität geändert",
       "issueTypeChanged": "Typ geändert",
       "issueLabelsChanged": "Labels geändert",
+      "issueShared": "Öffentlicher Link erstellt",
+      "issueShareRevoked": "Öffentlicher Link widerrufen",
       "labelCreated": "Label angelegt",
       "labelDeleted": "Label gelöscht"
     }

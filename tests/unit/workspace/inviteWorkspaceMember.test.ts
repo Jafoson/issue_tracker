@@ -71,7 +71,10 @@ mock.module("@/lib/project-membership", () => ({
   enrollInWorkspaceProjects: mockEnrollInWorkspaceProjects,
 }));
 
-import { inviteWorkspaceMember } from "@/features/workspaces/actions";
+import {
+  inviteWorkspaceMember,
+  inviteWorkspaceMembers,
+} from "@/features/workspaces/actions";
 
 const WS = "acme";
 const ACTOR = "u-actor";
@@ -248,5 +251,91 @@ describe("inviteWorkspaceMember() — unbekannte Adresse", () => {
     expect(mockUserFindUnique.mock.calls[0][0].where.email).toBe(
       "ada@example.com",
     );
+  });
+});
+
+describe("inviteWorkspaceMembers()", () => {
+  beforeEach(reset);
+
+  it("lädt mehrere Adressen ein und liefert ein Ergebnis pro Zeile", async () => {
+    mockUserFindUnique.mockImplementation(
+      async ({ where }: { where: { email: string } }) =>
+        where.email === "bekannt@example.com" ? { id: "u-1" } : null,
+    );
+
+    const result = await inviteWorkspaceMembers({
+      workspaceId: WS,
+      emails: ["bekannt@example.com", "neu@example.com"],
+      role: "member",
+    });
+
+    if ("error" in result) throw new Error("unerwarteter Fehler");
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toMatchObject({
+      email: "bekannt@example.com",
+      result: { ok: true },
+    });
+    expect(result.rows[1].email).toBe("neu@example.com");
+    expect(result.rows[1].result).toMatchObject({ ok: true });
+    expect(
+      "inviteUrl" in result.rows[1].result && result.rows[1].result.inviteUrl,
+    ).toContain("/invite/");
+  });
+
+  it("meldet eine ungültige Adresse nur für diese Zeile, nicht für den ganzen Aufruf", async () => {
+    const result = await inviteWorkspaceMembers({
+      workspaceId: WS,
+      emails: ["keine-adresse", "gut@example.com"],
+      role: "member",
+    });
+
+    if ("error" in result) throw new Error("unerwarteter Fehler");
+    expect(result.rows[0].result).toEqual({
+      error: "Please enter a valid email address.",
+    });
+    expect(result.rows[1].result).toMatchObject({ ok: true });
+  });
+
+  it("dedupliziert Adressen", async () => {
+    const result = await inviteWorkspaceMembers({
+      workspaceId: WS,
+      emails: ["ada@example.com", "ADA@example.com "],
+      role: "member",
+    });
+
+    if ("error" in result) throw new Error("unerwarteter Fehler");
+    expect(result.rows).toHaveLength(1);
+  });
+
+  it("lehnt ab, wenn keine Adresse übergeben wird", async () => {
+    expect(
+      await inviteWorkspaceMembers({
+        workspaceId: WS,
+        emails: [],
+        role: "member",
+      }),
+    ).toEqual({ error: "Add at least one email address." });
+  });
+
+  it("deckelt die Anzahl pro Aufruf", async () => {
+    const emails = Array.from(
+      { length: 51 },
+      (_, i) => `person${i}@example.com`,
+    );
+    expect(
+      await inviteWorkspaceMembers({ workspaceId: WS, emails, role: "member" }),
+    ).toEqual({ error: "You can invite at most 50 people at once." });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("prüft Rolle und Berechtigung nur einmal, nicht pro Adresse", async () => {
+    await inviteWorkspaceMembers({
+      workspaceId: WS,
+      emails: ["a@example.com", "b@example.com", "c@example.com"],
+      role: "member",
+    });
+
+    expect(mockCan).toHaveBeenCalledTimes(1);
+    expect(mockRoleFindFirst).toHaveBeenCalledTimes(1);
   });
 });

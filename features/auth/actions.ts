@@ -7,7 +7,11 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { openInvitation } from "@/lib/invitations";
 import { enrollInWorkspaceProjects } from "@/lib/project-membership";
-import { DEFAULT_PLATFORM_ROLE_KEY, systemRoleId } from "@/lib/rbac";
+import {
+  DEFAULT_PLATFORM_ROLE_KEY,
+  DEFAULT_WORKSPACE_ROLE_KEY,
+  systemRoleId,
+} from "@/lib/rbac";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 
 type AuthResult = { redirectTo: string } | { error: string };
@@ -48,12 +52,24 @@ export async function login(formData: FormData): Promise<AuthResult> {
   };
 }
 
+/**
+ * Selbst-Registrierung. Trifft die Adresse eine Domain, die ein Workspace per
+ * `addWorkspaceDomain()` beansprucht hat, tritt das neue Konto ihm sofort bei
+ * — ohne Einladungslink, ohne `pending` (die Adresse ist ja gerade erst
+ * getippt worden, derselbe Vertrauensgrad wie jede andere Registrierung hier).
+ * Beides — Konto und Beitritt — in einer Transaktion: sonst könnte ein
+ * Domain-Fehler ein Konto ohne nutzbaren Weg zurücklassen (weder Workspace
+ * noch `/create-workspace`, weil das ja gerade übersprungen wurde).
+ */
 export async function register(formData: FormData): Promise<AuthResult> {
   const firstName = (formData.get("firstName") as string | null)?.trim() ?? "";
   const lastName = (formData.get("lastName") as string | null)?.trim() ?? "";
   const email =
     (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
   const password = (formData.get("password") as string | null) ?? "";
+  // Zum Beispiel `/join/{token}`, wenn die Registrierung aus einem
+  // Einladungslink kommt — wie bei `login()`.
+  const callbackUrl = (formData.get("callbackUrl") as string | null) ?? "";
 
   if (!firstName || !lastName || !email || !password)
     return { error: "All fields are required." };
@@ -67,19 +83,45 @@ export async function register(formData: FormData): Promise<AuthResult> {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const handle = await generateHandle(email);
+  const domain = email.split("@")[1] ?? "";
 
+  let userId: string;
   try {
-    await db.user.create({
-      data: {
-        firstName,
-        lastName,
-        handle,
-        email,
-        color: pickUserColor(),
-        passwordHash,
-        // Jedes neue Konto startet ohne Plattform-Rechte.
-        platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
-      },
+    userId = await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          firstName,
+          lastName,
+          handle,
+          email,
+          color: pickUserColor(),
+          passwordHash,
+          // Jedes neue Konto startet ohne Plattform-Rechte.
+          platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
+        },
+        select: { id: true },
+      });
+
+      const claim = await tx.workspaceDomain.findUnique({
+        where: { domain },
+        select: { workspaceId: true },
+      });
+      if (claim) {
+        await tx.workspaceMember.create({
+          data: {
+            workspaceId: claim.workspaceId,
+            userId: user.id,
+            roleId: systemRoleId("WORKSPACE", DEFAULT_WORKSPACE_ROLE_KEY),
+            pending: false,
+          },
+        });
+        await enrollInWorkspaceProjects(tx, {
+          workspaceId: claim.workspaceId,
+          userId: user.id,
+        });
+      }
+
+      return user.id;
     });
   } catch {
     return { error: "Registration failed. Please try again." };
@@ -92,7 +134,8 @@ export async function register(formData: FormData): Promise<AuthResult> {
     if (!(error instanceof AuthError)) throw error;
   }
 
-  return { redirectTo: "/create-workspace" };
+  if (callbackUrl) return { redirectTo: callbackUrl };
+  return { redirectTo: await defaultRedirectFor(userId) };
 }
 
 /**

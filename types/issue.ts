@@ -62,6 +62,11 @@ export interface Issue {
   comments: Comment[];
   project: string;
   type: string;
+  /** Absolute URL des öffentlichen Lese-Links, `null` wenn Teilen aus ist
+   *  (`lib/issue-share.ts`). Fertig zusammengesetzt vom Server — der Client
+   *  baut keine URLs, `lib/app-url.ts` liest Umgebungsvariablen, die im
+   *  Browser nicht ankommen. */
+  shareUrl: string | null;
 }
 
 /**
@@ -79,6 +84,8 @@ export interface IssueAccess {
   canAssign: boolean;
   /** `issue.delete.any` oder (`issue.delete.own` und Reporter/Assignee). */
   canDelete: boolean;
+  /** `issue.share.manage` — öffentlichen Lese-Link erstellen/widerrufen. */
+  canShare: boolean;
 }
 
 /** Ein Issue, wie es die Detailansicht (Panel, Dialog, Vollseite) lädt. */

@@ -258,6 +258,10 @@ export const PERMISSIONS = {
     desc: "Issues anderen Mitgliedern zuweisen",
     scopes: PROJECT_ONLY,
   },
+  "issue.share.manage": {
+    desc: "Öffentlichen Lese-Link für ein Issue erstellen und widerrufen",
+    scopes: PROJECT_ONLY,
+  },
 
   // ── Kommentare ──────────────────────────────────────────────────────────────
   "comment.create": {

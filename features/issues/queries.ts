@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import { issueShareUrl } from "@/lib/issue-share";
 import {
   accessFor,
   accessibleProjectIds,
@@ -9,6 +10,7 @@ import {
   visibleProjectIds,
 } from "@/lib/permissions";
 import { toDoc } from "@/lib/richtext/doc";
+import type { PMDoc } from "@/lib/richtext/types";
 import type {
   Issue,
   IssueAccess,
@@ -45,6 +47,7 @@ function mapIssue(i: {
   created: Date;
   updated: Date;
   comments: { id: string; body: unknown; authorId: string; created: Date }[];
+  shareToken?: string | null;
 }): Issue {
   return {
     id: i.id,
@@ -67,6 +70,7 @@ function mapIssue(i: {
       author: c.authorId,
       time: c.created.getTime(),
     })),
+    shareUrl: i.shareToken ? issueShareUrl(i.shareToken) : null,
   };
 }
 
@@ -458,7 +462,13 @@ async function issueAccessFor(issue: {
   projectId: string;
 }): Promise<IssueAccess> {
   const userId = await currentUserId();
-  if (!userId) return { canEdit: false, canAssign: false, canDelete: false };
+  if (!userId)
+    return {
+      canEdit: false,
+      canAssign: false,
+      canDelete: false,
+      canShare: false,
+    };
 
   const access = await accessFor(userId, { projectId: issue.projectId });
   const isOwner = userId === issue.reporterId || userId === issue.assigneeId;
@@ -474,6 +484,7 @@ async function issueAccessFor(issue: {
     canEdit,
     canAssign: canEdit && access.has("issue.assign"),
     canDelete,
+    canShare: access.has("issue.share.manage"),
   };
 }
 
@@ -524,6 +535,95 @@ export const getIssueByRef = cache(
     return { ...mapIssue(i), access };
   },
 );
+
+/** Eine minimale, absichtlich unvollständige Projektion für die öffentliche
+ *  Issue-Seite — kein `access`, kein Assignee, keine internen Ids in der
+ *  Antwort außer denen, die die Anzeige selbst braucht. Die Seite darf
+ *  strukturell keine Bearbeitungs-UI rendern können. */
+export interface PublicSharedIssue {
+  title: string;
+  description: PMDoc;
+  status: { name: string; color: string } | null;
+  priority: { name: string; color: string } | null;
+  type: { name: string; color: string } | null;
+  labels: { id: string; name: string; color: string }[];
+  projectName: string;
+  workspaceName: string;
+  comments: { id: string; body: PMDoc; authorName: string; created: Date }[];
+}
+
+/**
+ * Löst einen öffentlichen Issue-Link auf. `null` heißt in jedem Fall
+ * dasselbe: unbekannter, deaktivierter oder nie aktivierter Token — dieselbe
+ * Zurückhaltung wie `openInvitation`/`resolveInviteLink`.
+ */
+export async function getIssueByShareToken(
+  token: string,
+): Promise<PublicSharedIssue | null> {
+  if (!token) return null;
+
+  const issue = await db.issue.findUnique({
+    where: { shareToken: token },
+    select: {
+      title: true,
+      description: true,
+      status: true,
+      priority: true,
+      type: true,
+      labels: true,
+      project: {
+        select: {
+          name: true,
+          workspaceId: true,
+          workspace: { select: { name: true } },
+        },
+      },
+      comments: {
+        orderBy: { created: "asc" },
+        select: {
+          id: true,
+          body: true,
+          created: true,
+          author: { select: { firstName: true, lastName: true } },
+        },
+      },
+    },
+  });
+  if (!issue) return null;
+
+  const [statuses, priorities, types, labelRows] = await Promise.all([
+    getStatuses(issue.project.workspaceId),
+    getPriorities(issue.project.workspaceId),
+    getIssueTypes(issue.project.workspaceId),
+    issue.labels.length > 0
+      ? db.label.findMany({
+          where: { id: { in: issue.labels } },
+          select: { id: true, name: true, color: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const status = statuses.find((s) => s.id === issue.status) ?? null;
+  const priority = priorities.find((p) => p.id === issue.priority) ?? null;
+  const type = types.find((t) => t.id === issue.type) ?? null;
+
+  return {
+    title: issue.title,
+    description: toDoc(issue.description),
+    status: status ? { name: status.name, color: status.color } : null,
+    priority: priority ? { name: priority.name, color: priority.color } : null,
+    type: type ? { name: type.name, color: type.color } : null,
+    labels: labelRows,
+    projectName: issue.project.name,
+    workspaceName: issue.project.workspace.name,
+    comments: issue.comments.map((c) => ({
+      id: c.id,
+      body: toDoc(c.body),
+      authorName: `${c.author.firstName} ${c.author.lastName}`.trim(),
+      created: c.created,
+    })),
+  };
+}
 
 export const getSearchIssues = cache(
   async (workspaceId: string): Promise<SearchableIssue[]> => {

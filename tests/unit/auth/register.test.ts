@@ -1,11 +1,41 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
+// Der Tx-Client für die Registrierung: Konto anlegen und — bei einer
+// beanspruchten Domain — sofort Workspace-Mitgliedschaft in einem Zug.
+//
+// `@/lib/project-membership` bleibt bewusst ungemockt: `projectMembership.test.ts`
+// und `projectMembers.test.ts` laufen im selben Prozess (siehe CLAUDE.md) und
+// verlassen sich auf die echte `enrollInWorkspaceProjects` — ein Mock hier
+// würde für den Rest des Prozesses gewinnen und beide falsch testen lassen.
+// `project.findMany`/`workspaceMember.findUnique` unten sind deshalb echte
+// Aufrufe der echten Funktion, nicht nur Staffage.
+const mockTxUserCreate = mock();
+const mockWorkspaceDomainFindUnique = mock();
+const mockTxWorkspaceMemberCreate = mock();
+const mockTxWorkspaceMemberFindUnique = mock();
+const mockTxProjectFindMany = mock();
+const mockTxProjectMemberCreateMany = mock();
+const mockWorkspaceMemberFindFirst = mock();
+const mockTransaction = mock();
+
+const mockTx = {
+  user: { create: mockTxUserCreate },
+  workspaceDomain: { findUnique: mockWorkspaceDomainFindUnique },
+  workspaceMember: {
+    create: mockTxWorkspaceMemberCreate,
+    findUnique: mockTxWorkspaceMemberFindUnique,
+  },
+  project: { findMany: mockTxProjectFindMany },
+  projectMember: { createMany: mockTxProjectMemberCreateMany },
+};
+
 mock.module("@/lib/db", () => ({
   db: {
     user: {
       findUnique: mock(),
-      create: mock(),
     },
+    workspaceMember: { findFirst: mockWorkspaceMemberFindFirst },
+    $transaction: mockTransaction,
   },
 }));
 
@@ -30,9 +60,11 @@ import { register } from "@/features/auth/actions";
 import { db } from "@/lib/db";
 
 const mockUserFindUnique = db.user.findUnique as ReturnType<typeof mock>;
-const mockUserCreate = db.user.create as ReturnType<typeof mock>;
 const mockSignIn = signIn as ReturnType<typeof mock>;
 const mockBcryptHash = bcrypt.hash as ReturnType<typeof mock>;
+// Für Assertions, die früher `db.user.create` direkt prüften — die
+// Registrierung legt das Konto jetzt in einer Transaktion an.
+const mockUserCreate = mockTxUserCreate;
 
 function makeFormData(data: Record<string, string>): FormData {
   const fd = new FormData();
@@ -43,14 +75,36 @@ function makeFormData(data: Record<string, string>): FormData {
 describe("register()", () => {
   beforeEach(() => {
     mockUserFindUnique.mockReset();
-    mockUserCreate.mockReset();
+    mockTxUserCreate.mockReset();
+    mockWorkspaceDomainFindUnique.mockReset();
+    mockTxWorkspaceMemberCreate.mockReset();
+    mockTxWorkspaceMemberFindUnique.mockReset();
+    mockTxProjectFindMany.mockReset();
+    mockTxProjectMemberCreateMany.mockReset();
+    mockWorkspaceMemberFindFirst.mockReset();
+    mockTransaction.mockReset();
     mockSignIn.mockReset();
     mockBcryptHash.mockReset();
+
     // findUnique wird sowohl für den Existenz-Check als auch von generateHandle
     // (Handle-Eindeutigkeit) genutzt → null = frei.
     mockUserFindUnique.mockResolvedValue(null);
     mockBcryptHash.mockResolvedValue("hashed-password");
-    mockUserCreate.mockResolvedValue({});
+    mockTxUserCreate.mockResolvedValue({ id: "u-new" });
+    // Standardlage: keine Domain beansprucht, kein Auto-Join.
+    mockWorkspaceDomainFindUnique.mockResolvedValue(null);
+    mockTxWorkspaceMemberCreate.mockResolvedValue({});
+    // Für den Auto-Join-Fall: `enrollInWorkspaceProjects` läuft echt, findet
+    // hier aber nichts zum Eintragen — die Mitgliedschaft selbst ist schon
+    // über `tx.workspaceMember.create` oben bewiesen.
+    mockTxWorkspaceMemberFindUnique.mockResolvedValue(null);
+    mockTxProjectFindMany.mockResolvedValue([]);
+    // Standardlage nach der Registrierung: keine Mitgliedschaft →
+    // `defaultRedirectFor` schickt nach `/create-workspace`.
+    mockWorkspaceMemberFindFirst.mockResolvedValue(null);
+    mockTransaction.mockImplementation(
+      async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx),
+    );
     mockSignIn.mockResolvedValue(undefined);
   });
 
@@ -241,6 +295,60 @@ describe("register()", () => {
       expect((result as { redirectTo: string }).redirectTo).toBe(
         "/create-workspace",
       );
+    });
+  });
+
+  describe("Domain-Auto-Join", () => {
+    it("tritt automatisch bei, wenn die Domain beansprucht ist", async () => {
+      mockWorkspaceDomainFindUnique.mockResolvedValue({
+        workspaceId: "acme",
+      });
+      mockWorkspaceMemberFindFirst.mockResolvedValue({
+        workspaceId: "acme",
+      });
+
+      const result = await register(
+        makeFormData({
+          firstName: "Test",
+          lastName: "User",
+          email: "new@acme.com",
+          password: "password123",
+        }),
+      );
+
+      expect(mockWorkspaceDomainFindUnique).toHaveBeenCalledWith({
+        where: { domain: "acme.com" },
+        select: { workspaceId: true },
+      });
+      expect(mockTxWorkspaceMemberCreate.mock.calls[0][0].data).toMatchObject({
+        workspaceId: "acme",
+        userId: "u-new",
+        pending: false,
+      });
+      // Beweist, dass `enrollInWorkspaceProjects` (echt, nicht gemockt) für
+      // genau diesen Workspace lief.
+      expect(mockTxProjectFindMany).toHaveBeenCalledWith({
+        where: { workspaceId: "acme", visibility: "public" },
+        select: { id: true },
+      });
+      // Nicht mehr "/create-workspace" — die Person ist schon in einem Workspace.
+      expect(result).toEqual({ redirectTo: "/acme" });
+    });
+
+    it("lässt Konten ohne passende Domain unangetastet", async () => {
+      mockWorkspaceDomainFindUnique.mockResolvedValue(null);
+
+      await register(
+        makeFormData({
+          firstName: "Test",
+          lastName: "User",
+          email: "new@example.com",
+          password: "password123",
+        }),
+      );
+
+      expect(mockTxWorkspaceMemberCreate).not.toHaveBeenCalled();
+      expect(mockTxProjectFindMany).not.toHaveBeenCalled();
     });
   });
 });

@@ -9,6 +9,7 @@
 import type { MailTemplateKey } from "@/features/mail-templates/catalog";
 import { emailVerificationEmail } from "@/lib/mail/templates/emailVerification";
 import { invitationEmail } from "@/lib/mail/templates/invitation";
+import { issueShareEmail } from "@/lib/mail/templates/issueShare";
 import { issueUpdateEmail } from "@/lib/mail/templates/issueUpdate";
 import { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
 import { notificationEmail } from "@/lib/mail/templates/notification";
@@ -173,6 +174,21 @@ export function renderMailPreview(
         },
         override,
       );
+    case "notification.issueShared":
+      return notificationEmail(
+        {
+          to: SAMPLE_TO,
+          type: "issueShared",
+          actorLabel: "Jonas Reuter",
+          text: "Kannst du dir das mal ansehen?",
+          workspaceName: "Acme",
+          project: { name: "Apollo Redesign" },
+          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          url: SAMPLE_URL,
+          manageUrl: SAMPLE_MANAGE_URL,
+        },
+        override,
+      );
     case "weeklyDigest":
       return weeklyDigestEmail(
         {
@@ -205,6 +221,18 @@ export function renderMailPreview(
             { field: "Titel", to: "Login-Fehler dringend beheben" },
           ],
           url: SAMPLE_URL,
+        },
+        override,
+      );
+    case "issueShare":
+      return issueShareEmail(
+        {
+          to: SAMPLE_TO,
+          actorName: "Jonas Reuter",
+          issueIdentifier: "ACME-42",
+          issueTitle: "Login-Fehler beheben",
+          text: "Kannst du dir das mal ansehen?",
+          url: "https://issues.example.com/share/abc123",
         },
         override,
       );

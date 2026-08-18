@@ -9,8 +9,8 @@ import type { IssueDetail, Project } from "@/types";
 import { IssueComments } from "./components/IssueComments";
 import { IssueDescription } from "./components/IssueDescription";
 import {
-  CopyLinkButton,
   IssueActionsMenu,
+  ShareIssueButton,
 } from "./components/IssueDetailActions";
 import { IssueSidebar, PAGE_SIDEBAR_W } from "./components/IssueSidebar";
 import { IssueTitle } from "./components/IssueTitle";
@@ -80,10 +80,14 @@ export function IssueDetailPageView({
         </nav>
 
         <div className={styles.pageActions}>
-          <CopyLinkButton
-            workspaceId={data.workspaceId}
-            identifier={identifier}
-          />
+          {issue.access.canShare && (
+            <ShareIssueButton
+              issueId={issue.id}
+              shareUrl={issue.shareUrl}
+              members={data.members}
+              me={data.me}
+            />
+          )}
           {/* Ohne `OpenPageButton` daneben — hier ist die Seite schon. */}
           <IssueActionsMenu
             onDelete={onDelete}

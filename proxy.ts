@@ -7,8 +7,12 @@ import { routing } from "@/i18n/routing";
 //
 // `/invite` gehört dazu: der Token im Pfad ist die Berechtigung, und wer eine
 // Einladung annimmt, hat noch kein Passwort — ein Auth-Gate davor wäre eine Tür,
-// hinter der der Schlüssel liegt.
-const PUBLIC_PATHS = ["/login", "/register", "/invite"];
+// hinter der der Schlüssel liegt. `/join` (teilbarer Einladungslink,
+// `lib/invite-links.ts`) aus demselben Grund — die Seite selbst entscheidet
+// dort zwischen "schon angemeldet" und "erst noch anmelden". `/share`
+// (öffentlicher Issue-Link, `lib/issue-share.ts`) ist von Natur aus für
+// Nicht-Mitglieder gedacht — ein Auth-Gate davor widerspräche dem Zweck.
+const PUBLIC_PATHS = ["/login", "/register", "/invite", "/join", "/share"];
 
 const handleI18nRouting = createMiddleware(routing);
 

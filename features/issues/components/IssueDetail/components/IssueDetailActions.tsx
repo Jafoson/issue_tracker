@@ -1,15 +1,16 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import { issuePath } from "@/features/issues/issue-links";
-import { getPathname, Link } from "@/i18n/navigation";
-import type { Locale } from "@/i18n/routing";
+import { Link } from "@/i18n/navigation";
+import { useModal } from "@/lib/context";
+import type { User } from "@/types";
 import styles from "../issueDetail.module.scss";
+import { ShareIssueModal } from "./ShareIssueModal";
 
 interface OpenPageButtonProps {
   workspaceId: string;
@@ -42,50 +43,45 @@ export function OpenPageButton({
   );
 }
 
-interface CopyLinkButtonProps {
-  workspaceId: string;
-  identifier: string;
+interface ShareIssueButtonProps {
+  issueId: string;
+  shareUrl: string | null;
+  members: User[];
+  me: { id: string };
 }
 
-/**
- * Kopiert die Vollseiten-Adresse des Issues — nicht die aktuelle URL, damit im
- * Panel nicht die Filter der Liste mitwandern.
- */
-export function CopyLinkButton({
-  workspaceId,
-  identifier,
-}: CopyLinkButtonProps) {
+/** Öffnet den Dialog zum Ein-/Ausschalten des öffentlichen Lese-Links —
+ *  ohne `issue.share.manage` bleibt der Knopf ganz weg. */
+export function ShareIssueButton({
+  issueId,
+  shareUrl,
+  members,
+  me,
+}: ShareIssueButtonProps) {
   const t = useTranslations();
-  const locale = useLocale() as Locale;
-  const [copied, setCopied] = useState(false);
+  const { openModal } = useModal();
 
-  const copy = async () => {
-    const path = getPathname({
-      href: issuePath(workspaceId, identifier),
-      locale,
-    });
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}${path}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      // Ohne Clipboard-Freigabe (oder ohne HTTPS) bleibt es beim Versuch.
-    }
-  };
+  const open = () =>
+    openModal(({ close }) => (
+      <ShareIssueModal
+        issueId={issueId}
+        shareUrl={shareUrl}
+        members={members}
+        me={me}
+        close={close}
+      />
+    ));
 
-  const label = copied ? t("actions.linkCopied") : t("actions.copyLink");
+  const label = t("share.trigger");
 
   return (
     <Button
       variant="ghost"
       size="sm"
-      icon={
-        <Icon icon={copied ? "lucide:check" : "lucide:link-2"} width={15} />
-      }
-      className={copied ? styles.copied : undefined}
+      icon={<Icon icon="lucide:link" width={15} />}
       aria-label={label}
       title={label}
-      onClick={copy}
+      onClick={open}
     />
   );
 }

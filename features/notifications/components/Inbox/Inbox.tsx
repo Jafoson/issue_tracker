@@ -37,6 +37,7 @@ const EVENT_ICON: Record<NotificationEvent, string> = {
   status: "lucide:refresh-cw",
   invite: "lucide:user-plus",
   role: "lucide:shield",
+  issueShared: "lucide:link",
 };
 
 export function Inbox({ notifications, workspaceId, filter, statuses }: Props) {
@@ -92,6 +93,8 @@ export function Inbox({ notifications, workspaceId, filter, statuses }: Props) {
               role: n.text,
             })
           : t("inbox.event.roleWorkspace", { actor, role: n.text });
+      case "issueShared":
+        return t("inbox.event.issueShared", { actor, issue });
     }
   };
 

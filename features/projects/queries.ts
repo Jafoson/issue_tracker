@@ -6,8 +6,17 @@ import type {
   ProjectMembersView,
   ProjectSettingsView,
 } from "@/features/projects/types";
+// Dieselbe Form wie auf Workspace-Ebene — geteilt statt dupliziert, die
+// Übersichts-Tabelle (`PendingInvitations`) kennt ohnehin nur die Zeile, kein
+// Workspace oder Projekt.
+import type {
+  InviteLinkView,
+  PendingInvitationRow,
+  PendingInvitationsView,
+} from "@/features/workspaces/types";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { inviteLinkUrl } from "@/lib/invite-links";
 import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import {
   accessFor,
@@ -403,6 +412,133 @@ export const getProjectMembersView = cache(
       canRemove,
       canInvite: canAdd,
       nextCursor: offset + limit < rows.length ? String(offset + limit) : null,
+    };
+  },
+);
+
+/**
+ * Offene Einladungen eines Projekts — nur die projektgebundenen (Gäste ohne
+ * Workspace-Mitgliedschaft eingeschlossen). Das Workspace-Äquivalent
+ * (`getPendingWorkspaceInvitationsView`) filtert `projectId: null` und lässt
+ * diese hier bewusst aus — dieselbe Trennung wie beim Audit-Log.
+ */
+export const getPendingProjectInvitationsView = cache(
+  async (
+    projectId: string,
+    cursor?: string,
+    limit: number = TABLE_PAGE_SIZE,
+  ): Promise<PendingInvitationsView | null> => {
+    const access = await accessFor(await currentUserId(), { projectId });
+    if (!access.has("member.invite")) return null;
+
+    const now = new Date();
+    const invitations = await db.invitation.findMany({
+      where: { projectId, acceptedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      ...(cursor ? { cursor: { token: cursor }, skip: 1 } : {}),
+      select: {
+        token: true,
+        createdAt: true,
+        expires: true,
+        user: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+            projectMemberships: {
+              where: { projectId },
+              select: { role: { select: { name: true } } },
+            },
+          },
+        },
+        invitedBy: { select: { firstName: true, lastName: true } },
+      },
+    });
+
+    const rows: PendingInvitationRow[] = invitations.map((inv) => ({
+      token: inv.token,
+      email: inv.user.email,
+      firstName: inv.user.firstName,
+      lastName: inv.user.lastName,
+      roleName: inv.user.projectMemberships[0]?.role.name ?? "—",
+      invitedByName: inv.invitedBy
+        ? `${inv.invitedBy.firstName} ${inv.invitedBy.lastName}`.trim()
+        : null,
+      createdAt: inv.createdAt,
+      expires: inv.expires,
+      expired: inv.expires <= now,
+    }));
+
+    return {
+      rows,
+      canManage: true,
+      nextCursor:
+        invitations.length === limit
+          ? invitations[invitations.length - 1].token
+          : null,
+    };
+  },
+);
+
+/** Der teilbare Einladungslink eines Projekts, samt der Rollen, die zur
+ *  Neuerstellung zur Auswahl stehen. Projekt-Äquivalent zu
+ *  `getWorkspaceInviteLinkView`. */
+export const getProjectInviteLinkView = cache(
+  async (projectId: string): Promise<InviteLinkView | null> => {
+    const access = await accessFor(await currentUserId(), { projectId });
+    if (!access.has("member.invite")) return null;
+
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: { workspaceId: true },
+    });
+    if (!project) return null;
+
+    const actorRank = assignmentCeiling(access, "PROJECT");
+    const now = new Date();
+
+    const [roles, link] = await Promise.all([
+      db.role.findMany({
+        where: {
+          scope: "PROJECT",
+          OR: [
+            { system: true },
+            { workspaceId: project.workspaceId, projectId: null },
+            { projectId },
+          ],
+        },
+        orderBy: { rank: "desc" },
+      }),
+      db.inviteLink.findFirst({
+        where: { projectId, revokedAt: null },
+        orderBy: { createdAt: "desc" },
+        select: {
+          token: true,
+          roleId: true,
+          expiresAt: true,
+          role: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    const active =
+      link && (!link.expiresAt || link.expiresAt > now)
+        ? {
+            token: link.token,
+            url: inviteLinkUrl(link.token),
+            roleId: link.roleId,
+            roleName: link.role.name,
+            expiresAt: link.expiresAt,
+          }
+        : null;
+
+    return {
+      activeLink: active,
+      assignableRoles: roles
+        .filter((r) => r.rank <= actorRank)
+        .map((r) => ({ id: r.key, name: r.name, desc: r.desc, rank: r.rank })),
+      canManage: true,
     };
   },
 );

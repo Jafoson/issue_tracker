@@ -7,7 +7,6 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { CopyField } from "@/components/ui/atoms/CopyField/CopyField";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
-import { Input } from "@/components/ui/atoms/Input/Input";
 import { Label } from "@/components/ui/atoms/Label/Label";
 import { SelectMenu } from "@/components/ui/atoms/SelectMenu/SelectMenu";
 import {
@@ -16,8 +15,9 @@ import {
 } from "@/components/ui/layout/Modal/components/ModalFooter";
 import { ModalHeader } from "@/components/ui/layout/Modal/components/ModalHeader";
 import { Modal, ModalBody } from "@/components/ui/layout/Modal/Modal";
-import { inviteWorkspaceMember } from "@/features/workspaces/actions";
+import { inviteWorkspaceMembers } from "@/features/workspaces/actions";
 import { roleColor } from "@/lib/rbac";
+import { parseEmailList } from "@/lib/utils/parse-emails";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import type { Role } from "@/types";
 import styles from "./inviteMemberModal.module.scss";
@@ -29,56 +29,55 @@ interface Props {
   close: () => void;
 }
 
+type BulkResult = Awaited<ReturnType<typeof inviteWorkspaceMembers>>;
+type BulkRow = Extract<BulkResult, { rows: unknown }>["rows"][number];
+
 /**
- * Jemanden per E-Mail in den Workspace einladen.
+ * Eine oder mehrere Adressen in den Workspace einladen.
  *
- * Zwei Ausgänge, und der Dialog zeigt beide: ein bekanntes Konto ist danach
- * einfach dabei, für eine unbekannte Adresse entsteht ein Einladungslink. Der
- * geht per Mail raus, wenn SMTP konfiguriert ist (`mailSent`) — der Link
- * bleibt trotzdem stehen, bis er kopiert wurde, statt mit dem Dialog zu
- * verschwinden, für den Fall ohne Mailversand oder eine hakende Zustellung.
+ * Nach dem Absenden steht für jede Adresse eine eigene Zeile: ein bekanntes
+ * Konto ist danach einfach dabei, für eine unbekannte Adresse entsteht ein
+ * Einladungslink. Der geht per Mail raus, wenn SMTP konfiguriert ist
+ * (`mailSent`) — der Link bleibt trotzdem stehen, bis er kopiert wurde, statt
+ * mit dem Dialog zu verschwinden, für den Fall ohne Mailversand oder eine
+ * hakende Zustellung. Eine ungültige oder schon vergebene Adresse blockiert
+ * die übrigen Zeilen nicht.
  */
 export function InviteMemberModal({ workspaceId, roles, close }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [email, setEmail] = useState("");
+  const [emailsText, setEmailsText] = useState("");
   const [role, setRole] = useState(
     roles.find((r) => r.id === "member")?.id ?? roles.at(-1)?.id ?? "",
   );
   const [error, setError] = useState("");
-  const [inviteUrl, setInviteUrl] = useState("");
-  const [mailSent, setMailSent] = useState(false);
-  const [added, setAdded] = useState("");
+  const [rows, setRows] = useState<BulkRow[] | null>(null);
 
   const selected = roles.find((r) => r.id === role);
-  const done = !!inviteUrl || !!added;
+  const done = rows !== null;
+  const emails = parseEmailList(emailsText);
 
   const submit = () => {
     if (done) {
       finish();
       return;
     }
-    if (!email.trim() || !role || isPending) return;
+    if (emails.length === 0 || !role || isPending) return;
     setError("");
 
     startTransition(async () => {
-      const result = await inviteWorkspaceMember({
+      const result = await inviteWorkspaceMembers({
         workspaceId,
-        email: email.trim(),
+        emails,
         role,
       });
       if ("error" in result) {
         setError(result.error);
         return;
       }
-      if (result.inviteUrl) {
-        setInviteUrl(result.inviteUrl);
-        setMailSent(!!result.mailSent);
-      } else {
-        setAdded(email.trim());
-      }
+      setRows(result.rows);
       router.refresh();
     });
   };
@@ -101,7 +100,7 @@ export function InviteMemberModal({ workspaceId, roles, close }: Props) {
           />
         }
         title={
-          inviteUrl ? t("members.inviteLinkTitle") : t("members.inviteTitle")
+          done ? t("members.inviteResultsTitle") : t("members.inviteTitle")
         }
         onClose={finish}
         closeLabel={t("actions.close")}
@@ -109,37 +108,68 @@ export function InviteMemberModal({ workspaceId, roles, close }: Props) {
 
       <ModalBody className={styles.body}>
         {done ? (
-          <>
-            <p className={styles.desc}>
-              {inviteUrl
-                ? t(
-                    mailSent
-                      ? "members.inviteLinkDescMailed"
-                      : "members.inviteLinkDesc",
-                  )
-                : t("members.inviteAdded", { email: added })}
-            </p>
-            {inviteUrl && (
-              <CopyField
-                value={inviteUrl}
-                copyLabel={t("members.inviteLinkCopy")}
-                copiedLabel={t("members.inviteLinkCopied")}
-              />
-            )}
-          </>
+          <ul className={styles.resultList}>
+            {rows.map((row) => (
+              <li key={row.email} className={styles.resultRow}>
+                <div className={styles.resultHead}>
+                  <Icon
+                    icon={
+                      "error" in row.result
+                        ? "lucide:circle-alert"
+                        : row.result.inviteUrl
+                          ? "lucide:mail"
+                          : "lucide:check"
+                    }
+                    width={14}
+                    className={
+                      "error" in row.result
+                        ? styles.resultIconError
+                        : styles.resultIconOk
+                    }
+                  />
+                  <span className={styles.resultEmail}>{row.email}</span>
+                </div>
+                {"error" in row.result ? (
+                  <p className={styles.resultError}>{row.result.error}</p>
+                ) : row.result.inviteUrl ? (
+                  <>
+                    <p className={styles.resultNote}>
+                      {t(
+                        row.result.mailSent
+                          ? "members.inviteMailedShort"
+                          : "members.inviteLinkOnlyShort",
+                      )}
+                    </p>
+                    <CopyField
+                      value={row.result.inviteUrl}
+                      copyLabel={t("members.inviteLinkCopy")}
+                      copiedLabel={t("members.inviteLinkCopied")}
+                    />
+                  </>
+                ) : (
+                  <p className={styles.resultNote}>
+                    {t("members.inviteAddedShort")}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         ) : (
           <>
             <p className={styles.desc}>{t("members.inviteDesc")}</p>
 
-            <Input
-              autoFocus
-              label={t("fields.email")}
-              inputMode="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
-            />
+            <div className={styles.field}>
+              <span className={styles.label}>{t("members.emailsLabel")}</span>
+              <textarea
+                className={styles.emailsInput}
+                placeholder={t("members.emailsPlaceholder")}
+                value={emailsText}
+                onChange={(e) => setEmailsText(e.target.value)}
+                rows={3}
+                spellCheck={false}
+              />
+              <span className={styles.hint}>{t("members.emailsHint")}</span>
+            </div>
 
             <div className={styles.field}>
               <span className={styles.label}>{t("fields.role")}</span>
@@ -207,7 +237,7 @@ export function InviteMemberModal({ workspaceId, roles, close }: Props) {
             </Button>
             <Button
               variant="primary"
-              disabled={!email.trim() || !role || isPending}
+              disabled={emails.length === 0 || !role || isPending}
               onClick={submit}
             >
               {t("actions.inviteMember")}

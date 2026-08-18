@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getMailTemplateOverride } from "@/lib/mail/overrides";
 import { isMailConfigured, sendMail } from "@/lib/mail/send";
 import { invitationEmail } from "@/lib/mail/templates/invitation";
+import { issueShareEmail } from "@/lib/mail/templates/issueShare";
 import { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
 
 export { isMailConfigured, sendMail } from "@/lib/mail/send";
@@ -10,6 +11,8 @@ export type { EmailVerificationInput } from "@/lib/mail/templates/emailVerificat
 export { emailVerificationEmail } from "@/lib/mail/templates/emailVerification";
 export type { InvitationEmailInput } from "@/lib/mail/templates/invitation";
 export { invitationEmail } from "@/lib/mail/templates/invitation";
+export type { IssueShareEmailInput } from "@/lib/mail/templates/issueShare";
+export { issueShareEmail } from "@/lib/mail/templates/issueShare";
 export type {
   IssueUpdateChange,
   IssueUpdateEmailInput,
@@ -159,5 +162,55 @@ export async function sendMemberRemovedEmail(
     await sendMail({ to: user.email, subject, html, text });
   } catch (error) {
     console.error("[mail] Entfernen nicht verschickt:", error);
+  }
+}
+
+export interface SendIssueShareLinkEmailInput {
+  to: string;
+  actorId: string;
+  issueIdentifier: string;
+  issueTitle: string;
+  text?: string;
+  url: string;
+}
+
+/**
+ * Verschickt den öffentlichen Lese-Link eines Issues an eine beliebige
+ * Adresse — anders als `sendInvitationEmail`/`sendMemberRemovedEmail` nicht an
+ * ein Konto im System, `to` kommt direkt von der teilenden Person.
+ *
+ * Schluckt jeden Fehler: der Link steht zu diesem Zeitpunkt schon, eine
+ * hakende Mail darf das Teilen selbst nicht rückgängig machen.
+ */
+export async function sendIssueShareLinkEmail(
+  input: SendIssueShareLinkEmailInput,
+): Promise<void> {
+  if (!isMailConfigured()) return;
+
+  try {
+    const [actor, override] = await Promise.all([
+      db.user.findUnique({
+        where: { id: input.actorId },
+        select: { firstName: true, lastName: true },
+      }),
+      getMailTemplateOverride("issueShare"),
+    ]);
+
+    const { subject, html, text } = issueShareEmail(
+      {
+        to: input.to,
+        actorName: actor
+          ? `${actor.firstName} ${actor.lastName}`.trim()
+          : "Jemand",
+        issueIdentifier: input.issueIdentifier,
+        issueTitle: input.issueTitle,
+        text: input.text,
+        url: input.url,
+      },
+      override,
+    );
+    await sendMail({ to: input.to, subject, html, text });
+  } catch (error) {
+    console.error("[mail] Geteilter Link nicht verschickt:", error);
   }
 }

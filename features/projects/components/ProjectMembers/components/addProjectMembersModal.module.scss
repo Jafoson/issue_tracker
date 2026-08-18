@@ -76,11 +76,97 @@
   font-size: var(--text-sm);
 }
 
-/* Erklärt den Einladungslink darunter — dieselbe Rolle wie ein Feld-Hint, nur für
-   den ganzen Dialogschritt. */
-.inviteLinkDesc {
-  margin: 0;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface-variant);
+}
+
+.emailsInput {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--on-surface);
+  font: inherit;
   font-size: var(--text-sm);
   line-height: 1.5;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+/* Eine Zeile pro E-Mail — dieselbe zweistufige Modal-UX (Formular →
+   Bestätigung) wie beim Einzel-Invite in `InviteMemberModal`, nur mit
+   mehreren Ergebnissen statt einem. */
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resultRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--outline-variant);
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.resultHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.resultEmail {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface);
+}
+
+.resultIconOk {
+  flex: none;
+  color: var(--success, var(--primary));
+}
+
+.resultIconError {
+  flex: none;
+  color: var(--error);
+}
+
+.resultError {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--error);
+}
+
+.resultNote {
+  margin: 0;
+  font-size: var(--text-sm);
   color: var(--on-surface-variant);
 }

@@ -1,0 +1,78 @@
+/* Die E-Mail-Zelle trägt zwei Textzeilen (Adresse + Name) — ohne die höhere
+   Vorgabe hier zentriert der Tisch die Nachbarspalten auf eine einzeilige
+   Zeilenhöhe und die zweite Zeile ragt in die nächste Zeile hinein. */
+.content {
+  --table-row-height: 60px;
+
+  flex: 1;
+  min-height: 0;
+  padding: 12px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.email {
+  font-size: var(--text-base);
+  color: var(--on-surface);
+}
+
+.name {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.invitedBy {
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+}
+
+.expired {
+  color: var(--error);
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: var(--text-sm);
+}
+
+.resent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-container-high);
+}
+
+.resentText {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+}

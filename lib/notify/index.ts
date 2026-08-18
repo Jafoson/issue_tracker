@@ -76,6 +76,8 @@ async function notificationPrefsFor(
       inviteEmail: true,
       roleInApp: true,
       roleEmail: true,
+      issueSharedInApp: true,
+      issueSharedEmail: true,
     },
   });
   return new Map(rows.map(({ userId, ...settings }) => [userId, settings]));
@@ -91,6 +93,7 @@ const EMAIL_DEFAULT: Record<NotificationEvent, boolean> = {
   status: false,
   invite: true,
   role: true,
+  issueShared: true,
 };
 
 interface EmailContext {

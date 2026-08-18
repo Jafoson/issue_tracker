@@ -54,6 +54,30 @@ model Workspace {
   // Wichtige externe Adressen — Dokumentation, Repository, Chat.
   links         WorkspaceLink[]
   notifications Notification[]
+  domains       WorkspaceDomain[]
+  inviteLinks   InviteLink[]
+}
+
+/// Eine E-Mail-Domain, über die neue Konten automatisch in diesen Workspace
+/// aufgenommen werden (`register()`, `features/auth/actions.ts`).
+///
+/// `domain` ist der Primärschlüssel statt eines gewöhnlichen Felds mit
+/// `@@unique`: eine Domain gehört exklusiv zu höchstens einem Workspace, sonst
+/// könnte ein zweiter Workspace dieselbe Domain beanspruchen und Leute abgreifen,
+/// die eigentlich dem ersten beitreten wollten. Bekannte Freemail-Domains
+/// (gmail.com und ähnliche) lehnt `addWorkspaceDomain()` schon beim Anlegen ab —
+/// die Exklusivität hier schützt nur vor zwei Workspaces, nicht vor einem
+/// einzelnen, der sich versehentlich (oder absichtlich) eine öffentliche
+/// Domain aneignet.
+model WorkspaceDomain {
+  /// Normalisiert: klein geschrieben, ohne führendes "@".
+  domain      String   @id
+  workspaceId String
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 /// Eine wichtige externe Adresse eines Workspace — Dokumentation, Repository,
@@ -118,6 +142,8 @@ model User {
   accounts            Account[]
   sessions            Session[]
   invitations         Invitation[]
+  invitationsSent     Invitation[]                   @relation("InvitationInvitedBy")
+  inviteLinksCreated  InviteLink[]                    @relation("InviteLinkCreatedBy")
   preferences         UserPreferences?
   dashboards          DashboardPreference[]
   workspaceDashboards WorkspaceDashboardPreference[]
@@ -161,6 +187,8 @@ model UserPreferences {
   inviteEmail    Boolean @default(true)
   roleInApp      Boolean @default(true)
   roleEmail      Boolean @default(true)
+  issueSharedInApp Boolean @default(true)
+  issueSharedEmail Boolean @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -341,6 +369,7 @@ model Project {
   // Wie einzelne Personen das Dashboard dieses Projekts eingerichtet haben.
   dashboards    DashboardPreference[]
   notifications Notification[]
+  inviteLinks   InviteLink[]
 
   @@unique([workspaceId, prefix])
   @@unique([workspaceId, slug])
@@ -421,6 +450,10 @@ model Invitation {
   userId      String
   /// Projekt, aus dem die Einladung kam — Ziel des Sprungs nach der Annahme.
   projectId   String?
+  /// Wer eingeladen hat — für die Übersicht offener Einladungen ("eingeladen
+  /// von"). `null` bei Zeilen von vor dieser Spalte; kein Backfill nötig, die
+  /// Übersicht zeigt dafür "Unbekannt".
+  invitedById String?
   createdAt   DateTime  @default(now())
   expires     DateTime
   /// Gesetzt, sobald der Zugang eingerichtet wurde. Danach ist der Token tot.
@@ -429,9 +462,41 @@ model Invitation {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  invitedBy User?     @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
 
   @@index([userId, workspaceId])
   @@index([workspaceId])
+}
+
+/// Ein teilbarer Einladungslink: eine feste Rolle, unbegrenzt viele
+/// Einlösungen, bis er abläuft oder widerrufen wird. Bewusst getrennt von
+/// `Invitation` — die ist "1 Token → 1 vorab angelegtes Konto", das hier ist
+/// "1 Token → viele Einlösungen, keine vorab bekannte Identität". Kein
+/// `maxUses`/`useCount` in v1: unbegrenzt bis Ablauf/Widerruf ist der
+/// einfachste Fall, ein Zähler ist eine rein additive Migration, falls später
+/// gebraucht.
+model InviteLink {
+  token       String    @id
+  workspaceId String
+  /// `null` = Workspace-weiter Link. Gesetzt = auf ein Projekt beschränkt
+  /// (Rolle kann auch die Projekt-Gast-Rolle sein, dann ohne
+  /// Workspace-Mitgliedschaft — dieselbe Fallunterscheidung wie bei
+  /// `inviteOneProjectMember`).
+  projectId   String?
+  roleId      String
+  createdById String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  /// Gesetzt heißt: nicht mehr einlösbar, unabhängig von `expiresAt`.
+  revokedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("InviteLinkCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([projectId])
 }
 
 // ─── Global config (shared across workspaces via join tables) ─────────────────
@@ -543,6 +608,7 @@ model Role {
   platformUsers    User[]            @relation("UserPlatformRole")
   // Team-Projekt-Verknüpfungen, die diese Rolle verleihen.
   teamProjects     TeamProject[]
+  inviteLinks      InviteLink[]
 
   @@index([scope, workspaceId])
   @@index([projectId])
@@ -660,6 +726,13 @@ model Issue {
   /// und die Durchlaufzeit, und beide wären damit nicht bloß ungenau, sondern
   /// rückwirkend veränderlich.
   closedAt DateTime?
+
+  /// Token für den öffentlichen Lese-Link (`issue.share.manage`). `null` heißt
+  /// Teilen aus. Ein Feld statt eines eigenen Modells: es gibt nur einen
+  /// aktiven Link pro Issue, kein Verlauf, kein Zähler — genau das, was ein
+  /// „an/aus mit Regenerieren"-Schalter braucht, wer wann geteilt hat steht
+  /// im Audit-Log (`issue.shared`/`issue.share.revoked`).
+  shareToken String? @unique
 
   assigneeId String?
   reporterId String

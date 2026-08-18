@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  getPendingProjectInvitationsView,
   getProjectLabelsView,
   getProjectMembersView,
   getProjectsOverview,
@@ -12,9 +13,11 @@ import type {
   ProjectMemberRow,
   ProjectVisibility,
 } from "@/features/projects/types";
+import type { PendingInvitationRow } from "@/features/workspaces/types";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { createInvitation, invitationUrl } from "@/lib/invitations";
+import { createInviteLink, inviteLinkUrl } from "@/lib/invite-links";
 import {
   isMailConfigured,
   sendInvitationEmail,
@@ -670,13 +673,94 @@ export async function removeProjectMember(
   return { ok: true };
 }
 
+/** Obergrenze pro Aufruf — der einzige verfügbare Schutz, solange es im Repo
+ *  kein Rate-Limiting gibt (weder hier noch anderswo). */
+const MAX_BULK_PROJECT_INVITES = 50;
+
+type BulkProjectInviteRow = { email: string; result: ProjectResult };
+type BulkProjectInviteResult =
+  | { rows: BulkProjectInviteRow[] }
+  | { error: string };
+
 /**
- * Lädt jemanden per E-Mail ins Projekt ein.
+ * Lädt jemanden per E-Mail ins Projekt ein. Dünner Wrapper um
+ * `inviteProjectMembers` für eine einzelne Adresse.
+ */
+export async function inviteProjectMember(data: {
+  projectId: string;
+  email: string;
+  role: string;
+}): Promise<ProjectResult> {
+  const result = await inviteProjectMembers({
+    projectId: data.projectId,
+    emails: [data.email],
+    role: data.role,
+  });
+  if ("error" in result) return result;
+  // `emails: [data.email]` liefert genau eine Zeile.
+  return (result.rows[0] as BulkProjectInviteRow).result;
+}
+
+/**
+ * Lädt mehrere Adressen auf einmal ins Projekt ein.
+ *
+ * Rollenauflösung und die Workspace-seitige `member.invite`-Prüfung (nötig für
+ * den Neukonto-Zweig, siehe `inviteOneProjectMember`) laufen einmal vor der
+ * Schleife statt pro Adresse — dieselbe Begründung wie bei
+ * `inviteWorkspaceMembers`.
+ */
+export async function inviteProjectMembers(data: {
+  projectId: string;
+  emails: string[];
+  role: string;
+}): Promise<BulkProjectInviteResult> {
+  const guard = await requireMemberManage(data.projectId, "member.invite");
+  if ("error" in guard) return guard;
+
+  const role = await resolveAssignable(guard, data.role);
+  if ("error" in role) return role;
+
+  const emails = [...new Set(data.emails.map((e) => e.trim().toLowerCase()))];
+  if (emails.length === 0) return { error: "Add at least one email address." };
+  if (emails.length > MAX_BULK_PROJECT_INVITES)
+    return {
+      error: `You can invite at most ${MAX_BULK_PROJECT_INVITES} people at once.`,
+    };
+
+  // Nur für den Neukonto-Zweig relevant, aber unabhängig von der jeweiligen
+  // E-Mail — einmal geprüft statt pro Adresse.
+  const canInviteToWorkspace = await can(guard.actorId, "member.invite", {
+    workspaceId: guard.workspaceId,
+  });
+
+  const rows: BulkProjectInviteRow[] = [];
+  for (const email of emails) {
+    rows.push({
+      email,
+      result: await inviteOneProjectMember({
+        projectId: data.projectId,
+        email,
+        roleKey: data.role,
+        guard,
+        role,
+        canInviteToWorkspace,
+      }),
+    });
+  }
+
+  revalidatePath("/", "layout");
+  return { rows };
+}
+
+/**
+ * Eine einzelne Adresse ins Projekt einladen — der Rumpf, den
+ * `inviteProjectMembers` pro E-Mail wiederholt. Rolle und Berechtigung sind
+ * hier schon geklärt.
  *
  * Existiert der Account schon, reicht `member.invite` im Projekt — es entsteht
  * nur ein Projekt-Eintrag. Für eine unbekannte Adresse muss ein Account angelegt
  * werden; das ist eine Workspace-Operation und verlangt `member.invite`
- * zusätzlich im Workspace-Kontext.
+ * zusätzlich im Workspace-Kontext (`canInviteToWorkspace`).
  *
  * Die Projektrolle entscheidet über die Workspace-Mitgliedschaft: ein Gast
  * bleibt bewusst außen vor und sieht nur dieses eine Projekt, jede andere Rolle
@@ -684,18 +768,17 @@ export async function removeProjectMember(
  * dazu. Projekt- und Workspace-Rollen sind seit dem dreistufigen RBAC zwei
  * getrennte Töpfe — der Projektrollen-Key taugt hier also nicht als Workspace-Rolle.
  */
-export async function inviteProjectMember(data: {
+async function inviteOneProjectMember(params: {
   projectId: string;
   email: string;
-  role: string;
+  roleKey: string;
+  guard: MemberGuard;
+  role: { id: string; rank: number; name: string };
+  canInviteToWorkspace: boolean;
 }): Promise<ProjectResult> {
-  const guard = await requireMemberManage(data.projectId, "member.invite");
-  if ("error" in guard) return guard;
+  const { projectId, email, roleKey, guard, role, canInviteToWorkspace } =
+    params;
 
-  const role = await resolveAssignable(guard, data.role);
-  if ("error" in role) return role;
-
-  const email = data.email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return { error: "Please enter a valid email address." };
 
@@ -707,7 +790,7 @@ export async function inviteProjectMember(data: {
   if (existing) {
     const member = await db.projectMember.findUnique({
       where: {
-        projectId_userId: { projectId: data.projectId, userId: existing.id },
+        projectId_userId: { projectId, userId: existing.id },
       },
       select: { userId: true },
     });
@@ -715,7 +798,7 @@ export async function inviteProjectMember(data: {
 
     await db.projectMember.create({
       data: {
-        projectId: data.projectId,
+        projectId,
         userId: existing.id,
         roleId: role.id,
         origin: "manual",
@@ -730,7 +813,7 @@ export async function inviteProjectMember(data: {
       type: "invite",
       actorId: guard.actorId,
       workspaceId: guard.workspaceId,
-      projectId: data.projectId,
+      projectId,
       text: role.name,
     });
 
@@ -744,19 +827,14 @@ export async function inviteProjectMember(data: {
       },
       personColor: existing.color,
       workspaceId: guard.workspaceId,
-      projectId: data.projectId,
+      projectId,
       meta: { role: role.name },
     });
 
-    revalidatePath("/", "layout");
     return { ok: true };
   }
 
-  if (
-    !(await can(guard.actorId, "member.invite", {
-      workspaceId: guard.workspaceId,
-    }))
-  ) {
+  if (!canInviteToWorkspace) {
     return {
       error: "You are not allowed to invite new people to this workspace.",
     };
@@ -782,7 +860,7 @@ export async function inviteProjectMember(data: {
       select: { id: true },
     });
 
-    if (data.role !== PROJECT_GUEST_ROLE_KEY) {
+    if (roleKey !== PROJECT_GUEST_ROLE_KEY) {
       await tx.workspaceMember.create({
         data: {
           workspaceId: guard.workspaceId,
@@ -803,11 +881,11 @@ export async function inviteProjectMember(data: {
     // Die Zeile kann aus der Aufnahme oben schon stehen, deshalb `upsert`.
     await tx.projectMember.upsert({
       where: {
-        projectId_userId: { projectId: data.projectId, userId: user.id },
+        projectId_userId: { projectId, userId: user.id },
       },
       update: { roleId: role.id, origin: "manual" },
       create: {
-        projectId: data.projectId,
+        projectId,
         userId: user.id,
         roleId: role.id,
         origin: "manual",
@@ -820,7 +898,8 @@ export async function inviteProjectMember(data: {
       {
         userId: user.id,
         workspaceId: guard.workspaceId,
-        projectId: data.projectId,
+        projectId,
+        invitedById: guard.actorId,
       },
       now,
     );
@@ -830,15 +909,47 @@ export async function inviteProjectMember(data: {
   await sendInvitationEmail({
     to: email,
     workspaceId: guard.workspaceId,
-    projectId: data.projectId,
+    projectId,
     inviterId: guard.actorId,
     roleName: role.name,
     expiresAt,
     inviteUrl,
   });
 
-  revalidatePath("/", "layout");
   return { ok: true, inviteUrl, mailSent: isMailConfigured() };
+}
+
+/**
+ * Erstellt (oder erneuert) den teilbaren Einladungslink eines Projekts für
+ * eine Rolle — Projekt-Äquivalent zu `createWorkspaceInviteLink`.
+ */
+export async function createProjectInviteLink(
+  projectId: string,
+  role: string,
+  expiresAt?: Date,
+): Promise<
+  { ok: true; url: string; expiresAt: Date | null } | { error: string }
+> {
+  const guard = await requireMemberManage(projectId, "member.invite");
+  if ("error" in guard) return guard;
+
+  const resolved = await resolveAssignable(guard, role);
+  if ("error" in resolved) return resolved;
+
+  const { token, expiresAt: expiry } = await createInviteLink(
+    db,
+    {
+      workspaceId: guard.workspaceId,
+      projectId,
+      roleId: resolved.id,
+      createdById: guard.actorId,
+      expiresAt: expiresAt ?? null,
+    },
+    new Date(),
+  );
+
+  revalidatePath("/", "layout");
+  return { ok: true, url: inviteLinkUrl(token), expiresAt: expiry };
 }
 
 /** Eine weitere Seite Projekte fürs Infinite Scroll in `ProjectOverview`. */
@@ -879,6 +990,18 @@ export async function loadMoreProjectMembers(
   cursor: string,
 ): Promise<{ items: ProjectMemberRow[]; nextCursor: string | null }> {
   const view = await getProjectMembersView(projectId, cursor);
+  return view
+    ? { items: view.rows, nextCursor: view.nextCursor }
+    : { items: [], nextCursor: null };
+}
+
+/** Eine weitere Seite offener Einladungen fürs Infinite Scroll im
+ * "Einladungen"-Tab der Projekt-Einstellungen. */
+export async function loadMorePendingProjectInvitations(
+  projectId: string,
+  cursor: string,
+): Promise<{ items: PendingInvitationRow[]; nextCursor: string | null }> {
+  const view = await getPendingProjectInvitationsView(projectId, cursor);
   return view
     ? { items: view.rows, nextCursor: view.nextCursor }
     : { items: [], nextCursor: null };
