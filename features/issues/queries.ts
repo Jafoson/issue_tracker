@@ -537,10 +537,40 @@ export const getIssueByRef = cache(
 );
 
 /** Eine minimale, absichtlich unvollständige Projektion für die öffentliche
- *  Issue-Seite — kein `access`, kein Assignee, keine internen Ids in der
- *  Antwort außer denen, die die Anzeige selbst braucht. Die Seite darf
- *  strukturell keine Bearbeitungs-UI rendern können. */
+ *  Issue-Seite — kein `access`, keine internen Ids in der Antwort außer
+ *  denen, die die Anzeige selbst braucht. Die Seite darf strukturell keine
+ *  Bearbeitungs-UI rendern können. */
+/** Reicht für `components/ui/atoms/Avatar` (`PersonAvatarData`) — hier lokal
+ *  definiert statt von dort importiert, damit diese Abfrage keine
+ *  UI-Abhängigkeit bekommt. */
+interface PublicPerson {
+  firstName: string;
+  lastName: string;
+  color: string;
+  image?: string;
+}
+
+function toPerson<
+  T extends {
+    firstName: string;
+    lastName: string;
+    color: string;
+    image: string | null;
+  },
+>(u: T): PublicPerson {
+  return {
+    firstName: u.firstName,
+    lastName: u.lastName,
+    color: u.color,
+    image: u.image ?? undefined,
+  };
+}
+
 export interface PublicSharedIssue {
+  identifier: string;
+  /** Für den Weg zurück in die App, wenn die betrachtende Person bereits
+   *  Zugriff hat (`SharedIssuePage`, Redirect via `getIssueByRef`). */
+  workspaceId: string;
   title: string;
   description: PMDoc;
   status: { name: string; color: string } | null;
@@ -549,31 +579,62 @@ export interface PublicSharedIssue {
   labels: { id: string; name: string; color: string }[];
   projectName: string;
   workspaceName: string;
-  comments: { id: string; body: PMDoc; authorName: string; created: Date }[];
+  assignee: PublicPerson | null;
+  reporter: PublicPerson;
+  /** Wer den Link erzeugt hat — `null`, wenn das Konto seither weg ist
+   *  (`onDelete: SetNull`). */
+  sharedBy: PublicPerson | null;
+  sharedAt: Date | null;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  comments: {
+    id: string;
+    body: PMDoc;
+    author: PublicPerson;
+    created: Date;
+  }[];
 }
 
 /**
  * Löst einen öffentlichen Issue-Link auf. `null` heißt in jedem Fall
- * dasselbe: unbekannter, deaktivierter oder nie aktivierter Token — dieselbe
- * Zurückhaltung wie `openInvitation`/`resolveInviteLink`.
+ * dasselbe: unbekannter, deaktivierter, abgelaufener oder nie aktivierter
+ * Token — dieselbe Zurückhaltung wie `openInvitation`/`resolveInviteLink`.
  */
 export async function getIssueByShareToken(
   token: string,
+  now: Date = new Date(),
 ): Promise<PublicSharedIssue | null> {
   if (!token) return null;
+
+  const personSelect = {
+    firstName: true,
+    lastName: true,
+    color: true,
+    image: true,
+  } as const;
 
   const issue = await db.issue.findUnique({
     where: { shareToken: token },
     select: {
+      key: true,
       title: true,
       description: true,
       status: true,
       priority: true,
       type: true,
       labels: true,
+      created: true,
+      updated: true,
+      shareTokenCreatedAt: true,
+      shareTokenExpiresAt: true,
+      assignee: { select: personSelect },
+      reporter: { select: personSelect },
+      sharedBy: { select: personSelect },
       project: {
         select: {
           name: true,
+          prefix: true,
           workspaceId: true,
           workspace: { select: { name: true } },
         },
@@ -584,12 +645,14 @@ export async function getIssueByShareToken(
           id: true,
           body: true,
           created: true,
-          author: { select: { firstName: true, lastName: true } },
+          author: { select: personSelect },
         },
       },
     },
   });
   if (!issue) return null;
+  if (issue.shareTokenExpiresAt && issue.shareTokenExpiresAt <= now)
+    return null;
 
   const [statuses, priorities, types, labelRows] = await Promise.all([
     getStatuses(issue.project.workspaceId),
@@ -608,6 +671,8 @@ export async function getIssueByShareToken(
   const type = types.find((t) => t.id === issue.type) ?? null;
 
   return {
+    identifier: `${issue.project.prefix}-${issue.key}`,
+    workspaceId: issue.project.workspaceId,
     title: issue.title,
     description: toDoc(issue.description),
     status: status ? { name: status.name, color: status.color } : null,
@@ -616,10 +681,17 @@ export async function getIssueByShareToken(
     labels: labelRows,
     projectName: issue.project.name,
     workspaceName: issue.project.workspace.name,
+    assignee: issue.assignee ? toPerson(issue.assignee) : null,
+    reporter: toPerson(issue.reporter),
+    sharedBy: issue.sharedBy ? toPerson(issue.sharedBy) : null,
+    sharedAt: issue.shareTokenCreatedAt,
+    expiresAt: issue.shareTokenExpiresAt,
+    createdAt: issue.created,
+    updatedAt: issue.updated,
     comments: issue.comments.map((c) => ({
       id: c.id,
       body: toDoc(c.body),
-      authorName: `${c.author.firstName} ${c.author.lastName}`.trim(),
+      author: toPerson(c.author),
       created: c.created,
     })),
   };

@@ -10,7 +10,11 @@ import type {
 } from "@/lib/audit/actions";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
-import { issueShareUrl, newIssueShareToken } from "@/lib/issue-share";
+import {
+  ISSUE_SHARE_LINK_DAYS,
+  issueShareUrl,
+  newIssueShareToken,
+} from "@/lib/issue-share";
 import { sendIssueShareLinkEmail } from "@/lib/mail";
 import { notify } from "@/lib/notify";
 import {
@@ -66,6 +70,7 @@ async function issueContext(id: string) {
       title: true,
       description: true,
       shareToken: true,
+      shareTokenExpiresAt: true,
       project: { select: { workspaceId: true, prefix: true } },
     },
   });
@@ -886,6 +891,20 @@ export async function deleteIssue(id: string) {
   await revalidate();
 }
 
+/** Neuer Token + die Metadaten, die `/share/[token]` über den aktuellen Link
+ *  anzeigt (wer, wann, bis wann) — an einer Stelle, damit `enableIssueShare`
+ *  und das stille Einschalten aus `shareIssueByEmail` nicht auseinanderlaufen. */
+function newShareTokenData(actorId: string, now: Date) {
+  return {
+    shareToken: newIssueShareToken(),
+    shareTokenCreatedAt: now,
+    shareTokenCreatedById: actorId,
+    shareTokenExpiresAt: new Date(
+      now.getTime() + ISSUE_SHARE_LINK_DAYS * 24 * 60 * 60 * 1000,
+    ),
+  };
+}
+
 /**
  * Schaltet den öffentlichen Lese-Link eines Issues ein und erzeugt (oder
  * erneuert) den Token. Wer den Link kennt, sieht Titel, Beschreibung, Status/
@@ -900,13 +919,13 @@ export async function enableIssueShare(
     projectId: issue.projectId,
   });
 
-  const token = newIssueShareToken();
-  await db.issue.update({ where: { id }, data: { shareToken: token } });
+  const data = newShareTokenData(actorId, new Date());
+  await db.issue.update({ where: { id }, data });
 
   await recordIssueAudit("issue.shared", id, issue, actorId);
 
   await revalidate();
-  return { ok: true, url: issueShareUrl(token) };
+  return { ok: true, url: issueShareUrl(data.shareToken) };
 }
 
 /** Schaltet den öffentlichen Lese-Link wieder aus — der alte Token wird ungültig. */
@@ -916,7 +935,15 @@ export async function disableIssueShare(id: string): Promise<{ ok: true }> {
     projectId: issue.projectId,
   });
 
-  await db.issue.update({ where: { id }, data: { shareToken: null } });
+  await db.issue.update({
+    where: { id },
+    data: {
+      shareToken: null,
+      shareTokenCreatedAt: null,
+      shareTokenExpiresAt: null,
+      shareTokenCreatedById: null,
+    },
+  });
 
   await recordIssueAudit("issue.share.revoked", id, issue, actorId);
 
@@ -975,10 +1002,17 @@ export async function shareIssueByEmail(
   const to = email.trim().toLowerCase();
   if (!isValidEmail(to)) return { error: "invalid-email" };
 
-  let token = issue.shareToken;
-  if (!token) {
-    token = newIssueShareToken();
-    await db.issue.update({ where: { id }, data: { shareToken: token } });
+  const now = new Date();
+  let token: string;
+  if (
+    issue.shareToken &&
+    (!issue.shareTokenExpiresAt || issue.shareTokenExpiresAt > now)
+  ) {
+    token = issue.shareToken;
+  } else {
+    const data = newShareTokenData(actorId, now);
+    token = data.shareToken;
+    await db.issue.update({ where: { id }, data });
     await recordIssueAudit("issue.shared", id, issue, actorId);
     await revalidate();
   }

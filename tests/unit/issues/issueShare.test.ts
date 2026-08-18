@@ -124,7 +124,12 @@ describe("enableIssueShare()", () => {
     expect(result.url).toContain("/share/");
     expect(mockIssueUpdate).toHaveBeenCalledWith({
       where: { id: ID },
-      data: { shareToken: expect.any(String) },
+      data: {
+        shareToken: expect.any(String),
+        shareTokenCreatedAt: expect.any(Date),
+        shareTokenCreatedById: ACTOR,
+        shareTokenExpiresAt: expect.any(Date),
+      },
     });
   });
 
@@ -146,13 +151,18 @@ describe("disableIssueShare()", () => {
     expect(mockIssueUpdate).not.toHaveBeenCalled();
   });
 
-  it("löscht den Token", async () => {
+  it("löscht den Token und seine Metadaten", async () => {
     const result = await disableIssueShare(ID);
 
     expect(result).toEqual({ ok: true });
     expect(mockIssueUpdate).toHaveBeenCalledWith({
       where: { id: ID },
-      data: { shareToken: null },
+      data: {
+        shareToken: null,
+        shareTokenCreatedAt: null,
+        shareTokenExpiresAt: null,
+        shareTokenCreatedById: null,
+      },
     });
   });
 
@@ -224,12 +234,17 @@ describe("shareIssueByEmail()", () => {
     expect(result).toEqual({ ok: true, url: expect.any(String) });
     expect(mockIssueUpdate).toHaveBeenCalledWith({
       where: { id: ID },
-      data: { shareToken: expect.any(String) },
+      data: {
+        shareToken: expect.any(String),
+        shareTokenCreatedAt: expect.any(Date),
+        shareTokenCreatedById: ACTOR,
+        shareTokenExpiresAt: expect.any(Date),
+      },
     });
     expect(mockAuditCreate.mock.calls[0][0].data.action).toBe("issue.shared");
   });
 
-  it("erzeugt keinen neuen Token, wenn schon einer aktiv ist", async () => {
+  it("erzeugt keinen neuen Token, wenn schon einer ohne Ablaufdatum aktiv ist", async () => {
     mockIssueFindUnique.mockResolvedValue(
       baseIssue({ shareToken: "existing-token" }),
     );
@@ -242,6 +257,48 @@ describe("shareIssueByEmail()", () => {
     });
     expect(mockIssueUpdate).not.toHaveBeenCalled();
     expect(mockAuditCreate).not.toHaveBeenCalled();
+  });
+
+  it("erzeugt keinen neuen Token, wenn der aktive noch nicht abgelaufen ist", async () => {
+    mockIssueFindUnique.mockResolvedValue(
+      baseIssue({
+        shareToken: "existing-token",
+        shareTokenExpiresAt: new Date(Date.now() + 60_000),
+      }),
+    );
+
+    const result = await shareIssueByEmail(ID, "mara@example.com");
+
+    expect(result).toEqual({
+      ok: true,
+      url: expect.stringContaining("existing-token"),
+    });
+    expect(mockIssueUpdate).not.toHaveBeenCalled();
+  });
+
+  it("erzeugt einen neuen Token, wenn der aktive schon abgelaufen ist", async () => {
+    mockIssueFindUnique.mockResolvedValue(
+      baseIssue({
+        shareToken: "expired-token",
+        shareTokenExpiresAt: new Date(Date.now() - 60_000),
+      }),
+    );
+
+    const result = await shareIssueByEmail(ID, "mara@example.com");
+
+    expect("ok" in result && result.ok).toBe(true);
+    expect(mockIssueUpdate).toHaveBeenCalledWith({
+      where: { id: ID },
+      data: {
+        shareToken: expect.any(String),
+        shareTokenCreatedAt: expect.any(Date),
+        shareTokenCreatedById: ACTOR,
+        shareTokenExpiresAt: expect.any(Date),
+      },
+    });
+    if ("url" in result) {
+      expect(result.url).not.toContain("expired-token");
+    }
   });
 });
 
@@ -258,16 +315,40 @@ describe("getIssueByShareToken()", () => {
     expect(mockIssueFindUnique).not.toHaveBeenCalled();
   });
 
-  it("liefert eine minimale Projektion ohne Zugriffsfelder", async () => {
-    mockIssueFindUnique.mockResolvedValue({
+  function shareableIssue(overrides: Partial<Record<string, unknown>> = {}) {
+    return {
+      key: 42,
       title: "Öffentliches Issue",
       description: { type: "doc", content: [] },
       status: "todo",
       priority: 2,
       type: "task",
       labels: ["l-a"],
+      created: new Date("2026-01-01"),
+      updated: new Date("2026-01-05"),
+      shareTokenCreatedAt: new Date("2026-01-04"),
+      shareTokenExpiresAt: null,
+      assignee: {
+        firstName: "Priya",
+        lastName: "Nair",
+        color: "#e05252",
+        image: null,
+      },
+      reporter: {
+        firstName: "Tomas",
+        lastName: "Køhler",
+        color: "#3b7bd5",
+        image: null,
+      },
+      sharedBy: {
+        firstName: "Jonas",
+        lastName: "Reuter",
+        color: "#a274d9",
+        image: null,
+      },
       project: {
         name: "Mobile",
+        prefix: "MOB",
         workspaceId: "ws1",
         workspace: { name: "Nimbus" },
       },
@@ -276,10 +357,20 @@ describe("getIssueByShareToken()", () => {
           id: "c1",
           body: { type: "doc", content: [] },
           created: new Date("2026-01-01"),
-          author: { firstName: "Ada", lastName: "Lovelace" },
+          author: {
+            firstName: "Ada",
+            lastName: "Lovelace",
+            color: "#5ab98a",
+            image: null,
+          },
         },
       ],
-    });
+      ...overrides,
+    };
+  }
+
+  it("liefert eine minimale Projektion ohne Zugriffsfelder", async () => {
+    mockIssueFindUnique.mockResolvedValue(shareableIssue());
     mockStatusFindMany.mockResolvedValue([
       {
         id: "todo",
@@ -296,6 +387,7 @@ describe("getIssueByShareToken()", () => {
     const result = await getIssueByShareToken(TOKEN);
 
     expect(result).not.toBeNull();
+    expect(result?.identifier).toBe("MOB-42");
     expect(result?.title).toBe("Öffentliches Issue");
     expect(result?.workspaceName).toBe("Nimbus");
     expect(result?.projectName).toBe("Mobile");
@@ -303,12 +395,35 @@ describe("getIssueByShareToken()", () => {
     expect(result?.labels).toEqual([
       { id: "l-a", name: "Backend", color: "#6e63e6" },
     ]);
+    expect(result?.assignee).toMatchObject({ firstName: "Priya" });
+    expect(result?.reporter).toMatchObject({ firstName: "Tomas" });
+    expect(result?.sharedBy).toMatchObject({ firstName: "Jonas" });
     expect(result?.comments[0]).toMatchObject({
       id: "c1",
-      authorName: "Ada Lovelace",
+      author: { firstName: "Ada", lastName: "Lovelace" },
     });
     // Keine Bearbeitungs- oder Zugriffsfelder in der öffentlichen Projektion.
     expect(result).not.toHaveProperty("access");
-    expect(result).not.toHaveProperty("assignee");
+  });
+
+  it("liefert null für einen abgelaufenen Token", async () => {
+    mockIssueFindUnique.mockResolvedValue(
+      shareableIssue({ shareTokenExpiresAt: new Date("2020-01-01") }),
+    );
+    mockStatusFindMany.mockResolvedValue([]);
+    mockLabelFindMany.mockResolvedValue([]);
+
+    expect(
+      await getIssueByShareToken(TOKEN, new Date("2026-01-01")),
+    ).toBeNull();
+  });
+
+  it("bleibt ohne Assignee gültig", async () => {
+    mockIssueFindUnique.mockResolvedValue(shareableIssue({ assignee: null }));
+    mockStatusFindMany.mockResolvedValue([]);
+    mockLabelFindMany.mockResolvedValue([]);
+
+    const result = await getIssueByShareToken(TOKEN);
+    expect(result?.assignee).toBeNull();
   });
 });
