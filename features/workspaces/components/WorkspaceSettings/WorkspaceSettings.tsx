@@ -10,6 +10,7 @@ import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { CopyField } from "@/components/ui/atoms/CopyField/CopyField";
 import { Input } from "@/components/ui/atoms/Input/Input";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { SettingsIdentity } from "@/components/ui/layout/SettingsIdentity/SettingsIdentity";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
 import {
   addWorkspaceDomain,
@@ -209,90 +210,6 @@ export function WorkspaceSettings({
   };
 
   const general: SettingRow[] = [
-    {
-      id: "avatar",
-      label: t("workspaceSettings.avatar"),
-      desc: t("workspaceSettings.avatarDesc"),
-      control: (
-        <AvatarUploader
-          avatar={{ name, color, image: workspace.avatarUrl ?? undefined }}
-          shape="square"
-          disabled={!canUpdate || isPending}
-          onRequestUpload={(input) =>
-            requestWorkspaceAvatarUploadUrl(workspace.id, input)
-          }
-          onConfirmUpload={(key) =>
-            confirmWorkspaceAvatarUpload(workspace.id, key)
-          }
-          onRemove={
-            canUpdate ? () => removeWorkspaceAvatar(workspace.id) : undefined
-          }
-          onDone={() => router.refresh()}
-        />
-      ),
-    },
-    {
-      id: "name",
-      label: t("fields.name"),
-      desc: t("workspaceSettings.nameDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("fields.name")}
-            value={name}
-            disabled={!canUpdate || isPending}
-            onChange={(e) => {
-              setName(e.target.value);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "desc",
-      label: t("fields.description"),
-      desc: t("workspaceSettings.descDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("fields.description")}
-            placeholder={t("workspaceSettings.descPlaceholder")}
-            value={desc}
-            disabled={!canUpdate || isPending}
-            onChange={(e) => {
-              setDesc(e.target.value);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "color",
-      label: t("fields.color"),
-      desc: t("workspaceSettings.colorDesc"),
-      control: canUpdate ? (
-        <div className={styles.control}>
-          <ColorPicker
-            size="sm"
-            value={color}
-            onChange={(next) => {
-              setColor(next);
-              touch();
-            }}
-          />
-        </div>
-      ) : (
-        // Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe.
-        <span
-          role="img"
-          className={styles.colorProof}
-          style={{ background: color }}
-          aria-label={color}
-        />
-      ),
-    },
     // Der Slug ist zugleich die Id des Workspace: er steht in jeder Adresse und
     // in jeder verschickten Einladung. Deshalb steht er hier zum Nachlesen und
     // Mitnehmen, nicht als Feld.
@@ -410,6 +327,69 @@ export function WorkspaceSettings({
             {error}
           </p>
         )}
+
+        <SettingsIdentity
+          avatar={
+            <AvatarUploader
+              avatar={{ name, color, image: workspace.avatarUrl ?? undefined }}
+              shape="square"
+              disabled={!canUpdate || isPending}
+              removeLabel={t("workspaceSettings.removeAvatar")}
+              onRequestUpload={(input) =>
+                requestWorkspaceAvatarUploadUrl(workspace.id, input)
+              }
+              onConfirmUpload={(key) =>
+                confirmWorkspaceAvatarUpload(workspace.id, key)
+              }
+              onRemove={
+                canUpdate
+                  ? () => removeWorkspaceAvatar(workspace.id)
+                  : undefined
+              }
+              onDone={() => router.refresh()}
+            />
+          }
+        >
+          <Input
+            label={t("fields.name")}
+            value={name}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setName(e.target.value);
+              touch();
+            }}
+          />
+          <Input
+            label={t("fields.description")}
+            placeholder={t("workspaceSettings.descPlaceholder")}
+            value={desc}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setDesc(e.target.value);
+              touch();
+            }}
+          />
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>{t("fields.color")}</span>
+            {canUpdate ? (
+              <ColorPicker
+                value={color}
+                onChange={(next) => {
+                  setColor(next);
+                  touch();
+                }}
+              />
+            ) : (
+              // Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe.
+              <span
+                role="img"
+                className={styles.colorProof}
+                style={{ background: color }}
+                aria-label={color}
+              />
+            )}
+          </div>
+        </SettingsIdentity>
 
         <Table
           variant="card"

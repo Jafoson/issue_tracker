@@ -657,8 +657,7 @@
   },
   "workspaceSettings": {
     "generalDesc": "Core details of this workspace and what lives in it.",
-    "avatar": "Avatar",
-    "avatarDesc": "Shown in the sidebar, in the workspace switcher and wherever the workspace appears.",
+    "removeAvatar": "Remove workspace picture",
     "nameDesc": "Shown in the sidebar, in the workspace switcher and in every invitation.",
     "descDesc": "One or two sentences for the workspace overview — what is it for?",
     "descPlaceholder": "What is this workspace for? (optional)",
@@ -753,10 +752,9 @@
     "uploadFailed": "Upload failed — please try again."
   },
   "account": {
-    "generalDesc": "How you appear in Orbit — in lists, on issues and in comments.",
+    "generalDesc": "Your personal details.",
     "profile": "Profile",
-    "avatar": "Avatar",
-    "avatarDesc": "A picture instead of your initials — shown wherever you appear.",
+    "removeAvatar": "Remove profile picture",
     "signIn": "Sign-in",
     "firstName": "First name",
     "lastName": "Last name",

@@ -17,7 +17,6 @@ import {
   WORKSPACE_SETTINGS_PERMISSIONS,
 } from "@/lib/nav";
 import { getAccess } from "@/lib/permissions";
-import { fullName } from "@/lib/utils/string";
 import styles from "./account.module.scss";
 
 export const dynamic = "force-dynamic";
@@ -97,10 +96,8 @@ export default async function AccountLayout({
       )}
       <div className={styles.body}>
         <SettingsNav
-          subject={fullName(profile)}
-          color={profile.color}
-          image={profile.avatarUrl ?? undefined}
-          title={t("nav.account")}
+          subject={t("nav.account")}
+          title={t("nav.settings")}
           items={items}
         />
         <div className={styles.panel}>{children}</div>

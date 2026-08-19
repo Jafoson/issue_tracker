@@ -3,12 +3,14 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState, useTransition } from "react";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { CopyField } from "@/components/ui/atoms/CopyField/CopyField";
 import { Input } from "@/components/ui/atoms/Input/Input";
 import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/SegmentedControl";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { SettingsIdentity } from "@/components/ui/layout/SettingsIdentity/SettingsIdentity";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
 import { deleteProject, updateProject } from "@/features/projects/actions";
 import type {
@@ -140,93 +142,6 @@ export function ProjectSettings({
   const touch = () => setSaved(false);
 
   const general: SettingRow[] = [
-    {
-      id: "name",
-      label: t("fields.name"),
-      desc: t("projectSettings.nameDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("fields.name")}
-            value={name}
-            disabled={!canUpdate || isPending}
-            onChange={(e) => {
-              setName(e.target.value);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "desc",
-      label: t("fields.description"),
-      desc: t("projectSettings.descDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("fields.description")}
-            placeholder={t("projects.descPlaceholder")}
-            value={desc}
-            disabled={!canUpdate || isPending}
-            onChange={(e) => {
-              setDesc(e.target.value);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "prefix",
-      label: t("projects.identifier"),
-      desc: `${t("projects.example")} ${prefix || "WEB"}-123`,
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("projects.identifier")}
-            value={prefix}
-            spellCheck={false}
-            maxLength={4}
-            disabled={!canUpdate || isPending}
-            onChange={(e) => {
-              setPrefix(
-                e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
-              );
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "color",
-      label: t("fields.color"),
-      desc: t("projectSettings.colorDesc"),
-      // Die Palette steht in derselben Breite wie die Felder darüber, und die
-      // reicht für genau zehn Farben je Reihe (10 × 22px + 9 × 6px = 274px) —
-      // die zwanzig der Palette stehen damit in zwei gleich langen Reihen.
-      control: canUpdate ? (
-        <div className={styles.control}>
-          <ColorPicker
-            size="sm"
-            value={color}
-            onChange={(next) => {
-              setColor(next);
-              touch();
-            }}
-          />
-        </div>
-      ) : (
-        // Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe.
-        <span
-          role="img"
-          className={styles.colorProof}
-          style={{ background: color }}
-          aria-label={color}
-        />
-      ),
-    },
     // Der Slug steht in jeder URL des Projekts und ändert sich nicht mit dem
     // Namen — sonst bräche jeder geteilte Link. Deshalb steht er hier zum
     // Nachlesen und Mitnehmen, nicht als Feld.
@@ -342,6 +257,64 @@ export function ProjectSettings({
             {error}
           </p>
         )}
+
+        <SettingsIdentity
+          avatar={<Avatar avatar={{ name, color }} shape="square" size={140} />}
+        >
+          <Input
+            label={t("fields.name")}
+            value={name}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setName(e.target.value);
+              touch();
+            }}
+          />
+          <Input
+            label={t("fields.description")}
+            placeholder={t("projects.descPlaceholder")}
+            value={desc}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setDesc(e.target.value);
+              touch();
+            }}
+          />
+          <Input
+            label={t("projects.identifier")}
+            hint={`${t("projects.example")} ${prefix || "WEB"}-123`}
+            value={prefix}
+            spellCheck={false}
+            maxLength={4}
+            disabled={!canUpdate || isPending}
+            onChange={(e) => {
+              setPrefix(
+                e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+              );
+              touch();
+            }}
+          />
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>{t("fields.color")}</span>
+            {canUpdate ? (
+              <ColorPicker
+                value={color}
+                onChange={(next) => {
+                  setColor(next);
+                  touch();
+                }}
+              />
+            ) : (
+              // Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe.
+              <span
+                role="img"
+                className={styles.colorProof}
+                style={{ background: color }}
+                aria-label={color}
+              />
+            )}
+          </div>
+        </SettingsIdentity>
 
         <Table
           variant="card"

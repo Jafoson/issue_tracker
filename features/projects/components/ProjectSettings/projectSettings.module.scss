@@ -105,6 +105,20 @@
   border-radius: var(--radius-sm);
 }
 
+/* Für die Farbwahl im Kopf (`SettingsIdentity`) — sie hat kein eigenes
+   `label`-Prop wie `Input`, also dieselbe Beschriftung von Hand daneben. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface-variant);
+}
+
 /* Bestätigung des Speicherns, neben dem Knopf im Seitenkopf. */
 .saved {
   display: inline-flex;

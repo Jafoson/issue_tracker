@@ -3,12 +3,12 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { AvatarUploader } from "@/components/ui/atoms/AvatarUploader/AvatarUploader";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { Input } from "@/components/ui/atoms/Input/Input";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
+import { SettingsIdentity } from "@/components/ui/layout/SettingsIdentity/SettingsIdentity";
 import {
   SettingsBody,
   SettingsList,
@@ -97,109 +97,6 @@ export function AccountGeneral({ profile }: Props) {
       router.refresh();
     });
 
-  const identity: SettingsRow[] = [
-    {
-      id: "avatar",
-      label: t("account.avatar"),
-      desc: t("account.avatarDesc"),
-      control: (
-        <AvatarUploader
-          avatar={{
-            firstName,
-            lastName,
-            color,
-            handle,
-            image: profile.avatarUrl ?? undefined,
-          }}
-          disabled={isPending}
-          onRequestUpload={requestAvatarUploadUrl}
-          onConfirmUpload={confirmAvatarUpload}
-          onRemove={removeAvatar}
-          onDone={() => router.refresh()}
-        />
-      ),
-    },
-    {
-      id: "firstName",
-      label: t("account.firstName"),
-      desc: t("account.nameDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("account.firstName")}
-            value={firstName}
-            disabled={isPending}
-            onChange={(e) => {
-              setFirstName(e.target.value);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "lastName",
-      label: t("account.lastName"),
-      desc: t("account.lastNameDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("account.lastName")}
-            value={lastName}
-            disabled={isPending}
-            onChange={(e) => {
-              setLastName(e.target.value);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "handle",
-      label: t("account.handle"),
-      desc: t("account.handleDesc"),
-      control: (
-        <div className={styles.control}>
-          <Input
-            aria-label={t("account.handle")}
-            value={handle}
-            disabled={isPending}
-            // Kein Symbol, sondern ein Vorsatz: das `@` steht unmittelbar vor
-            // dem Namen und wird mit ihm als ein Wort gelesen.
-            prefix="@"
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            maxLength={30}
-            onChange={(e) => {
-              setHandle(toHandle(e.target.value));
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "color",
-      label: t("fields.color"),
-      desc: t("account.colorDesc"),
-      control: (
-        <div className={styles.control}>
-          <ColorPicker
-            size="sm"
-            value={color}
-            onChange={(next) => {
-              setColor(next);
-              touch();
-            }}
-          />
-        </div>
-      ),
-    },
-  ];
-
   const login: SettingsRow[] = [
     {
       id: "email",
@@ -217,20 +114,6 @@ export function AccountGeneral({ profile }: Props) {
     <>
       <PageHeader
         divider={false}
-        // Der Avatar zeigt die gewählte Farbe sofort — noch bevor gespeichert
-        // ist, denn genau das ist die Frage, die die Farbwahl beantwortet.
-        leading={
-          <Avatar
-            avatar={{
-              firstName,
-              lastName,
-              color,
-              handle,
-              image: profile.avatarUrl ?? undefined,
-            }}
-            size={28}
-          />
-        }
         title={t("nav.general")}
         description={t("account.generalDesc")}
         actions={
@@ -262,7 +145,73 @@ export function AccountGeneral({ profile }: Props) {
           </p>
         )}
 
-        <SettingsList label={t("account.profile")} rows={identity} />
+        <SettingsIdentity
+          avatar={
+            <AvatarUploader
+              avatar={{
+                firstName,
+                lastName,
+                color,
+                handle,
+                image: profile.avatarUrl ?? undefined,
+              }}
+              shape="square"
+              disabled={isPending}
+              removeLabel={t("account.removeAvatar")}
+              onRequestUpload={requestAvatarUploadUrl}
+              onConfirmUpload={confirmAvatarUpload}
+              onRemove={removeAvatar}
+              onDone={() => router.refresh()}
+            />
+          }
+        >
+          <Input
+            label={t("account.firstName")}
+            value={firstName}
+            disabled={isPending}
+            onChange={(e) => {
+              setFirstName(e.target.value);
+              touch();
+            }}
+          />
+          <Input
+            label={t("account.lastName")}
+            value={lastName}
+            disabled={isPending}
+            onChange={(e) => {
+              setLastName(e.target.value);
+              touch();
+            }}
+          />
+          <Input
+            label={t("account.handle")}
+            value={handle}
+            disabled={isPending}
+            // Kein Symbol, sondern ein Vorsatz: das `@` steht unmittelbar vor
+            // dem Namen und wird mit ihm als ein Wort gelesen.
+            prefix="@"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={30}
+            onChange={(e) => {
+              setHandle(toHandle(e.target.value));
+              touch();
+            }}
+          />
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>{t("fields.color")}</span>
+            <ColorPicker
+              value={color}
+              onChange={(next) => {
+                setColor(next);
+                touch();
+              }}
+            />
+          </div>
+        </SettingsIdentity>
+
         <SettingsList title={t("account.signIn")} rows={login} />
       </SettingsBody>
     </>

@@ -1,0 +1,44 @@
+/* Dieselbe Kartenoptik wie `Table[variant=card]` darunter (Rahmen, Fläche,
+   Radius) — die Seite soll wie ein Stück wirken, auch wenn dieser Kopf ein
+   Formular ist und der Rest eine Tabelle. */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 24px;
+  background: var(--table-surface, var(--background));
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+}
+
+.avatarArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Schmaler als die Karte: eine einzelne Spalte Formularfelder liest sich bei
+   voller Breite schlechter, und der Avatar darüber bleibt so die optische
+   Mitte statt in der Breite unterzugehen. */
+.fields {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Für Bedienelemente ohne eigenes `label`-Prop (z. B. `ColorPicker`) —
+   dieselbe Beschriftung wie bei `Input`, nur außenherum gebaut. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--on-surface-variant);
+}

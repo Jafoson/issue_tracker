@@ -657,8 +657,7 @@
   },
   "workspaceSettings": {
     "generalDesc": "Stammdaten dieses Workspace und was in ihm liegt.",
-    "avatar": "Avatar",
-    "avatarDesc": "Sichtbar in der Seitenleiste, im Workspace-Wechsler und überall dort, wo der Workspace erscheint.",
+    "removeAvatar": "Workspace-Bild entfernen",
     "nameDesc": "Steht in der Seitenleiste, im Workspace-Wechsler und in jeder Einladung.",
     "descDesc": "Ein bis zwei Sätze für die Workspace-Übersicht — wofür ist er da?",
     "descPlaceholder": "Wofür ist dieser Workspace da? (optional)",
@@ -753,10 +752,9 @@
     "uploadFailed": "Upload fehlgeschlagen — bitte erneut versuchen."
   },
   "account": {
-    "generalDesc": "Wie du in Orbit erscheinst — in Listen, an Aufgaben und in Kommentaren.",
+    "generalDesc": "Deine persönlichen Stammdaten.",
     "profile": "Profil",
-    "avatar": "Avatar",
-    "avatarDesc": "Ein Bild statt deiner Initialen — sichtbar überall dort, wo du vorkommst.",
+    "removeAvatar": "Profilbild entfernen",
     "signIn": "Anmeldung",
     "firstName": "Vorname",
     "lastName": "Nachname",

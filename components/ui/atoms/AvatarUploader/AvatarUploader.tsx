@@ -25,6 +25,10 @@ interface AvatarUploaderProps {
   size?: number;
   shape?: AvatarShape;
   disabled?: boolean;
+  /** Beschriftung des Entfernen-Knopfs, z. B. „Profilbild entfernen" —
+   *  domänenspezifisch, deshalb von außen statt fest hier drin. Ohne Angabe
+   *  ein neutrales „Entfernen". */
+  removeLabel?: string;
   /** Erster Schritt: Server validiert Rechte/Mime/Größe und stellt eine
    *  presigned PUT-URL aus. */
   onRequestUpload: (input: {
@@ -48,9 +52,10 @@ interface AvatarUploaderProps {
  */
 export function AvatarUploader({
   avatar,
-  size = 72,
+  size = 140,
   shape,
   disabled,
+  removeLabel,
   onRequestUpload,
   onConfirmUpload,
   onRemove,
@@ -144,9 +149,26 @@ export function AvatarUploader({
       >
         <Avatar avatar={avatar} size={size} shape={shape} />
         <span className={styles.overlay} aria-hidden>
-          <Icon icon="lucide:camera" width={Math.round(size * 0.32)} />
+          {/* Ändern eines vorhandenen Bildes vs. erstmaliges Hinzufügen sind
+              unterschiedliche Handlungen und verdienen unterschiedliche
+              Symbole: Stift nur, wo es etwas zu bearbeiten gibt. */}
+          <Icon
+            icon={hasImage ? "lucide:pencil" : "lucide:camera"}
+            width={Math.round(size * (hasImage ? 0.24 : 0.3))}
+          />
         </span>
       </button>
+      {onRemove && hasImage && !disabled && (
+        <Button
+          type="button"
+          variant="elevated"
+          size="sm"
+          disabled={busy}
+          onClick={handleRemove}
+        >
+          {removeLabel ?? t("actions.remove")}
+        </Button>
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -159,17 +181,6 @@ export function AvatarUploader({
           if (file) handleFile(file);
         }}
       />
-      {onRemove && hasImage && !disabled && (
-        <Button
-          type="button"
-          variant="text"
-          size="sm"
-          disabled={busy}
-          onClick={handleRemove}
-        >
-          {t("actions.remove")}
-        </Button>
-      )}
       {error && (
         <p className={styles.error} role="alert">
           <Icon icon="lucide:circle-alert" width={14} />
