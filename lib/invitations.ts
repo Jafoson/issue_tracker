@@ -154,7 +154,9 @@ export async function openInvitation(
     workspaceName: invitation.workspace.name,
     projectId: invitation.projectId,
     userId: invitation.user.id,
-    email: invitation.user.email,
+    // Das Schatten-Konto einer Einladung entsteht immer mit der eingeladenen
+    // Adresse — der Fallback ist reine Typsicherheit, kein erwarteter Fall.
+    email: invitation.user.email ?? "",
     firstName: invitation.user.firstName,
     lastName: invitation.user.lastName,
     hasPasskey: invitation.user.authenticators.length > 0,

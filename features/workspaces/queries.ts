@@ -803,7 +803,11 @@ export const getPendingWorkspaceInvitationsView = cache(
 
     const rows: PendingInvitationRow[] = invitations.map((inv) => ({
       token: inv.token,
-      email: inv.user.email,
+      // Das Schatten-Konto einer Einladung entsteht immer mit der
+      // eingeladenen Adresse (`inviteOneWorkspaceMember`) — anders als ein
+      // Passkey-Erstkonto ist `email` hier nie leer. Der Fallback ist reine
+      // Typsicherheit, kein erwarteter Fall.
+      email: inv.user.email ?? "",
       firstName: inv.user.firstName,
       lastName: inv.user.lastName,
       roleName: inv.user.workspaces[0]?.role.name ?? "—",

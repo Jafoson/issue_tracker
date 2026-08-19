@@ -25,7 +25,7 @@ import styles from "./platformProjects.module.scss";
 export interface OwnerOption {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
 }
 
 interface Props {
@@ -167,7 +167,7 @@ export function PlatformProjects({
                 items={owners.map((owner) => ({
                   value: owner.id,
                   label: owner.name,
-                  hint: owner.email,
+                  hint: owner.email ?? undefined,
                 }))}
                 value={row.owner?.id ?? null}
                 onPick={(value) => {

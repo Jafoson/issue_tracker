@@ -485,9 +485,11 @@ export function ProjectProfileView({
                               {role.name}
                             </Label>
                           </span>
-                          <span className={styles.personMeta}>
-                            {member.email}
-                          </span>
+                          {member.email && (
+                            <span className={styles.personMeta}>
+                              {member.email}
+                            </span>
+                          )}
                         </span>
                       </li>
                     )),

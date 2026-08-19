@@ -200,7 +200,7 @@ type UserRow = {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   color: string;
   image: string | null;
 };
@@ -458,7 +458,9 @@ export const getPendingProjectInvitationsView = cache(
 
     const rows: PendingInvitationRow[] = invitations.map((inv) => ({
       token: inv.token,
-      email: inv.user.email,
+      // Siehe workspaces/queries.ts: das Schatten-Konto einer Einladung hat
+      // immer die eingeladene Adresse, der Fallback ist reine Typsicherheit.
+      email: inv.user.email ?? "",
       firstName: inv.user.firstName,
       lastName: inv.user.lastName,
       roleName: inv.user.projectMemberships[0]?.role.name ?? "—",

@@ -74,11 +74,20 @@ async function actorInfoFor(
     return { label: fallback?.trim() || UNKNOWN_ACTOR, color: null };
   const user = await client.user.findUnique({
     where: { id: actorId },
-    select: { firstName: true, lastName: true, email: true, color: true },
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      handle: true,
+      color: true,
+    },
   });
   if (!user) return { label: fallback?.trim() || UNKNOWN_ACTOR, color: null };
+  // Passkey-Konten ohne Adresse: `@handle` statt der Klammer, damit die Zeile
+  // trotzdem eindeutig bleibt, statt „(null)" anzuzeigen.
   return {
-    label: `${user.firstName} ${user.lastName} (${user.email})`.trim(),
+    label:
+      `${user.firstName} ${user.lastName} (${user.email ?? `@${user.handle}`})`.trim(),
     color: user.color,
   };
 }

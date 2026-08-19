@@ -10,6 +10,7 @@ import {
 } from "@/features/account/types";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { isValidEmail } from "@/lib/utils/parse-emails";
 
 // Die eigenen Einstellungen kennen keine Rechteprüfung, nur eine Frage: wer ist
 // eingeloggt? Jede Aktion arbeitet ausschließlich auf diesem Konto — es gibt
@@ -168,6 +169,52 @@ export async function setNotification(
   if (!NOTIFICATION_KEYS.has(key)) return { error: "Unknown setting." };
 
   await writePreferences(session.userId, { [key]: value });
+  return { ok: true };
+}
+
+/**
+ * Eine Adresse zu einem Konto ohne E-Mail nachtragen (Passkey-Erstkonten,
+ * `auth.ts`s WebAuthn-`getUserInfo`).
+ *
+ * Nur *hinzufügen*, nicht *ändern*: ein Konto mit schon gesetzter Adresse
+ * lehnt ab — eine bestehende Anmeldeadresse zu ersetzen ist eine
+ * sicherheitsrelevante Operation, die eine Bestätigung der neuen Adresse
+ * verlangen würde, und es gibt in dieser App noch kein Token-System dafür
+ * (`lib/mail`s `emailVerification.ts` ist "noch nicht verdrahtet"). Die
+ * frisch eingetragene Adresse landet deshalb als `emailVerified: null` —
+ * unbestätigt, aber nutzbar für Magic Link/Einladung/Benachrichtigung, genau
+ * wie jede andere unbestätigte Adresse in dieser App auch.
+ */
+export async function addEmail(email: string): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_LOGGED_IN };
+
+  const trimmed = email.trim().toLowerCase();
+  if (!isValidEmail(trimmed)) {
+    return { error: "Please enter a valid email address." };
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  });
+  if (!user) return { error: NOT_LOGGED_IN };
+  if (user.email) {
+    return { error: "This account already has an email address." };
+  }
+
+  const taken = await db.user.findUnique({
+    where: { email: trimmed },
+    select: { id: true },
+  });
+  if (taken) return { error: "This email address is already in use." };
+
+  await db.user.update({
+    where: { id: session.userId },
+    data: { email: trimmed, emailVerified: null },
+  });
+
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

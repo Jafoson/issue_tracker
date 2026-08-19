@@ -178,7 +178,11 @@ export function AccountGeneral({ profile }: Props) {
       id: "email",
       label: t("fields.email"),
       desc: t("account.emailDesc"),
-      control: <span className={styles.value}>{profile.email}</span>,
+      control: (
+        <span className={styles.value}>
+          {profile.email ?? t("account.noEmail")}
+        </span>
+      ),
     },
   ];
 

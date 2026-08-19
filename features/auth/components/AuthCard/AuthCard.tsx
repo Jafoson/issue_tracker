@@ -12,7 +12,7 @@ const OAUTH_META: Record<string, { label: string; icon: string }> = {
   gitlab: { label: "GitLab", icon: "logos:gitlab" },
   "microsoft-entra-id": { label: "Microsoft", icon: "logos:microsoft-icon" },
   apple: { label: "Apple", icon: "mdi:apple" },
-  oidc: { label: "SSO", icon: "lucide:shield-check" },
+  oidc: { label: "SSO", icon: "lucide:key-round" },
 };
 
 interface AuthCardProps {
@@ -75,14 +75,14 @@ export function AuthCard({
           <h1 className={styles.title}>{title}</h1>
           {subtitle && <p className={styles.sub}>{subtitle}</p>}
 
-          <div className={styles.fields}>{children}</div>
-
           {error && (
             <div className={styles.error}>
               <Icon icon="lucide:circle-alert" width={14} />
               {error}
             </div>
           )}
+
+          <div className={styles.fields}>{children}</div>
 
           {onSubmit && submitLabel && (
             <Button

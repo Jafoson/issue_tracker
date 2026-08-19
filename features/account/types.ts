@@ -45,7 +45,9 @@ export interface AccountProfileView {
   firstName: string;
   lastName: string;
   handle: string;
-  email: string;
+  /** Passkey-Konten können ganz ohne Adresse existieren — dann `null`, bis
+   *  die Person selbst eine nachträgt (`account.actions#setEmail`). */
+  email: string | null;
   color: string;
   /** Die Adresse ist bestätigt. Ohne Mailversand bleibt das offen — die
    *  Seite sagt das, statt es zu verschweigen. */
@@ -79,7 +81,7 @@ export interface PasskeyInfo {
 
 /** Sicherheit: womit man hereinkommt. */
 export interface AccountSecurityView {
-  email: string;
+  email: string | null;
   emailVerified: boolean;
   /** Anbieter, über die man sich anmelden kann — für den Verweis dorthin. */
   connectedProviders: string[];

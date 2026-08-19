@@ -55,7 +55,7 @@ export interface CurrentUser {
   firstName: string;
   lastName: string;
   handle: string;
-  email: string;
+  email: string | null;
   color: string;
   platformRole: PlatformRoleRef | null;
 }
@@ -68,7 +68,7 @@ export interface PlatformUser {
   firstName: string;
   lastName: string;
   handle: string;
-  email: string;
+  email: string | null;
   color: string;
   platformRole: PlatformRoleRef | null;
   workspaceCount: number;
@@ -609,7 +609,7 @@ export interface PlatformWorkspace {
     id: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
   } | null;
   members: number;
   projects: number;

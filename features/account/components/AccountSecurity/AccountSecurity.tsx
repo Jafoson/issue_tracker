@@ -5,13 +5,14 @@ import { signIn } from "next-auth/webauthn";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import { Input } from "@/components/ui/atoms/Input/Input";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import {
   SettingsBody,
   SettingsList,
   type SettingsRow,
 } from "@/components/ui/layout/SettingsList/SettingsList";
-import { removePasskey } from "@/features/account/actions";
+import { addEmail, removePasskey } from "@/features/account/actions";
 import type { AccountSecurityView } from "@/features/account/types";
 import { Link } from "@/i18n/navigation";
 import styles from "./accountSecurity.module.scss";
@@ -30,10 +31,12 @@ interface Props extends AccountSecurityView {
  * `signIn` vollständig, der letzte-Weg-hinein-Schutz steckt im Server
  * (`removePasskey`); die Oberfläche macht die Regel nur sichtbar.
  *
- * Was hier fehlt, fehlt bewusst: eine neue E-Mail-Adresse ließe sich ohne
- * Mailversand nicht bestätigen, und „überall abmelden" wäre ein Knopf ohne
- * Wirkung — die Sitzung steckt in einem signierten Token, das der Server nicht
- * zurückrufen kann.
+ * Was hier fehlt, fehlt bewusst: eine bestehende Adresse zu *ändern* ließe
+ * sich ohne Mailversand nicht bestätigen (siehe `addEmail`), und „überall
+ * abmelden" wäre ein Knopf ohne Wirkung — die Sitzung steckt in einem
+ * signierten Token, das der Server nicht zurückrufen kann. Eine ganz neue
+ * Adresse *hinzufügen* (Passkey-Konto ohne Adresse) geht dagegen — dafür
+ * gibt es noch nichts zu bestätigen, das kaputtgehen könnte.
  */
 export function AccountSecurity({
   email,
@@ -47,6 +50,22 @@ export function AccountSecurity({
 
   const [passkeyError, setPasskeyError] = useState("");
   const [isPasskeyPending, startPasskeyTransition] = useTransition();
+
+  const [newEmail, setNewEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [isEmailPending, startEmailTransition] = useTransition();
+
+  const submitEmail = () => {
+    setEmailError("");
+    startEmailTransition(async () => {
+      const result = await addEmail(newEmail);
+      if ("error" in result) {
+        setEmailError(result.error);
+        return;
+      }
+      setNewEmail("");
+    });
+  };
 
   const addPasskey = () => {
     setPasskeyError("");
@@ -110,8 +129,8 @@ export function AccountSecurity({
     {
       id: "email",
       label: t("fields.email"),
-      desc: t("account.emailLoginDesc"),
-      control: (
+      desc: email ? t("account.emailLoginDesc") : t("account.addEmailDesc"),
+      control: email ? (
         <span className={styles.status}>
           <span className={styles.value}>{email}</span>
           {emailVerified ? (
@@ -125,6 +144,25 @@ export function AccountSecurity({
               {t("account.emailUnverified")}
             </span>
           )}
+        </span>
+      ) : (
+        <span className={styles.addEmail}>
+          <Input
+            aria-label={t("fields.email")}
+            inputMode="email"
+            placeholder="you@example.com"
+            value={newEmail}
+            disabled={isEmailPending}
+            onChange={(e) => setNewEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitEmail()}
+          />
+          <Button
+            variant="outline"
+            disabled={isEmailPending || !newEmail.trim()}
+            onClick={submitEmail}
+          >
+            {t("account.addEmail")}
+          </Button>
         </span>
       ),
     },
@@ -161,6 +199,12 @@ export function AccountSecurity({
         )}
 
         <SettingsList title={t("account.signIn")} rows={login} />
+        {emailError && (
+          <p className={styles.error} role="alert">
+            <Icon icon="lucide:circle-alert" width={14} />
+            {emailError}
+          </p>
+        )}
       </SettingsBody>
     </>
   );

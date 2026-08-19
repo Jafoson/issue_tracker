@@ -86,7 +86,7 @@ export function AddProjectMembersModal({
   const needle = query.trim().toLowerCase();
   const filtered = needle
     ? candidates.filter((user) =>
-        `${fullName(user)} ${user.email}`.toLowerCase().includes(needle),
+        `${fullName(user)} ${user.email ?? ""}`.toLowerCase().includes(needle),
       )
     : candidates;
 

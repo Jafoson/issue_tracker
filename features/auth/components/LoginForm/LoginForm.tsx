@@ -1,10 +1,12 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { signIn } from "next-auth/webauthn";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Input } from "@/components/ui/atoms/Input/Input";
+import { OptionButton } from "@/components/ui/atoms/OptionButton/OptionButton";
 import { sendMagicLink } from "@/features/auth/actions";
 import { AuthCard } from "@/features/auth/components/AuthCard/AuthCard";
 import { PasskeyLoginButton } from "@/features/auth/components/PasskeyLoginButton/PasskeyLoginButton";
@@ -19,8 +21,8 @@ interface LoginFormProps {
   oidcLabel?: string;
   /** Ob `next-auth/providers/nodemailer` aktiv ist (`isMailConfigured()`,
    *  server-only — deshalb als fertiger Wert von der Seite gereicht). Ohne
-   *  SMTP bleibt der ganze Magic-Link-Abschnitt weg statt eines Buttons, der
-   *  nur einen Fehler produzieren könnte. */
+   *  SMTP bleibt der ganze Magic-Link-Abschnitt weg — Passkey-Login und
+   *  -Registrierung brauchen kein SMTP und stehen unabhängig davon oben. */
   mailConfigured: boolean;
   /** Aus `?error=` nach einem fehlgeschlagenen Code-Versuch (`auth.config.ts`s
    *  `pages.error`) — die Seite landet dabei neu, jeder Client-State ist weg. */
@@ -28,15 +30,19 @@ interface LoginFormProps {
 }
 
 /**
- * Anmelden — und, für eine unbekannte Adresse, zugleich das Konto anlegen:
- * `next-auth/webauthn` entscheidet serverseitig selbst, ob die E-Mail schon
- * einen Passkey hat (dann Anmeldung) oder nicht (dann Registrierung). Ein
- * eigenes Registrierungsformular gibt es deshalb nicht mehr.
+ * Anmelden — und, für ein neues Konto, zugleich registrieren.
  *
- * Drei unabhängige Wege, jeder nur sichtbar, wenn er auch funktioniert:
- * Passkey (immer — ohne E-Mail-Feld, der Browser zeigt die hinterlegten
- * Passkeys selbst an), Magic Link (nur mit SMTP), Single Sign-On (nur mit
- * konfigurierten Anbietern, über `AuthCard`s eingebauten OAuth-Abschnitt).
+ * Drei Blöcke von oben nach unten, jeder nur sichtbar, wenn er auch
+ * funktioniert:
+ *
+ * 1. Passkey — immer da, zwei Knöpfe: anmelden (`PasskeyLoginButton`, rein
+ *    discoverable, der Browser zeigt die auf diesem Gerät hinterlegten
+ *    Passkeys selbst an) oder registrieren (`registerWithPasskey`, legt ein
+ *    komplett neues Konto an, siehe dort für die technische Notwendigkeit
+ *    einer intern erzeugten Adresse).
+ * 2. Magic Link — nur mit SMTP, sonst bleibt der ganze Block weg.
+ * 3. Single Sign-On — nur mit konfigurierten Anbietern, über `AuthCard`s
+ *    eingebauten OAuth-/OIDC-Abschnitt.
  */
 export function LoginForm({
   callbackUrl,
@@ -50,6 +56,7 @@ export function LoginForm({
   const [email, setEmail] = useState("");
   const [error, setError] = useState(initialError ?? "");
   const [isMagicPending, startMagicTransition] = useTransition();
+  const [isPasskeyPending, startPasskeyTransition] = useTransition();
 
   // Die Code-Eingabe passiert auf einer eigenen Seite (`/login/verify`), nicht
   // mehr inline unter diesem Button — der Wechsel dorthin behält die
@@ -70,6 +77,27 @@ export function LoginForm({
     });
   };
 
+  // `@auth/core`s WebAuthn-Ablauf verlangt für eine Registrierung intern
+  // immer eine `email` — ein WebAuthn-Credential braucht laut Spezifikation
+  // einen `userName`, den der Passkey-Manager anzeigt. Diese Adresse wird nie
+  // angezeigt oder abgefragt, nur einmalig hier erzeugt und dient rein der
+  // Ceremony; `createAdapter().createUser` (`auth.ts`s
+  // `NO_EMAIL_SENTINEL_DOMAIN`) verwirft sie sofort wieder und legt das Konto
+  // mit `email: null` an.
+  const registerWithPasskey = () => {
+    setError("");
+    startPasskeyTransition(async () => {
+      try {
+        await signIn("webauthn", {
+          email: `${crypto.randomUUID()}@no-email.invalid`,
+          redirectTo: callbackUrl || "/",
+        });
+      } catch {
+        setError(t("login.passkeyFailed"));
+      }
+    });
+  };
+
   return (
     <AuthCard
       title={t("login.signInTitle")}
@@ -77,7 +105,16 @@ export function LoginForm({
       oauthProviders={oauthProviders}
       oauthLabels={oidcLabel ? { oidc: oidcLabel } : undefined}
     >
-      <PasskeyLoginButton callbackUrl={callbackUrl} onError={setError} />
+      <div className={styles.group}>
+        <PasskeyLoginButton callbackUrl={callbackUrl} onError={setError} />
+        <OptionButton
+          variant="outline"
+          disabled={isPasskeyPending}
+          icon={<Icon icon="lucide:user-plus" width={18} />}
+          title={t("login.registerWithPasskey")}
+          onClick={registerWithPasskey}
+        />
+      </div>
 
       {mailConfigured && (
         <>

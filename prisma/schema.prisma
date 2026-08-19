@@ -106,7 +106,12 @@ model User {
   firstName      String
   lastName       String
   handle         String    @unique
-  email          String    @unique
+  /// Optional: ein Passkey-Konto braucht keine Adresse (siehe `auth.ts`s
+  /// WebAuthn-`getUserInfo`). Ohne sie funktionieren weder Magic Link noch
+  /// Einladung/Benachrichtigung per Mail für dieses Konto, und es gibt keinen
+  /// Recovery-Weg, falls der Passkey verloren geht — die Person kann jederzeit
+  /// unter Account → Security eine Adresse nachtragen.
+  email          String?   @unique
   color          String
   // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
   emailVerified  DateTime?

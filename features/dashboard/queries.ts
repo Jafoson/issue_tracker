@@ -194,7 +194,7 @@ function mapUser(user: {
   firstName: string;
   lastName: string;
   handle: string;
-  email: string;
+  email: string | null;
   color: string;
   image: string | null;
 }): User {

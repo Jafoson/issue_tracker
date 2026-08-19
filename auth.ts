@@ -46,11 +46,27 @@ function generateMagicCode(): string {
   return code;
 }
 
+// Next-auths WebAuthn-Provider verlangt für eine Registrierung zwingend eine
+// `email` in der Anfrage (`@auth/core`s `webAuthnOptions` bricht sonst mit
+// „Invalid request" ab — ein WebAuthn-Credential braucht laut Spezifikation
+// immer einen `userName`, den der Passkey-Manager anzeigt). Die
+// Registrierung (`registerWithPasskey` in `LoginForm.tsx`) fragt aber nie
+// eine Adresse ab, schickt deshalb eine clientseitig erzeugte, garantiert
+// einmalige Adresse unter dieser reservierten Domain (RFC 2606 — `.invalid`
+// wird nie an echte Domains vergeben, kollidiert also nie mit einer
+// tatsächlichen Adresse). Sie dient nur der WebAuthn-Ceremony als technischer
+// Platzhalter und wird hier direkt wieder verworfen — im Konto landet `null`,
+// nicht die Platzhalteradresse.
+const NO_EMAIL_SENTINEL_DOMAIN = "@no-email.invalid";
+
 function createAdapter(): Adapter {
   const base = PrismaAdapter(db);
   return {
     ...base,
     async createUser({ id: _id, ...data }: AdapterUser) {
+      const isSentinelEmail = data.email?.endsWith(NO_EMAIL_SENTINEL_DOMAIN);
+      const email = isSentinelEmail ? null : (data.email ?? null);
+
       // Ein echter Name kommt nur von OAuth/OIDC-Providern mit — Passkey und
       // Magic Link liefern nie eines. Kein aus der E-Mail geratener Ersatz:
       // Name ist ein optionales Feld im Onboarding-Formular und bleibt leer,
@@ -58,12 +74,12 @@ function createAdapter(): Adapter {
       const { firstName, lastName } = data.name
         ? splitName(data.name)
         : { firstName: "", lastName: "" };
-      const handle = await generateHandle(data.email ?? data.name ?? "user");
+      const handle = await generateHandle(email ?? data.name ?? "user");
       const user = await db.user.create({
         data: {
           firstName,
           lastName,
-          email: data.email,
+          email,
           emailVerified: data.emailVerified,
           image: data.image,
           handle,
@@ -72,8 +88,8 @@ function createAdapter(): Adapter {
           platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
         },
       });
-      if (data.email) {
-        await provisionNewUser(db, { userId: user.id, email: data.email });
+      if (email) {
+        await provisionNewUser(db, { userId: user.id, email });
       }
       return user as AdapterUser;
     },

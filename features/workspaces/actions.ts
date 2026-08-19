@@ -1227,7 +1227,9 @@ export async function resendInvitation(token: string): Promise<MemberResult> {
 
   const inviteUrl = invitationUrl(newToken);
   await sendInvitationEmail({
-    to: invitation.user.email,
+    // Das Schatten-Konto einer Einladung entsteht immer mit der eingeladenen
+    // Adresse — der Fallback ist reine Typsicherheit, kein erwarteter Fall.
+    to: invitation.user.email ?? "",
     workspaceId: invitation.workspaceId,
     projectId: invitation.projectId,
     inviterId: actorId,

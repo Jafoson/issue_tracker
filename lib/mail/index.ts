@@ -146,7 +146,9 @@ export async function sendMemberRemovedEmail(
       }),
       getMailTemplateOverride("memberRemoved"),
     ]);
-    if (!user || !workspace) return;
+    // Ein Passkey-Konto ohne hinterlegte Adresse hat hier nichts zu
+    // erreichen — kein Fehler, nur nichts zu verschicken.
+    if (!user?.email || !workspace) return;
 
     const { subject, html, text } = memberRemovedEmail(
       {

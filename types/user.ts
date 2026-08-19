@@ -2,7 +2,10 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  // Passkey-Konten kommen ohne Adresse aus (`prisma/schema.prisma`s
+  // `User.email`) — überall, wo sie angezeigt wird, muss der leere Fall
+  // sichtbar behandelt werden statt sie ungeprüft zu interpolieren.
+  email: string | null;
   // Nicht überall gefüllt: `getMembers` liefert ihn, die Projektansicht nicht.
   // `lib/filter-slugs.ts` baut daraus die lesbaren Filter-Slugs.
   handle?: string;

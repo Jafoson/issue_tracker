@@ -227,7 +227,7 @@ export function TeamModal({
                 items={candidates.map((user) => ({
                   value: user.id,
                   label: fullName(user),
-                  hint: user.email,
+                  hint: user.email ?? undefined,
                 }))}
                 value={leadId}
                 onPick={(value) => {
