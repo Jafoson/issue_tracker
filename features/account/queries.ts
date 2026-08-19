@@ -26,7 +26,13 @@ import { getSession } from "@/lib/session";
  * ohne Knopf. Sonst hinge die Existenz einer Zeile an einer Umgebungsvariablen,
  * und niemand könnte sehen, dass es die Möglichkeit überhaupt gibt.
  */
-export const OAUTH_PROVIDERS = ["github", "google"] as const;
+export const OAUTH_PROVIDERS = [
+  "github",
+  "google",
+  "gitlab",
+  "microsoft-entra-id",
+  "apple",
+] as const;
 
 /** OIDC ist nicht Teil der festen Liste oben — sein Name kommt erst aus
  *  `AUTH_OIDC_NAME`, es gibt also nichts Sinnvolles anzuzeigen, solange er

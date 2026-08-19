@@ -1,6 +1,9 @@
 import type { NextAuthConfig } from "next-auth";
+import Apple from "next-auth/providers/apple";
 import GitHub from "next-auth/providers/github";
+import GitLab from "next-auth/providers/gitlab";
 import Google from "next-auth/providers/google";
+import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
 // Edge-sichere Basiskonfiguration (KEIN Prisma-Adapter, KEIN bcrypt) — wird sowohl
 // vom vollen Node-Setup (auth.ts) als auch vom Middleware-Gate (proxy.ts) genutzt.
@@ -18,23 +21,39 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   oauthProviders.push(Google);
   enabledOAuthProviders.push("google");
 }
+if (process.env.AUTH_GITLAB_ID && process.env.AUTH_GITLAB_SECRET) {
+  oauthProviders.push(GitLab);
+  enabledOAuthProviders.push("gitlab");
+}
+// `issuer` ist optional — ohne ihn erlaubt Microsoft Entra ID jedes Konto
+// (privat, Schule, Arbeit) über den `/common/`-Tenant. Nur wer den eigenen
+// Tenant erzwingen will, setzt AUTH_MICROSOFT_ENTRA_ID_ISSUER.
+if (
+  process.env.AUTH_MICROSOFT_ENTRA_ID_ID &&
+  process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET
+) {
+  oauthProviders.push(
+    MicrosoftEntraID({
+      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
+      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
+      issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
+    }),
+  );
+  enabledOAuthProviders.push("microsoft-entra-id");
+}
+// Apple verlangt ein JWT als Client Secret (kein statischer String) und
+// funktioniert nur über HTTPS — kein localhost. `npx auth add apple` erzeugt
+// beides interaktiv und trägt AUTH_APPLE_ID/AUTH_APPLE_SECRET selbst ein.
+if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
+  oauthProviders.push(Apple);
+  enabledOAuthProviders.push("apple");
+}
 // Ein generischer OIDC-Provider statt mehrerer benannter — passt zu jedem
 // Standard-IdP (Keycloak, Authentik, Entra ID, Okta, …). `issuer` allein
 // genügt next-auth für die Discovery (`{issuer}/.well-known/openid-
 // configuration`), kein `wellKnown` nötig. `AUTH_OIDC_NAME` ist nur die
 // Beschriftung des Buttons — Vorgabe „SSO", wenn nichts gesetzt ist.
 export const oidcProviderName = process.env.AUTH_OIDC_NAME || "SSO";
-// Nur fürs Login-Formular (Zeilen-Untertitel „OIDC · {host}"), next-auth
-// selbst braucht nur die volle Issuer-URL oben.
-export const oidcIssuerHost = (() => {
-  try {
-    return process.env.AUTH_OIDC_ISSUER
-      ? new URL(process.env.AUTH_OIDC_ISSUER).hostname
-      : undefined;
-  } catch {
-    return undefined;
-  }
-})();
 if (
   process.env.AUTH_OIDC_ISSUER &&
   process.env.AUTH_OIDC_CLIENT_ID &&

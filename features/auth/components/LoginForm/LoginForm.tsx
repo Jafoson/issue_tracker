@@ -17,9 +17,6 @@ interface LoginFormProps {
   /** Anzeigename des OIDC-Providers (`AUTH_OIDC_NAME`) — server-only,
    *  deshalb als fertiger Wert von der Seite gereicht. */
   oidcLabel?: string;
-  /** Issuer-Host des OIDC-Providers (`AUTH_OIDC_ISSUER`), für den
-   *  Zeilen-Untertitel „OIDC · {host}" — server-only. */
-  oidcHost?: string;
   /** Ob `next-auth/providers/nodemailer` aktiv ist (`isMailConfigured()`,
    *  server-only — deshalb als fertiger Wert von der Seite gereicht). Ohne
    *  SMTP bleibt der ganze Magic-Link-Abschnitt weg statt eines Buttons, der
@@ -45,7 +42,6 @@ export function LoginForm({
   callbackUrl,
   oauthProviders = [],
   oidcLabel,
-  oidcHost,
   mailConfigured,
   initialError,
 }: LoginFormProps) {
@@ -80,7 +76,6 @@ export function LoginForm({
       error={error}
       oauthProviders={oauthProviders}
       oauthLabels={oidcLabel ? { oidc: oidcLabel } : undefined}
-      oauthHosts={oidcHost ? { oidc: oidcHost } : undefined}
     >
       <PasskeyLoginButton callbackUrl={callbackUrl} onError={setError} />
 

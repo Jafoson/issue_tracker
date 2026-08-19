@@ -3,21 +3,16 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { OptionButton } from "@/components/ui/atoms/OptionButton/OptionButton";
 import { signInWithOAuth } from "@/features/auth/actions";
 import styles from "./authCard.module.scss";
 
-const OAUTH_META: Record<
-  string,
-  { label: string; icon: string; kind: string }
-> = {
-  github: { label: "GitHub", icon: "lucide:github", kind: "OAuth" },
-  google: {
-    label: "Google",
-    icon: "logos:google-icon",
-    kind: "OpenID Connect",
-  },
-  oidc: { label: "SSO", icon: "lucide:shield-check", kind: "OIDC" },
+const OAUTH_META: Record<string, { label: string; icon: string }> = {
+  github: { label: "GitHub", icon: "lucide:github" },
+  google: { label: "Google", icon: "logos:google-icon" },
+  gitlab: { label: "GitLab", icon: "logos:gitlab" },
+  "microsoft-entra-id": { label: "Microsoft", icon: "logos:microsoft-icon" },
+  apple: { label: "Apple", icon: "mdi:apple" },
+  oidc: { label: "SSO", icon: "lucide:shield-check" },
 };
 
 interface AuthCardProps {
@@ -33,9 +28,6 @@ interface AuthCardProps {
   /** Überschreibt den Anzeigenamen einzelner Anbieter — für OIDC, dessen Name
    *  aus `AUTH_OIDC_NAME` kommt statt aus der festen Marken-Liste. */
   oauthLabels?: Record<string, string>;
-  /** Untertitel-Zusatz je Anbieter — für OIDC der Issuer-Host
-   *  (`AUTH_OIDC_ISSUER`), z. B. „OIDC · nimbus.io". */
-  oauthHosts?: Record<string, string>;
   /** Zusätzlicher Anmeldeweg (z. B. Passkey-Button) — steht zwischen dem
    *  Submit-Button und den OAuth-Anbietern, teilt sich aber keine Optik mit
    *  ihnen (andere Bedingung, anderer Ceremony-Ablauf). */
@@ -56,7 +48,6 @@ export function AuthCard({
   onSubmit,
   oauthProviders = [],
   oauthLabels,
-  oauthHosts,
   extra,
   children,
 }: AuthCardProps) {
@@ -110,27 +101,56 @@ export function AuthCard({
           {oauthProviders.length > 0 && (
             <>
               <div className={styles.divider}>{t("login.or")}</div>
-              <div className={styles.oauth}>
+              {/* Ab drei Anbietern würde eine gestapelte Liste voller Knöpfe
+                  die Karte sprengen — ab da nur noch Logos in einer Reihe,
+                  wie bei Google/Apple/Facebook üblich. */}
+              <div
+                className={
+                  oauthProviders.length >= 3
+                    ? styles.oauthCompact
+                    : styles.oauth
+                }
+              >
                 {oauthProviders.map((provider) => {
                   const meta = OAUTH_META[provider] ?? {
                     label: provider,
                     icon: "lucide:log-in",
-                    kind: "OAuth",
                   };
                   const label = oauthLabels?.[provider] ?? meta.label;
-                  const host = oauthHosts?.[provider];
+                  if (oauthProviders.length >= 3) {
+                    return (
+                      <form
+                        key={provider}
+                        action={signInWithOAuth.bind(null, provider)}
+                      >
+                        <Button
+                          type="submit"
+                          variant="elevated"
+                          size="lg"
+                          icon={<Icon icon={meta.icon} width={18} />}
+                          aria-label={t("login.continueWith", {
+                            provider: label,
+                          })}
+                          title={t("login.continueWith", { provider: label })}
+                        />
+                      </form>
+                    );
+                  }
                   return (
                     <form
                       key={provider}
                       className={styles.oauthForm}
                       action={signInWithOAuth.bind(null, provider)}
                     >
-                      <OptionButton
+                      <Button
                         type="submit"
+                        variant="elevated"
+                        size="lg"
+                        full
                         icon={<Icon icon={meta.icon} width={18} />}
-                        title={label}
-                        subtitle={host ? `${meta.kind} · ${host}` : meta.kind}
-                      />
+                      >
+                        {t("login.continueWith", { provider: label })}
+                      </Button>
                     </form>
                   );
                 })}

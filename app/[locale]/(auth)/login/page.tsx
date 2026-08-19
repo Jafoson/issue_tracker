@@ -1,10 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import {
-  enabledOAuthProviders,
-  oidcIssuerHost,
-  oidcProviderName,
-} from "@/auth.config";
+import { enabledOAuthProviders, oidcProviderName } from "@/auth.config";
 import { LoginForm } from "@/features/auth/components/LoginForm/LoginForm";
 import { isMailConfigured } from "@/lib/mail/send";
 import { getSession } from "@/lib/session";
@@ -36,7 +32,6 @@ export default async function LoginPage({
       callbackUrl={callbackUrl}
       oauthProviders={enabledOAuthProviders}
       oidcLabel={oidcProviderName}
-      oidcHost={oidcIssuerHost}
       mailConfigured={isMailConfigured()}
       initialError={initialError}
     />

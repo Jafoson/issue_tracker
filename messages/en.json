@@ -463,6 +463,7 @@
   "login": {
     "subtitle": "Continue to Orbit Issue Tracker",
     "or": "or use single sign-on",
+    "continueWith": "Continue with {provider}",
     "noAccount": "Don't have an account?",
     "requestAccess": "Request access",
     "signInTo": "Sign in to {ws}",
@@ -481,7 +482,6 @@
     "haveAccount": "Already have an account?",
     "signUp": "Sign up",
     "withPasskey": "Sign in with passkey",
-    "passkeySubtitle": "Touch ID, Windows Hello or security key",
     "passkeyFailed": "Passkey sign-in was cancelled or failed.",
     "orMagicLink": "or get a magic link",
     "workEmail": "Email address",

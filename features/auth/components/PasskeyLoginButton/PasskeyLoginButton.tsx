@@ -47,7 +47,6 @@ export function PasskeyLoginButton({ callbackUrl, onError }: Props) {
       disabled={isPending}
       icon={<Icon icon="lucide:fingerprint" width={18} />}
       title={t("login.withPasskey")}
-      subtitle={t("login.passkeySubtitle")}
       onClick={submit}
     />
   );

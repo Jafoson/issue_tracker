@@ -21,6 +21,9 @@ import styles from "./accountConnections.module.scss";
 const PROVIDERS: Record<string, { icon: string; name: string }> = {
   github: { icon: "lucide:github", name: "GitHub" },
   google: { icon: "logos:google-icon", name: "Google" },
+  gitlab: { icon: "logos:gitlab", name: "GitLab" },
+  "microsoft-entra-id": { icon: "logos:microsoft-icon", name: "Microsoft" },
+  apple: { icon: "mdi:apple", name: "Apple" },
 };
 
 /**
