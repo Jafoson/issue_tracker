@@ -1122,6 +1122,9 @@ async function inviteOneWorkspaceMember(params: {
         email,
         color: pickUserColor(),
         platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
+        // Eingeladen statt selbst angemeldet — kein Onboarding-Schritt nötig,
+        // die Einladung bleibt ein einziger Klick.
+        onboardedAt: now,
       },
       select: { id: true },
     });

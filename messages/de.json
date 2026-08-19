@@ -498,6 +498,11 @@
     "resendSent": "Erneut gesendet",
     "backToLogin": "Zurück zur Anmeldung"
   },
+  "onboarding": {
+    "title": "Fast geschafft",
+    "subtitle": "Bestätige deinen Benutzernamen — der Name ist optional und lässt sich jederzeit ändern.",
+    "continue": "Weiter"
+  },
   "invite": {
     "title": "Willkommen bei {workspace}",
     "subtitle": "Setze Namen und Passwort, dann bist du drin.",

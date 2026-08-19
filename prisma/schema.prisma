@@ -129,6 +129,13 @@ model User {
   /// mehr herein (`auth.ts`). Das Gegenstück zum Löschen, das Issues, Kommentare
   /// und Zuweisungen mitnähme.
   deactivatedAt DateTime?
+  /// Ungesetzt heißt: braucht noch den Onboarding-Schritt (Benutzername
+  /// bestätigen, Name optional) — geprüft in `app/[locale]/page.tsx`, bevor
+  /// die Person einen Workspace anlegt oder betritt. Eingeladene Konten
+  /// (Schatten-Zeile beim Einladen, `features/workspaces/actions.ts` /
+  /// `features/projects/actions.ts`) setzen es sofort bei der Erstellung —
+  /// die Einladung selbst bleibt dadurch reibungslos, ohne Zwischenschritt.
+  onboardedAt DateTime?
 
   workspaces          WorkspaceMember[]
   assignedIssues      Issue[]                        @relation("IssueAssignee")

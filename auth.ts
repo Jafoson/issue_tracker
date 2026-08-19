@@ -51,9 +51,13 @@ function createAdapter(): Adapter {
   return {
     ...base,
     async createUser({ id: _id, ...data }: AdapterUser) {
-      const { firstName, lastName } = splitName(
-        data.name ?? data.email ?? "User",
-      );
+      // Ein echter Name kommt nur von OAuth/OIDC-Providern mit — Passkey und
+      // Magic Link liefern nie eines. Kein aus der E-Mail geratener Ersatz:
+      // Name ist ein optionales Feld im Onboarding-Formular und bleibt leer,
+      // bis die Person selbst etwas einträgt.
+      const { firstName, lastName } = data.name
+        ? splitName(data.name)
+        : { firstName: "", lastName: "" };
       const handle = await generateHandle(data.email ?? data.name ?? "user");
       const user = await db.user.create({
         data: {

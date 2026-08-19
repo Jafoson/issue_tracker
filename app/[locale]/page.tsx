@@ -15,9 +15,14 @@ export default async function LocaleRootPage({
 
   const user = await db.user.findUnique({
     where: { id: session.userId },
-    select: { id: true },
+    select: { id: true, onboardedAt: true },
   });
   if (!user) redirect(`/api/logout?to=/${locale}/login`);
+
+  // Frisch selbst angemeldet (Passkey/Magic Link/OAuth), noch kein Konto
+  // eingerichtet — eingeladene Konten haben das schon bei der Einladung
+  // erledigt bekommen (`onboardedAt` dort sofort gesetzt).
+  if (!user.onboardedAt) redirect(`/${locale}/onboarding`);
 
   const membership = await db.workspaceMember.findFirst({
     where: { userId: session.userId },

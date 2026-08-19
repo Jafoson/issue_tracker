@@ -1035,6 +1035,7 @@ async function main() {
         email: u.email,
         color: u.color,
         platformRoleId: roleId,
+        onboardedAt: new Date(),
       },
     });
   }

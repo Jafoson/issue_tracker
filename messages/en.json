@@ -498,6 +498,11 @@
     "resendSent": "Sent again",
     "backToLogin": "Back to sign in"
   },
+  "onboarding": {
+    "title": "Almost there",
+    "subtitle": "Confirm your username — your name is optional and can be changed anytime.",
+    "continue": "Continue"
+  },
   "invite": {
     "title": "Welcome to {workspace}",
     "subtitle": "Set your name and a password, and you are in.",
