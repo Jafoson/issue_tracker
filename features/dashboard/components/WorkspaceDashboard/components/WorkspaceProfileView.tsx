@@ -24,7 +24,12 @@ import styles from "./workspaceProfileView.module.scss";
 
 interface Props {
   /** Name, Farbe und Id stehen in der Kopfkarte bzw. brauchen die Dialoge zum Anlegen. */
-  workspace: { id: string; name: string; color: string };
+  workspace: {
+    id: string;
+    name: string;
+    color: string;
+    avatarUrl: string | null;
+  };
   workspaceSlug: string;
   profile: WorkspaceProfile;
   stats: DashboardStats;
@@ -210,7 +215,11 @@ export function WorkspaceProfileView({
         {/* ── 1. Wer bin ich ── */}
         <header className={styles.hero}>
           <Avatar
-            avatar={{ name: workspace.name, color: workspace.color }}
+            avatar={{
+              name: workspace.name,
+              color: workspace.color,
+              image: workspace.avatarUrl ?? undefined,
+            }}
             shape="square"
             size={92}
           />

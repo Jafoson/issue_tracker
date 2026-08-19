@@ -311,7 +311,13 @@ export interface WorkspaceProfile {
 
 /** Was die Workspace-Seite braucht: die Zahlen, der Steckbrief, die Anordnung. */
 export interface WorkspaceDashboardView {
-  workspace: { id: string; name: string; slug: string; color: string };
+  workspace: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+    avatarUrl: string | null;
+  };
   data: WorkspaceDashboardData;
   profile: WorkspaceProfile;
   order: WidgetKey[];

@@ -148,10 +148,12 @@ export const getMe = cache(async (): Promise<User | null> => {
       email: true,
       color: true,
       image: true,
+      avatarKey: true,
     },
   });
   if (!user) return null;
 
+  const image = (await resolveAvatarUrl(user.avatarKey)) ?? user.image;
   return {
     id: user.id,
     firstName: user.firstName,
@@ -159,7 +161,7 @@ export const getMe = cache(async (): Promise<User | null> => {
     handle: user.handle,
     email: user.email,
     color: user.color,
-    ...(user.image ? { image: user.image } : {}),
+    ...(image ? { image } : {}),
   };
 });
 
@@ -291,6 +293,7 @@ const workspaceProjectSelect = {
           email: true,
           color: true,
           image: true,
+          avatarKey: true,
         },
       },
     },
@@ -318,10 +321,16 @@ async function toWorkspaceProjectRows(
         visibility: project.visibility as ProjectVisibility,
         issueCount: project._count.issues,
         memberCount: project._count.members,
-        members: project.members.map((m) => ({
-          ...m.user,
-          image: m.user.image ?? undefined,
-        })),
+        members: await Promise.all(
+          project.members.map(async (m) => {
+            const { avatarKey, ...user } = m.user;
+            return {
+              ...user,
+              image:
+                (await resolveAvatarUrl(avatarKey)) ?? user.image ?? undefined,
+            };
+          }),
+        ),
         canUpdate: access.has("project.update"),
         canDelete: access.has("project.delete"),
       };
@@ -591,42 +600,47 @@ export const getWorkspaceTeamsView = cache(
     const userById = new Map(members.map((m) => [m.id, m]));
     const projectById = new Map(projects.map((p) => [p.id, p]));
 
-    const rows: WorkspaceTeamRow[] = teams.map((team) => {
-      const teamProjects: TeamProjectRow[] = team.projects
-        .map((p) => {
-          const project = projectById.get(p.projectId);
-          if (!project) return undefined;
-          return { ...project, role: p.role };
-        })
-        .filter((p) => p !== undefined);
+    const rows: WorkspaceTeamRow[] = await Promise.all(
+      teams.map(async (team) => {
+        const teamProjects: TeamProjectRow[] = team.projects
+          .map((p) => {
+            const project = projectById.get(p.projectId);
+            if (!project) return undefined;
+            return { ...project, role: p.role };
+          })
+          .filter((p) => p !== undefined);
 
-      return {
-        id: team.id,
-        name: team.name,
-        key: team.key,
-        color: team.color,
-        desc: team.desc,
-        // Der Lead steht über den Fremdschlüssel fest und muss kein
-        // Workspace-Mitglied mehr sein — dann fehlt er in `members`, und die
-        // Zeile nimmt seine Stammdaten direkt aus der Beziehung.
-        lead: userById.get(team.leadId) ?? {
-          id: team.lead.id,
-          firstName: team.lead.firstName,
-          lastName: team.lead.lastName,
-          email: team.lead.email,
-          color: team.lead.color,
-          ...(team.lead.image ? { image: team.lead.image } : {}),
-        },
-        members: team.members
-          .map((m) => userById.get(m.userId))
-          .filter((m) => m !== undefined),
-        projects: teamProjects,
-        openIssues: teamProjects.reduce(
-          (sum, p) => sum + (openOf.get(p.id) ?? 0),
-          0,
-        ),
-      };
-    });
+        const leadImage =
+          (await resolveAvatarUrl(team.lead.avatarKey)) ?? team.lead.image;
+
+        return {
+          id: team.id,
+          name: team.name,
+          key: team.key,
+          color: team.color,
+          desc: team.desc,
+          // Der Lead steht über den Fremdschlüssel fest und muss kein
+          // Workspace-Mitglied mehr sein — dann fehlt er in `members`, und die
+          // Zeile nimmt seine Stammdaten direkt aus der Beziehung.
+          lead: userById.get(team.leadId) ?? {
+            id: team.lead.id,
+            firstName: team.lead.firstName,
+            lastName: team.lead.lastName,
+            email: team.lead.email,
+            color: team.lead.color,
+            ...(leadImage ? { image: leadImage } : {}),
+          },
+          members: team.members
+            .map((m) => userById.get(m.userId))
+            .filter((m) => m !== undefined),
+          projects: teamProjects,
+          openIssues: teamProjects.reduce(
+            (sum, p) => sum + (openOf.get(p.id) ?? 0),
+            0,
+          ),
+        };
+      }),
+    );
 
     return {
       rows,
@@ -713,33 +727,39 @@ export const getWorkspaceMembersView = cache(
       }
     }
 
-    const rows: WorkspaceMemberRow[] = rowsRaw.map((m) => ({
-      user: {
-        id: m.user.id,
-        firstName: m.user.firstName,
-        lastName: m.user.lastName,
-        handle: m.user.handle,
-        email: m.user.email,
-        color: m.user.color,
-        ...(m.user.image ? { image: m.user.image } : {}),
-        role: m.role.key,
-        roleRank: m.role.rank,
-        pending: m.pending,
-      },
-      role: m.role.key,
-      roleName: m.role.name,
-      roleRank: m.role.rank,
-      pending: m.pending,
-      teams: teamsOf.get(m.userId) ?? [],
-      you: m.userId === actorId,
-      // Der Owner bleibt unangetastet — zum Owner führt nur ein
-      // Ownership-Transfer, und aus der Rolle heraus führt kein Knopf.
-      manageable:
-        (canSetRole || canRemove) &&
-        m.userId !== actorId &&
-        m.role.key !== OWNER_ROLE_KEY &&
-        m.role.rank <= actorRank,
-    }));
+    const rows: WorkspaceMemberRow[] = await Promise.all(
+      rowsRaw.map(async (m) => {
+        const image =
+          (await resolveAvatarUrl(m.user.avatarKey)) ?? m.user.image;
+        return {
+          user: {
+            id: m.user.id,
+            firstName: m.user.firstName,
+            lastName: m.user.lastName,
+            handle: m.user.handle,
+            email: m.user.email,
+            color: m.user.color,
+            ...(image ? { image } : {}),
+            role: m.role.key,
+            roleRank: m.role.rank,
+            pending: m.pending,
+          },
+          role: m.role.key,
+          roleName: m.role.name,
+          roleRank: m.role.rank,
+          pending: m.pending,
+          teams: teamsOf.get(m.userId) ?? [],
+          you: m.userId === actorId,
+          // Der Owner bleibt unangetastet — zum Owner führt nur ein
+          // Ownership-Transfer, und aus der Rolle heraus führt kein Knopf.
+          manageable:
+            (canSetRole || canRemove) &&
+            m.userId !== actorId &&
+            m.role.key !== OWNER_ROLE_KEY &&
+            m.role.rank <= actorRank,
+        };
+      }),
+    );
 
     const assignableRoles =
       canSetRole || canInvite

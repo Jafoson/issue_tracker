@@ -14,6 +14,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { TABLE_PAGE_SIZE } from "@/lib/pagination";
 import { PLATFORM, requirePermission } from "@/lib/permissions";
 import { OWNER_ROLE_KEY } from "@/lib/rbac";
+import { resolveAvatarUrl } from "@/lib/storage";
 
 // ─── Plattform-Ebene: die Hülle des Systems ───────────────────────────────────
 //
@@ -57,6 +58,7 @@ export interface CurrentUser {
   handle: string;
   email: string | null;
   color: string;
+  image?: string;
   platformRole: PlatformRoleRef | null;
 }
 
@@ -70,6 +72,7 @@ export interface PlatformUser {
   handle: string;
   email: string | null;
   color: string;
+  image?: string;
   platformRole: PlatformRoleRef | null;
   workspaceCount: number;
   createdAt: Date;
@@ -110,10 +113,18 @@ export const getCurrentUser = cache(
         handle: true,
         email: true,
         color: true,
+        image: true,
+        avatarKey: true,
         platformRole: platformRoleSelect,
       },
     });
-    return user;
+    if (!user) return null;
+
+    const { image, avatarKey, ...rest } = user;
+    return {
+      ...rest,
+      image: (await resolveAvatarUrl(avatarKey)) ?? image ?? undefined,
+    };
   },
 );
 
@@ -140,6 +151,8 @@ export const getAllUsers = cache(
         handle: true,
         email: true,
         color: true,
+        image: true,
+        avatarKey: true,
         createdAt: true,
         lastSeenAt: true,
         deactivatedAt: true,
@@ -150,22 +163,25 @@ export const getAllUsers = cache(
     });
 
     return {
-      rows: rows.map((u) => ({
-        id: u.id,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        handle: u.handle,
-        email: u.email,
-        color: u.color,
-        platformRole: u.platformRole,
-        workspaceCount: u._count.workspaces,
-        createdAt: u.createdAt,
-        lastSeenAt: u.lastSeenAt,
-        deactivatedAt: u.deactivatedAt,
-        hasPasskey: u._count.authenticators > 0,
-        invitePending:
-          u.workspaces.length > 0 && u.workspaces.every((m) => m.pending),
-      })),
+      rows: await Promise.all(
+        rows.map(async (u) => ({
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          handle: u.handle,
+          email: u.email,
+          color: u.color,
+          image: (await resolveAvatarUrl(u.avatarKey)) ?? u.image ?? undefined,
+          platformRole: u.platformRole,
+          workspaceCount: u._count.workspaces,
+          createdAt: u.createdAt,
+          lastSeenAt: u.lastSeenAt,
+          deactivatedAt: u.deactivatedAt,
+          hasPasskey: u._count.authenticators > 0,
+          invitePending:
+            u.workspaces.length > 0 && u.workspaces.every((m) => m.pending),
+        })),
+      ),
       nextCursor:
         limit && rows.length === limit ? rows[rows.length - 1].id : null,
     };

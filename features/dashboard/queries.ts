@@ -53,6 +53,7 @@ import {
   WORKSPACE_VIEWER_ROLE_KEY,
 } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
+import { resolveAvatarUrl } from "@/lib/storage";
 import { CLOSED_STATUSES } from "@/lib/workspace-defaults";
 import type { User } from "@/types";
 
@@ -162,7 +163,7 @@ async function platformStaffFor(
     if (excludeIds.has(user.id) || !user.platformRole) continue;
     const existing = groups.get(user.platformRole.key);
     if (existing) {
-      existing.members.push(mapUser(user));
+      existing.members.push(await mapUser(user));
       continue;
     }
     groups.set(user.platformRole.key, {
@@ -170,7 +171,7 @@ async function platformStaffFor(
       name: user.platformRole.name,
       rank: user.platformRole.rank + PLATFORM_STAFF_RANK_OFFSET,
       distinguished: true,
-      members: [mapUser(user)],
+      members: [await mapUser(user)],
     });
   }
   return [...groups.values()].sort((a, b) => b.rank - a.rank);
@@ -189,7 +190,7 @@ const WS_ROSTER_ROLE_KEYS = new Set<string>([
   WORKSPACE_GUEST_ROLE_KEY,
 ]);
 
-function mapUser(user: {
+async function mapUser(user: {
   id: string;
   firstName: string;
   lastName: string;
@@ -197,7 +198,9 @@ function mapUser(user: {
   email: string | null;
   color: string;
   image: string | null;
-}): User {
+  avatarKey: string | null;
+}): Promise<User> {
+  const image = (await resolveAvatarUrl(user.avatarKey)) ?? user.image;
   return {
     id: user.id,
     firstName: user.firstName,
@@ -205,7 +208,7 @@ function mapUser(user: {
     handle: user.handle,
     email: user.email,
     color: user.color,
-    ...(user.image ? { image: user.image } : {}),
+    ...(image ? { image } : {}),
   };
 }
 
@@ -217,6 +220,7 @@ const USER_SELECT = {
   email: true,
   color: true,
   image: true,
+  avatarKey: true,
 } as const;
 
 /** Personenlisten stehen alphabetisch — wie überall in dieser Anwendung. */
@@ -461,7 +465,11 @@ async function workloadFor(
     where: { id: { in: ids } },
     select: USER_SELECT,
   });
-  const byId = new Map(users.map((user) => [user.id, mapUser(user)]));
+  const byId = new Map(
+    await Promise.all(
+      users.map(async (user) => [user.id, await mapUser(user)] as const),
+    ),
+  );
 
   const totals = new Map<string, { open: number; inProgress: number }>();
   for (const row of rows) {
@@ -541,26 +549,28 @@ async function attentionFor(
     take: LIST_LIMIT,
   });
 
-  return rows.map((row) => {
-    const reason: AttentionReason =
-      row.priority === 4 && !row.assignee
-        ? "unassigned"
-        : row.priority >= 3
-          ? "urgent"
-          : "stale";
+  return Promise.all(
+    rows.map(async (row) => {
+      const reason: AttentionReason =
+        row.priority === 4 && !row.assignee
+          ? "unassigned"
+          : row.priority >= 3
+            ? "urgent"
+            : "stale";
 
-    return {
-      id: row.id,
-      ref: issueRef(prefix, row.key),
-      title: row.title,
-      status: row.status,
-      statusColor: statusColors.get(row.status) ?? "#8a9099",
-      priority: row.priority,
-      assignee: row.assignee ? mapUser(row.assignee) : null,
-      updated: row.updated.getTime(),
-      reason,
-    } satisfies AttentionIssue;
-  });
+      return {
+        id: row.id,
+        ref: issueRef(prefix, row.key),
+        title: row.title,
+        status: row.status,
+        statusColor: statusColors.get(row.status) ?? "#8a9099",
+        priority: row.priority,
+        assignee: row.assignee ? await mapUser(row.assignee) : null,
+        updated: row.updated.getTime(),
+        reason,
+      } satisfies AttentionIssue;
+    }),
+  );
 }
 
 // ── Der Steckbrief ────────────────────────────────────────────────────────────
@@ -593,20 +603,20 @@ async function attentionFor(
  * Verfahren gilt eine Ebene höher für die Mitgliedschaft im Workspace, nur mit
  * anderen Rollen und einem anderen Rang der bloßen Mitarbeit (`getWorkspaceDashboard`).
  */
-export function groupByRole(
+export async function groupByRole(
   members: {
     user: Parameters<typeof mapUser>[0];
     role: { key: string; name: string; rank: number };
   }[],
   contributorRank: number = CONTRIBUTOR_RANK,
   rosterKeys: Set<string> = ROSTER_ROLE_KEYS,
-): ProjectRoleGroup[] {
+): Promise<ProjectRoleGroup[]> {
   const groups = new Map<string, ProjectRoleGroup>();
 
   for (const member of members) {
     const existing = groups.get(member.role.key);
     if (existing) {
-      existing.members.push(mapUser(member.user));
+      existing.members.push(await mapUser(member.user));
       continue;
     }
     groups.set(member.role.key, {
@@ -615,7 +625,7 @@ export function groupByRole(
       rank: member.role.rank,
       distinguished:
         member.role.rank >= contributorRank && !rosterKeys.has(member.role.key),
-      members: [mapUser(member.user)],
+      members: [await mapUser(member.user)],
     });
   }
 
@@ -702,13 +712,13 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
     prefix: project.prefix,
     visibility: project.visibility,
     createdAt: project.createdAt.getTime(),
-    createdBy: project.createdBy ? mapUser(project.createdBy) : null,
+    createdBy: project.createdBy ? await mapUser(project.createdBy) : null,
     canUpdate: access.has("project.update"),
     canViewSettings: PROJECT_SETTINGS_PERMISSIONS.some(access.has),
     canViewAllStats: access.has("dashboard.view.all"),
     canCreateLabel: access.has("label.create"),
     canManageTeams: wsAccess.has("team.project.manage"),
-    roles: groupByRole(project.members),
+    roles: await groupByRole(project.members),
     memberCount: project.members.length,
     teams: project.teams.map((entry) => entry.team),
     labels: [
@@ -1064,7 +1074,11 @@ async function wsWorkloadFor(
     where: { id: { in: ids } },
     select: USER_SELECT,
   });
-  const byId = new Map(users.map((user) => [user.id, mapUser(user)]));
+  const byId = new Map(
+    await Promise.all(
+      users.map(async (user) => [user.id, await mapUser(user)] as const),
+    ),
+  );
 
   const totals = new Map<string, { open: number; inProgress: number }>();
   for (const row of rows) {
@@ -1119,26 +1133,28 @@ async function wsAttentionFor(
     take: LIST_LIMIT,
   });
 
-  return rows.map((row) => {
-    const reason: AttentionReason =
-      row.priority === 4 && !row.assignee
-        ? "unassigned"
-        : row.priority >= 3
-          ? "urgent"
-          : "stale";
+  return Promise.all(
+    rows.map(async (row) => {
+      const reason: AttentionReason =
+        row.priority === 4 && !row.assignee
+          ? "unassigned"
+          : row.priority >= 3
+            ? "urgent"
+            : "stale";
 
-    return {
-      id: row.id,
-      ref: issueRef(row.project.prefix, row.key),
-      title: row.title,
-      status: row.status,
-      statusColor: statusColors.get(row.status) ?? "#8a9099",
-      priority: row.priority,
-      assignee: row.assignee ? mapUser(row.assignee) : null,
-      updated: row.updated.getTime(),
-      reason,
-    } satisfies AttentionIssue;
-  });
+      return {
+        id: row.id,
+        ref: issueRef(row.project.prefix, row.key),
+        title: row.title,
+        status: row.status,
+        statusColor: statusColors.get(row.status) ?? "#8a9099",
+        priority: row.priority,
+        assignee: row.assignee ? await mapUser(row.assignee) : null,
+        updated: row.updated.getTime(),
+        reason,
+      } satisfies AttentionIssue;
+    }),
+  );
 }
 
 /**
@@ -1213,7 +1229,7 @@ async function wsProfileFor(
   // sichtbar, sonst wüsste niemand im Workspace, wer dort das Sagen hat. Die
   // Belegschaft dahinter (`rest` in der Ansicht) fällt unten über den Filter
   // ohnehin weg, weil nur noch `distinguished` übrig bleibt.
-  const roles = groupByRole(
+  const roles = await groupByRole(
     workspace.members,
     WS_CONTRIBUTOR_RANK,
     WS_ROSTER_ROLE_KEYS,
@@ -1287,9 +1303,16 @@ export const getWorkspaceDashboard = cache(
 
     const workspace = await db.workspace.findUnique({
       where: { id: workspaceId },
-      select: { id: true, name: true, slug: true, color: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        color: true,
+        avatarKey: true,
+      },
     });
     if (!workspace) return null;
+    const workspaceAvatarUrl = await resolveAvatarUrl(workspace.avatarKey);
 
     const window = windowFor(range);
 
@@ -1344,6 +1367,7 @@ export const getWorkspaceDashboard = cache(
         name: workspace.name,
         slug: workspace.slug,
         color: workspace.color,
+        avatarUrl: workspaceAvatarUrl,
       },
       data,
       profile,

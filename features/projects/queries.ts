@@ -25,6 +25,7 @@ import {
   visibleProjectIds,
 } from "@/lib/permissions";
 import { DEFAULT_PROJECT_ROLE_KEY, PROJECT_ADMIN_ROLE_KEY } from "@/lib/rbac";
+import { resolveAvatarUrl } from "@/lib/storage";
 import type { Role, User } from "@/types";
 
 // ── Übersicht ─────────────────────────────────────────────────────────────────
@@ -107,6 +108,7 @@ export const getProjectsOverview = cache(
                 email: true,
                 color: true,
                 image: true,
+                avatarKey: true,
               },
             },
           },
@@ -120,22 +122,30 @@ export const getProjectsOverview = cache(
       orderBy: { name: "asc" },
     });
 
-    const rows: ProjectOverviewRow[] = projects.map((project) => {
-      const leads = project.members.map((m) => ({
-        ...m.user,
-        image: m.user.image ?? undefined,
-      }));
-      return {
-        id: project.id,
-        name: project.name,
-        slug: project.slug,
-        prefix: project.prefix,
-        color: project.color,
-        desc: project.desc,
-        lead: leads[0] ?? null,
-        moreLeads: Math.max(0, leads.length - 1),
-      };
-    });
+    const rows: ProjectOverviewRow[] = await Promise.all(
+      projects.map(async (project) => {
+        const leads = await Promise.all(
+          project.members.map(async (m) => {
+            const { avatarKey, ...user } = m.user;
+            return {
+              ...user,
+              image:
+                (await resolveAvatarUrl(avatarKey)) ?? user.image ?? undefined,
+            };
+          }),
+        );
+        return {
+          id: project.id,
+          name: project.name,
+          slug: project.slug,
+          prefix: project.prefix,
+          color: project.color,
+          desc: project.desc,
+          lead: leads[0] ?? null,
+          moreLeads: Math.max(0, leads.length - 1),
+        };
+      }),
+    );
 
     return {
       rows,
@@ -203,16 +213,18 @@ type UserRow = {
   email: string | null;
   color: string;
   image: string | null;
+  avatarKey: string | null;
 };
 
-function toUser(u: UserRow, pending: boolean): User {
+async function toUser(u: UserRow, pending: boolean): Promise<User> {
+  const image = (await resolveAvatarUrl(u.avatarKey)) ?? u.image;
   return {
     id: u.id,
     firstName: u.firstName,
     lastName: u.lastName,
     email: u.email,
     color: u.color,
-    ...(u.image ? { image: u.image } : {}),
+    ...(image ? { image } : {}),
     pending,
   };
 }
@@ -323,28 +335,30 @@ export const getProjectMembersView = cache(
       workspaceMembers.map((m) => [m.userId, m.pending]),
     );
 
-    const rows: ProjectMemberRow[] = projectMembers.map((pm) => ({
-      user: toUser(pm.user, pendingOf.get(pm.userId) ?? false),
-      role: pm.role.key,
-      roleName: pm.role.name,
-      roleRank: pm.role.rank,
-      source: "project",
-      origin: pm.origin,
-      originTeam: pm.originTeam ?? undefined,
-      pending: pendingOf.get(pm.userId) ?? false,
-      you: pm.userId === actorId,
-      // Niemand ändert ein Mitglied, das über ihm steht — und die eigene Rolle
-      // schon gar nicht über diese Tabelle. Die Leitung des Workspace bleibt
-      // außen vor: an ihren Rechten würde die Änderung nichts ändern.
-      //
-      // Das sagt nur, dass die Zeile anfassbar ist. Welche der drei Aktionen
-      // erlaubt ist, sagen `canSetRole` und `canRemove`.
-      manageable:
-        anyManage &&
-        pm.userId !== actorId &&
-        !privileged.has(pm.userId) &&
-        pm.role.rank <= actorRank,
-    }));
+    const rows: ProjectMemberRow[] = await Promise.all(
+      projectMembers.map(async (pm) => ({
+        user: await toUser(pm.user, pendingOf.get(pm.userId) ?? false),
+        role: pm.role.key,
+        roleName: pm.role.name,
+        roleRank: pm.role.rank,
+        source: "project",
+        origin: pm.origin,
+        originTeam: pm.originTeam ?? undefined,
+        pending: pendingOf.get(pm.userId) ?? false,
+        you: pm.userId === actorId,
+        // Niemand ändert ein Mitglied, das über ihm steht — und die eigene Rolle
+        // schon gar nicht über diese Tabelle. Die Leitung des Workspace bleibt
+        // außen vor: an ihren Rechten würde die Änderung nichts ändern.
+        //
+        // Das sagt nur, dass die Zeile anfassbar ist. Welche der drei Aktionen
+        // erlaubt ist, sagen `canSetRole` und `canRemove`.
+        manageable:
+          anyManage &&
+          pm.userId !== actorId &&
+          !privileged.has(pm.userId) &&
+          pm.role.rank <= actorRank,
+      })),
+    );
 
     const hasOwnEntry = new Set(projectMembers.map((pm) => pm.userId));
     const candidates: User[] = [];
@@ -352,7 +366,7 @@ export const getProjectMembersView = cache(
     for (const wm of workspaceMembers) {
       if (hasOwnEntry.has(wm.userId)) continue;
 
-      const user = toUser(wm.user, wm.pending);
+      const user = await toUser(wm.user, wm.pending);
       // Wer ohnehin in jedem Projekt alles darf, braucht keinen Projekt-Eintrag
       // — der wäre nur eine leere Geste.
       const isPrivileged = privileged.has(wm.userId);

@@ -154,19 +154,24 @@ export const getMembers = cache(
       include: { user: true, role: { select: { key: true, rank: true } } },
       orderBy: [{ user: { firstName: "asc" } }, { user: { lastName: "asc" } }],
     });
-    return rows.map((m) => {
-      return {
-        id: m.user.id,
-        firstName: m.user.firstName,
-        lastName: m.user.lastName,
-        handle: m.user.handle,
-        email: m.user.email,
-        color: m.user.color,
-        role: m.role.key,
-        roleRank: m.role.rank,
-        pending: m.pending,
-      };
-    });
+    return Promise.all(
+      rows.map(async (m) => {
+        const image =
+          (await resolveAvatarUrl(m.user.avatarKey)) ?? m.user.image;
+        return {
+          id: m.user.id,
+          firstName: m.user.firstName,
+          lastName: m.user.lastName,
+          handle: m.user.handle,
+          email: m.user.email,
+          color: m.user.color,
+          ...(image ? { image } : {}),
+          role: m.role.key,
+          roleRank: m.role.rank,
+          pending: m.pending,
+        };
+      }),
+    );
   },
 );
 
@@ -564,19 +569,20 @@ interface PublicPerson {
   image?: string;
 }
 
-function toPerson<
+async function toPerson<
   T extends {
     firstName: string;
     lastName: string;
     color: string;
     image: string | null;
+    avatarKey: string | null;
   },
->(u: T): PublicPerson {
+>(u: T): Promise<PublicPerson> {
   return {
     firstName: u.firstName,
     lastName: u.lastName,
     color: u.color,
-    image: u.image ?? undefined,
+    image: (await resolveAvatarUrl(u.avatarKey)) ?? u.image ?? undefined,
   };
 }
 
@@ -626,6 +632,7 @@ export async function getIssueByShareToken(
     lastName: true,
     color: true,
     image: true,
+    avatarKey: true,
   } as const;
 
   const issue = await db.issue.findUnique({
@@ -695,19 +702,21 @@ export async function getIssueByShareToken(
     labels: labelRows,
     projectName: issue.project.name,
     workspaceName: issue.project.workspace.name,
-    assignee: issue.assignee ? toPerson(issue.assignee) : null,
-    reporter: toPerson(issue.reporter),
-    sharedBy: issue.sharedBy ? toPerson(issue.sharedBy) : null,
+    assignee: issue.assignee ? await toPerson(issue.assignee) : null,
+    reporter: await toPerson(issue.reporter),
+    sharedBy: issue.sharedBy ? await toPerson(issue.sharedBy) : null,
     sharedAt: issue.shareTokenCreatedAt,
     expiresAt: issue.shareTokenExpiresAt,
     createdAt: issue.created,
     updatedAt: issue.updated,
-    comments: issue.comments.map((c) => ({
-      id: c.id,
-      body: toDoc(c.body),
-      author: toPerson(c.author),
-      created: c.created,
-    })),
+    comments: await Promise.all(
+      issue.comments.map(async (c) => ({
+        id: c.id,
+        body: toDoc(c.body),
+        author: await toPerson(c.author),
+        created: c.created,
+      })),
+    ),
   };
 }
 
