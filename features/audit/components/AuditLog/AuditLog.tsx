@@ -245,6 +245,22 @@ const PROJECT_IS_CONTEXT: ReadonlySet<string> = new Set([
   "project.member.role.changed",
 ]);
 
+/** Vorgänge, bei denen das Ziel selbst der Workspace ist — wie
+ * `PROJECT_IS_TARGET`, nur ohne Link: eine Plattform-Admin ist in fremden
+ * Workspaces kein Mitglied (siehe `PlatformWorkspaces`). */
+const WORKSPACE_IS_TARGET: ReadonlySet<string> = new Set([
+  "workspace.suspended",
+  "workspace.unsuspended",
+  "workspace.deleted",
+]);
+
+type EntityRef = {
+  slug: string;
+  name: string;
+  color: string;
+  avatarUrl: string | null;
+};
+
 interface TargetLabelProps {
   text: string;
   action: string;
@@ -254,9 +270,12 @@ interface TargetLabelProps {
   personColor?: string | null;
   /** Verlinkt das Kürzel zum Issue. Ohne sie steht es als reiner Text da. */
   workspaceSlug?: string;
-  /** Aktuelles Projekt hinter `projectId` — für den Link bei
+  /** Aktuelles Projekt hinter `projectId` — für Link und Avatar bei
    * `PROJECT_IS_TARGET`/`PROJECT_IS_CONTEXT` (`lib/audit/index.ts`). */
-  projectRef?: { slug: string; name: string } | null;
+  projectRef?: EntityRef | null;
+  /** Aktueller Workspace hinter `workspaceId` — für den Avatar bei
+   * `WORKSPACE_IS_TARGET`, ohne Link (`lib/audit/index.ts`). */
+  workspaceRef?: EntityRef | null;
 }
 
 export function TargetLabel({
@@ -266,6 +285,7 @@ export function TargetLabel({
   personColor,
   workspaceSlug,
   projectRef,
+  workspaceRef,
 }: TargetLabelProps) {
   const { ref, before, after } = parseTargetLabel(text);
   if (!ref && !after) return null;
@@ -286,10 +306,41 @@ export function TargetLabel({
         href={projectPath(workspaceSlug, projectRef.slug, "overview")}
         className={styles.projectRef}
       >
-        <Icon icon="lucide:folder" width={11} />
+        <Avatar
+          avatar={{
+            name: projectRef.name,
+            color: projectRef.color,
+            image: projectRef.avatarUrl ?? undefined,
+          }}
+          shape="square"
+          size={14}
+        />
         {projectRef.name}
       </Link>
     ) : null;
+
+  if (WORKSPACE_IS_TARGET.has(action)) {
+    return (
+      <span className={styles.targetLabel}>
+        {workspaceRef ? (
+          <span className={styles.projectRef}>
+            <Avatar
+              avatar={{
+                name: workspaceRef.name,
+                color: workspaceRef.color,
+                image: workspaceRef.avatarUrl ?? undefined,
+              }}
+              shape="square"
+              size={14}
+            />
+            {workspaceRef.name}
+          </span>
+        ) : (
+          <span className={styles.changeAfter}>{after}</span>
+        )}
+      </span>
+    );
+  }
 
   if (PROJECT_IS_TARGET.has(action)) {
     return (
@@ -472,6 +523,7 @@ export function AuditLog({
                 personColor={row.personColor}
                 workspaceSlug={workspaceSlug}
                 projectRef={row.projectRef}
+                workspaceRef={row.workspaceRef}
               />
             )}
           </span>
@@ -491,6 +543,7 @@ export function AuditLog({
                 ? {
                     name: actorDisplayName(row.actorLabel),
                     color: row.actorColor,
+                    image: row.actorAvatarUrl ?? undefined,
                   }
                 : null
             }

@@ -9,6 +9,7 @@ const mockAuditCount = mock();
 const mockUserFindUnique = mock();
 const mockUserFindMany = mock();
 const mockProjectFindMany = mock();
+const mockWorkspaceFindMany = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -19,6 +20,7 @@ mock.module("@/lib/db", () => ({
     },
     user: { findUnique: mockUserFindUnique, findMany: mockUserFindMany },
     project: { findMany: mockProjectFindMany },
+    workspace: { findMany: mockWorkspaceFindMany },
   },
 }));
 
@@ -44,6 +46,7 @@ beforeEach(() => {
   });
   mockUserFindMany.mockResolvedValue([]);
   mockProjectFindMany.mockResolvedValue([]);
+  mockWorkspaceFindMany.mockResolvedValue([]);
 });
 
 describe("Schreiben", () => {
@@ -194,22 +197,29 @@ describe("Lesen", () => {
     ]);
   });
 
-  it("fragt gar nicht erst nach, wenn jede Zeile schon eine Farbe trägt", async () => {
+  it("fragt für die Farbe nicht erneut nach, wenn jede Zeile schon eine trägt — nur noch für den Avatar", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen" },
     ]);
 
     await listAudit();
 
-    expect(mockUserFindMany).not.toHaveBeenCalled();
+    // Das Profilbild ist nie eingefroren (siehe `AuditEntry.actorAvatarUrl`)
+    // und wird deshalb immer live nachgeschlagen — auch wenn die Farbe schon
+    // eingefroren ist. Genau ein Aufruf statt zwei: nicht mehr für die Farbe.
+    expect(mockUserFindMany).toHaveBeenCalledTimes(1);
+    expect(mockUserFindMany.mock.calls[0][0].select).toEqual({
+      id: true,
+      avatarKey: true,
+    });
   });
 
-  it("löst das Projekt hinter `projectId` für den Link auf", async () => {
+  it("löst Profilbild, Farbe, Slug und Name des Projekts hinter `projectId` auf", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: "p1" },
     ]);
     mockProjectFindMany.mockResolvedValue([
-      { id: "p1", slug: "mobile", name: "Mobile App" },
+      { id: "p1", slug: "mobile", name: "Mobile App", color: "#3b82f6" },
     ]);
 
     const entries = await listAudit();
@@ -218,7 +228,39 @@ describe("Lesen", () => {
     expect(entries[0].projectRef).toEqual({
       slug: "mobile",
       name: "Mobile App",
+      color: "#3b82f6",
+      avatarUrl: null,
     });
+  });
+
+  it("löst Profilbild, Farbe, Slug und Name des Workspace hinter `workspaceId` auf", async () => {
+    mockAuditFindMany.mockResolvedValue([
+      { id: "a1", actorId: "u1", actorColor: "#frozen", workspaceId: "ws1" },
+    ]);
+    mockWorkspaceFindMany.mockResolvedValue([
+      { id: "ws1", slug: "nimbus", name: "Nimbus", color: "#6e63e6" },
+    ]);
+
+    const entries = await listAudit();
+
+    expect(mockWorkspaceFindMany.mock.calls[0][0].where.id.in).toEqual(["ws1"]);
+    expect(entries[0].workspaceRef).toEqual({
+      slug: "nimbus",
+      name: "Nimbus",
+      color: "#6e63e6",
+      avatarUrl: null,
+    });
+  });
+
+  it("lässt `workspaceRef` leer, wenn der Workspace inzwischen gelöscht ist", async () => {
+    mockAuditFindMany.mockResolvedValue([
+      { id: "a1", actorId: "u1", actorColor: "#frozen", workspaceId: "ws-weg" },
+    ]);
+    mockWorkspaceFindMany.mockResolvedValue([]);
+
+    const entries = await listAudit();
+
+    expect(entries[0].workspaceRef).toBeNull();
   });
 
   it("lässt `projectRef` leer, wenn keine Zeile eine `projectId` trägt", async () => {

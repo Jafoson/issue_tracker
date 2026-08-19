@@ -2,6 +2,7 @@ import "server-only";
 import type { AuditAction, AuditEntry, AuditTarget } from "@/lib/audit/actions";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { resolveAvatarUrl } from "@/lib/storage";
 
 // ─── Audit-Log: schreiben und lesen ───────────────────────────────────────────
 //
@@ -238,13 +239,19 @@ export async function listAudit(
       meta: true,
     },
   });
-  // `projectRef` ist keine Spalte — Platzhalter, den `withProjectRef` befüllt,
-  // genau wie `withCurrentColor` es mit fehlender `actorColor` tut.
+  // `projectRef`/`workspaceRef`/`actorAvatarUrl` sind keine Spalten —
+  // Platzhalter, die die drei Funktionen unten befüllen, genau wie
+  // `withCurrentColor` es mit fehlender `actorColor` tut.
   const withPlaceholder: AuditEntry[] = entries.map((entry) => ({
     ...entry,
+    actorAvatarUrl: null,
     projectRef: null,
+    workspaceRef: null,
   }));
-  return withProjectRef(await withCurrentColor(withPlaceholder));
+  const withColor = await withCurrentColor(withPlaceholder);
+  const withAvatar = await withActorAvatar(withColor);
+  const withProject = await withProjectRef(withAvatar);
+  return withWorkspaceRef(withProject);
 }
 
 /**
@@ -278,10 +285,45 @@ async function withCurrentColor(entries: AuditEntry[]): Promise<AuditEntry[]> {
 }
 
 /**
- * Ergänzt Slug und Name des Projekts, zu dem die Zeile gehört — für den Link
- * in `TargetLabel` (`AuditLog`/`ActivityFeed`). Kein Fremdschlüssel auf
- * `AuditLog` (siehe `prisma/schema.prisma`), also ist das hier der einzige
- * Weg zu einem klickbaren Projekt: eine gebündelte Nachfrage, nicht anders als
+ * Ergänzt das Profilbild des Handelnden, live nachgeschlagen — anders als
+ * `actorColor` gilt hier keine Zeitzeugenschaft (siehe `AuditEntry.actorAvatarUrl`):
+ * eine signierte URL wäre nach einer Stunde ohnehin ungültig, „eingefroren"
+ * ergäbe also keinen Sinn. Ein gelöschtes Konto liefert kein Bild — die Liste
+ * zeigt dann den Farb- oder Platzhalter-Avatar.
+ */
+async function withActorAvatar(entries: AuditEntry[]): Promise<AuditEntry[]> {
+  const actorIds = [
+    ...new Set(
+      entries.filter((e) => e.actorId).map((e) => e.actorId as string),
+    ),
+  ];
+  if (actorIds.length === 0) return entries;
+
+  const users = await db.user.findMany({
+    where: { id: { in: actorIds } },
+    select: { id: true, avatarKey: true },
+  });
+  const avatarOf = new Map(
+    await Promise.all(
+      users.map(
+        async (u) => [u.id, await resolveAvatarUrl(u.avatarKey)] as const,
+      ),
+    ),
+  );
+
+  return entries.map((entry) =>
+    entry.actorId && avatarOf.has(entry.actorId)
+      ? { ...entry, actorAvatarUrl: avatarOf.get(entry.actorId) ?? null }
+      : entry,
+  );
+}
+
+/**
+ * Ergänzt Slug, Name, Farbe und Profilbild des Projekts, zu dem die Zeile
+ * gehört — für den Link samt Avatar in `TargetLabel` (`AuditLog`/
+ * `ActivityFeed`). Kein Fremdschlüssel auf `AuditLog` (siehe
+ * `prisma/schema.prisma`), also ist das hier der einzige Weg zu einem
+ * klickbaren Projekt: eine gebündelte Nachfrage, nicht anders als
  * `withCurrentColor` nebenan. Ein inzwischen gelöschtes Projekt liefert
  * `null` — die Zeile bleibt dann unverlinkter Text statt eines toten Links.
  */
@@ -295,15 +337,70 @@ async function withProjectRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
 
   const projects = await db.project.findMany({
     where: { id: { in: projectIds } },
-    select: { id: true, slug: true, name: true },
+    select: { id: true, slug: true, name: true, color: true, avatarKey: true },
   });
   const refOf = new Map(
-    projects.map((p) => [p.id, { slug: p.slug, name: p.name }]),
+    await Promise.all(
+      projects.map(
+        async (p) =>
+          [
+            p.id,
+            {
+              slug: p.slug,
+              name: p.name,
+              color: p.color,
+              avatarUrl: await resolveAvatarUrl(p.avatarKey),
+            },
+          ] as const,
+      ),
+    ),
   );
 
   return entries.map((entry) =>
     entry.projectId && refOf.has(entry.projectId)
       ? { ...entry, projectRef: refOf.get(entry.projectId) ?? null }
+      : entry,
+  );
+}
+
+/**
+ * Dasselbe für den Workspace hinter `workspaceId` — ohne Link, siehe
+ * `AuditEntry.workspaceRef`. Betrifft praktisch nur `workspace.*`-Vorgänge im
+ * Plattform-Protokoll; ein gelöschter Workspace liefert `null`, die Zeile
+ * bleibt dann reiner Text.
+ */
+async function withWorkspaceRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
+  const workspaceIds = [
+    ...new Set(
+      entries.filter((e) => e.workspaceId).map((e) => e.workspaceId as string),
+    ),
+  ];
+  if (workspaceIds.length === 0) return entries;
+
+  const workspaces = await db.workspace.findMany({
+    where: { id: { in: workspaceIds } },
+    select: { id: true, slug: true, name: true, color: true, avatarKey: true },
+  });
+  const refOf = new Map(
+    await Promise.all(
+      workspaces.map(
+        async (w) =>
+          [
+            w.id,
+            {
+              slug: w.slug,
+              name: w.name,
+              color: w.color,
+              avatarUrl: await resolveAvatarUrl(w.avatarKey),
+            },
+          ] as const,
+      ),
+    ),
+  );
+
+  return entries.map((entry) =>
+    entry.workspaceId && refOf.has(entry.workspaceId)
+      ? { ...entry, workspaceRef: refOf.get(entry.workspaceId) ?? null }
       : entry,
   );
 }

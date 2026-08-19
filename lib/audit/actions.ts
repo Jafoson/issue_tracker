@@ -178,6 +178,14 @@ export interface AuditEntry {
   /** Kontofarbe zur Tatzeit, für den Avatar — `null` ohne Konto (fehlgeschlagene
    * Anmeldung) oder wenn es inzwischen gelöscht ist. */
   actorColor: string | null;
+  /**
+   * Das hochgeladene Profilbild des Handelnden, live nachgeschlagen wie
+   * `projectRef` — anders als `actorColor` nicht eingefroren: eine signierte
+   * URL hat ohnehin nur eine Stunde Gültigkeit, ein „zur Tatzeit"-Bild ließe
+   * sich also gar nicht aufheben. `null` ohne Konto, ohne Bild oder wenn das
+   * Konto inzwischen gelöscht ist — die Liste zeigt dann die Initialen.
+   */
+  actorAvatarUrl: string | null;
   targetType: string | null;
   targetId: string | null;
   targetLabel: string | null;
@@ -196,13 +204,30 @@ export interface AuditEntry {
    */
   meta: unknown;
   /**
-   * Slug und Name des Projekts hinter `projectId`, live nachgeschlagen wie
-   * `actorColor` in `withCurrentColor` (`lib/audit/index.ts`) — nicht
-   * eingefroren, weil es nur für einen Link taugen muss, nicht für
-   * Zeitzeugenschaft. `null` ohne `projectId` oder wenn das Projekt inzwischen
-   * gelöscht ist; die Zeile bleibt dann unverlinkter Text.
+   * Slug, Name, Farbe und Profilbild des Projekts hinter `projectId`, live
+   * nachgeschlagen wie `actorColor` in `withCurrentColor` (`lib/audit/index.ts`)
+   * — nicht eingefroren, weil es nur für einen Link und einen Avatar taugen
+   * muss, nicht für Zeitzeugenschaft. `null` ohne `projectId` oder wenn das
+   * Projekt inzwischen gelöscht ist; die Zeile bleibt dann unverlinkter Text.
    */
-  projectRef: { slug: string; name: string } | null;
+  projectRef: {
+    slug: string;
+    name: string;
+    color: string;
+    avatarUrl: string | null;
+  } | null;
+  /**
+   * Dasselbe für den Workspace hinter `workspaceId` — ohne Link (eine
+   * Plattform-Admin ist in fremden Workspaces kein Mitglied, siehe
+   * `PlatformWorkspaces`), nur für den Avatar neben `workspace.*`-Vorgängen.
+   * `null` ohne `workspaceId` oder wenn der Workspace inzwischen gelöscht ist.
+   */
+  workspaceRef: {
+    slug: string;
+    name: string;
+    color: string;
+    avatarUrl: string | null;
+  } | null;
 }
 
 /** `meta` bei `issue.priority.changed` — Prioritäts-Id reicht, das Symbol

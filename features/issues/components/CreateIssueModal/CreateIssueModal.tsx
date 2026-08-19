@@ -180,7 +180,15 @@ export function CreateIssueModal({
       width={260}
       trigger={
         <Badge as="button" title={project.name}>
-          <span className="dot" style={{ background: project.color }} />
+          <Avatar
+            avatar={{
+              name: project.name,
+              color: project.color,
+              image: project.avatarUrl ?? undefined,
+            }}
+            shape="circle"
+            size={12}
+          />
           {project.prefix}
           <Icon icon="lucide:chevron-down" width={12} />
         </Badge>
@@ -192,7 +200,17 @@ export function CreateIssueModal({
             value: p.id,
             label: p.name,
             hint: p.prefix,
-            icon: <span className="dot" style={{ background: p.color }} />,
+            icon: (
+              <Avatar
+                avatar={{
+                  name: p.name,
+                  color: p.color,
+                  image: p.avatarUrl ?? undefined,
+                }}
+                shape="square"
+                size={18}
+              />
+            ),
           }))}
           value={project.id}
           onPick={(v) => {

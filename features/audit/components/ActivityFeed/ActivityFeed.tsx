@@ -49,6 +49,7 @@ export function ActivityFeed({ entries, workspaceSlug }: Props) {
                     personColor={entry.personColor}
                     workspaceSlug={workspaceSlug}
                     projectRef={entry.projectRef}
+                    workspaceRef={entry.workspaceRef}
                   />
                 )}
               </span>
@@ -59,6 +60,7 @@ export function ActivityFeed({ entries, workspaceSlug }: Props) {
                       ? {
                           name: actorDisplayName(entry.actorLabel),
                           color: entry.actorColor,
+                          image: entry.actorAvatarUrl ?? undefined,
                         }
                       : null
                   }
