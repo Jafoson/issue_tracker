@@ -24,6 +24,17 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
 // configuration`), kein `wellKnown` nötig. `AUTH_OIDC_NAME` ist nur die
 // Beschriftung des Buttons — Vorgabe „SSO", wenn nichts gesetzt ist.
 export const oidcProviderName = process.env.AUTH_OIDC_NAME || "SSO";
+// Nur fürs Login-Formular (Zeilen-Untertitel „OIDC · {host}"), next-auth
+// selbst braucht nur die volle Issuer-URL oben.
+export const oidcIssuerHost = (() => {
+  try {
+    return process.env.AUTH_OIDC_ISSUER
+      ? new URL(process.env.AUTH_OIDC_ISSUER).hostname
+      : undefined;
+  } catch {
+    return undefined;
+  }
+})();
 if (
   process.env.AUTH_OIDC_ISSUER &&
   process.env.AUTH_OIDC_CLIENT_ID &&

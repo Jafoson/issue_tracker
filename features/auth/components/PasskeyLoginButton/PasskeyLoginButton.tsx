@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { signIn } from "next-auth/webauthn";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
-import { Button } from "@/components/ui/atoms/Button/Button";
+import { OptionButton } from "@/components/ui/atoms/OptionButton/OptionButton";
 
 interface Props {
   callbackUrl?: string;
@@ -42,16 +42,13 @@ export function PasskeyLoginButton({ callbackUrl, onError }: Props) {
   };
 
   return (
-    <Button
-      type="button"
+    <OptionButton
       variant="primary"
-      size="lg"
-      full
       disabled={isPending}
-      icon={<Icon icon="lucide:fingerprint" width={16} />}
+      icon={<Icon icon="lucide:fingerprint" width={18} />}
+      title={t("login.withPasskey")}
+      subtitle={t("login.passkeySubtitle")}
       onClick={submit}
-    >
-      {t("login.withPasskey")}
-    </Button>
+    />
   );
 }

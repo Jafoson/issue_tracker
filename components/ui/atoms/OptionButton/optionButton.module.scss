@@ -1,0 +1,91 @@
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+
+  &::after {
+    content: "";
+    display: block;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  &:hover:not(:disabled)::after { opacity: var(--opacity-hover); }
+  &:focus-visible:not(:disabled)::after { opacity: var(--opacity-focus); }
+  &:active:not(:disabled)::after { opacity: var(--opacity-active); }
+
+  &:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+.icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: var(--text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--on-surface-variant);
+}
+
+.chevron {
+  flex: none;
+  color: var(--on-surface-variant);
+}
+
+.primary {
+  background: var(--primary);
+  border: 1px solid transparent;
+  color: var(--on-primary);
+
+  &::after { background: var(--on-primary); }
+
+  .subtitle {
+    color: color-mix(in oklab, var(--on-primary) 70%, transparent);
+  }
+  .chevron { color: var(--on-primary); }
+}
+
+.outline {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface);
+
+  &::after { background: var(--on-surface); }
+}
