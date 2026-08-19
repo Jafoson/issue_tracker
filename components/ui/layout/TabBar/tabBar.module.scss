@@ -108,14 +108,6 @@
   }
 }
 
-/* Project tabs trade the icon for the project's colour. */
-.dot {
-  width: 8px;
-  height: 8px;
-  flex: none;
-  border-radius: var(--radius-pill);
-}
-
 .label {
   flex: 1;
   min-width: 0;

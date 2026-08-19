@@ -37,6 +37,7 @@ export interface ProjectOverviewRow {
   slug: string;
   prefix: string;
   color: string;
+  avatarUrl: string | null;
   /** Leer, wenn niemand einen Satz dazu geschrieben hat. */
   desc: string;
   /**
@@ -93,6 +94,7 @@ export const getProjectsOverview = cache(
         slug: true,
         prefix: true,
         color: true,
+        avatarKey: true,
         desc: true,
         // Die Leitung des Projekts. Ein paar mehr als die eine gezeigte, damit
         // „+n" stimmt; wer ein Projekt mit mehr als sechs Leitenden hat, hat
@@ -140,6 +142,7 @@ export const getProjectsOverview = cache(
           slug: project.slug,
           prefix: project.prefix,
           color: project.color,
+          avatarUrl: await resolveAvatarUrl(project.avatarKey),
           desc: project.desc,
           lead: leads[0] ?? null,
           moreLeads: Math.max(0, leads.length - 1),
@@ -176,6 +179,7 @@ export const getProjectSettingsView = cache(
         slug: true,
         prefix: true,
         color: true,
+        avatarKey: true,
         desc: true,
         visibility: true,
         _count: { select: { issues: true, members: true } },
@@ -193,6 +197,7 @@ export const getProjectSettingsView = cache(
         slug: project.slug,
         prefix: project.prefix,
         color: project.color,
+        avatarUrl: await resolveAvatarUrl(project.avatarKey),
         desc: project.desc,
         visibility: project.visibility,
         issueCount: project._count.issues,

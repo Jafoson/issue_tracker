@@ -15,15 +15,3 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Ersetzt den Farbpunkt/das Icon, wenn ein hochgeladenes Bild vorliegt (z. B.
-   ein Workspace-Avatar) — dieselbe Größe wie das Icon daneben, damit die Zeile
-   nicht springt. */
-.avatarIcon {
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex: none;
-  display: block;
-}

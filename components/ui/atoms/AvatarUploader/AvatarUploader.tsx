@@ -52,7 +52,7 @@ interface AvatarUploaderProps {
  */
 export function AvatarUploader({
   avatar,
-  size = 140,
+  size = 156,
   shape,
   disabled,
   removeLabel,

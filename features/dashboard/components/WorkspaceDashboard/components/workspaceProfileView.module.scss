@@ -530,15 +530,6 @@
   color: #fff;
 }
 
-/* Dasselbe Zeichen wie oben im Dashboard-Kopf (`.dot`) — nur hier je Projekt
-   in seiner eigenen Karte statt einmal im Seitenkopf. */
-.projectDot {
-  flex: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-
 /* ── 4. Die Wege hinaus ── */
 .next {
   grid-column: 1 / -1;

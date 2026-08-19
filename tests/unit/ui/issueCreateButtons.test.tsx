@@ -45,8 +45,22 @@ const STATUS = {
 };
 
 const PROJECTS = [
-  { id: "p-1", name: "Web", slug: "web", prefix: "WEB", color: "#111" },
-  { id: "p-2", name: "App", slug: "app", prefix: "APP", color: "#222" },
+  {
+    id: "p-1",
+    name: "Web",
+    slug: "web",
+    prefix: "WEB",
+    color: "#111",
+    avatarUrl: null,
+  },
+  {
+    id: "p-2",
+    name: "App",
+    slug: "app",
+    prefix: "APP",
+    color: "#222",
+    avatarUrl: null,
+  },
 ];
 
 /** Composer-Daten, in denen genau die genannten Projekte anlegbar sind. */

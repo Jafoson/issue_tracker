@@ -55,6 +55,7 @@ export interface WorkspaceProjectRow {
   slug: string;
   prefix: string;
   color: string;
+  avatarUrl: string | null;
   /** Wofür das Projekt da ist — leer, wenn es niemand gesagt hat. */
   desc: string;
   visibility: ProjectVisibility;

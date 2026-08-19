@@ -15,6 +15,7 @@ export interface ProjectSettingsView {
     slug: string;
     prefix: string;
     color: string;
+    avatarUrl: string | null;
     /** Leer, wenn niemand einen Satz dazu geschrieben hat. */
     desc: string;
     visibility: ProjectVisibility;

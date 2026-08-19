@@ -1,6 +1,6 @@
 // Pur, ohne `server-only` — Schlüsselschema ist reine Stringlogik.
 
-export type AvatarKind = "user" | "workspace";
+export type AvatarKind = "user" | "workspace" | "project";
 
 /**
  * Zufälliger Suffix pro Upload statt eines festen Namens: "Ersetzen" heißt

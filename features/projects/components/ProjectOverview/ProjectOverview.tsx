@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
 import { UserCell } from "@/components/ui/atoms/UserCell/UserCell";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
@@ -66,10 +67,14 @@ export function ProjectOverview({
       sortValue: (row) => row.name,
       cell: (row) => (
         <span className={styles.project}>
-          <span
-            className={styles.dot}
-            style={{ background: row.color }}
-            aria-hidden
+          <Avatar
+            avatar={{
+              name: row.name,
+              color: row.color,
+              image: row.avatarUrl ?? undefined,
+            }}
+            shape="square"
+            size={32}
           />
           <span className={styles.name}>{row.name}</span>
         </span>

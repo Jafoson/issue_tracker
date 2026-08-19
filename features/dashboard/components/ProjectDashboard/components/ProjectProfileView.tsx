@@ -22,7 +22,12 @@ import styles from "./projectProfileView.module.scss";
 
 interface Props {
   /** Name, Farbe und Id stehen in der Kopfkarte bzw. brauchen den Label-Dialog. */
-  project: { id: string; name: string; color: string };
+  project: {
+    id: string;
+    name: string;
+    color: string;
+    avatarUrl: string | null;
+  };
   workspaceId: string;
   profile: ProjectProfile;
   stats: DashboardStats;
@@ -254,7 +259,11 @@ export function ProjectProfileView({
             zur Projektfarbe passt; nachgebaut wäre das eine zweite Rechnung,
             die bei einer hellen Farbe still falsch würde. */}
           <Avatar
-            avatar={{ name: project.name, color: project.color }}
+            avatar={{
+              name: project.name,
+              color: project.color,
+              image: project.avatarUrl ?? undefined,
+            }}
             shape="square"
             size={92}
           />

@@ -354,10 +354,14 @@ export function WorkspaceProfileView({
                       href={projectPath(workspaceSlug, project.slug, "")}
                       className={`${styles.row} ${styles.rowLink}`}
                     >
-                      <span
-                        className={styles.projectDot}
-                        style={{ background: project.color }}
-                        aria-hidden="true"
+                      <Avatar
+                        avatar={{
+                          name: project.name,
+                          color: project.color,
+                          image: project.avatarUrl ?? undefined,
+                        }}
+                        shape="square"
+                        size={20}
                       />
                       {project.name}
                       <Icon

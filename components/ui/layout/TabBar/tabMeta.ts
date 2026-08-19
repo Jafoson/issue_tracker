@@ -123,6 +123,11 @@ export function tabColor(path: string, projects: Project[]): string | null {
   return projectFromPath(path, projects)?.color ?? null;
 }
 
+/** Uploaded project avatar for a project tab path, else null. */
+export function tabImage(path: string, projects: Project[]): string | null {
+  return projectFromPath(path, projects)?.avatarUrl ?? null;
+}
+
 /** Iconify name for a tab path. */
 export function tabIcon(path: string): string {
   const { root, section } = segments(path);
@@ -182,6 +187,7 @@ export interface TabMeta {
   title: string;
   color: string | null;
   icon: string | null;
+  image: string | null;
 }
 
 /**
@@ -199,6 +205,7 @@ export function tabMeta(
 ): TabMeta {
   const path = href.split("?")[0];
   const color = tabColor(path, projects);
+  const image = tabImage(path, projects);
 
   let title = tabTitle(path, projects, t);
   // Das Board ist die Hauptansicht und trägt den Projektnamen unverändert —
@@ -241,5 +248,6 @@ export function tabMeta(
     title,
     color,
     icon: color ? null : tabIcon(path),
+    image,
   };
 }

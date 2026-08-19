@@ -235,6 +235,7 @@
   },
   "projectSettings": {
     "saved": "Saved",
+    "removeAvatar": "Remove project picture",
     "visibility": "Visibility",
     "public": "Public",
     "private": "Private",

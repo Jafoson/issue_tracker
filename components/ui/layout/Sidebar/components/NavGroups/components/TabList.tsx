@@ -44,6 +44,8 @@ function TabItem({ item }: { item: TabGroup }) {
           badge={item.badge}
           onClick={item.onClick}
           color={item.color}
+          image={item.image}
+          shape={item.shape}
         />
         {hasGroup && (
           <span className={styles.toggle}>

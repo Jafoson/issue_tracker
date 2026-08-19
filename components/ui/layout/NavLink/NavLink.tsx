@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { Avatar, type AvatarShape } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import styles from "@/components/ui/atoms/Button/button.module.scss";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -16,6 +17,8 @@ export interface NavLinkProps {
   color?: string;
   /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
   image?: string;
+  /** Form des Farbpunkts/Bildes bei `color`. Standard: rund. */
+  shape?: AvatarShape;
   onClick?: () => void;
 }
 
@@ -37,6 +40,7 @@ export function NavLink({
   badge,
   color,
   image,
+  shape,
   onClick,
 }: NavLinkProps) {
   const pathname = usePathname();
@@ -45,8 +49,18 @@ export function NavLink({
     return isNavActive(pathname, href, activeHref);
   }
   function LeadingIcon() {
-    if (image) {
-      return <img src={image} alt="" className={navStyles.avatarIcon} />;
+    // Ohne eigenes Icon steht der Eintrag für eine benannte Entität (Projekt,
+    // Workspace, ...) statt für eine Route — dieselbe Bild-oder-Initialen-Logik
+    // wie überall sonst, wo Entitäten auftauchen (`Avatar`), statt eines
+    // undifferenzierten Farbpunkts.
+    if (!icon && color) {
+      return (
+        <Avatar
+          avatar={{ name: label, color, image }}
+          shape={shape ?? "circle"}
+          size={17}
+        />
+      );
     }
     if (!icon) {
       return <Icon width={17} icon="material-symbols:circle" color={color} />;

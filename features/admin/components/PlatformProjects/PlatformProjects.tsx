@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { EmptyState } from "@/components/ui/atoms/EmptyState/EmptyState";
@@ -97,7 +98,15 @@ export function PlatformProjects({
       sortValue: (row) => row.name,
       cell: (row) => (
         <span className={styles.project}>
-          <span className={styles.dot} style={{ background: row.color }} />
+          <Avatar
+            avatar={{
+              name: row.name,
+              color: row.color,
+              image: row.avatarUrl ?? undefined,
+            }}
+            shape="square"
+            size={32}
+          />
           <span className={styles.projectText}>
             <span className={styles.projectName}>
               {row.name}

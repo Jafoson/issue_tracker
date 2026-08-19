@@ -3,7 +3,7 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState, useTransition } from "react";
-import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { AvatarUploader } from "@/components/ui/atoms/AvatarUploader/AvatarUploader";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { CopyField } from "@/components/ui/atoms/CopyField/CopyField";
@@ -12,7 +12,13 @@ import { SegmentedControl } from "@/components/ui/atoms/SegmentedControl/Segment
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { SettingsIdentity } from "@/components/ui/layout/SettingsIdentity/SettingsIdentity";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
-import { deleteProject, updateProject } from "@/features/projects/actions";
+import {
+  confirmProjectAvatarUpload,
+  deleteProject,
+  removeProjectAvatar,
+  requestProjectAvatarUploadUrl,
+  updateProject,
+} from "@/features/projects/actions";
 import type {
   ProjectSettingsView,
   ProjectVisibility,
@@ -259,7 +265,24 @@ export function ProjectSettings({
         )}
 
         <SettingsIdentity
-          avatar={<Avatar avatar={{ name, color }} shape="square" size={140} />}
+          avatar={
+            <AvatarUploader
+              avatar={{ name, color, image: project.avatarUrl ?? undefined }}
+              shape="square"
+              disabled={!canUpdate || isPending}
+              removeLabel={t("projectSettings.removeAvatar")}
+              onRequestUpload={(input) =>
+                requestProjectAvatarUploadUrl(project.id, input)
+              }
+              onConfirmUpload={(key) =>
+                confirmProjectAvatarUpload(project.id, key)
+              }
+              onRemove={
+                canUpdate ? () => removeProjectAvatar(project.id) : undefined
+              }
+              onDone={() => router.refresh()}
+            />
+          }
         >
           <Input
             label={t("fields.name")}

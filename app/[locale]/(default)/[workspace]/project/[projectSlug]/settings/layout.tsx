@@ -81,6 +81,7 @@ export default async function ProjectSettingsLayout({
     id: p.id,
     name: p.name,
     color: p.color,
+    image: p.avatarUrl ?? undefined,
     href: projectSettingsPath(p.workspaceId, p.slug, ""),
     group: p.workspaceName,
   }));
@@ -110,6 +111,7 @@ export default async function ProjectSettingsLayout({
         <SettingsNav
           subject={project.name}
           color={project.color}
+          image={project.avatarUrl ?? undefined}
           siblings={siblings}
           siblingsLabel={t("settings.scopeProject")}
           title={t("nav.settings")}

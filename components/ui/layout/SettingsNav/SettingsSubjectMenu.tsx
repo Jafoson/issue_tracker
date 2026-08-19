@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { useRef, useState } from "react";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Popover } from "@/components/ui/atoms/Popover/Popover";
 import { NavLink } from "@/components/ui/layout/NavLink/NavLink";
@@ -74,15 +75,7 @@ export function SettingsSubjectMenu({
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        {image ? (
-          <img src={image} alt="" className={styles.dotImg} />
-        ) : (
-          <span
-            className={styles.dot}
-            style={{ background: color }}
-            aria-hidden
-          />
-        )}
+        <Avatar avatar={{ name, color, image }} shape="square" size={20} />
         <span className={styles.subject} title={name}>
           {name}
         </span>

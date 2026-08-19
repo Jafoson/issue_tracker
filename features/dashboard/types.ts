@@ -214,7 +214,13 @@ export interface ProjectProfile {
 
 /** Was die Seite braucht: die Zahlen, der Steckbrief und die Anordnung. */
 export interface ProjectDashboardView {
-  project: { id: string; name: string; slug: string; color: string };
+  project: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+    avatarUrl: string | null;
+  };
   data: ProjectDashboardData;
   profile: ProjectProfile;
   /** Sichtbare Bausteine in ihrer Reihenfolge, plus die abgewählten. */
@@ -236,6 +242,7 @@ export interface WorkspaceProjectSummary {
   name: string;
   slug: string;
   color: string;
+  avatarUrl: string | null;
 }
 
 /**

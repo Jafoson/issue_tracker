@@ -14,15 +14,8 @@
 .project {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   min-width: 0;
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex: none;
 }
 
 .name {

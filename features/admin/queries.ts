@@ -224,6 +224,7 @@ export interface PlatformProject {
   name: string;
   slug: string;
   color: string;
+  avatarUrl: string | null;
   visibility: "public" | "private";
   createdAt: Date;
   archivedAt: Date | null;
@@ -255,6 +256,7 @@ export const getAllProjects = cache(
         name: true,
         slug: true,
         color: true,
+        avatarKey: true,
         visibility: true,
         createdAt: true,
         archivedAt: true,
@@ -269,20 +271,23 @@ export const getAllProjects = cache(
     });
 
     return {
-      rows: rows.map((p) => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        color: p.color,
-        visibility: p.visibility,
-        createdAt: p.createdAt,
-        archivedAt: p.archivedAt,
-        workspace: p.workspace,
-        owner: p.createdBy,
-        memberCount: p._count.members,
-        issueCount: p._count.issues,
-        orphaned: p.createdBy === null || p._count.members === 0,
-      })),
+      rows: await Promise.all(
+        rows.map(async (p) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          color: p.color,
+          avatarUrl: await resolveAvatarUrl(p.avatarKey),
+          visibility: p.visibility,
+          createdAt: p.createdAt,
+          archivedAt: p.archivedAt,
+          workspace: p.workspace,
+          owner: p.createdBy,
+          memberCount: p._count.members,
+          issueCount: p._count.issues,
+          orphaned: p.createdBy === null || p._count.members === 0,
+        })),
+      ),
       nextCursor: rows.length === limit ? rows[rows.length - 1].id : null,
     };
   },
@@ -614,6 +619,7 @@ export interface PlatformWorkspace {
   name: string;
   slug: string;
   color: string;
+  avatarUrl: string | null;
   createdAt: Date;
   /** Gesperrt: niemand kommt hinein, auch die Leitung nicht. */
   suspended: boolean;
@@ -666,6 +672,7 @@ export const getAllWorkspaces = cache(
           name: true,
           slug: true,
           color: true,
+          avatarKey: true,
           createdAt: true,
           suspended: true,
           _count: { select: { members: true, projects: true } },
@@ -703,19 +710,25 @@ export const getAllWorkspaces = cache(
     );
 
     return {
-      rows: rows.map((workspace) => ({
-        id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        color: workspace.color,
-        createdAt: workspace.createdAt,
-        suspended: workspace.suspended,
-        owner: workspace.members[0]?.user ?? null,
-        members: workspace._count.members,
-        projects: workspace._count.projects,
-        issues: workspace.projects.reduce((sum, p) => sum + p._count.issues, 0),
-        lastActivityAt: lastByWorkspace.get(workspace.id) ?? null,
-      })),
+      rows: await Promise.all(
+        rows.map(async (workspace) => ({
+          id: workspace.id,
+          name: workspace.name,
+          slug: workspace.slug,
+          color: workspace.color,
+          avatarUrl: await resolveAvatarUrl(workspace.avatarKey),
+          createdAt: workspace.createdAt,
+          suspended: workspace.suspended,
+          owner: workspace.members[0]?.user ?? null,
+          members: workspace._count.members,
+          projects: workspace._count.projects,
+          issues: workspace.projects.reduce(
+            (sum, p) => sum + p._count.issues,
+            0,
+          ),
+          lastActivityAt: lastByWorkspace.get(workspace.id) ?? null,
+        })),
+      ),
       nextCursor: rows.length === limit ? rows[rows.length - 1].id : null,
     };
   },

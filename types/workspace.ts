@@ -19,6 +19,7 @@ export interface Project {
   slug: string;
   prefix: string;
   color: string;
+  avatarUrl: string | null;
 }
 
 export interface Team {

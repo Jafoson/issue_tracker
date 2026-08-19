@@ -387,6 +387,10 @@ model Project {
   desc         String            @default("")
   lastIssueKey Int               @default(0)
   visibility   ProjectVisibility @default(public)
+  /// Objektschlüssel im `avatars`-Bucket (`lib/storage`) für ein selbst
+  /// hochgeladenes Bild. Ohne S3-Konfiguration oder ohne Upload bleibt es
+  /// beim Initialen-Avatar.
+  avatarKey    String?
 
   /// Wann es angelegt wurde.
   createdAt   DateTime  @default(now())

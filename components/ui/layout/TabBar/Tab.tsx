@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import styles from "./tabBar.module.scss";
 import type { TabMeta } from "./tabMeta";
 
@@ -16,7 +17,7 @@ interface TabProps {
 // TabBarClient, hier kommen nur die abgeleiteten Meta-Daten und Callbacks an.
 export function Tab({ meta, isActive, onSelect, onClose }: TabProps) {
   const t = useTranslations();
-  const { title, color, icon } = meta;
+  const { title, color, icon, image } = meta;
 
   return (
     // Bewusst ein <div role="tab">: der Tab enthält einen Close-<button>,
@@ -37,7 +38,11 @@ export function Tab({ meta, isActive, onSelect, onClose }: TabProps) {
       }}
     >
       {color ? (
-        <span className={styles.dot} style={{ background: color }} />
+        <Avatar
+          avatar={{ name: title, color, image: image ?? undefined }}
+          shape="square"
+          size={14}
+        />
       ) : (
         <Icon
           icon={icon ?? "lucide:layout-dashboard"}

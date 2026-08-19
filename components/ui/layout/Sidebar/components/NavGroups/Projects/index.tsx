@@ -41,6 +41,8 @@ export default async function NavGroupProjects() {
       activeHref: `${projPath}/*`,
       label: p.name,
       color: p.color,
+      image: p.avatarUrl ?? undefined,
+      shape: "square",
       group: [
         ...PROJECT_NAV.filter((entry) =>
           navEntryAllowed(pAccess.has, entry),

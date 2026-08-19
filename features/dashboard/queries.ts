@@ -794,6 +794,7 @@ export const getProjectDashboard = cache(
         name: true,
         slug: true,
         color: true,
+        avatarKey: true,
         prefix: true,
         workspaceId: true,
       },
@@ -859,6 +860,7 @@ export const getProjectDashboard = cache(
         name: project.name,
         slug: project.slug,
         color: project.color,
+        avatarUrl: await resolveAvatarUrl(project.avatarKey),
       },
       data,
       profile,
@@ -1198,7 +1200,13 @@ async function wsProfileFor(
         },
         projects: {
           where: { id: { in: [...visible] } },
-          select: { id: true, name: true, slug: true, color: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+            avatarKey: true,
+          },
           orderBy: { name: "asc" },
         },
         links: {
@@ -1253,7 +1261,12 @@ async function wsProfileFor(
     platformStaff,
     memberCount: workspace.members.length,
     teams: workspace.teams,
-    projects: workspace.projects satisfies WorkspaceProjectSummary[],
+    projects: (await Promise.all(
+      workspace.projects.map(async ({ avatarKey, ...project }) => ({
+        ...project,
+        avatarUrl: await resolveAvatarUrl(avatarKey),
+      })),
+    )) satisfies WorkspaceProjectSummary[],
     links: workspace.links,
     canCreateProject: access.has("project.create"),
     canCreateTeam: access.has("team.create"),

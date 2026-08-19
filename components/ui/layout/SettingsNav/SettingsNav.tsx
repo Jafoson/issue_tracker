@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { NavLink } from "@/components/ui/layout/NavLink/NavLink";
 import {
   type SettingsNavSubject,
@@ -81,16 +82,12 @@ export function SettingsNav({
         />
       ) : (
         <div className={styles.head}>
-          {image ? (
-            <img src={image} alt="" className={styles.dotImg} />
-          ) : (
-            color && (
-              <span
-                className={styles.dot}
-                style={{ background: color }}
-                aria-hidden
-              />
-            )
+          {color && (
+            <Avatar
+              avatar={{ name: subject, color, image }}
+              shape="square"
+              size={20}
+            />
           )}
           <span className={styles.subject} title={subject}>
             {subject}

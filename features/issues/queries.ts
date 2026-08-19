@@ -132,13 +132,16 @@ export const getProjects = cache(
       where: { workspaceId, id: { in: [...visible] } },
       orderBy: { name: "asc" },
     });
-    return rows.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      prefix: p.prefix,
-      color: p.color,
-    }));
+    return Promise.all(
+      rows.map(async (p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        prefix: p.prefix,
+        color: p.color,
+        avatarUrl: await resolveAvatarUrl(p.avatarKey),
+      })),
+    );
   },
 );
 

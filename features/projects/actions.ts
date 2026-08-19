@@ -44,6 +44,11 @@ import {
 } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
 import { slugify } from "@/lib/slug";
+import {
+  deleteAvatarObject,
+  finalizeAvatarUpload,
+  requestAvatarUpload,
+} from "@/lib/storage";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 import { uid } from "@/lib/utils/id";
 
@@ -294,6 +299,78 @@ export async function updateProject(
       meta: { from: guard.visibility, to: data.visibility },
     });
   }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+type AvatarResult = { ok: true } | { error: string };
+
+type UploadUrlResult =
+  | { ok: true; key: string; uploadUrl: string }
+  | { error: string };
+
+/** Erster Schritt des Projekt-Avatar-Uploads: presigned PUT-URL, direkt gegen
+ *  S3, nach demselben Muster wie `requestWorkspaceAvatarUploadUrl`. */
+export async function requestProjectAvatarUploadUrl(
+  projectId: string,
+  input: { contentType: string; contentLength: number },
+): Promise<UploadUrlResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "project.update", { projectId })))
+    return { error: "You are not allowed to change this project." };
+
+  return requestAvatarUpload({
+    kind: "project",
+    ownerId: projectId,
+    ...input,
+  });
+}
+
+export async function confirmProjectAvatarUpload(
+  projectId: string,
+  key: string,
+): Promise<AvatarResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "project.update", { projectId })))
+    return { error: "You are not allowed to change this project." };
+
+  const result = await finalizeAvatarUpload("project", projectId, key);
+  if ("error" in result) return result;
+
+  const previous = await db.project.findUnique({
+    where: { id: projectId },
+    select: { avatarKey: true },
+  });
+  await db.project.update({
+    where: { id: projectId },
+    data: { avatarKey: key },
+  });
+  await deleteAvatarObject(previous?.avatarKey);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeProjectAvatar(
+  projectId: string,
+): Promise<AvatarResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "project.update", { projectId })))
+    return { error: "You are not allowed to change this project." };
+
+  const previous = await db.project.findUnique({
+    where: { id: projectId },
+    select: { avatarKey: true },
+  });
+  await db.project.update({
+    where: { id: projectId },
+    data: { avatarKey: null },
+  });
+  await deleteAvatarObject(previous?.avatarKey);
 
   revalidatePath("/", "layout");
   return { ok: true };
