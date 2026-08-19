@@ -487,8 +487,6 @@
     "orMagicLink": "oder per Magic Link",
     "workEmail": "E-Mail-Adresse",
     "sendMagicLink": "Magic Link senden",
-    "linkSent": "Link gesendet",
-    "linkSentDesc": "E-Mail-Postfach prüfen — Link und Code laufen in 15 Minuten ab.",
     "verifyTitle": "Code eingeben",
     "verifySubtitle": "Wir haben einen Code an {email} geschickt.",
     "codeLabel": "Code aus der E-Mail",
@@ -506,8 +504,8 @@
   },
   "invite": {
     "title": "Willkommen bei {workspace}",
-    "subtitle": "Setze Namen und Passwort, dann bist du drin.",
-    "accept": "Einladung annehmen",
+    "subtitle": "Wähle einen Weg, um deinen Zugang einzurichten.",
+    "accept": "Magic Link senden",
     "haveAccount": "Schon ein Konto?",
     "invalidTitle": "Diese Einladung gilt nicht mehr",
     "invalidText": "Der Link ist abgelaufen, wurde schon benutzt, oder es gibt ihn nicht. Bitte um eine neue Einladung — oder melde dich an, wenn du bereits ein Konto hast."

@@ -487,8 +487,6 @@
     "orMagicLink": "or get a magic link",
     "workEmail": "Email address",
     "sendMagicLink": "Send magic link",
-    "linkSent": "Link sent",
-    "linkSentDesc": "Check your inbox — the link and code expire in 15 minutes.",
     "verifyTitle": "Enter your code",
     "verifySubtitle": "We sent a code to {email}.",
     "codeLabel": "Code from the email",
@@ -506,8 +504,8 @@
   },
   "invite": {
     "title": "Welcome to {workspace}",
-    "subtitle": "Set your name and a password, and you are in.",
-    "accept": "Accept invitation",
+    "subtitle": "Pick a way to set up your access.",
+    "accept": "Send magic link",
     "haveAccount": "Already have an account?",
     "invalidTitle": "This invitation is no longer valid",
     "invalidText": "The link has expired, was already used, or does not exist. Ask for a new invitation — or sign in if you already have an account."

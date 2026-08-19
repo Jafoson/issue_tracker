@@ -36,8 +36,19 @@ export function VerifyCodeForm({ email, callbackUrl }: VerifyCodeFormProps) {
   const [isVerifying, startVerifying] = useTransition();
   const [isResending, startResending] = useTransition();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // `isVerifying` (aus useTransition) greift erst nach dem nächsten Render —
+  // zwischen dem Auto-Submit auf das achte Zeichen und einem Klick auf „Code
+  // bestätigen" (der Knopf ist ja längst nicht mehr disabled, sobald alle
+  // Kästchen voll sind) passt noch ein zweiter Aufruf hindurch. next-auths
+  // Magic-Link-Token ist einmalig — zwei fast gleichzeitige Anfragen lösen
+  // zwei volle Navigationen aus (`window.location.href`), die zweite sieht
+  // dann eine Einladung, die die erste gerade schon angenommen hat. Diese Ref
+  // sperrt synchron, noch bevor React neu rendert.
+  const verifyingRef = useRef(false);
 
   const verify = (fullCode: string) => {
+    if (verifyingRef.current) return;
+    verifyingRef.current = true;
     setError("");
     startVerifying(async () => {
       const params = new URLSearchParams({
@@ -52,6 +63,7 @@ export function VerifyCodeForm({ email, callbackUrl }: VerifyCodeFormProps) {
         setError(t("login.codeInvalid"));
         setDigits(Array(CODE_LENGTH).fill(""));
         inputRefs.current[0]?.focus();
+        verifyingRef.current = false;
         return;
       }
       window.location.href = callbackUrl || "/";

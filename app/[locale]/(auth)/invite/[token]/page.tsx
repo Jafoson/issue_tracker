@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
 import { getTranslations } from "next-intl/server";
+import { enabledOAuthProviders, oidcProviderName } from "@/auth.config";
 import { acceptInvitation } from "@/features/auth/actions";
 import { AcceptInviteForm } from "@/features/auth/components/AcceptInviteForm/AcceptInviteForm";
 import { Link, redirect } from "@/i18n/navigation";
@@ -46,11 +47,11 @@ function InvalidInviteCard({
  * Unterschied in der Meldung würde verraten, welche Tokens es gibt.
  *
  * Der eigentliche Beitritt läuft in zwei Schritten über dieselbe Seite: erst
- * ohne Session zeigt sie `AcceptInviteForm` (Passkey für das eingeladene
- * Konto registrieren), das leitet nach der Ceremony hierher zurück — jetzt
- * mit einer Session, die zum eingeladenen Konto passt. Dieser zweite Aufruf
- * ruft `acceptInvitation()` auf (Pending-Flip, Projekt-Enrollment) und leitet
- * in den Workspace weiter.
+ * ohne Session zeigt sie `AcceptInviteForm` (Magic Link oder Single Sign-On
+ * für das eingeladene Konto — siehe dort, warum kein Passkey), die Anmeldung
+ * führt hierher zurück — jetzt mit einer Session, die zum eingeladenen Konto
+ * passt. Dieser zweite Aufruf ruft `acceptInvitation()` auf (Pending-Flip,
+ * Projekt-Enrollment) und leitet in den Workspace weiter.
  */
 export default async function InvitePage({
   params,
@@ -65,6 +66,30 @@ export default async function InvitePage({
   ]);
 
   if (!invitation || invitation.hasPasskey) {
+    // `openInvitation` schließt eine schon angenommene Einladung aus — bevor
+    // die generische „ungültig"-Meldung greift: vielleicht hat genau die
+    // jetzt eingeloggte Person diese Einladung gerade eben selbst
+    // angenommen (Doppel-Aufruf durch Reacts Dev-Strict-Mode auf Server
+    // Components, erneuter Seitenaufruf, Zurück-Knopf) — dann ist es kein
+    // Fehler, sondern schon erledigt, siehe `acceptInvitation()`.
+    if (session) {
+      const already = await db.invitation.findUnique({
+        where: { token },
+        select: {
+          userId: true,
+          workspaceId: true,
+          acceptedAt: true,
+          workspace: { select: { suspended: true } },
+        },
+      });
+      if (
+        already?.acceptedAt &&
+        already.userId === session.userId &&
+        !already.workspace.suspended
+      ) {
+        redirect({ href: `/${already.workspaceId}`, locale: locale as Locale });
+      }
+    }
     // Ein Konto mit Passkey braucht keine Einladung mehr, sondern eine
     // Anmeldung — für die Oberfläche derselbe Hinweis.
     return (
@@ -97,6 +122,8 @@ export default async function InvitePage({
       token={invitation.token}
       workspaceName={invitation.workspaceName}
       email={invitation.email}
+      oauthProviders={enabledOAuthProviders}
+      oidcLabel={oidcProviderName}
     />
   );
 }

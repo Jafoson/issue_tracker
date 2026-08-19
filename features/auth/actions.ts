@@ -66,10 +66,34 @@ export async function acceptInvitation(token: string): Promise<AuthResult> {
     return { error: "You must be signed in to accept this invitation." };
 
   const invitation = await openInvitation(db, token, new Date());
-  // Unbekannt, abgelaufen, schon benutzt oder Workspace gesperrt — eine Meldung
-  // für alle Fälle, damit der Endpunkt kein Orakel für gültige Tokens ist.
-  if (!invitation)
+  if (!invitation) {
+    // `openInvitation` schließt eine schon angenommene Einladung aus — das
+    // ist hier nicht zwangsläufig ein Fehler: ruft dieselbe (eingeloggte)
+    // Person diese Aktion für ihre eigene, gerade eben angenommene Einladung
+    // ein zweites Mal auf (Doppel-Aufruf durch Reacts Dev-Strict-Mode auf
+    // Server Components, erneuter Seitenaufruf, Zurück-Knopf), ist die
+    // Aufnahme längst erledigt — derselbe Erfolg, kein zweiter Schreibvorgang.
+    const already = await db.invitation.findUnique({
+      where: { token },
+      select: {
+        userId: true,
+        workspaceId: true,
+        acceptedAt: true,
+        workspace: { select: { suspended: true } },
+      },
+    });
+    if (
+      already?.acceptedAt &&
+      already.userId === session.userId &&
+      !already.workspace.suspended
+    ) {
+      return { redirectTo: `/${already.workspaceId}` };
+    }
+    // Unbekannt, abgelaufen, schon von jemand anderem benutzt oder Workspace
+    // gesperrt — eine Meldung für alle Fälle, damit der Endpunkt kein Orakel
+    // für gültige Tokens ist.
     return { error: "This invitation is no longer valid. Ask for a new one." };
+  }
   if (session.userId !== invitation.userId) {
     return {
       error:

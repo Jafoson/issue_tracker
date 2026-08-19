@@ -115,6 +115,56 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
      * abfangen würde.
      */
     async signIn({ user, account }) {
+      // Eine Einladung legt ein Schatten-Konto mit fester E-Mail an
+      // (`inviteOneWorkspaceMember`/`inviteOneProjectMember`) — ohne eigenes
+      // Passwort, ohne Passkey, ohne verbundenen Anbieter. next-auth verweigert
+      // OAuth/OIDC dafür standardmäßig mit `OAuthAccountNotLinked`, sobald die
+      // Adresse schon einem Konto gehört ("we don't trust user-provided email
+      // addresses" — @auth/core). Für ein wirklich unberührtes Schatten-Konto
+      // gilt dieses Misstrauen nicht: niemand hat sich je erfolgreich
+      // angemeldet (kein Magic-Link-Klick, sonst stünde `emailVerified`; kein
+      // Passkey; kein verbundener Anbieter) — es gibt also nichts zu kapern.
+      // `getUserByAccount()` in `handleLoginOrRegister` (nach diesem Callback)
+      // findet die hier selbst angelegte Zeile dann als bereits verknüpft und
+      // meldet ganz normal an, statt den Fehler zu werfen.
+      if (
+        !user.id &&
+        user.email &&
+        (account?.type === "oauth" || account?.type === "oidc") &&
+        account.providerAccountId
+      ) {
+        const shadow = await db.user.findUnique({
+          where: { email: user.email },
+          select: {
+            id: true,
+            emailVerified: true,
+            accounts: { select: { id: true }, take: 1 },
+            authenticators: { select: { credentialID: true }, take: 1 },
+          },
+        });
+        if (
+          shadow &&
+          !shadow.emailVerified &&
+          shadow.accounts.length === 0 &&
+          shadow.authenticators.length === 0
+        ) {
+          await db.account.create({
+            data: {
+              userId: shadow.id,
+              type: account.type,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              refresh_token: account.refresh_token ?? null,
+              access_token: account.access_token ?? null,
+              expires_at: account.expires_at ?? null,
+              token_type: account.token_type ?? null,
+              scope: account.scope ?? null,
+              id_token: account.id_token ?? null,
+            },
+          });
+        }
+      }
+
       if (!user.id) return true;
 
       const row = await db.user.findUnique({
