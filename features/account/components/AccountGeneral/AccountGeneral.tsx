@@ -68,9 +68,9 @@ export function AccountGeneral({ profile }: Props) {
     handle.trim() !== profile.handle ||
     color !== profile.color;
 
-  const complete = Boolean(
-    firstName.trim() && lastName.trim() && handle.trim(),
-  );
+  // Benutzername und Vorname sind Pflicht, Nachname optional
+  // (`features/onboarding`).
+  const complete = Boolean(handle.trim() && firstName.trim());
 
   const touch = () => setSaved(false);
 
@@ -188,7 +188,9 @@ export function AccountGeneral({ profile }: Props) {
         divider={false}
         // Der Avatar zeigt die gewählte Farbe sofort — noch bevor gespeichert
         // ist, denn genau das ist die Frage, die die Farbwahl beantwortet.
-        leading={<Avatar avatar={{ firstName, lastName, color }} size={28} />}
+        leading={
+          <Avatar avatar={{ firstName, lastName, color, handle }} size={28} />
+        }
         title={t("nav.general")}
         description={t("account.generalDesc")}
         actions={

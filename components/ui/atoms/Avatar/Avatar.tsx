@@ -12,6 +12,10 @@ export type PersonAvatarData = {
   lastName: string;
   color: string;
   image?: string;
+  /** Fürs Initialen-Kürzel, wenn Vor- und Nachname (beide optional) leer
+   *  sind — der Benutzername ist der einzige Wert, der bei jeder Person
+   *  garantiert existiert. */
+  handle?: string;
 };
 
 export type AvatarData =
@@ -91,6 +95,7 @@ export function Avatar({
   const label = isPerson
     ? personInitials(avatar.firstName, avatar.lastName) ||
       avatar.firstName?.[0]?.toUpperCase() ||
+      avatar.handle?.slice(0, 2).toUpperCase() ||
       "?"
     : initials(avatar.name) || avatar.name?.[0]?.toUpperCase() || "?";
 

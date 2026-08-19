@@ -193,6 +193,7 @@ function mapUser(user: {
   id: string;
   firstName: string;
   lastName: string;
+  handle: string;
   email: string;
   color: string;
   image: string | null;
@@ -201,6 +202,7 @@ function mapUser(user: {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
+    handle: user.handle,
     email: user.email,
     color: user.color,
     ...(user.image ? { image: user.image } : {}),
@@ -211,6 +213,7 @@ const USER_SELECT = {
   id: true,
   firstName: true,
   lastName: true,
+  handle: true,
   email: true,
   color: true,
   image: true,

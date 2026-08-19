@@ -11,10 +11,8 @@ const NOT_LOGGED_IN = "You must be logged in.";
 const HANDLE_PATTERN = /^[a-z0-9][a-z0-9-]{1,29}$/;
 
 /**
- * Schließt das Onboarding ab: Benutzername bestätigen (Pflicht), Vor-/
- * Nachname anpassen (beides optional — beim Anlegen des Kontos schon mit
- * einem aus E-Mail/Providername abgeleiteten Wert vorbelegt, siehe `auth.ts`s
- * `createUser`-Override).
+ * Schließt das Onboarding ab: Benutzername und Vorname sind Pflicht,
+ * Nachname bleibt optional.
  *
  * Nur für selbst angemeldete Konten erreichbar (`app/[locale]/page.tsx`
  * leitet nur um, wenn `onboardedAt` noch leer ist) — eingeladene Konten haben
@@ -32,6 +30,7 @@ export async function completeOnboarding(data: {
   const firstName = data.firstName.trim();
   const lastName = data.lastName.trim();
 
+  if (!firstName) return { error: "First name is required." };
   if (!HANDLE_PATTERN.test(handle)) {
     return {
       error:

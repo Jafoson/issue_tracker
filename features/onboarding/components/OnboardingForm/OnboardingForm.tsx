@@ -15,11 +15,11 @@ interface OnboardingFormProps {
 }
 
 /**
- * Letzter Schritt vor dem ersten Workspace: Benutzername bestätigen (Pflicht
- * — beim Konto-Anlegen nur automatisch aus der E-Mail abgeleitet, siehe
- * `auth.ts`), Name anpassen (optional, schon vorbelegt). Nach dem Absenden
- * geht es zurück zu „/“ — die dortige Weiterleitung entscheidet dann wie
- * gewohnt zwischen bestehendem Workspace und `/create-workspace`.
+ * Letzter Schritt vor dem ersten Workspace: Benutzername (Pflicht, beim
+ * Konto-Anlegen nur automatisch aus der E-Mail abgeleitet, siehe `auth.ts`)
+ * und Vorname (Pflicht) eintragen, Nachname optional. Nach dem Absenden geht
+ * es zurück zu „/“ — die dortige Weiterleitung entscheidet dann wie gewohnt
+ * zwischen bestehendem Workspace und `/create-workspace`.
  */
 export function OnboardingForm({
   initialHandle,

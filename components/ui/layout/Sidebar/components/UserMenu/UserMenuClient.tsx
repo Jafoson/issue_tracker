@@ -65,7 +65,9 @@ function UserMenuClient({
         className={styles.trigger}
         style={{ height: "48px", borderRadius: "var(--radius)" }}
       >
-        <span className={styles.title}>{fullName(me)}</span>
+        <span className={styles.title}>
+          {fullName(me) || (me.handle ? `@${me.handle}` : "")}
+        </span>
       </Button>
 
       {inboxHref && (

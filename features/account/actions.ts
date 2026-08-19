@@ -77,7 +77,8 @@ export async function updateProfile(data: {
   const handle = data.handle.trim().toLowerCase();
   const color = data.color.trim();
 
-  if (!firstName || !lastName) return { error: "Name is required." };
+  // Vorname ist Pflicht, Nachname optional (`features/onboarding`).
+  if (!firstName) return { error: "First name is required." };
   if (!/^[a-z0-9][a-z0-9-]{1,29}$/.test(handle)) {
     return {
       error:

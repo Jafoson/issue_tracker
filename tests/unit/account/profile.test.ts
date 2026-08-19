@@ -73,14 +73,18 @@ describe("updateProfile()", () => {
     });
   });
 
-  it("verlangt einen Namen", async () => {
+  it("verlangt einen Vornamen", async () => {
     expect(await updateProfile({ ...INPUT, firstName: "  " })).toEqual({
-      error: "Name is required.",
-    });
-    expect(await updateProfile({ ...INPUT, lastName: "" })).toEqual({
-      error: "Name is required.",
+      error: "First name is required.",
     });
     expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
+
+  it("lässt den Nachnamen leer — er ist optional", async () => {
+    expect(await updateProfile({ ...INPUT, lastName: "" })).toEqual({
+      ok: true,
+    });
+    expect(mockUserUpdate.mock.calls[0][0].data.lastName).toBe("");
   });
 
   it("normalisiert den Benutzernamen auf Kleinbuchstaben", async () => {

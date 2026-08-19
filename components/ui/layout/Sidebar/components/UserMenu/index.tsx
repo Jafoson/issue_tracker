@@ -3,6 +3,7 @@ import type { PersonAvatarData } from "@/components/ui/atoms/Avatar/Avatar";
 import { getUnreadNotificationCount } from "@/features/notifications/queries";
 import { getMyWorkspaces } from "@/features/workspaces/queries";
 import { getCurrentWorkspaceId } from "@/lib/current-workspace";
+import { db } from "@/lib/db";
 import { accountPath, adminPath, workspacePath } from "@/lib/nav";
 import { getAccess, PLATFORM } from "@/lib/permissions";
 import UserMenuClient from "./UserMenuClient";
@@ -12,16 +13,20 @@ export async function UserMenu() {
   let me: PersonAvatarData;
 
   if (!session?.user) {
-    me = {
-      firstName: "Unknown",
-      lastName: "User",
-      color: "var(--secondary)",
-    };
+    me = { firstName: "", lastName: "", color: "var(--secondary)" };
   } else {
+    // `handle` steht nicht im Token (siehe `global.d.ts`) — Name und Kürzel
+    // sind beide optional (`features/onboarding`), ein frisches Konto ohne
+    // beides braucht den Benutzernamen als einzigen verlässlichen Anzeigewert.
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { handle: true },
+    });
     me = {
-      firstName: session.user.firstName || "Unknown",
-      lastName: session.user.lastName || "User",
+      firstName: session.user.firstName,
+      lastName: session.user.lastName,
       color: session.user.color || "var(--primary)",
+      handle: user?.handle,
     };
   }
 
