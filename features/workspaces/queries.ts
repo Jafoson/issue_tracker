@@ -43,6 +43,7 @@ import {
 } from "@/lib/permissions";
 import { OWNER_ROLE_KEY } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
+import { resolveAvatarUrl } from "@/lib/storage";
 import { CLOSED_STATUSES } from "@/lib/workspace-defaults";
 import type {
   IssueType,
@@ -219,6 +220,7 @@ export const getWorkspaceSettingsView = cache(
         slug: true,
         color: true,
         desc: true,
+        avatarKey: true,
         _count: { select: { projects: true, members: true } },
         links: {
           select: { id: true, label: true, url: true },
@@ -247,6 +249,7 @@ export const getWorkspaceSettingsView = cache(
         slug: workspace.slug,
         color: workspace.color,
         desc: workspace.desc,
+        avatarUrl: await resolveAvatarUrl(workspace.avatarKey),
         projectCount: workspace._count.projects,
         memberCount: workspace._count.members,
         issueCount,

@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
+import { AvatarUploader } from "@/components/ui/atoms/AvatarUploader/AvatarUploader";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
 import { Input } from "@/components/ui/atoms/Input/Input";
@@ -13,7 +14,12 @@ import {
   SettingsList,
   type SettingsRow,
 } from "@/components/ui/layout/SettingsList/SettingsList";
-import { updateProfile } from "@/features/account/actions";
+import {
+  confirmAvatarUpload,
+  removeAvatar,
+  requestAvatarUploadUrl,
+  updateProfile,
+} from "@/features/account/actions";
 import type { AccountProfileView } from "@/features/account/types";
 import { useRouter } from "@/i18n/navigation";
 import styles from "./accountGeneral.module.scss";
@@ -92,6 +98,27 @@ export function AccountGeneral({ profile }: Props) {
     });
 
   const identity: SettingsRow[] = [
+    {
+      id: "avatar",
+      label: t("account.avatar"),
+      desc: t("account.avatarDesc"),
+      control: (
+        <AvatarUploader
+          avatar={{
+            firstName,
+            lastName,
+            color,
+            handle,
+            image: profile.avatarUrl ?? undefined,
+          }}
+          disabled={isPending}
+          onRequestUpload={requestAvatarUploadUrl}
+          onConfirmUpload={confirmAvatarUpload}
+          onRemove={removeAvatar}
+          onDone={() => router.refresh()}
+        />
+      ),
+    },
     {
       id: "firstName",
       label: t("account.firstName"),
@@ -193,7 +220,16 @@ export function AccountGeneral({ profile }: Props) {
         // Der Avatar zeigt die gewählte Farbe sofort — noch bevor gespeichert
         // ist, denn genau das ist die Frage, die die Farbwahl beantwortet.
         leading={
-          <Avatar avatar={{ firstName, lastName, color, handle }} size={28} />
+          <Avatar
+            avatar={{
+              firstName,
+              lastName,
+              color,
+              handle,
+              image: profile.avatarUrl ?? undefined,
+            }}
+            size={28}
+          />
         }
         title={t("nav.general")}
         description={t("account.generalDesc")}

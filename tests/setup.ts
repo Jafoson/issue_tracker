@@ -21,6 +21,19 @@ for (const name of [
   delete process.env[name];
 }
 
+// Dieselbe Gefahr wie bei SMTP: ein lokal für rustfs gesetztes `.env` würde
+// `isStorageConfigured()` mitten im Unit-Test wahr werden lassen.
+// `tests/unit/storage/config.test.ts` setzt die Variablen gezielt selbst.
+for (const name of [
+  "S3_ENDPOINT",
+  "S3_REGION",
+  "S3_ACCESS_KEY_ID",
+  "S3_SECRET_ACCESS_KEY",
+  "S3_BUCKET_AVATARS",
+]) {
+  delete process.env[name];
+}
+
 // Komponenten importieren ihre SCSS-Module direkt — im Test gibt es keinen
 // Bundler dafür. Der Stub liefert für jede Klasse ihren eigenen Namen zurück,
 // damit gerenderte Klassennamen lesbar bleiben.

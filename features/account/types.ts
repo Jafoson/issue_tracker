@@ -49,6 +49,7 @@ export interface AccountProfileView {
    *  die Person selbst eine nachträgt (`account.actions#setEmail`). */
   email: string | null;
   color: string;
+  avatarUrl: string | null;
   /** Die Adresse ist bestätigt. Ohne Mailversand bleibt das offen — die
    *  Seite sagt das, statt es zu verschweigen. */
   emailVerified: boolean;

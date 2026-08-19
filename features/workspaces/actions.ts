@@ -53,6 +53,11 @@ import {
   systemRoleId,
 } from "@/lib/rbac";
 import { getSession } from "@/lib/session";
+import {
+  deleteAvatarObject,
+  finalizeAvatarUpload,
+  requestAvatarUpload,
+} from "@/lib/storage";
 import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 import { uid } from "@/lib/utils/id";
 import {
@@ -296,6 +301,76 @@ export async function updateWorkspace(
       }
     }
   });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+type UploadUrlResult =
+  | { ok: true; key: string; uploadUrl: string }
+  | { error: string };
+
+/** Erster Schritt des Workspace-Avatar-Uploads: presigned PUT-URL, direkt
+ *  gegen S3, nach demselben Muster wie `updateWorkspace`. */
+export async function requestWorkspaceAvatarUploadUrl(
+  workspaceId: string,
+  input: { contentType: string; contentLength: number },
+): Promise<UploadUrlResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.update", { workspaceId })))
+    return { error: "You are not allowed to change this workspace." };
+
+  return requestAvatarUpload({
+    kind: "workspace",
+    ownerId: workspaceId,
+    ...input,
+  });
+}
+
+export async function confirmWorkspaceAvatarUpload(
+  workspaceId: string,
+  key: string,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.update", { workspaceId })))
+    return { error: "You are not allowed to change this workspace." };
+
+  const result = await finalizeAvatarUpload("workspace", workspaceId, key);
+  if ("error" in result) return result;
+
+  const previous = await db.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { avatarKey: true },
+  });
+  await db.workspace.update({
+    where: { id: workspaceId },
+    data: { avatarKey: key },
+  });
+  await deleteAvatarObject(previous?.avatarKey);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeWorkspaceAvatar(
+  workspaceId: string,
+): Promise<SettingsResult> {
+  const actorId = await currentUserId();
+  if (!actorId) return { error: "You must be logged in." };
+  if (!(await can(actorId, "workspace.update", { workspaceId })))
+    return { error: "You are not allowed to change this workspace." };
+
+  const previous = await db.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { avatarKey: true },
+  });
+  await db.workspace.update({
+    where: { id: workspaceId },
+    data: { avatarKey: null },
+  });
+  await deleteAvatarObject(previous?.avatarKey);
 
   revalidatePath("/", "layout");
   return { ok: true };

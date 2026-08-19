@@ -39,6 +39,10 @@ model Workspace {
   /// Wozu der Workspace da ist, in ein bis zwei Sätzen. Steht im Steckbrief
   /// unter dem Namen; leer heißt, dass es niemand gesagt hat.
   desc      String   @default("")
+  /// Objektschlüssel im `avatars`-Bucket (`lib/storage`) für ein selbst
+  /// hochgeladenes Bild. Ohne S3-Konfiguration oder ohne Upload bleibt es
+  /// beim Initialen-Avatar.
+  avatarKey String?
 
   members       WorkspaceMember[]
   projects      Project[]
@@ -116,6 +120,10 @@ model User {
   // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
   emailVerified  DateTime?
   image          String?
+  /// Objektschlüssel im `avatars`-Bucket (`lib/storage`) für ein selbst
+  /// hochgeladenes Bild — getrennt von `image` (roher OAuth-Avatar-Link,
+  /// wird von `Avatar.tsx` nicht gerendert).
+  avatarKey      String?
   // Rolle im Scope PLATFORM. Steuert Plattform-Operationen und gewährt für sich
   // genommen KEINEN Zugriff auf Mandanteninhalte — dafür braucht die Rolle
   // ausdrücklich `tenant.access`.

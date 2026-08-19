@@ -6,6 +6,7 @@ import { getCurrentWorkspaceId } from "@/lib/current-workspace";
 import { db } from "@/lib/db";
 import { accountPath, adminPath, workspacePath } from "@/lib/nav";
 import { getAccess, PLATFORM } from "@/lib/permissions";
+import { resolveAvatarUrl } from "@/lib/storage";
 import UserMenuClient from "./UserMenuClient";
 
 export async function UserMenu() {
@@ -20,13 +21,14 @@ export async function UserMenu() {
     // beides braucht den Benutzernamen als einzigen verlässlichen Anzeigewert.
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { handle: true },
+      select: { handle: true, avatarKey: true },
     });
     me = {
       firstName: session.user.firstName,
       lastName: session.user.lastName,
       color: session.user.color || "var(--primary)",
       handle: user?.handle,
+      image: (await resolveAvatarUrl(user?.avatarKey)) ?? undefined,
     };
   }
 

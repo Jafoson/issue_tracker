@@ -21,6 +21,7 @@ export interface WorkspaceSettingsView {
     color: string;
     /** Wozu der Workspace da ist — leer, wenn es niemand gesagt hat. */
     desc: string;
+    avatarUrl: string | null;
     projectCount: number;
     memberCount: number;
     issueCount: number;

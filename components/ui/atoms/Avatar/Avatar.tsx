@@ -1,6 +1,6 @@
 "use client";
 import { Icon } from "@iconify/react";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 import { initials, personInitials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
@@ -61,6 +61,8 @@ export function Avatar({
   placeholderLabel,
   className,
 }: AvatarProps) {
+  const [imgFailed, setImgFailed] = useState(false);
+
   if (!avatar) {
     if (!placeholder) {
       return null;
@@ -122,7 +124,16 @@ export function Avatar({
         } as CSSProperties
       }
     >
-      {label}
+      {avatar.image && !imgFailed ? (
+        <img
+          src={avatar.image}
+          alt=""
+          className={styles.img}
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        label
+      )}
     </span>
   );
 }

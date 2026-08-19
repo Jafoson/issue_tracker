@@ -3,6 +3,7 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState, useTransition } from "react";
+import { AvatarUploader } from "@/components/ui/atoms/AvatarUploader/AvatarUploader";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { ColorPicker } from "@/components/ui/atoms/ColorPicker/ColorPicker";
@@ -12,8 +13,11 @@ import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
 import {
   addWorkspaceDomain,
+  confirmWorkspaceAvatarUpload,
   deleteWorkspace,
+  removeWorkspaceAvatar,
   removeWorkspaceDomain,
+  requestWorkspaceAvatarUploadUrl,
   updateWorkspace,
 } from "@/features/workspaces/actions";
 import type { WorkspaceSettingsView } from "@/features/workspaces/types";
@@ -205,6 +209,28 @@ export function WorkspaceSettings({
   };
 
   const general: SettingRow[] = [
+    {
+      id: "avatar",
+      label: t("workspaceSettings.avatar"),
+      desc: t("workspaceSettings.avatarDesc"),
+      control: (
+        <AvatarUploader
+          avatar={{ name, color, image: workspace.avatarUrl ?? undefined }}
+          shape="square"
+          disabled={!canUpdate || isPending}
+          onRequestUpload={(input) =>
+            requestWorkspaceAvatarUploadUrl(workspace.id, input)
+          }
+          onConfirmUpload={(key) =>
+            confirmWorkspaceAvatarUpload(workspace.id, key)
+          }
+          onRemove={
+            canUpdate ? () => removeWorkspaceAvatar(workspace.id) : undefined
+          }
+          onDone={() => router.refresh()}
+        />
+      ),
+    },
     {
       id: "name",
       label: t("fields.name"),

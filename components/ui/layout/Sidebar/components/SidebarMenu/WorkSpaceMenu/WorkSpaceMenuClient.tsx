@@ -38,7 +38,11 @@ export function WorkspaceMenuClient({
         style={{ gap: 6, padding: "4px 8px", width: "100%" }}
       >
         <Avatar
-          avatar={{ name: workspace.name, color: workspace.color }}
+          avatar={{
+            name: workspace.name,
+            color: workspace.color,
+            image: workspace.avatarUrl ?? undefined,
+          }}
           size={30}
         />
         <span className={styles.title}>{workspace.name}</span>
@@ -70,7 +74,13 @@ export function WorkspaceMenuClient({
             data-active={ws.id === workspace.id ? "true" : undefined}
             onClick={() => goTo(ws.id)}
           >
-            <Avatar avatar={{ name: ws.name, color: ws.color }} />
+            <Avatar
+              avatar={{
+                name: ws.name,
+                color: ws.color,
+                image: ws.avatarUrl ?? undefined,
+              }}
+            />
             {ws.name}
           </Button>
         ))}

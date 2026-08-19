@@ -9,6 +9,7 @@ import type {
 } from "@/features/account/types";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { resolveAvatarUrl } from "@/lib/storage";
 
 // Alles hier gilt genau einer Person: der eingeloggten. Es gibt keinen Parameter
 // „welcher Benutzer" — wer fremde Konten läse, hätte damit eine Möglichkeit
@@ -104,11 +105,17 @@ export const getMyProfile = cache(
         email: true,
         color: true,
         emailVerified: true,
+        avatarKey: true,
       },
     });
     if (!user) return null;
 
-    return { ...user, emailVerified: user.emailVerified !== null };
+    const { avatarKey, ...rest } = user;
+    return {
+      ...rest,
+      emailVerified: user.emailVerified !== null,
+      avatarUrl: await resolveAvatarUrl(avatarKey),
+    };
   },
 );
 

@@ -2,6 +2,7 @@ export interface Workspace {
   id: string;
   name: string;
   color: string;
+  avatarUrl: string | null;
 }
 
 export interface SearchableIssue {

@@ -657,6 +657,8 @@
   },
   "workspaceSettings": {
     "generalDesc": "Stammdaten dieses Workspace und was in ihm liegt.",
+    "avatar": "Avatar",
+    "avatarDesc": "Sichtbar in der Seitenleiste, im Workspace-Wechsler und überall dort, wo der Workspace erscheint.",
     "nameDesc": "Steht in der Seitenleiste, im Workspace-Wechsler und in jeder Einladung.",
     "descDesc": "Ein bis zwei Sätze für die Workspace-Übersicht — wofür ist er da?",
     "descPlaceholder": "Wofür ist dieser Workspace da? (optional)",
@@ -744,9 +746,17 @@
     "emptyTitle": "Noch niemand hier",
     "emptyDesc": "Lade jemanden per E-Mail ein, um gemeinsam zu arbeiten."
   },
+  "avatarUploader": {
+    "change": "Avatar ändern",
+    "invalidType": "Nur PNG, JPEG, WebP oder GIF sind erlaubt.",
+    "tooLarge": "Datei ist zu groß (max. 5 MB).",
+    "uploadFailed": "Upload fehlgeschlagen — bitte erneut versuchen."
+  },
   "account": {
     "generalDesc": "Wie du in Orbit erscheinst — in Listen, an Aufgaben und in Kommentaren.",
     "profile": "Profil",
+    "avatar": "Avatar",
+    "avatarDesc": "Ein Bild statt deiner Initialen — sichtbar überall dort, wo du vorkommst.",
     "signIn": "Anmeldung",
     "firstName": "Vorname",
     "lastName": "Nachname",

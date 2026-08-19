@@ -10,6 +10,11 @@ import {
 } from "@/features/account/types";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import {
+  deleteAvatarObject,
+  finalizeAvatarUpload,
+  requestAvatarUpload,
+} from "@/lib/storage";
 import { isValidEmail } from "@/lib/utils/parse-emails";
 
 // Die eigenen Einstellungen kennen keine Rechteprüfung, nur eine Frage: wer ist
@@ -101,6 +106,72 @@ export async function updateProfile(data: {
   });
 
   await unstable_update({ user: { firstName, lastName, color } });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+type UploadUrlResult =
+  | { ok: true; key: string; uploadUrl: string }
+  | { error: string };
+
+/**
+ * Erster Schritt des Avatar-Uploads: stellt eine presigned PUT-URL aus, gegen
+ * die der Client direkt (ohne Umweg über den Server) hochlädt. Kein
+ * `unstable_update()` nötig — anders als Name/Farbe steht der Avatar nicht im
+ * Sitzungs-Token (`UserMenu` liest ihn schon heute live aus der DB, wie auch
+ * `handle`), `revalidatePath` unten genügt.
+ */
+export async function requestAvatarUploadUrl(input: {
+  contentType: string;
+  contentLength: number;
+}): Promise<UploadUrlResult> {
+  const session = await getSession();
+  if (!session) return { error: NOT_LOGGED_IN };
+
+  return requestAvatarUpload({
+    kind: "user",
+    ownerId: session.userId,
+    ...input,
+  });
+}
+
+/** Zweiter Schritt: nach dem direkten PUT gegen S3 den Key in der DB
+ *  hinterlegen und den vorherigen Avatar best-effort löschen. */
+export async function confirmAvatarUpload(key: string): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_LOGGED_IN };
+
+  const result = await finalizeAvatarUpload("user", session.userId, key);
+  if ("error" in result) return result;
+
+  const previous = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { avatarKey: true },
+  });
+  await db.user.update({
+    where: { id: session.userId },
+    data: { avatarKey: key },
+  });
+  await deleteAvatarObject(previous?.avatarKey);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeAvatar(): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_LOGGED_IN };
+
+  const previous = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { avatarKey: true },
+  });
+  await db.user.update({
+    where: { id: session.userId },
+    data: { avatarKey: null },
+  });
+  await deleteAvatarObject(previous?.avatarKey);
 
   revalidatePath("/", "layout");
   return { ok: true };

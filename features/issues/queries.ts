@@ -11,6 +11,7 @@ import {
 } from "@/lib/permissions";
 import { toDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
+import { resolveAvatarUrl } from "@/lib/storage";
 import type {
   Issue,
   IssueAccess,
@@ -91,19 +92,32 @@ function mapIssue(i: {
 export const getWorkspace = cache(async (id: string) => {
   // Gesperrte Workspaces (vom Plattform-Admin suspendiert) sind für den normalen
   // App-Zugriff nicht auffindbar → die Layouts behandeln sie via notFound().
-  return db.workspace.findFirst({
+  const workspace = await db.workspace.findFirst({
     where: { id, suspended: false },
-    select: { id: true, name: true, color: true },
+    select: { id: true, name: true, color: true, avatarKey: true },
   });
+  if (!workspace) return null;
+
+  const { avatarKey, ...rest } = workspace;
+  return { ...rest, avatarUrl: await resolveAvatarUrl(avatarKey) };
 });
 
 export const getUserWorkspaces = cache(async (userId: string) => {
   const rows = await db.workspaceMember.findMany({
     where: { userId },
-    include: { workspace: { select: { id: true, name: true, color: true } } },
+    include: {
+      workspace: {
+        select: { id: true, name: true, color: true, avatarKey: true },
+      },
+    },
     orderBy: { workspace: { name: "asc" } },
   });
-  return rows.map((r) => r.workspace);
+  return Promise.all(
+    rows.map(async (r) => {
+      const { avatarKey, ...rest } = r.workspace;
+      return { ...rest, avatarUrl: await resolveAvatarUrl(avatarKey) };
+    }),
+  );
 });
 
 export const getProjects = cache(
