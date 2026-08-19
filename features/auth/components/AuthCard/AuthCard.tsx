@@ -10,18 +10,29 @@ import styles from "./authCard.module.scss";
 const OAUTH_META: Record<string, { label: string; icon: string }> = {
   github: { label: "GitHub", icon: "lucide:github" },
   google: { label: "Google", icon: "logos:google-icon" },
+  oidc: { label: "SSO", icon: "lucide:shield-check" },
 };
 
 interface AuthCardProps {
   title: string;
   subtitle: string;
   error?: string;
-  submitLabel: string;
-  onSubmit: () => void;
+  /** Ohne `onSubmit` bleibt der generische Button weg — Formulare ohne
+   *  eigenes Feld-basiertes Absenden (z. B. reine Passkey-Anmeldung) tragen
+   *  ihren Auslöser stattdessen über `extra`. */
+  submitLabel?: string;
+  onSubmit?: () => void;
   oauthProviders?: string[];
-  switchText: string;
-  switchLabel: string;
-  switchHref: "/login" | "/register";
+  /** Überschreibt den Anzeigenamen einzelner Anbieter — für OIDC, dessen Name
+   *  aus `AUTH_OIDC_NAME` kommt statt aus der festen Marken-Liste. */
+  oauthLabels?: Record<string, string>;
+  /** Zusätzlicher Anmeldeweg (z. B. Passkey-Button) — steht zwischen dem
+   *  Submit-Button und den OAuth-Anbietern, teilt sich aber keine Optik mit
+   *  ihnen (andere Bedingung, anderer Ceremony-Ablauf). */
+  extra?: React.ReactNode;
+  switchText?: string;
+  switchLabel?: string;
+  switchHref?: "/login" | "/register";
   children: React.ReactNode;
 }
 
@@ -34,6 +45,8 @@ export function AuthCard({
   submitLabel,
   onSubmit,
   oauthProviders = [],
+  oauthLabels,
+  extra,
   switchText,
   switchLabel,
   switchHref,
@@ -60,15 +73,19 @@ export function AuthCard({
           </div>
         )}
 
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          full
-          onClick={onSubmit}
-        >
-          {submitLabel}
-        </Button>
+        {onSubmit && submitLabel && (
+          <Button
+            type="button"
+            variant="primary"
+            size="lg"
+            full
+            onClick={onSubmit}
+          >
+            {submitLabel}
+          </Button>
+        )}
+
+        {extra}
 
         {oauthProviders.length > 0 && (
           <>
@@ -79,6 +96,7 @@ export function AuthCard({
                   label: provider,
                   icon: "lucide:log-in",
                 };
+                const label = oauthLabels?.[provider] ?? meta.label;
                 return (
                   <form
                     key={provider}
@@ -92,7 +110,7 @@ export function AuthCard({
                       full
                       icon={<Icon icon={meta.icon} width={16} />}
                     >
-                      {t("login.continueWith", { provider: meta.label })}
+                      {t("login.continueWith", { provider: label })}
                     </Button>
                   </form>
                 );
@@ -101,9 +119,11 @@ export function AuthCard({
           </>
         )}
 
-        <p className={styles.switch}>
-          {switchText} <Link href={switchHref}>{switchLabel}</Link>
-        </p>
+        {switchText && switchLabel && switchHref && (
+          <p className={styles.switch}>
+            {switchText} <Link href={switchHref}>{switchLabel}</Link>
+          </p>
+        )}
       </div>
     </div>
   );

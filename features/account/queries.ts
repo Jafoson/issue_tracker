@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { enabledOAuthProviders } from "@/auth.config";
+import { enabledOAuthProviders, oidcProviderName } from "@/auth.config";
 import type {
   AccountConnectionsView,
   AccountProfileView,
@@ -27,6 +27,11 @@ import { getSession } from "@/lib/session";
  * und niemand könnte sehen, dass es die Möglichkeit überhaupt gibt.
  */
 export const OAUTH_PROVIDERS = ["github", "google"] as const;
+
+/** OIDC ist nicht Teil der festen Liste oben — sein Name kommt erst aus
+ *  `AUTH_OIDC_NAME`, es gibt also nichts Sinnvolles anzuzeigen, solange er
+ *  nicht konfiguriert ist. */
+export const OIDC_PROVIDER_ID = "oidc";
 
 /** Was gilt, solange niemand etwas eingestellt hat. Dieselben Werte wie die
  *  `@default`s in `prisma/schema.prisma`. */
@@ -101,7 +106,7 @@ export const getMyProfile = cache(
   },
 );
 
-/** Womit man sich anmeldet: Passwort, Adresse, fremde Anbieter. */
+/** Womit man sich anmeldet: Passkeys, Adresse, fremde Anbieter. */
 export const getMySecurity = cache(
   async (): Promise<AccountSecurityView | null> => {
     const session = await getSession();
@@ -112,8 +117,15 @@ export const getMySecurity = cache(
       select: {
         email: true,
         emailVerified: true,
-        passwordHash: true,
         accounts: { select: { provider: true } },
+        authenticators: {
+          select: {
+            credentialID: true,
+            credentialDeviceType: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "asc" },
+        },
       },
     });
     if (!user) return null;
@@ -121,10 +133,12 @@ export const getMySecurity = cache(
     return {
       email: user.email,
       emailVerified: user.emailVerified !== null,
-      // Nie den Hash selbst herausreichen — die Seite will nur wissen, ob es
-      // einen gibt.
-      hasPassword: user.passwordHash !== null,
       connectedProviders: user.accounts.map((a) => a.provider),
+      passkeys: user.authenticators.map((a) => ({
+        credentialID: a.credentialID,
+        deviceType: a.credentialDeviceType,
+        createdAt: a.createdAt,
+      })),
     };
   },
 );
@@ -138,21 +152,34 @@ export const getMyConnections = cache(
     const user = await db.user.findUnique({
       where: { id: session.userId },
       select: {
-        passwordHash: true,
         accounts: { select: { provider: true } },
+        authenticators: { select: { credentialID: true } },
       },
     });
     if (!user) return null;
 
     const connected = new Set(user.accounts.map((a) => a.provider));
+    const oidcEnabled = enabledOAuthProviders.includes(OIDC_PROVIDER_ID);
 
     return {
-      accounts: OAUTH_PROVIDERS.map((provider) => ({
-        provider,
-        connected: connected.has(provider),
-        available: enabledOAuthProviders.includes(provider),
-      })),
-      hasPassword: user.passwordHash !== null,
+      accounts: [
+        ...OAUTH_PROVIDERS.map((provider) => ({
+          provider,
+          connected: connected.has(provider),
+          available: enabledOAuthProviders.includes(provider),
+        })),
+        ...(oidcEnabled
+          ? [
+              {
+                provider: OIDC_PROVIDER_ID,
+                connected: connected.has(OIDC_PROVIDER_ID),
+                available: true,
+                label: oidcProviderName,
+              },
+            ]
+          : []),
+      ],
+      hasPasskey: user.authenticators.length > 0,
     };
   },
 );

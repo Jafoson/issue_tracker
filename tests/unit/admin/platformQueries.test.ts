@@ -89,24 +89,12 @@ describe("Benutzerverwaltung", () => {
     });
   });
 
-  it("wählt niemals das Passwort aus", async () => {
+  it("beantwortet die Frage nach dem Passkey über eine Zählung, nie über die Zeile selbst", async () => {
+    // Kein eigenes Passwort mehr — `hasPasskey` kommt aus
+    // `_count.select.authenticators`, nicht aus einer zweiten Abfrage.
     await getAllUsers();
 
-    for (const call of mockUserFindMany.mock.calls) {
-      const keys = keysOf(call[0].select);
-      expect(keys).not.toContain("passwordHash");
-    }
-  });
-
-  it("beantwortet die Frage nach dem Passwort, ohne es anzufassen", async () => {
-    // Die zweite Abfrage fragt nach der Bedingung, nicht nach dem Wert: sie
-    // holt Ids, keine Hashes.
-    await getAllUsers();
-
-    const probe = mockUserFindMany.mock.calls.find(
-      (call) => call[0].where?.passwordHash !== undefined,
-    );
-    expect(probe).toBeDefined();
-    expect(keysOf(probe?.[0].select)).toEqual(["id"]);
+    const keys = keysOf(mockUserFindMany.mock.calls[0][0].select);
+    expect(keys).toContain("_count.select.authenticators");
   });
 });

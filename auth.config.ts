@@ -7,7 +7,7 @@ import Google from "next-auth/providers/google";
 // Der Credentials-Provider + Adapter kommen erst in auth.ts dazu.
 
 // OAuth-Provider nur aktivieren, wenn die zugehörigen Env-Vars gesetzt sind.
-// So läuft die App auch ohne konfiguriertes OAuth (nur E-Mail/Passwort).
+// So läuft die App auch ohne konfiguriertes OAuth (nur Passkey/Magic Link).
 const oauthProviders: NextAuthConfig["providers"] = [];
 export const enabledOAuthProviders: string[] = [];
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
@@ -18,11 +18,35 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   oauthProviders.push(Google);
   enabledOAuthProviders.push("google");
 }
+// Ein generischer OIDC-Provider statt mehrerer benannter — passt zu jedem
+// Standard-IdP (Keycloak, Authentik, Entra ID, Okta, …). `issuer` allein
+// genügt next-auth für die Discovery (`{issuer}/.well-known/openid-
+// configuration`), kein `wellKnown` nötig. `AUTH_OIDC_NAME` ist nur die
+// Beschriftung des Buttons — Vorgabe „SSO", wenn nichts gesetzt ist.
+export const oidcProviderName = process.env.AUTH_OIDC_NAME || "SSO";
+if (
+  process.env.AUTH_OIDC_ISSUER &&
+  process.env.AUTH_OIDC_CLIENT_ID &&
+  process.env.AUTH_OIDC_CLIENT_SECRET
+) {
+  oauthProviders.push({
+    id: "oidc",
+    name: oidcProviderName,
+    type: "oidc",
+    issuer: process.env.AUTH_OIDC_ISSUER,
+    clientId: process.env.AUTH_OIDC_CLIENT_ID,
+    clientSecret: process.env.AUTH_OIDC_CLIENT_SECRET,
+  });
+  enabledOAuthProviders.push("oidc");
+}
 
 export const authConfig = {
   trustHost: true,
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  // `error: "/login"` fängt vor allem einen ungültigen/abgelaufenen
+  // Magic-Link-Code auf (`?error=Verification`) — sonst landet die Person auf
+  // next-auths unstyled Standard-Fehlerseite statt zurück im eigenen Formular.
+  pages: { signIn: "/login", error: "/login" },
   providers: oauthProviders,
   callbacks: {
     // User-Id + Avatar-Farbe + Name in das JWT übernehmen (bei Login liegt `user` vor).

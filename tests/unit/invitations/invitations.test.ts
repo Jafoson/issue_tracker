@@ -30,7 +30,7 @@ function row(
     expires?: Date;
     acceptedAt?: Date | null;
     suspended?: boolean;
-    passwordHash?: string | null;
+    hasPasskey?: boolean;
     projectId?: string | null;
   } = {},
 ) {
@@ -46,7 +46,7 @@ function row(
       email: "ada@example.com",
       firstName: "Ada",
       lastName: "",
-      passwordHash: overrides.passwordHash ?? null,
+      authenticators: overrides.hasPasskey ? [{ credentialID: "cred-1" }] : [],
     },
   };
 }
@@ -123,13 +123,13 @@ describe("openInvitation()", () => {
       workspaceId: "acme",
       workspaceName: "Acme",
       email: "ada@example.com",
-      hasPassword: false,
+      hasPasskey: false,
     });
   });
 
-  it("meldet ein Konto mit Passwort — das braucht keine Einladung mehr", async () => {
-    findUnique.mockResolvedValue(row({ passwordHash: "hash" }));
-    expect((await openInvitation(db, "tok", NOW))?.hasPassword).toBe(true);
+  it("meldet ein Konto mit Passkey — das braucht keine Einladung mehr", async () => {
+    findUnique.mockResolvedValue(row({ hasPasskey: true }));
+    expect((await openInvitation(db, "tok", NOW))?.hasPasskey).toBe(true);
   });
 
   // Unbekannt, abgelaufen, benutzt, gesperrt: alle vier enden gleich, damit der

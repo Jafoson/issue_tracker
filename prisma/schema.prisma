@@ -108,7 +108,6 @@ model User {
   handle         String    @unique
   email          String    @unique
   color          String
-  passwordHash   String?
   // Auth.js-Adapter-Felder (OAuth). handle/color werden im createUser-Override gefüllt.
   emailVerified  DateTime?
   image          String?
@@ -142,6 +141,7 @@ model User {
   createdProjects     Project[]                      @relation("ProjectCreator")
   accounts            Account[]
   sessions            Session[]
+  authenticators      Authenticator[]
   invitations         Invitation[]
   invitationsSent     Invitation[]                   @relation("InvitationInvitedBy")
   inviteLinksCreated  InviteLink[]                    @relation("InviteLinkCreatedBy")
@@ -313,6 +313,28 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Passkeys (WebAuthn). Feldnamen/-typen sind vom PrismaAdapter vorgegeben —
+// er reicht die Objekte unverändert durch, `credentialID` muss deshalb
+// eigenständig `@unique` sein (der Adapter sucht ausschließlich darüber).
+model Authenticator {
+  credentialID         String   @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  // Nicht Teil des Adapter-Vertrags (der reicht nur die sieben Felder oben
+  // durch) — reiner Anzeige-Zeitpunkt für die Kontoeinstellungen, entsteht
+  // aus dem Spalten-Default statt aus der Ceremony.
+  createdAt            DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
 }
 
 model WorkspaceMember {

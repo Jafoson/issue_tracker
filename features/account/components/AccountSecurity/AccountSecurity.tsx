@@ -1,19 +1,19 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { useTranslations } from "next-intl";
+import { signIn } from "next-auth/webauthn";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
-import { Input } from "@/components/ui/atoms/Input/Input";
 import { PageHeader } from "@/components/ui/layout/PageHeader/PageHeader";
 import {
   SettingsBody,
   SettingsList,
   type SettingsRow,
 } from "@/components/ui/layout/SettingsList/SettingsList";
-import { changePassword } from "@/features/account/actions";
+import { removePasskey } from "@/features/account/actions";
 import type { AccountSecurityView } from "@/features/account/types";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import styles from "./accountSecurity.module.scss";
 
 interface Props extends AccountSecurityView {
@@ -25,12 +25,10 @@ interface Props extends AccountSecurityView {
 /**
  * Womit man hereinkommt.
  *
- * Drei Auskünfte und ein Vorgang: das Passwort. Wer über GitHub oder Google
- * gekommen ist, hat noch keines — dann heißt der Knopf „Passwort festlegen" und
- * das Formular fragt nur nach dem neuen. Wer eines hat, muss es nennen: eine
- * offene Sitzung an einem fremden Rechner soll nicht genügen, um den Zugang zu
- * übernehmen. Geprüft wird das ohnehin im Server (`changePassword`); das
- * Formular macht die Regel nur sichtbar.
+ * Kein Passwort mehr — Passkeys und verbundene Anbieter sind die einzigen
+ * Wege. Die Ceremony (Browser-Prompt) übernimmt `next-auth/webauthn`s
+ * `signIn` vollständig, der letzte-Weg-hinein-Schutz steckt im Server
+ * (`removePasskey`); die Oberfläche macht die Regel nur sichtbar.
  *
  * Was hier fehlt, fehlt bewusst: eine neue E-Mail-Adresse ließe sich ohne
  * Mailversand nicht bestätigen, und „überall abmelden" wäre ein Knopf ohne
@@ -40,69 +38,69 @@ interface Props extends AccountSecurityView {
 export function AccountSecurity({
   email,
   emailVerified,
-  hasPassword,
   connectedProviders,
   connectionsHref,
+  passkeys,
 }: Props) {
   const t = useTranslations();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const format = useFormatter();
 
-  const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [repeat, setRepeat] = useState("");
-  const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
+  const [passkeyError, setPasskeyError] = useState("");
+  const [isPasskeyPending, startPasskeyTransition] = useTransition();
 
-  const close = () => {
-    setOpen(false);
-    setCurrent("");
-    setNext("");
-    setRepeat("");
-    setError("");
-  };
-
-  const submit = () => {
-    if (next !== repeat) {
-      setError(t("account.passwordMismatch"));
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await changePassword({ current, next });
-      if ("error" in result) {
-        setError(result.error);
-        return;
+  const addPasskey = () => {
+    setPasskeyError("");
+    startPasskeyTransition(async () => {
+      try {
+        await signIn("webauthn", { action: "register", redirect: true });
+      } catch {
+        setPasskeyError(t("account.passkeyAddFailed"));
       }
-      close();
-      setDone(true);
-      router.refresh();
     });
   };
 
-  const password: SettingsRow[] = [
+  const removePasskeyRow = (credentialID: string) =>
+    startPasskeyTransition(async () => {
+      const result = await removePasskey(credentialID);
+      if ("error" in result) {
+        setPasskeyError(result.error);
+        return;
+      }
+      setPasskeyError("");
+    });
+
+  const passkeyRows: SettingsRow[] = [
+    ...passkeys.map((passkey) => ({
+      id: passkey.credentialID,
+      label:
+        passkey.deviceType === "multiDevice"
+          ? t("account.passkeySynced")
+          : t("account.passkeyDevice"),
+      desc: t("account.passkeyAddedOn", {
+        date: format.dateTime(passkey.createdAt, { dateStyle: "medium" }),
+      }),
+      control: (
+        <Button
+          variant="text"
+          disabled={isPasskeyPending}
+          onClick={() => removePasskeyRow(passkey.credentialID)}
+        >
+          {t("actions.remove")}
+        </Button>
+      ),
+    })),
     {
-      id: "password",
-      label: t("fields.password"),
-      desc: hasPassword
-        ? t("account.passwordDesc")
-        : t("account.passwordNoneDesc"),
-      control: done ? (
-        <span className={styles.saved}>
-          <Icon icon="lucide:check" width={14} />
-          {t("account.passwordChanged")}
-        </span>
-      ) : (
+      id: "add-passkey",
+      label: t("account.addPasskey"),
+      desc: t("account.addPasskeyDesc"),
+      control: (
         <Button
           variant="outline"
-          disabled={open}
-          onClick={() => {
-            setDone(false);
-            setOpen(true);
-          }}
+          disabled={isPasskeyPending}
+          icon={<Icon icon="lucide:fingerprint" width={14} />}
+          onClick={addPasskey}
         >
-          {hasPassword ? t("account.changePassword") : t("account.setPassword")}
+          {t("account.addPasskey")}
         </Button>
       ),
     },
@@ -154,67 +152,12 @@ export function AccountSecurity({
       />
 
       <SettingsBody>
-        <SettingsList title={t("fields.password")} rows={password} />
-
-        {/* Das Formular steht unter der Zeile, die es geöffnet hat — nicht in
-            einem Dialog: es gehört zu dieser Einstellung, und nichts daran
-            verlangt, den Rest der Seite zu verdecken. */}
-        {open && (
-          <form
-            className={styles.form}
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit();
-            }}
-          >
-            {hasPassword && (
-              <Input
-                variant="password"
-                label={t("account.currentPassword")}
-                value={current}
-                autoComplete="current-password"
-                disabled={isPending}
-                onChange={(e) => setCurrent(e.target.value)}
-              />
-            )}
-            <Input
-              variant="password"
-              label={t("account.newPassword")}
-              hint={t("account.passwordHint")}
-              value={next}
-              autoComplete="new-password"
-              disabled={isPending}
-              onChange={(e) => setNext(e.target.value)}
-            />
-            <Input
-              variant="password"
-              label={t("account.repeatPassword")}
-              value={repeat}
-              autoComplete="new-password"
-              disabled={isPending}
-              onChange={(e) => setRepeat(e.target.value)}
-            />
-
-            {error && (
-              <p className={styles.error} role="alert">
-                <Icon icon="lucide:circle-alert" width={14} />
-                {error}
-              </p>
-            )}
-
-            <div className={styles.actions}>
-              <Button variant="text" type="button" onClick={close}>
-                {t("actions.cancel")}
-              </Button>
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={isPending || !next || !repeat}
-              >
-                {t("actions.save")}
-              </Button>
-            </div>
-          </form>
+        <SettingsList title={t("account.passkeys")} rows={passkeyRows} />
+        {passkeyError && (
+          <p className={styles.error} role="alert">
+            <Icon icon="lucide:circle-alert" width={14} />
+            {passkeyError}
+          </p>
         )}
 
         <SettingsList title={t("account.signIn")} rows={login} />

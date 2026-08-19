@@ -187,18 +187,17 @@ export function PlatformUsers({
       id: "access",
       header: t("platform.colAccess"),
       width: "minmax(110px, max-content)",
-      sortValue: (row) => (row.hasPassword ? 1 : 0),
-      // Nicht *welches* Passwort — nur, ob es eines gibt. Wer keines hat, kommt
-      // über einen verbundenen Anbieter herein oder hat die Einladung noch nicht
-      // angenommen.
+      sortValue: (row) => (row.hasPasskey ? 1 : 0),
+      // Wer keinen Passkey hat, kommt über einen verbundenen Anbieter herein
+      // oder hat die Einladung noch nicht angenommen.
       cell: (row) => (
         <span className={styles.access}>
           <Icon
-            icon={row.hasPassword ? "lucide:key-round" : "lucide:key-square"}
+            icon={row.hasPasskey ? "lucide:key-round" : "lucide:key-square"}
             width={14}
           />
-          {row.hasPassword
-            ? t("platform.accessPassword")
+          {row.hasPasskey
+            ? t("platform.accessPasskey")
             : t("platform.accessProvider")}
         </span>
       ),

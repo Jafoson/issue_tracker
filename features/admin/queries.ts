@@ -62,10 +62,6 @@ export interface CurrentUser {
 
 /**
  * Ein Konto, wie die Benutzerverwaltung es zeigt.
- *
- * `passwordHash` steht hier nicht und wird nirgends ausgewählt — auch nicht
- * verkürzt, auch nicht als „ist gesetzt". Ob jemand ein Passwort hat, sagt
- * `hasPassword`; wie es lautet, erfährt auf dieser Ebene niemand.
  */
 export interface PlatformUser {
   id: string;
@@ -80,8 +76,9 @@ export interface PlatformUser {
   lastSeenAt: Date | null;
   /** Gesetzt heißt stillgelegt: kein Zutritt, keine Rechte. */
   deactivatedAt: Date | null;
-  /** Ob es überhaupt ein Passwort gibt — nicht, welches. */
-  hasPassword: boolean;
+  /** Ob ein Passkey hinterlegt ist. Sonst: verbundener Anbieter oder
+   *  Einladung noch nicht angenommen. */
+  hasPasskey: boolean;
   /** Konto steht, aber die Einladung ist noch nirgends angenommen. */
   invitePending: boolean;
 }
@@ -147,24 +144,10 @@ export const getAllUsers = cache(
         lastSeenAt: true,
         deactivatedAt: true,
         platformRole: platformRoleSelect,
-        // Nicht `passwordHash: true`. Prisma gäbe den Hash sonst bis in die
-        // Server Component, und von dort ist es ein Tippfehler bis in den Browser.
-        // Die Zählung beantwortet dieselbe Frage, ohne das Geheimnis anzufassen.
-        _count: { select: { workspaces: true } },
+        _count: { select: { workspaces: true, authenticators: true } },
         workspaces: { select: { pending: true } },
       },
     });
-
-    // Getrennt geholt, weil `_count` keine Bedingung auf eine Spalte kennt und
-    // ein `null`-Vergleich in einer Auswahl nicht ausdrückbar ist.
-    const withPassword = new Set(
-      (
-        await db.user.findMany({
-          where: { passwordHash: { not: null } },
-          select: { id: true },
-        })
-      ).map((u) => u.id),
-    );
 
     return {
       rows: rows.map((u) => ({
@@ -179,7 +162,7 @@ export const getAllUsers = cache(
         createdAt: u.createdAt,
         lastSeenAt: u.lastSeenAt,
         deactivatedAt: u.deactivatedAt,
-        hasPassword: withPassword.has(u.id),
+        hasPasskey: u._count.authenticators > 0,
         invitePending:
           u.workspaces.length > 0 && u.workspaces.every((m) => m.pending),
       })),

@@ -117,7 +117,9 @@ function reset() {
   mockProjectMemberDeleteMany.mockResolvedValue({ count: 0 });
   mockWorkspaceMemberCount.mockResolvedValue(0);
   mockProjectMemberCount.mockResolvedValue(0);
-  mockUserFindUnique.mockResolvedValue({ passwordHash: null });
+  mockUserFindUnique.mockResolvedValue({
+    _count: { authenticators: 0, accounts: 0 },
+  });
   mockUserDelete.mockResolvedValue({});
 }
 
@@ -217,8 +219,18 @@ describe("revokeInvitation()", () => {
     expect(mockUserDelete).toHaveBeenCalledWith({ where: { id: INVITEE } });
   });
 
-  it("lässt das Konto stehen, wenn es ein Passwort hat", async () => {
-    mockUserFindUnique.mockResolvedValue({ passwordHash: "hash" });
+  it("lässt das Konto stehen, wenn es einen Passkey hat", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      _count: { authenticators: 1, accounts: 0 },
+    });
+    await revokeInvitation(TOKEN);
+    expect(mockUserDelete).not.toHaveBeenCalled();
+  });
+
+  it("lässt das Konto stehen, wenn es einen verbundenen Anbieter hat", async () => {
+    mockUserFindUnique.mockResolvedValue({
+      _count: { authenticators: 0, accounts: 1 },
+    });
     await revokeInvitation(TOKEN);
     expect(mockUserDelete).not.toHaveBeenCalled();
   });

@@ -1,7 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
+import { getMySecurity } from "@/features/account/queries";
+import { PasskeyNudge } from "@/features/auth/components/PasskeyNudge/PasskeyNudge";
 import { getCurrentWorkspace } from "@/features/workspaces/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
+import { accountPath } from "@/lib/nav";
 import { canEnterWorkspace } from "@/lib/permissions";
 import { getSession } from "@/lib/session";
 
@@ -33,5 +36,14 @@ export default async function AppLayout({
   // Layout schützt nur die Seiten unter sich.
   if (!(await canEnterWorkspace(session.userId, workspace.id))) notFound();
 
-  return <AppShell>{children}</AppShell>;
+  const security = await getMySecurity();
+
+  return (
+    <AppShell>
+      {security && security.passkeys.length === 0 && (
+        <PasskeyNudge securityHref={accountPath(workspaceId, "security")} />
+      )}
+      {children}
+    </AppShell>
+  );
 }

@@ -1,6 +1,5 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { unstable_update } from "@/auth";
 import {
@@ -172,51 +171,12 @@ export async function setNotification(
 }
 
 /**
- * Passwort setzen oder ändern.
- *
- * Wer schon eines hat, muss das alte nennen — eine offene Sitzung an einem
- * fremden Rechner soll nicht genügen, um den Zugang zu übernehmen. Wer keines
- * hat (Konto über GitHub oder Google), setzt hier sein erstes; dann gibt es
- * nichts zu bestätigen außer der Sitzung selbst.
- */
-export async function changePassword(data: {
-  current: string;
-  next: string;
-}): Promise<Result> {
-  const session = await getSession();
-  if (!session) return { error: NOT_LOGGED_IN };
-
-  const user = await db.user.findUnique({
-    where: { id: session.userId },
-    select: { passwordHash: true },
-  });
-  if (!user) return { error: NOT_LOGGED_IN };
-
-  if (data.next.length < 8) {
-    return { error: "The new password must be at least 8 characters long." };
-  }
-
-  if (user.passwordHash) {
-    if (!data.current) return { error: "Please enter your current password." };
-    const matches = await bcrypt.compare(data.current, user.passwordHash);
-    if (!matches) return { error: "The current password is not correct." };
-  }
-
-  await db.user.update({
-    where: { id: session.userId },
-    data: { passwordHash: await bcrypt.hash(data.next, 10) },
-  });
-
-  return { ok: true };
-}
-
-/**
  * Einen fremden Anmeldeweg vom Konto lösen.
  *
- * Der letzte geht nicht: ohne Passwort und ohne verbundenes Konto käme niemand
- * mehr herein, und es gibt keinen Mailversand, über den sich das reparieren
- * ließe. Geprüft wird das hier und nicht in der Oberfläche — der Knopf ist dort
- * zwar ausgeblendet, aber eine Server Function ist eine Adresse wie jede andere.
+ * Der letzte geht nicht: ohne verbundenes Konto und ohne Passkey käme niemand
+ * mehr herein. Geprüft wird das hier und nicht in der Oberfläche — der Knopf
+ * ist dort zwar ausgeblendet, aber eine Server Function ist eine Adresse wie
+ * jede andere.
  */
 export async function disconnectAccount(provider: string): Promise<Result> {
   const session = await getSession();
@@ -225,8 +185,8 @@ export async function disconnectAccount(provider: string): Promise<Result> {
   const user = await db.user.findUnique({
     where: { id: session.userId },
     select: {
-      passwordHash: true,
       accounts: { select: { provider: true } },
+      authenticators: { select: { credentialID: true } },
     },
   });
   if (!user) return { error: NOT_LOGGED_IN };
@@ -234,14 +194,53 @@ export async function disconnectAccount(provider: string): Promise<Result> {
   if (!user.accounts.some((a) => a.provider === provider)) {
     return { error: "This account is not connected." };
   }
-  if (!user.passwordHash && user.accounts.length <= 1) {
+  if (user.authenticators.length === 0 && user.accounts.length <= 1) {
     return {
       error:
-        "This is your only way to sign in. Set a password first, then disconnect it.",
+        "This is your only way to sign in. Add a passkey first, then disconnect it.",
     };
   }
 
   await db.account.deleteMany({ where: { userId: session.userId, provider } });
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Einen Passkey vom Konto entfernen.
+ *
+ * Derselbe „letzter Weg hinein"-Schutz wie bei `disconnectAccount`: die
+ * verbundenen Anbieter und die übrigen Passkeys zählen zusammen als Pool —
+ * bleibt keiner übrig, wird nicht gelöscht.
+ */
+export async function removePasskey(credentialID: string): Promise<Result> {
+  const session = await getSession();
+  if (!session) return { error: NOT_LOGGED_IN };
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      accounts: { select: { provider: true } },
+      authenticators: { select: { credentialID: true } },
+    },
+  });
+  if (!user) return { error: NOT_LOGGED_IN };
+
+  if (!user.authenticators.some((a) => a.credentialID === credentialID)) {
+    return { error: "This passkey is not on your account." };
+  }
+
+  const remainingWaysIn =
+    user.accounts.length + (user.authenticators.length - 1);
+  if (remainingWaysIn === 0) {
+    return {
+      error:
+        "This is your only way to sign in. Add another method first, then remove it.",
+    };
+  }
+
+  await db.authenticator.delete({ where: { credentialID } });
 
   revalidatePath("/", "layout");
   return { ok: true };

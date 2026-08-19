@@ -103,8 +103,9 @@ export interface OpenInvitation {
   email: string;
   firstName: string;
   lastName: string;
-  /** Das Konto hat schon ein Passwort — die Einladung braucht keines mehr. */
-  hasPassword: boolean;
+  /** Das Konto hat schon einen Passkey — die Einladung ist überflüssig,
+   *  eine normale Anmeldung reicht. */
+  hasPasskey: boolean;
 }
 
 /**
@@ -136,7 +137,7 @@ export async function openInvitation(
           email: true,
           firstName: true,
           lastName: true,
-          passwordHash: true,
+          authenticators: { select: { credentialID: true }, take: 1 },
         },
       },
     },
@@ -156,6 +157,6 @@ export async function openInvitation(
     email: invitation.user.email,
     firstName: invitation.user.firstName,
     lastName: invitation.user.lastName,
-    hasPassword: invitation.user.passwordHash !== null,
+    hasPasskey: invitation.user.authenticators.length > 0,
   };
 }

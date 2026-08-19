@@ -353,9 +353,10 @@ export async function deleteWorkspace(
 
 // ─── Domain-Auto-Join ──────────────────────────────────────────────────────────
 //
-// Wer sich mit einer Adresse dieser Domain neu registriert (`register()`,
-// `features/auth/actions.ts`), tritt automatisch bei — ohne Einladungslink,
-// ohne `pending`. Zwei Wächter gegen Missbrauch: `domain @id` in
+// Wer mit einer Adresse dieser Domain ein neues Konto anlegt
+// (`provisionNewUser()`, `lib/user-provisioning.ts` — läuft bei jedem neuen
+// Passkey-/OAuth-Konto), tritt automatisch bei — ohne Einladungslink, ohne
+// `pending`. Zwei Wächter gegen Missbrauch: `domain @id` in
 // `WorkspaceDomain` verhindert, dass zwei Workspaces dieselbe Domain
 // beanspruchen; die Sperrliste unten verhindert, dass überhaupt jemand eine
 // öffentliche Freemail-Domain (die Fremde teilen) claimt. Keine
@@ -1244,9 +1245,10 @@ export async function resendInvitation(token: string): Promise<MemberResult> {
  * Workspace — bei einem Gast nur die eine Projektzeile, sonst zusätzlich die
  * öffentlichen Projekte aus `enrollInWorkspaceProjects`), und zuletzt das
  * Schatten-Konto selbst, aber nur, wenn danach nirgends mehr etwas an ihm
- * hängt und es kein Passwort hat. Sonst bliebe eine für immer unsichtbare
- * Karteileiche stehen: ohne `Invitation`-Zeile taucht sie in keiner Übersicht
- * mehr auf, ist aber nie ein nutzbarer Zugang geworden.
+ * hängt und es nie ein Passkey oder ein verbundener Anbieter angelegt wurde.
+ * Sonst bliebe eine für immer unsichtbare Karteileiche stehen: ohne
+ * `Invitation`-Zeile taucht sie in keiner Übersicht mehr auf, ist aber nie ein
+ * nutzbarer Zugang geworden.
  */
 export async function revokeInvitation(
   token: string,
@@ -1290,10 +1292,16 @@ export async function revokeInvitation(
       tx.projectMember.count({ where: { userId } }),
       tx.user.findUnique({
         where: { id: userId },
-        select: { passwordHash: true },
+        select: {
+          _count: { select: { authenticators: true, accounts: true } },
+        },
       }),
     ]);
-    if (wsCount === 0 && pmCount === 0 && user?.passwordHash === null) {
+    const neverSetUp =
+      user !== null &&
+      user._count.authenticators === 0 &&
+      user._count.accounts === 0;
+    if (wsCount === 0 && pmCount === 0 && neverSetUp) {
       await tx.user.delete({ where: { id: userId } });
     }
   });

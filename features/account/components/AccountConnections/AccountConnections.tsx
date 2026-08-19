@@ -30,15 +30,15 @@ const PROVIDERS: Record<string, { icon: string; name: string }> = {
  * Verbinden heißt sich dort anmelden — Auth.js hängt den Weg an das Konto, in
  * dem man gerade steckt, ein eigener Vorgang wäre es nicht.
  *
- * Der letzte Weg lässt sich nicht lösen. Wer kein Passwort hat und nur ein
- * verbundenes Konto, käme danach nicht mehr herein, und ohne Mailversand gäbe es
- * keinen Weg zurück. Der Knopf fehlt dann und die Zeile sagt, warum — verboten
- * wird es aber im Server (`disconnectAccount`), denn eine ausgeblendete
- * Schaltfläche ist keine Sperre.
+ * Der letzte Weg lässt sich nicht lösen. Wer keinen Passkey hat und nur ein
+ * verbundenes Konto, käme danach nicht mehr herein. Der Knopf fehlt dann und
+ * die Zeile sagt, warum — verboten wird es aber im Server
+ * (`disconnectAccount`), denn eine ausgeblendete Schaltfläche ist keine
+ * Sperre.
  */
 export function AccountConnections({
   accounts,
-  hasPassword,
+  hasPasskey,
 }: AccountConnectionsView) {
   const t = useTranslations();
   const router = useRouter();
@@ -60,22 +60,20 @@ export function AccountConnections({
 
   const rows: SettingsRow[] = accounts.map((account) => {
     const meta = PROVIDERS[account.provider];
+    const name = account.label ?? meta?.name ?? account.provider;
     // Der letzte Weg hinein bleibt, wo er ist.
-    const isLastWayIn =
-      account.connected && !hasPassword && connectedCount <= 1;
+    const isLastWayIn = account.connected && !hasPasskey && connectedCount <= 1;
 
     return {
       id: account.provider,
-      label: meta?.name ?? account.provider,
+      label: name,
       desc: !account.available
         ? t("account.providerUnavailable")
         : isLastWayIn
           ? t("account.lastMethod")
           : account.connected
             ? t("account.connectedDesc")
-            : t("account.connectDesc", {
-                provider: meta?.name ?? account.provider,
-              }),
+            : t("account.connectDesc", { provider: name }),
       control: (
         <span className={styles.control}>
           <Icon
@@ -133,7 +131,7 @@ export function AccountConnections({
 
         <p className={styles.note}>
           <Icon icon="lucide:info" width={14} />
-          {hasPassword
+          {hasPasskey
             ? t("account.connectionsNote")
             : t("account.connectionsNoteNoPassword")}
         </p>

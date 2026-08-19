@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockTx = {
-  user: { update: mock() },
   workspaceMember: { findUnique: mock(), update: mock() },
   project: { findMany: mock() },
   projectMember: { createMany: mock() },
@@ -12,35 +11,26 @@ const mockTx = {
 
 const mockTransaction = mock();
 const mockInvitationFindUnique = mock();
+// `recordAudit` (`@/lib/audit`) läuft hier echt gegen diese beiden — ein Mock
+// des Moduls würde in `tests/unit/audit/audit.test.ts` lecken, das im selben
+// Prozess die echte Funktion prüft (siehe CLAUDE.md).
+const mockAuditLogCreate = mock();
+const mockAuditUserFindUnique = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
-    user: { findUnique: mock(), create: mock() },
-    // `openInvitation` läuft hier echt — nur die Zeile kommt aus dem Mock. Ein
-    // Mock des Moduls würde in andere Test-Dateien lecken (Bun teilt den
-    // Modul-Cache innerhalb eines Prozesses, siehe CLAUDE.md).
+    // `openInvitation` läuft hier echt — nur die Zeile kommt aus dem Mock.
     invitation: { findUnique: mockInvitationFindUnique },
+    auditLog: { create: mockAuditLogCreate },
+    user: { findUnique: mockAuditUserFindUnique },
     $transaction: mockTransaction,
   },
 }));
 
-class AuthError extends Error {}
-mock.module("next-auth", () => ({ AuthError }));
-
-const mockSignIn = mock();
-mock.module("@/auth", () => ({ signIn: mockSignIn, signOut: mock() }));
-
-mock.module("bcryptjs", () => ({
-  default: { compare: mock(), hash: mock(async () => "hashed") },
-}));
+const mockGetSession = mock();
+mock.module("@/lib/session", () => ({ getSession: mockGetSession }));
 
 import { acceptInvitation } from "@/features/auth/actions";
-
-function form(data: Record<string, string>): FormData {
-  const fd = new FormData();
-  for (const [k, v] of Object.entries(data)) fd.append(k, v);
-  return fd;
-}
 
 /** Eine offene Einladung, wie die Datenbank sie liefert. */
 const VALID_ROW = {
@@ -54,12 +44,10 @@ const VALID_ROW = {
     id: "u-1",
     email: "ada@example.com",
     firstName: "Ada",
-    lastName: "",
-    passwordHash: null,
+    lastName: "Lovelace",
+    authenticators: [],
   },
 };
-
-const GOOD = { firstName: "Ada", lastName: "Lovelace", password: "supersafe1" };
 
 function reset() {
   for (const group of Object.values(mockTx)) {
@@ -88,24 +76,27 @@ function reset() {
 
   mockInvitationFindUnique.mockReset();
   mockInvitationFindUnique.mockResolvedValue(VALID_ROW);
-  mockSignIn.mockReset();
-  mockSignIn.mockResolvedValue(undefined);
+  mockGetSession.mockReset();
+  mockGetSession.mockResolvedValue({ userId: "u-1" });
+  mockAuditLogCreate.mockReset();
+  mockAuditLogCreate.mockResolvedValue({});
+  mockAuditUserFindUnique.mockReset();
+  mockAuditUserFindUnique.mockResolvedValue({
+    firstName: "Ada",
+    lastName: "Lovelace",
+    email: "ada@example.com",
+    color: "#000000",
+  });
 }
 
-describe("acceptInvitation() — Eingaben", () => {
+describe("acceptInvitation() — Zugriff", () => {
   beforeEach(reset);
 
-  it("verlangt einen Vornamen", async () => {
-    expect(
-      await acceptInvitation("tok", form({ ...GOOD, firstName: " " })),
-    ).toEqual({ error: "Please enter your first name." });
-    expect(mockTransaction).not.toHaveBeenCalled();
-  });
-
-  it("verlangt mindestens acht Zeichen Passwort", async () => {
-    expect(
-      await acceptInvitation("tok", form({ ...GOOD, password: "kurz" })),
-    ).toEqual({ error: "Password must be at least 8 characters." });
+  it("verlangt eine Session", async () => {
+    mockGetSession.mockResolvedValue(null);
+    expect(await acceptInvitation("tok")).toEqual({
+      error: "You must be signed in to accept this invitation.",
+    });
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
@@ -113,8 +104,17 @@ describe("acceptInvitation() — Eingaben", () => {
   // diese Meldung tut es auch nicht.
   it("lehnt eine ungültige Einladung ab", async () => {
     mockInvitationFindUnique.mockResolvedValue(null);
-    expect(await acceptInvitation("tok", form(GOOD))).toEqual({
+    expect(await acceptInvitation("tok")).toEqual({
       error: "This invitation is no longer valid. Ask for a new one.",
+    });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it("lehnt eine fremde, eingeloggte Sitzung ab", async () => {
+    mockGetSession.mockResolvedValue({ userId: "u-other" });
+    expect(await acceptInvitation("tok")).toEqual({
+      error:
+        "You're signed in with a different account. Sign out first, then open the invitation link again.",
     });
     expect(mockTransaction).not.toHaveBeenCalled();
   });
@@ -123,20 +123,8 @@ describe("acceptInvitation() — Eingaben", () => {
 describe("acceptInvitation() — Zugang einrichten", () => {
   beforeEach(reset);
 
-  it("setzt Name und Passwort-Hash", async () => {
-    await acceptInvitation("tok", form(GOOD));
-    expect(mockTx.user.update).toHaveBeenCalledWith({
-      where: { id: "u-1" },
-      data: {
-        firstName: "Ada",
-        lastName: "Lovelace",
-        passwordHash: "hashed",
-      },
-    });
-  });
-
   it("hebt pending auf — erst damit greifen die Rechte der Rolle", async () => {
-    await acceptInvitation("tok", form(GOOD));
+    await acceptInvitation("tok");
     expect(mockTx.workspaceMember.update).toHaveBeenCalledWith({
       where: { workspaceId_userId: { workspaceId: "acme", userId: "u-1" } },
       data: { pending: false },
@@ -144,7 +132,7 @@ describe("acceptInvitation() — Zugang einrichten", () => {
   });
 
   it("nimmt die Person in die öffentlichen Projekte auf", async () => {
-    await acceptInvitation("tok", form(GOOD));
+    await acceptInvitation("tok");
     expect(mockTx.project.findMany.mock.calls[0][0].where.visibility).toBe(
       "public",
     );
@@ -152,29 +140,25 @@ describe("acceptInvitation() — Zugang einrichten", () => {
   });
 
   it("verbraucht den Token", async () => {
-    await acceptInvitation("tok", form(GOOD));
+    await acceptInvitation("tok");
     const call = mockTx.invitation.update.mock.calls[0][0];
     expect(call.where).toEqual({ token: "tok" });
     expect(call.data.acceptedAt).toBeInstanceOf(Date);
   });
 
-  it("meldet danach an und schickt in den Workspace", async () => {
-    expect(await acceptInvitation("tok", form(GOOD))).toEqual({
-      redirectTo: "/acme",
-    });
-    expect(mockSignIn).toHaveBeenCalledWith("credentials", {
-      email: "ada@example.com",
-      password: GOOD.password,
-      redirect: false,
-    });
+  it("schickt in den Workspace", async () => {
+    expect(await acceptInvitation("tok")).toEqual({ redirectTo: "/acme" });
   });
 
-  it("schickt zur Anmeldung, wenn der Login scheitert — der Zugang steht ja", async () => {
-    mockSignIn.mockRejectedValue(new AuthError("nope"));
-    expect(await acceptInvitation("tok", form(GOOD))).toEqual({
-      redirectTo: "/login",
-    });
-    expect(mockTx.invitation.update).toHaveBeenCalled();
+  it("protokolliert die Aufnahme", async () => {
+    await acceptInvitation("tok");
+    const entry = mockAuditLogCreate.mock.calls[0][0].data;
+    expect(entry.action).toBe("member.added");
+    expect(entry.actorId).toBe("u-1");
+    expect(entry.targetType).toBe("user");
+    expect(entry.targetId).toBe("u-1");
+    expect(entry.targetLabel).toBe("Ada Lovelace");
+    expect(entry.workspaceId).toBe("acme");
   });
 });
 
@@ -186,12 +170,12 @@ describe("acceptInvitation() — Projekt-Gast", () => {
     // schon steht. Zu heben gibt es hier nichts.
     mockTx.workspaceMember.findUnique.mockResolvedValue(null);
 
-    await acceptInvitation("tok", form(GOOD));
+    await acceptInvitation("tok");
 
-    expect(mockTx.user.update).toHaveBeenCalled();
     expect(mockTx.workspaceMember.update).not.toHaveBeenCalled();
     expect(mockTx.projectMember.createMany).not.toHaveBeenCalled();
     expect(mockTx.invitation.update).toHaveBeenCalled();
+    expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
 
   it("rührt eine schon angenommene Mitgliedschaft nicht an", async () => {
@@ -199,7 +183,8 @@ describe("acceptInvitation() — Projekt-Gast", () => {
       pending: false,
       role: { permissions: [] },
     });
-    await acceptInvitation("tok", form(GOOD));
+    await acceptInvitation("tok");
     expect(mockTx.workspaceMember.update).not.toHaveBeenCalled();
+    expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
 });

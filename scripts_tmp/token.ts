@@ -1,4 +1,5 @@
 import { encode } from "@auth/core/jwt";
+
 const token = await encode({
   token: {
     id: "cmskzllb300006xwowqrxewk3",

@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 import { type Prisma, PrismaClient } from "../lib/generated/prisma/client";
 import { enrollWorkspaceMembers } from "../lib/project-membership";
@@ -16,11 +15,6 @@ const db = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const WS = "nimbus";
 
-// Alle Seed-User bekommen dasselbe Passwort, damit sich jede Rolle für
-// Permission-Tests im Browser tatsächlich einloggen lässt (Login mit
-// z. B. mara@nimbus.io / DEV_PASSWORD).
-const DEV_PASSWORD = "test";
-
 // Bootstrap: erster Plattform-Admin (SaaS-Betreiber-Ebene über allen Workspaces).
 // u1 (Mara) wird global zum Plattform-Admin ernannt. Hat keinen Durchgriff auf
 // Tenant-Inhalte, nur auf Plattform-Operationen.
@@ -30,12 +24,6 @@ const PLATFORM_ADMIN_IDS = new Set(["u1"]);
 // jede Sperre (gesperrter Workspace, privates Projekt, `blocked`) durchbricht.
 // Zum Testen bewusst getrennt von `platform_admin`, der genau das NICHT darf.
 const PLATFORM_SUPPORT_IDS = new Set(["u18"]);
-
-// u21 (pending1) simuliert eine offene Einladung: `WorkspaceMember.pending`
-// steht schon, ein Passwort gibt es erst nach Annahme (siehe lib/invitations.ts)
-// — genau deshalb bekommt dieser User hier keinen Hash und kann sich (zu Recht)
-// nicht einloggen.
-const NO_PASSWORD_IDS = new Set(["u21"]);
 
 // u20 (deactivated1) testet die Sperre am Login selbst: `auth.ts` weist ein
 // stillgelegtes Konto zurück, noch bevor irgendeine Rolle geladen wird.
@@ -1028,11 +1016,6 @@ async function main() {
   await provisionSystemRbac(db);
   console.log("   ✓ RBAC permissions & shared system roles");
 
-  // Ein Hash für alle Seed-User: sie sind Testdaten, kein echtes Passwort pro
-  // Kopf nötig, aber ohne passwordHash könnte sich niemand einloggen und
-  // Rollen im Browser gegeneinander testen.
-  const devPasswordHash = await bcrypt.hash(DEV_PASSWORD, 12);
-
   for (const u of USERS) {
     const id = ref(realUserId, u.id, "user");
     const platformRoleKey = PLATFORM_ADMIN_IDS.has(u.id)
@@ -1041,10 +1024,9 @@ async function main() {
         ? "platform_support"
         : "platform_member";
     const roleId = systemRoleId("PLATFORM", platformRoleKey);
-    const passwordHash = NO_PASSWORD_IDS.has(u.id) ? null : devPasswordHash;
     await db.user.upsert({
       where: { id },
-      update: { platformRoleId: roleId, passwordHash },
+      update: { platformRoleId: roleId },
       create: {
         id,
         firstName: u.firstName,
@@ -1053,7 +1035,6 @@ async function main() {
         email: u.email,
         color: u.color,
         platformRoleId: roleId,
-        passwordHash,
       },
     });
   }
@@ -1067,7 +1048,15 @@ async function main() {
     },
     data: { deactivatedAt: new Date() },
   });
-  console.log(`   ✓ ${USERS.length} users (Login-Passwort: ${DEV_PASSWORD})`);
+  // Kein Passwort mehr. Ein Passkey lässt sich für eine schon existierende
+  // Adresse nur mit aktiver Sitzung registrieren (next-auth verweigert das
+  // sonst, `AccountNotLinked`) — für diese Seed-Konten bleibt also nur der
+  // Magic-Link-Weg, und der braucht lokal konfiguriertes SMTP (Mailpit o. ä.,
+  // siehe example.env). Ohne SMTP kommt aktuell niemand in ein Seed-Konto
+  // hinein — bewusst in Kauf genommen, es sind Testdaten.
+  console.log(
+    `   ✓ ${USERS.length} users (Login nur per Magic Link — SMTP nötig, siehe example.env)`,
+  );
 
   for (const m of WORKSPACE_MEMBERS) {
     const userId = ref(realUserId, m.userId, "member user");
