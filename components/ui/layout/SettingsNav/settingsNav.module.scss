@@ -106,10 +106,20 @@
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   flex: none;
+}
+
+/* Ersetzt den Farbpunkt im Auslöser, wenn ein hochgeladenes Bild vorliegt. */
+.dotImg {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: cover;
+  flex: none;
+  display: block;
 }
 
 .subject {

@@ -14,6 +14,8 @@ export interface NavLinkProps {
   activeHref?: string;
   badge?: number;
   color?: string;
+  /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
+  image?: string;
   onClick?: () => void;
 }
 
@@ -34,6 +36,7 @@ export function NavLink({
   activeHref,
   badge,
   color,
+  image,
   onClick,
 }: NavLinkProps) {
   const pathname = usePathname();
@@ -42,6 +45,9 @@ export function NavLink({
     return isNavActive(pathname, href, activeHref);
   }
   function LeadingIcon() {
+    if (image) {
+      return <img src={image} alt="" className={navStyles.avatarIcon} />;
+    }
     if (!icon) {
       return <Icon width={17} icon="material-symbols:circle" color={color} />;
     }

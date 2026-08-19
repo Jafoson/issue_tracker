@@ -18,6 +18,8 @@ interface Props {
   subject: string;
   /** Farbpunkt vor dem Namen. Ohne ihn steht der Name allein. */
   color?: string;
+  /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
+  image?: string;
   /**
    * Macht den Kopf zum Wechsler: Geschwister, zu deren gleichem Bereich man von
    * hier springen kann. Bei weniger als zwei Einträgen bleibt der Name stehen —
@@ -56,6 +58,7 @@ interface Props {
 export function SettingsNav({
   subject,
   color,
+  image,
   siblings,
   siblingsLabel,
   title,
@@ -72,17 +75,22 @@ export function SettingsNav({
         <SettingsSubjectMenu
           name={subject}
           color={color}
+          image={image}
           siblings={switchable}
           label={siblingsLabel}
         />
       ) : (
         <div className={styles.head}>
-          {color && (
-            <span
-              className={styles.dot}
-              style={{ background: color }}
-              aria-hidden
-            />
+          {image ? (
+            <img src={image} alt="" className={styles.dotImg} />
+          ) : (
+            color && (
+              <span
+                className={styles.dot}
+                style={{ background: color }}
+                aria-hidden
+              />
+            )
           )}
           <span className={styles.subject} title={subject}>
             {subject}

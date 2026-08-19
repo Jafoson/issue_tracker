@@ -99,6 +99,7 @@ export default async function AccountLayout({
         <SettingsNav
           subject={fullName(profile)}
           color={profile.color}
+          image={profile.avatarUrl ?? undefined}
           title={t("nav.account")}
           items={items}
         />

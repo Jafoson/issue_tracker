@@ -25,6 +25,12 @@ $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  // Ohne das: eine reine Bild-Kachel hat (anders als eine mit Initialen-Text)
+  // keine eigene Baseline, und der Browser weicht auf die untere Kante als
+  // Baseline aus — das reserviert Nachkommastellen-Platz darunter und schiebt
+  // sie sichtbar nach oben, sobald sie neben Text oder anderen Avataren in
+  // einer Inline-/Flex-Zeile steht (z. B. `AvatarStack`).
+  vertical-align: middle;
   flex: none;
   width: var(--avatar-size);
   height: var(--avatar-size);

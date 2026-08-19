@@ -11,6 +11,8 @@ export interface SettingsNavSubject {
   id: string;
   name: string;
   color: string;
+  /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
+  image?: string;
   /** Der gleiche Bereich beim Geschwister — in der Regel dessen Allgemein-Seite. */
   href: string;
   /**
@@ -25,6 +27,8 @@ interface Props {
   /** Wessen Einstellungen gerade offen sind — nur fürs Auge des Auslösers. */
   name: string;
   color: string;
+  /** Hochgeladenes Bild statt des Farbpunkts im Auslöser. */
+  image?: string;
   /**
    * Wohin man von hier springen kann, das offene Element eingeschlossen.
    * Bereits gefiltert: das Layout gibt nur weiter, was der Benutzer sehen darf.
@@ -49,7 +53,13 @@ interface Props {
  * derselben Regel. Der Auslöser ist ein Knopf, weil er nirgendwohin führt — er
  * klappt nur auf.
  */
-export function SettingsSubjectMenu({ name, color, siblings, label }: Props) {
+export function SettingsSubjectMenu({
+  name,
+  color,
+  image,
+  siblings,
+  label,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -64,11 +74,15 @@ export function SettingsSubjectMenu({ name, color, siblings, label }: Props) {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span
-          className={styles.dot}
-          style={{ background: color }}
-          aria-hidden
-        />
+        {image ? (
+          <img src={image} alt="" className={styles.dotImg} />
+        ) : (
+          <span
+            className={styles.dot}
+            style={{ background: color }}
+            aria-hidden
+          />
+        )}
         <span className={styles.subject} title={name}>
           {name}
         </span>
@@ -106,6 +120,7 @@ export function SettingsSubjectMenu({ name, color, siblings, label }: Props) {
                   href={item.href}
                   label={item.name}
                   color={item.color}
+                  image={item.image}
                   onClick={() => setOpen(false)}
                 />
               </div>

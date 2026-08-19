@@ -67,6 +67,7 @@ export default async function WorkspaceSettingsLayout({
     id: ws.id,
     name: ws.name,
     color: ws.color,
+    image: ws.avatarUrl ?? undefined,
     href: workspaceSettingsPath(ws.id, ""),
   }));
 
@@ -119,6 +120,7 @@ export default async function WorkspaceSettingsLayout({
         <SettingsNav
           subject={current.name}
           color={current.color}
+          image={current.avatarUrl ?? undefined}
           siblings={siblings}
           siblingsLabel={t("settings.scopeWorkspace")}
           title={t("nav.settings")}
