@@ -11,6 +11,7 @@ import { Resizer } from "@/components/ui/layout/Resizer/Resizer";
 import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
 import type { PMDoc } from "@/lib/richtext/types";
 import type { IssueDetail } from "@/types";
+import { IssueAttachments } from "./components/IssueAttachments";
 import { IssueComments } from "./components/IssueComments";
 import { IssueDescription } from "./components/IssueDescription";
 import {
@@ -63,6 +64,8 @@ interface IssueDetailViewProps {
   onPatch: (patch: IssuePatch) => void;
   onComment: (body: PMDoc) => Promise<void>;
   onDelete: () => void;
+  /** Holt das Issue neu — für Anhänge, die am Hook vorbei geschrieben werden. */
+  onRefresh: () => Promise<void>;
 }
 
 /** Reine Darstellung — alles, was schreibt, kommt als Callback herein. */
@@ -75,6 +78,7 @@ export function IssueDetailView({
   onPatch,
   onComment,
   onDelete,
+  onRefresh,
 }: IssueDetailViewProps) {
   const t = useTranslations();
   const isPanel = !isExpanded;
@@ -158,10 +162,18 @@ export function IssueDetailView({
             onPatch={onPatch}
           />
           <IssueDescription
+            issueId={issue.id}
             description={issue.description}
             data={data}
             readOnly={!issue.access.canEdit}
             onPatch={onPatch}
+            onRefresh={onRefresh}
+          />
+          <IssueAttachments
+            issueId={issue.id}
+            attachments={issue.attachments}
+            readOnly={!issue.access.canEdit}
+            onRefresh={onRefresh}
           />
           <IssueLabels
             issue={issue}
@@ -187,10 +199,18 @@ export function IssueDetailView({
               onPatch={onPatch}
             />
             <IssueDescription
+              issueId={issue.id}
               description={issue.description}
               data={data}
               readOnly={!issue.access.canEdit}
               onPatch={onPatch}
+              onRefresh={onRefresh}
+            />
+            <IssueAttachments
+              issueId={issue.id}
+              attachments={issue.attachments}
+              readOnly={!issue.access.canEdit}
+              onRefresh={onRefresh}
             />
             <IssueComments
               comments={issue.comments}

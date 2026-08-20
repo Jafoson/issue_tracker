@@ -418,6 +418,18 @@
     "empty": "No comments yet. Start the discussion.",
     "toSend": "to send"
   },
+  "attachments": {
+    "add": "Add attachment",
+    "addLink": "Add link",
+    "dropHintFiles": "Drag a file here or click to upload",
+    "dropHintLinks": "Click to add a link",
+    "emptyFiles": "No files",
+    "emptyLinks": "No links",
+    "files": "Files",
+    "links": "Links",
+    "remove": "Remove",
+    "title": "Attachments"
+  },
   "empty": {
     "noIssues": "No issues",
     "noAssignedIssues": "You have no assigned issues",
@@ -609,6 +621,11 @@
     "weeks": "{count}w ago"
   },
   "editor": {
+    "attachment": "Attachment",
+    "attachmentRemove": "Remove attachment",
+    "attachmentRemoveError": "Failed to remove",
+    "attachmentRemoved": "Attachment removed",
+    "attachmentUploadFailed": "Upload failed",
     "bold": "Bold",
     "bulletList": "Bulleted list",
     "close": "Close",

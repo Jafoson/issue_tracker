@@ -30,6 +30,7 @@ for (const name of [
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
   "S3_BUCKET_AVATARS",
+  "S3_BUCKET_ISSUES",
 ]) {
   delete process.env[name];
 }

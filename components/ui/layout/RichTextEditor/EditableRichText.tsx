@@ -12,7 +12,11 @@ import { onActivate } from "@/lib/a11y";
 import { isEmptyDoc, toDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 import styles from "./editableRichText.module.scss";
-import type { IssueSource, MentionSource } from "./RichTextEditor";
+import type {
+  IssueSource,
+  MentionSource,
+  UploadedAttachment,
+} from "./RichTextEditor";
 
 /**
  * Text, der sich anfassen lässt: im Ruhezustand das gerenderte Dokument, nach
@@ -58,6 +62,11 @@ interface EditableRichTextProps {
   actions?: boolean;
   members?: MentionSource[];
   issues?: IssueSource[];
+  /** Siehe `RichTextEditor` — Anhang hochladen/entfernen. Fehlt ⇒ Feature aus. */
+  onUploadAttachment?: (
+    file: File,
+  ) => Promise<UploadedAttachment | { error: string }>;
+  onRemoveAttachment?: (id: string) => Promise<void>;
   /** Beschriftungen der Anzeige — bislang nur der Codeblock. */
   labels?: Partial<RichTextLabels>;
   className?: string;
@@ -76,6 +85,8 @@ export function EditableRichText({
   actions = true,
   members,
   issues,
+  onUploadAttachment,
+  onRemoveAttachment,
   labels,
   className,
   readOnly = false,
@@ -234,6 +245,8 @@ export function EditableRichText({
           autoFocus
           members={members}
           issues={issues}
+          onUploadAttachment={onUploadAttachment}
+          onRemoveAttachment={onRemoveAttachment}
         />
       </fieldset>
 

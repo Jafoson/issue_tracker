@@ -6,6 +6,7 @@ import type { IssueComposerData, IssuePatch } from "@/features/issues/types";
 import { Link } from "@/i18n/navigation";
 import type { PMDoc } from "@/lib/richtext/types";
 import type { IssueDetail, Project } from "@/types";
+import { IssueAttachments } from "./components/IssueAttachments";
 import { IssueComments } from "./components/IssueComments";
 import { IssueDescription } from "./components/IssueDescription";
 import {
@@ -26,6 +27,8 @@ interface IssueDetailPageViewProps {
   onPatch: (patch: IssuePatch) => void;
   onComment: (body: PMDoc) => Promise<void>;
   onDelete: () => void;
+  /** Holt das Issue neu — für Anhänge, die am Hook vorbei geschrieben werden. */
+  onRefresh: () => Promise<void>;
 }
 
 /**
@@ -45,6 +48,7 @@ export function IssueDetailPageView({
   onPatch,
   onComment,
   onDelete,
+  onRefresh,
 }: IssueDetailPageViewProps) {
   const t = useTranslations();
   const identifier = `${project?.prefix ?? "?"}-${issue.key}`;
@@ -104,10 +108,18 @@ export function IssueDetailPageView({
             onPatch={onPatch}
           />
           <IssueDescription
+            issueId={issue.id}
             description={issue.description}
             data={data}
             readOnly={!issue.access.canEdit}
             onPatch={onPatch}
+            onRefresh={onRefresh}
+          />
+          <IssueAttachments
+            issueId={issue.id}
+            attachments={issue.attachments}
+            readOnly={!issue.access.canEdit}
+            onRefresh={onRefresh}
           />
           <IssueComments
             comments={issue.comments}

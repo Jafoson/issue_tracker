@@ -1,3 +1,12 @@
+export type {
+  AttachmentAttrs,
+  ResolvedAttachmentRef,
+} from "./attachments";
+export {
+  formatBytes,
+  stripAttachmentAttrs,
+  withResolvedAttachments,
+} from "./attachments";
 export { formatChipDate } from "./date";
 export {
   EMPTY_DOC,

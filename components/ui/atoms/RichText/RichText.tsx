@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { CopyButton } from "@/components/ui/layout/CopyButton/CopyButton";
+import { formatBytes } from "@/lib/richtext/attachments";
 import { languageLabel } from "@/lib/richtext/code";
 import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";
@@ -211,6 +212,71 @@ function renderNode(
       return <img key={key} src={src} alt={attr(node, "alt")} />;
     }
 
+    case "attachment": {
+      // `url`/`name`/`mimeType`/`size` sind bereits aufgelöst — der Aufrufer
+      // (`features/issues/queries.ts`, `withResolvedAttachments`) reichert sie
+      // an, bevor das Dokument hierher kommt. Fehlt `url` (Anhang gelöscht),
+      // bleibt ein stiller Platzhalter statt eines toten Bildes.
+      const src = safeUrl(node.attrs?.url);
+      const name = attr(node, "name");
+      const mimeType = attr(node, "mimeType");
+      const size = node.attrs?.size;
+      const sizeLabel = typeof size === "number" ? formatBytes(size) : null;
+
+      if (!src) {
+        return (
+          <div key={key} className={styles.attachmentMissing}>
+            {labels.attachmentRemoved}
+          </div>
+        );
+      }
+
+      if (mimeType.startsWith("image/")) {
+        return (
+          <div key={key} className={styles.attachmentImage}>
+            {/* biome-ignore lint/performance/noImgElement: presignte URL, next/image kann sie nicht optimieren */}
+            <img src={src} alt={name} className={styles.attachmentPreview} />
+            <div className={styles.attachmentCaption}>
+              <span className={styles.attachmentName}>{name}</span>
+              {sizeLabel && (
+                <span className={styles.attachmentSize}>{sizeLabel}</span>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      if (mimeType.startsWith("video/")) {
+        return (
+          <div key={key} className={styles.attachmentVideo}>
+            {/* biome-ignore lint/a11y/useMediaCaption: hochgeladene Anhänge tragen keine Untertitel */}
+            <video src={src} controls className={styles.attachmentPreview} />
+            <div className={styles.attachmentCaption}>
+              <span className={styles.attachmentName}>{name}</span>
+              {sizeLabel && (
+                <span className={styles.attachmentSize}>{sizeLabel}</span>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <a
+          key={key}
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.attachmentFile}
+        >
+          <span className={styles.attachmentName}>{name}</span>
+          {sizeLabel && (
+            <span className={styles.attachmentSize}>{sizeLabel}</span>
+          )}
+        </a>
+      );
+    }
+
     case "table":
       return (
         // Breite Tabellen scrollen in ihrem Block, statt das Panel zu dehnen.
@@ -372,11 +438,13 @@ function renderNode(
 export interface RichTextLabels {
   copy: string;
   copied: string;
+  attachmentRemoved: string;
 }
 
 const DEFAULT_LABELS: RichTextLabels = {
   copy: "Copy",
   copied: "Copied",
+  attachmentRemoved: "Attachment removed",
 };
 
 interface RichTextProps {

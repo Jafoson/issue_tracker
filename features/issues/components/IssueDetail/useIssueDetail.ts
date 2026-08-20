@@ -32,6 +32,13 @@ export interface IssueDetailState {
   patch: (patch: IssuePatch) => void;
   comment: (body: PMDoc) => Promise<void>;
   remove: () => void;
+  /**
+   * Holt das Issue erneut — für Änderungen, die am Hook vorbei geschrieben
+   * wurden (z. B. Anhänge: eigene Server Actions, kein `patch()`). Das Panel
+   * hängt an keinem Server-Render, ein bloßes `router.refresh()` allein
+   * berührt `fetched` unten nicht.
+   */
+  refresh: () => Promise<void>;
 }
 
 /**
@@ -117,5 +124,5 @@ export function useIssueDetail({
     });
   };
 
-  return { issue, isMissing, patch, comment, remove };
+  return { issue, isMissing, patch, comment, remove, refresh: reload };
 }

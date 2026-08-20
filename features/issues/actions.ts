@@ -24,12 +24,22 @@ import {
   requirePermission,
   requirePermissionOr,
 } from "@/lib/permissions";
+import { stripAttachmentAttrs } from "@/lib/richtext/attachments";
+import { hostOf } from "@/lib/richtext/link";
 import { mentionedUserIds, toPlainText, toPreview } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 import { slugify } from "@/lib/slug";
+import {
+  deleteAttachmentObject,
+  finalizeAttachmentUpload,
+  type RequestAttachmentUploadResult,
+  requestAttachmentUpload,
+  resolveAttachmentUrl,
+} from "@/lib/storage";
 import { uid } from "@/lib/utils/id";
 import { isValidEmail } from "@/lib/utils/parse-emails";
 import { isClosedStatus } from "@/lib/workspace-defaults";
+import type { IssueAttachment } from "@/types";
 
 async function revalidate() {
   revalidatePath("/", "layout");
@@ -408,9 +418,14 @@ export async function updateIssue(id: string, patch: IssuePatch) {
       ...(patch.labels !== undefined && { labels: patch.labels }),
       ...(patch.title !== undefined && { title: patch.title }),
       // Dokument und abgeleiteter Fließtext gehören zusammen — die Suche
-      // liefe sonst gegen einen veralteten Stand.
+      // liefe sonst gegen einen veralteten Stand. `stripAttachmentAttrs`
+      // wirft die nur zur Anzeige angereicherten Anhang-Attribute (url,
+      // name, mimeType, size) wieder ab — sonst landete eine presignte URL,
+      // die nach einer Stunde abläuft, dauerhaft in der Spalte.
       ...(patch.description !== undefined && {
-        description: patch.description as unknown as Prisma.InputJsonValue,
+        description: stripAttachmentAttrs(
+          patch.description,
+        ) as unknown as Prisma.InputJsonValue,
         descriptionText: toPlainText(patch.description),
       }),
     },
@@ -565,6 +580,134 @@ export async function updateIssue(id: string, patch: IssuePatch) {
   await revalidate();
 }
 
+// ── Anhänge ──────────────────────────────────────────────────────────────────
+//
+// Dieselbe Berechtigung wie beim Bearbeiten der Beschreibung selbst
+// (`issue.update.any`/`.own`) — ein Anhang ist Teil der Beschreibung, keine
+// eigene Permission nötig.
+
+async function requireAttachmentAccess(issueId: string) {
+  const issue = await issueContext(issueId);
+  const actorId = await requirePermissionOr([
+    { permission: "issue.update.any", ctx: { projectId: issue.projectId } },
+    {
+      permission: "issue.update.own",
+      ctx: { projectId: issue.projectId },
+      ownerIds: [issue.reporterId, issue.assigneeId],
+    },
+  ]);
+  return actorId;
+}
+
+export async function requestIssueAttachmentUpload(
+  issueId: string,
+  input: { fileName: string; contentType: string; contentLength: number },
+): Promise<RequestAttachmentUploadResult> {
+  await requireAttachmentAccess(issueId);
+  return requestAttachmentUpload({ issueId, ...input });
+}
+
+export async function confirmIssueAttachmentUpload(
+  issueId: string,
+  key: string,
+  input: { fileName: string; contentType: string },
+): Promise<{ ok: true; attachment: IssueAttachment } | { error: string }> {
+  const actorId = await requireAttachmentAccess(issueId);
+
+  const finalized = await finalizeAttachmentUpload(issueId, key);
+  if ("error" in finalized) return finalized;
+
+  const row = await db.attachment.create({
+    data: {
+      id: uid("att"),
+      issueId,
+      authorId: actorId,
+      kind: "file",
+      name: input.fileName,
+      key,
+      mimeType: input.contentType,
+      size: finalized.size,
+    },
+  });
+
+  await revalidate();
+  return {
+    ok: true,
+    attachment: {
+      id: row.id,
+      kind: "file",
+      name: row.name,
+      url: await resolveAttachmentUrl(row.key),
+      mimeType: row.mimeType,
+      size: row.size,
+      createdAt: row.created.getTime(),
+      authorId: row.authorId,
+    },
+  };
+}
+
+/** Nur `http(s)://` — dieselbe Zurückhaltung wie bei jeder anderen Adresse,
+ *  die in ein `href` wandert (siehe `lib/richtext/link.ts`). */
+function isWebUrl(href: string): boolean {
+  try {
+    return /^https?:$/i.test(new URL(href).protocol);
+  } catch {
+    return false;
+  }
+}
+
+export async function addIssueLinkAttachment(
+  issueId: string,
+  input: { url: string; name?: string },
+): Promise<{ ok: true; attachment: IssueAttachment } | { error: string }> {
+  const actorId = await requireAttachmentAccess(issueId);
+
+  const href = input.url.trim();
+  if (!isWebUrl(href)) return { error: "Only http(s) links are allowed." };
+
+  const row = await db.attachment.create({
+    data: {
+      id: uid("att"),
+      issueId,
+      authorId: actorId,
+      kind: "link",
+      name: input.name?.trim() || hostOf(href),
+      url: href,
+    },
+  });
+
+  await revalidate();
+  return {
+    ok: true,
+    attachment: {
+      id: row.id,
+      kind: "link",
+      name: row.name,
+      url: row.url,
+      mimeType: null,
+      size: null,
+      createdAt: row.created.getTime(),
+      authorId: row.authorId,
+    },
+  };
+}
+
+export async function deleteIssueAttachment(
+  issueId: string,
+  attachmentId: string,
+): Promise<{ ok: true } | { error: string }> {
+  await requireAttachmentAccess(issueId);
+
+  const row = await db.attachment.findUnique({ where: { id: attachmentId } });
+  if (!row || row.issueId !== issueId) return { error: "Not found." };
+
+  await db.attachment.delete({ where: { id: attachmentId } });
+  if (row.kind === "file") await deleteAttachmentObject(row.key);
+
+  await revalidate();
+  return { ok: true };
+}
+
 export async function createIssue(data: {
   title: string;
   description: PMDoc;
@@ -594,7 +737,9 @@ export async function createIssue(data: {
       id,
       key: lastIssueKey,
       title: data.title,
-      description: data.description as unknown as Prisma.InputJsonValue,
+      description: stripAttachmentAttrs(
+        data.description,
+      ) as unknown as Prisma.InputJsonValue,
       descriptionText: toPlainText(data.description),
       status: data.status,
       // Wer eine Aufgabe gleich als erledigt anlegt — nachgetragene Arbeit —

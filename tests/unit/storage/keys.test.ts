@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { avatarObjectKey, isOwnAvatarKey } from "@/lib/storage/keys";
+import {
+  attachmentObjectKey,
+  avatarObjectKey,
+  isOwnAttachmentKey,
+  isOwnAvatarKey,
+  sanitizeAttachmentExt,
+} from "@/lib/storage/keys";
 
 describe("avatarObjectKey()", () => {
   it("baut den Key aus Art, Owner-Id und einem zufälligen Suffix", () => {
@@ -27,5 +33,50 @@ describe("isOwnAvatarKey()", () => {
     expect(isOwnAvatarKey("user", "acme", "workspaces/acme/abc.png")).toBe(
       false,
     );
+  });
+});
+
+describe("sanitizeAttachmentExt()", () => {
+  it("liest die Endung aus dem Originalnamen", () => {
+    expect(sanitizeAttachmentExt("logs.txt")).toBe("txt");
+  });
+
+  it("kleinschreibt und entfernt unerlaubte Zeichen", () => {
+    expect(sanitizeAttachmentExt("Screenshot 2026.PNG")).toBe("png");
+  });
+
+  it("fällt ohne Endung auf 'bin' zurück", () => {
+    expect(sanitizeAttachmentExt("README")).toBe("bin");
+  });
+
+  it("fällt bei einem Punkt am Ende auf 'bin' zurück", () => {
+    expect(sanitizeAttachmentExt("archive.")).toBe("bin");
+  });
+
+  it("kappt eine ungewöhnlich lange Endung", () => {
+    expect(sanitizeAttachmentExt(`x.${"a".repeat(20)}`)).toHaveLength(10);
+  });
+});
+
+describe("attachmentObjectKey()", () => {
+  it("baut den Key aus der Issue-Id und einem zufälligen Suffix", () => {
+    const key = attachmentObjectKey("i-1", "pdf");
+    expect(key).toMatch(/^attachments\/i-1\/[0-9a-f-]{36}\.pdf$/);
+  });
+
+  it("erzeugt bei jedem Aufruf einen neuen Key — kein Überschreiben in-place", () => {
+    const a = attachmentObjectKey("i-1", "zip");
+    const b = attachmentObjectKey("i-1", "zip");
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("isOwnAttachmentKey()", () => {
+  it("erkennt einen Key des richtigen Issues", () => {
+    expect(isOwnAttachmentKey("i-1", "attachments/i-1/abc.png")).toBe(true);
+  });
+
+  it("lehnt einen Key eines anderen Issues ab", () => {
+    expect(isOwnAttachmentKey("i-1", "attachments/i-2/abc.png")).toBe(false);
   });
 });

@@ -26,6 +26,7 @@ import { CodeBlockView } from "./components/CodeBlockView/CodeBlockView";
 import { EditorToolbar } from "./components/EditorToolbar/EditorToolbar";
 import { LinkForm } from "./components/LinkForm/LinkForm";
 import type { SuggestionItem } from "./components/SuggestionMenu/SuggestionMenu";
+import { AttachmentNode } from "./extensions/attachment";
 import {
   DateChip,
   EmojiChip,
@@ -77,6 +78,15 @@ export interface IssueSource {
   icon?: React.ReactNode;
 }
 
+/** Was ein erfolgreicher Anhang-Upload an Attributen für den Knoten liefert. */
+export interface UploadedAttachment {
+  id: string;
+  url: string;
+  name: string;
+  mimeType: string | null;
+  size: number | null;
+}
+
 export interface RichTextEditorProps {
   value: PMDoc | unknown;
   onChange: (doc: PMDoc) => void;
@@ -87,6 +97,18 @@ export interface RichTextEditorProps {
   autoFocus?: boolean;
   members?: MentionSource[];
   issues?: IssueSource[];
+  /**
+   * Lädt eine Datei hoch (Werkzeugleiste, Drag&Drop, Einfügen aus der
+   * Zwischenablage) und liefert die aufgelösten Attribute für den Knoten.
+   * Fehlt sie, ist das Feature für diese Editor-Instanz aus (Kommentare,
+   * Create-Issue-Composer) — kein Werkzeugleisten-Knopf, kein Abfangen von
+   * Dateien beim Ablegen/Einfügen.
+   */
+  onUploadAttachment?: (
+    file: File,
+  ) => Promise<UploadedAttachment | { error: string }>;
+  /** Löscht einen Anhang serverseitig — an den `attachment`-Knoten gereicht. */
+  onRemoveAttachment?: (id: string) => Promise<void>;
   className?: string;
 }
 
@@ -99,6 +121,8 @@ export function RichTextEditor({
   autoFocus,
   members = [],
   issues = [],
+  onUploadAttachment,
+  onRemoveAttachment,
   className,
 }: RichTextEditorProps) {
   const t = useTranslations("editor");
@@ -107,6 +131,34 @@ export function RichTextEditor({
     null,
   );
   const editorRef = useRef<Editor | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+
+  /**
+   * Lädt hoch und fügt bei Erfolg den Knoten an der Cursor-Position ein — ein
+   * Absatz danach, sonst hat der Cursor nach einem Block-Atom keinen Platz,
+   * an dem es weitergeht.
+   */
+  const pickAttachment = useCallback(
+    async (file: File) => {
+      if (!onUploadAttachment) return;
+      setAttachmentError(null);
+      const result = await onUploadAttachment(file);
+      if ("error" in result) {
+        setAttachmentError(result.error);
+        return;
+      }
+      editorRef.current
+        ?.chain()
+        .focus()
+        .insertContent([
+          { type: "attachment", attrs: result },
+          { type: "paragraph" },
+        ])
+        .run();
+    },
+    [onUploadAttachment],
+  );
 
   /**
    * Hängt das Blatt an die Stelle, an der der Cursor gerade steht.
@@ -431,6 +483,7 @@ export function RichTextEditor({
         },
       }).configure({ openOnClick: false, autolink: true }),
       Image,
+      AttachmentNode.configure({ onRemove: onRemoveAttachment ?? null }),
       TaskList,
       TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: true } }),
@@ -450,7 +503,15 @@ export function RichTextEditor({
       date,
       slash,
     ];
-  }, [members, issues, placeholder, t, openCalendar, openLink]);
+  }, [
+    members,
+    issues,
+    placeholder,
+    t,
+    openCalendar,
+    openLink,
+    onRemoveAttachment,
+  ]);
 
   const editor = useEditor({
     extensions,
@@ -491,6 +552,26 @@ export function RichTextEditor({
 
         return false;
       },
+      // Dateien aus Drag&Drop bzw. der Zwischenablage (z. B. ein eingefügter
+      // Screenshot) laufen über denselben Upload-Pfad wie der
+      // Werkzeugleisten-Knopf. Ohne `onUploadAttachment` bleibt das
+      // Standardverhalten (Bild einfügen als Base64, Datei im Tab öffnen).
+      handleDrop: (_view, event) => {
+        if (!onUploadAttachment) return false;
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) return false;
+        event.preventDefault();
+        pickAttachment(file);
+        return true;
+      },
+      handlePaste: (_view, event) => {
+        if (!onUploadAttachment) return false;
+        const file = Array.from(event.clipboardData?.files ?? [])[0];
+        if (!file) return false;
+        event.preventDefault();
+        pickAttachment(file);
+        return true;
+      },
     },
     // `toPlainDoc` ist Pflicht, nicht Vorsicht: ProseMirrors Attribute haben
     // keinen Prototyp und überleben den Weg zu einer Server Function nicht.
@@ -501,7 +582,32 @@ export function RichTextEditor({
 
   return (
     <div className={[styles.editor, className].filter(Boolean).join(" ")}>
-      <EditorToolbar editor={editor} onLink={openLink} />
+      <EditorToolbar
+        editor={editor}
+        onLink={openLink}
+        onAttachment={
+          onUploadAttachment
+            ? () => attachmentInputRef.current?.click()
+            : undefined
+        }
+      />
+      {onUploadAttachment && (
+        <input
+          ref={attachmentInputRef}
+          type="file"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) pickAttachment(file);
+          }}
+        />
+      )}
+      {attachmentError && (
+        <p className={styles.attachmentError} role="alert">
+          {attachmentError}
+        </p>
+      )}
       {/* Der Ziehgriff ist kein fokussierbares Element: Ziehen nimmt dem Text
           den Fokus und gibt ihn an niemanden weiter. Danach zurückgeben, sonst
           steht der Cursor nach dem Vergrößern nicht mehr im Text.

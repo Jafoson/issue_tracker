@@ -13,6 +13,12 @@ export interface StorageConfig {
   accessKeyId: string;
   secretAccessKey: string;
   bucketAvatars: string;
+  /// `null` heißt: kein `S3_BUCKET_ISSUES` gesetzt — Issue-Anhänge bleiben
+  /// dann aus, unabhängig davon, ob Avatare konfiguriert sind. Anders als
+  /// `bucketAvatars` keine Voraussetzung dafür, dass `storageConfig()`
+  /// überhaupt etwas zurückgibt: ein reines Avatar-Setup soll unverändert
+  /// weiterlaufen, ohne den `issues`-Bucket zu kennen.
+  bucketIssues: string | null;
 }
 
 /**
@@ -35,9 +41,16 @@ export function storageConfig(): StorageConfig | null {
     accessKeyId,
     secretAccessKey,
     bucketAvatars,
+    bucketIssues: process.env.S3_BUCKET_ISSUES || null,
   };
 }
 
 export function isStorageConfigured(): boolean {
   return storageConfig() !== null;
+}
+
+/** Eigener Schalter für Issue-Anhänge — braucht zusätzlich `S3_BUCKET_ISSUES`. */
+export function isAttachmentsConfigured(): boolean {
+  const config = storageConfig();
+  return config !== null && config.bucketIssues !== null;
 }

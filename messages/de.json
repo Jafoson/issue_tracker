@@ -418,6 +418,18 @@
     "empty": "Noch keine Kommentare. Starte die Diskussion.",
     "toSend": "zum Senden"
   },
+  "attachments": {
+    "add": "Anhang hinzufügen",
+    "addLink": "Link hinzufügen",
+    "dropHintFiles": "Datei hierher ziehen oder klicken zum Hochladen",
+    "dropHintLinks": "Klicken, um einen Link hinzuzufügen",
+    "emptyFiles": "Keine Dateien",
+    "emptyLinks": "Keine Links",
+    "files": "Dateien",
+    "links": "Links",
+    "remove": "Entfernen",
+    "title": "Anhänge"
+  },
   "empty": {
     "noIssues": "Keine Aufgaben",
     "noAssignedIssues": "Dir sind keine Aufgaben zugewiesen",
@@ -609,6 +621,11 @@
     "weeks": "vor {count} Wo."
   },
   "editor": {
+    "attachment": "Anhang",
+    "attachmentRemove": "Anhang entfernen",
+    "attachmentRemoveError": "Entfernen fehlgeschlagen",
+    "attachmentRemoved": "Anhang entfernt",
+    "attachmentUploadFailed": "Hochladen fehlgeschlagen",
     "bold": "Fett",
     "bulletList": "Aufzählung",
     "close": "Schließen",

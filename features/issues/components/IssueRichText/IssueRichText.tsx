@@ -7,6 +7,7 @@ import { EditableRichText } from "@/components/ui/layout/RichTextEditor/Editable
 import type {
   IssueSource,
   MentionSource,
+  UploadedAttachment,
 } from "@/components/ui/layout/RichTextEditor/RichTextEditor";
 import { StatusIcon } from "@/features/issues/components/IssueIcons/IssueIcons";
 import type { IssueEditorData } from "@/features/issues/types";
@@ -38,6 +39,12 @@ interface IssueRichTextProps {
   actions?: boolean;
   /** Siehe `EditableRichText` — nur Anzeige, kein Klick öffnet den Editor. */
   readOnly?: boolean;
+  /** Siehe `RichTextEditor` — Anhang hochladen/entfernen. Fehlt ⇒ kein
+   *  Werkzeugleisten-Knopf, kein Abfangen von Dateien beim Ablegen/Einfügen. */
+  onUploadAttachment?: (
+    file: File,
+  ) => Promise<UploadedAttachment | { error: string }>;
+  onRemoveAttachment?: (id: string) => Promise<void>;
   className?: string;
 }
 
@@ -84,6 +91,8 @@ export function IssueRichText({
   cancelLabel,
   actions,
   readOnly,
+  onUploadAttachment,
+  onRemoveAttachment,
   className,
 }: IssueRichTextProps) {
   const { members, issues } = useEditorSources(data);
@@ -94,6 +103,7 @@ export function IssueRichText({
       labels={{
         copy: t("copy"),
         copied: t("copied"),
+        attachmentRemoved: t("attachmentRemoved"),
       }}
       value={value}
       onCommit={onCommit}
@@ -106,6 +116,8 @@ export function IssueRichText({
       readOnly={readOnly}
       members={members}
       issues={issues}
+      onUploadAttachment={onUploadAttachment}
+      onRemoveAttachment={onRemoveAttachment}
       className={className}
     />
   );

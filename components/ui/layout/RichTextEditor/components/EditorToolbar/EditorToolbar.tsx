@@ -31,15 +31,23 @@ type ToolId =
   | "taskList"
   | "quote"
   | "link"
-  | "image";
+  | "image"
+  | "attachment";
+
+interface ToolbarActions {
+  /** Öffnet die Adresszeile des Editors. */
+  onLink: () => void;
+  /** Öffnet den Datei-Dialog für einen Anhang. Fehlt, wo die Editor-Instanz
+   *  keine Anhänge anbietet (Kommentare, Create-Issue-Composer). */
+  onAttachment?: () => void;
+}
 
 interface ToolButton {
   id: ToolId;
   icon: string;
   /** Tastenkürzel, das im Tooltip hinter dem Namen steht. */
   shortcut?: string;
-  /** `onLink` öffnet die Adresszeile des Editors. */
-  run: (editor: Editor, onLink: () => void) => void;
+  run: (editor: Editor, actions: ToolbarActions) => void;
   /** Wann der Knopf als aktiv gilt. */
   active?: (editor: Editor) => boolean;
 }
@@ -110,7 +118,7 @@ const GROUPS: ToolButton[][] = [
       shortcut: "K",
       // Setzen, ändern und entfernen macht die Adresszeile — sie kennt den
       // bestehenden Link und bietet dann auch das Lösen an.
-      run: (_editor, onLink) => onLink(),
+      run: (_editor, { onLink }) => onLink(),
       active: (e) => e.isActive("link"),
     },
     {
@@ -121,6 +129,13 @@ const GROUPS: ToolButton[][] = [
         if (src) e.chain().focus().setImage({ src }).run();
       },
     },
+    {
+      id: "attachment",
+      icon: "lucide:paperclip",
+      // Öffnet den Datei-Dialog — der eigentliche Upload läuft in
+      // `RichTextEditor.tsx`, nach der Auswahl.
+      run: (_editor, { onAttachment }) => onAttachment?.(),
+    },
   ],
 ];
 
@@ -128,9 +143,15 @@ interface EditorToolbarProps {
   editor: Editor | null;
   /** Öffnet die Adresszeile für Links. */
   onLink: () => void;
+  /** Öffnet den Datei-Dialog für einen Anhang. Fehlt ⇒ kein Knopf dafür. */
+  onAttachment?: () => void;
 }
 
-export function EditorToolbar({ editor, onLink }: EditorToolbarProps) {
+export function EditorToolbar({
+  editor,
+  onLink,
+  onAttachment,
+}: EditorToolbarProps) {
   const t = useTranslations("editor");
 
   const active = useEditorState({
@@ -152,27 +173,30 @@ export function EditorToolbar({ editor, onLink }: EditorToolbarProps) {
       {GROUPS.map((group, index) => (
         <Fragment key={group[0].id}>
           {index > 0 && <span className={styles.divider} />}
-          {group.map((button) => (
-            <button
-              key={button.id}
-              type="button"
-              className={styles.btn}
-              data-active={active?.[button.id] ? "" : undefined}
-              aria-pressed={button.active ? !!active?.[button.id] : undefined}
-              aria-label={t(button.id)}
-              title={
-                button.shortcut
-                  ? `${t(button.id)} (${modKey()} + ${button.shortcut})`
-                  : t(button.id)
-              }
-              // Der Fokus muss im Text bleiben — sonst verliert der Befehl die
-              // Auswahl, auf die er sich bezieht.
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => button.run(editor, onLink)}
-            >
-              <Icon icon={button.icon} width={15} />
-            </button>
-          ))}
+          {group
+            // Kein Knopf für ein Feature, das diese Editor-Instanz nicht anbietet.
+            .filter((button) => button.id !== "attachment" || onAttachment)
+            .map((button) => (
+              <button
+                key={button.id}
+                type="button"
+                className={styles.btn}
+                data-active={active?.[button.id] ? "" : undefined}
+                aria-pressed={button.active ? !!active?.[button.id] : undefined}
+                aria-label={t(button.id)}
+                title={
+                  button.shortcut
+                    ? `${t(button.id)} (${modKey()} + ${button.shortcut})`
+                    : t(button.id)
+                }
+                // Der Fokus muss im Text bleiben — sonst verliert der Befehl
+                // die Auswahl, auf die er sich bezieht.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => button.run(editor, { onLink, onAttachment })}
+              >
+                <Icon icon={button.icon} width={15} />
+              </button>
+            ))}
         </Fragment>
       ))}
     </div>

@@ -9,12 +9,17 @@ import {
   hasPermission,
   visibleProjectIds,
 } from "@/lib/permissions";
+import {
+  type ResolvedAttachmentRef,
+  withResolvedAttachments,
+} from "@/lib/richtext/attachments";
 import { toDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
-import { resolveAvatarUrl } from "@/lib/storage";
+import { resolveAttachmentUrl, resolveAvatarUrl } from "@/lib/storage";
 import type {
   Issue,
   IssueAccess,
+  IssueAttachment,
   IssueDetail,
   IssueType,
   Label,
@@ -72,6 +77,71 @@ function mapIssue(i: {
       time: c.created.getTime(),
     })),
     shareUrl: i.shareToken ? issueShareUrl(i.shareToken) : null,
+  };
+}
+
+/**
+ * Löst die Anhänge eines Issues auf — nur für die beiden echten
+ * Detailansicht-Lader (`getIssueById`, `getIssueByRef`), nicht für
+ * Board/Liste (`getIssuesByProject`, `getMyIssues`): dort wird die volle
+ * Beschreibung nie gerendert, zusätzliche Storage-Aufrufe wären verschwendet.
+ *
+ * `kind: "file"` braucht eine presignte URL (`resolveAttachmentUrl`, wie bei
+ * Avataren pro Render frisch erzeugt, kein Cache); `kind: "link"` trägt die
+ * externe Adresse bereits fertig in der Spalte.
+ */
+async function resolveIssueAttachments(
+  rows: {
+    id: string;
+    kind: string;
+    name: string;
+    key: string | null;
+    url: string | null;
+    mimeType: string | null;
+    size: number | null;
+    created: Date;
+    authorId: string;
+  }[],
+): Promise<IssueAttachment[]> {
+  return Promise.all(
+    rows.map(async (a) => ({
+      id: a.id,
+      kind: a.kind === "link" ? ("link" as const) : ("file" as const),
+      name: a.name,
+      url: a.kind === "link" ? a.url : await resolveAttachmentUrl(a.key),
+      mimeType: a.mimeType,
+      size: a.size,
+      createdAt: a.created.getTime(),
+      authorId: a.authorId,
+    })),
+  );
+}
+
+/**
+ * Verbindet Anhänge mit dem Issue: baut die Nachschlagetabelle für
+ * `withResolvedAttachments` und reichert damit die Beschreibung an. Läuft
+ * nach `mapIssue`, weil sie deren `description` (schon `toDoc`-geprüft)
+ * braucht.
+ */
+function withIssueAttachments(
+  issue: Issue,
+  attachments: IssueAttachment[],
+): Issue & { attachments: IssueAttachment[] } {
+  const byId: Record<string, ResolvedAttachmentRef> = {};
+  for (const a of attachments) {
+    if (a.url) {
+      byId[a.id] = {
+        url: a.url,
+        name: a.name,
+        mimeType: a.mimeType,
+        size: a.size,
+      };
+    }
+  }
+  return {
+    ...issue,
+    description: withResolvedAttachments(issue.description, byId),
+    attachments,
   };
 }
 
@@ -421,10 +491,14 @@ export async function getIssuesByProject(
   // Zeilen desselben Projekts kostet das keine weitere Datenbankfrage. Board
   // und Liste zeigen sonst Titel, Status, Priorität und Zuständigkeit als
   // Bedienelemente, die der Server ohnehin ablehnen würde (`updateIssue`).
+  // Keine Anhänge hier: Board/Liste rendern die volle Beschreibung nie,
+  // zusätzliche Storage-Aufrufe für jede Zeile wären verschwendet (siehe
+  // `resolveIssueAttachments`).
   return Promise.all(
     rows.map(async (i) => ({
       ...mapIssue(i),
       access: await issueAccessFor(i),
+      attachments: [],
     })),
   );
 }
@@ -459,11 +533,13 @@ export async function getMyIssues(
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
   // Über mehrere Projekte hinweg löst `issueAccessFor` je vorkommendem Projekt
-  // einmal auf (`cache()`), nicht je Zeile.
+  // einmal auf (`cache()`), nicht je Zeile. Keine Anhänge — siehe
+  // `getIssuesByProject`.
   return Promise.all(
     rows.map(async (i) => ({
       ...mapIssue(i),
       access: await issueAccessFor(i),
+      attachments: [],
     })),
   );
 }
@@ -513,7 +589,10 @@ async function issueAccessFor(issue: {
 export async function getIssueById(id: string): Promise<IssueDetail | null> {
   const i = await db.issue.findUnique({
     where: { id },
-    include: { comments: { orderBy: { created: "asc" } } },
+    include: {
+      comments: { orderBy: { created: "asc" } },
+      attachments: { orderBy: { created: "asc" } },
+    },
   });
   if (!i) return null;
   // Ein einzelnes Issue über seine Id — der direkteste Weg an fremde Inhalte,
@@ -522,7 +601,8 @@ export async function getIssueById(id: string): Promise<IssueDetail | null> {
   if (!(await hasPermission("project.view", { projectId: i.projectId })))
     return null;
   const access = await issueAccessFor(i);
-  return { ...mapIssue(i), access };
+  const attachments = await resolveIssueAttachments(i.attachments);
+  return { ...withIssueAttachments(mapIssue(i), attachments), access };
 }
 
 /**
@@ -550,11 +630,15 @@ export const getIssueByRef = cache(
 
     const i = await db.issue.findUnique({
       where: { projectId_key: { projectId: project.id, key } },
-      include: { comments: { orderBy: { created: "asc" } } },
+      include: {
+        comments: { orderBy: { created: "asc" } },
+        attachments: { orderBy: { created: "asc" } },
+      },
     });
     if (!i) return null;
     const access = await issueAccessFor(i);
-    return { ...mapIssue(i), access };
+    const attachments = await resolveIssueAttachments(i.attachments);
+    return { ...withIssueAttachments(mapIssue(i), attachments), access };
   },
 );
 

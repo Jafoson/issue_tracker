@@ -40,7 +40,7 @@ export function IssueDetail({
   isExpanded = false,
   onToggleExpanded,
 }: IssueDetailProps) {
-  const { issue, isMissing, patch, comment, remove } = useIssueDetail({
+  const { issue, isMissing, patch, comment, remove, refresh } = useIssueDetail({
     issueRef,
     data,
     onDeleted: onClose,
@@ -64,6 +64,7 @@ export function IssueDetail({
       onPatch={patch}
       onComment={comment}
       onDelete={remove}
+      onRefresh={refresh}
     />
   );
 }

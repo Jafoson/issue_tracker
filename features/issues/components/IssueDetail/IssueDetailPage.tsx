@@ -35,6 +35,7 @@ export function IssueDetailPage({ issue, data }: IssueDetailPageProps) {
     patch,
     comment,
     remove,
+    refresh,
   } = useIssueDetail({
     issueRef: issue.id,
     data,
@@ -52,6 +53,7 @@ export function IssueDetailPage({ issue, data }: IssueDetailPageProps) {
       onPatch={patch}
       onComment={comment}
       onDelete={remove}
+      onRefresh={refresh}
     />
   );
 }

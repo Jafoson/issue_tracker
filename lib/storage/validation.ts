@@ -14,3 +14,8 @@ export const AVATAR_MIME_EXTENSIONS: Record<string, string> = {
 export function avatarExtensionFor(contentType: string): string | null {
   return AVATAR_MIME_EXTENSIONS[contentType] ?? null;
 }
+
+/// Jeder Dateityp ist erlaubt (Bilder, generell Dateien, Videos) — nur die
+/// Größe wird begrenzt. Großzügig genug für kurze Videoclips; an dieser
+/// einen Stelle leicht anzupassen.
+export const ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024; // 100 MB

@@ -45,6 +45,24 @@ export interface Comment {
   body: PMDoc;
 }
 
+/**
+ * Ein Anhang, wie ihn die Detailansicht lädt — bereits aufgelöst: `url` ist
+ * bei `kind: "file"` eine presignte S3-Adresse (eine Stunde gültig, bei jedem
+ * Render frisch erzeugt), bei `kind: "link"` die extern eingetragene Adresse
+ * unverändert. `null` heißt bei `kind: "file"`: Speicher nicht konfiguriert
+ * oder Objekt fehlt.
+ */
+export interface IssueAttachment {
+  id: string;
+  kind: "file" | "link";
+  name: string;
+  url: string | null;
+  mimeType: string | null;
+  size: number | null;
+  createdAt: number;
+  authorId: string;
+}
+
 export interface Issue {
   id: string;
   key: number;
@@ -91,4 +109,5 @@ export interface IssueAccess {
 /** Ein Issue, wie es die Detailansicht (Panel, Dialog, Vollseite) lädt. */
 export interface IssueDetail extends Issue {
   access: IssueAccess;
+  attachments: IssueAttachment[];
 }

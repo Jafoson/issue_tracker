@@ -342,3 +342,75 @@
   position: relative;
   counter-reset: codeline;
 }
+
+/* ─── Anhänge ──────────────────────────────────────────────────────────────── */
+
+/* Dieselbe Optik wie `AttachmentView` im Editor (`attachmentView.module.scss`)
+   — beim Speichern soll nichts springen, nur ohne die Entfernen-Schaltfläche. */
+
+.attachmentImage, .attachmentVideo {
+  margin: .7em 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-high);
+}
+
+.attachmentPreview {
+  display: block;
+  max-height: 360px;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.attachmentCaption {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--outline-variant);
+  font-size: var(--text-xs);
+}
+
+.attachmentName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--on-surface-variant);
+}
+
+.attachmentSize {
+  flex: none;
+  color: var(--outline);
+  font-variant-numeric: tabular-nums;
+}
+
+.attachmentFile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: .7em 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  text-decoration: none;
+  transition: background .12s;
+
+  &:hover { background: var(--surface-container-highest); text-decoration: none; }
+
+  .attachmentSize { margin-left: auto; }
+}
+
+.attachmentMissing {
+  margin: .7em 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--outline-variant);
+  color: var(--outline);
+  font-size: var(--text-sm);
+}

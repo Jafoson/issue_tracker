@@ -24,6 +24,13 @@
     border-color: var(--tertiary);  }
 }
 
+.attachmentError {
+  margin: 0;
+  padding: 4px 12px;
+  color: var(--error);
+  font-size: var(--text-xs);
+}
+
 .content {
   /* In der Höhe ziehbar — so war es beim abgelösten `textarea` auch.
      `resize` verlangt ein `overflow` ungleich `visible`; das liefert die

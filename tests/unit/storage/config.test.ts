@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { isStorageConfigured, storageConfig } from "@/lib/storage/config";
+import {
+  isAttachmentsConfigured,
+  isStorageConfigured,
+  storageConfig,
+} from "@/lib/storage/config";
 
 const S3_VARS = [
   "S3_ENDPOINT",
@@ -7,6 +11,7 @@ const S3_VARS = [
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
   "S3_BUCKET_AVATARS",
+  "S3_BUCKET_ISSUES",
 ] as const;
 
 function clearEnv() {
@@ -29,7 +34,7 @@ describe("storageConfig()", () => {
     expect(storageConfig()).toBeNull();
   });
 
-  it("liest Endpoint, Keys und Bucket aus der Umgebung", () => {
+  it("liest Endpoint, Keys und Bucket aus der Umgebung — ohne S3_BUCKET_ISSUES bleiben Anhänge aus", () => {
     process.env.S3_ENDPOINT = "http://localhost:9000";
     process.env.S3_REGION = "eu-central-1";
     process.env.S3_ACCESS_KEY_ID = "rustfsadmin";
@@ -42,8 +47,10 @@ describe("storageConfig()", () => {
       accessKeyId: "rustfsadmin",
       secretAccessKey: "rustfsadmin",
       bucketAvatars: "avatars",
+      bucketIssues: null,
     });
     expect(isStorageConfigured()).toBe(true);
+    expect(isAttachmentsConfigured()).toBe(false);
   });
 
   it("fällt ohne S3_REGION auf us-east-1 zurück", () => {
@@ -54,5 +61,16 @@ describe("storageConfig()", () => {
 
     const config = storageConfig();
     expect(config?.region).toBe("us-east-1");
+  });
+
+  it("liest S3_BUCKET_ISSUES unabhängig vom Avatar-Bucket", () => {
+    process.env.S3_ENDPOINT = "http://localhost:9000";
+    process.env.S3_ACCESS_KEY_ID = "id";
+    process.env.S3_SECRET_ACCESS_KEY = "secret";
+    process.env.S3_BUCKET_AVATARS = "avatars";
+    process.env.S3_BUCKET_ISSUES = "issues";
+
+    expect(storageConfig()?.bucketIssues).toBe("issues");
+    expect(isAttachmentsConfigured()).toBe(true);
   });
 });
