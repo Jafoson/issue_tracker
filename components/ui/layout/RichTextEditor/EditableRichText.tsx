@@ -1,6 +1,5 @@
 "use client";
 
-import { Icon } from "@iconify/react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/atoms/Button/Button";
@@ -20,8 +19,11 @@ import type {
 
 /**
  * Text, der sich anfassen lässt: im Ruhezustand das gerenderte Dokument, nach
- * einem Klick der Editor. Übernommen wird beim Verlassen, mit ⌘/Strg + Enter
- * oder über den Haken; verworfen mit Escape oder dem Kreuz.
+ * einem Klick der Editor. Mit eigenen Knöpfen (`actions`, der Normalfall)
+ * bleibt die Bearbeitung offen, bis jemand sie beendet — über Speichern,
+ * Abbrechen, Escape oder ⌘/Strg + Enter, nie durch bloßes Wegklicken (wie bei
+ * Jira). Ohne Knöpfe (`actions={false}`) übernimmt stattdessen das Verlassen
+ * des Felds, siehe `EditableRichTextProps.actions`.
  *
  * Der Editor kommt per `next/dynamic` — solange niemand schreibt, lädt der
  * Browser das Tiptap-Bündel gar nicht erst. Gelesen wird viel öfter als
@@ -67,6 +69,12 @@ interface EditableRichTextProps {
     file: File,
   ) => Promise<UploadedAttachment | { error: string }>;
   onRemoveAttachment?: (id: string) => Promise<void>;
+  /** Siehe `RichTextEditor` — Bild-URL als Anhang registrieren. */
+  onAddLinkAttachment?: (input: {
+    url: string;
+    name?: string;
+    mimeType?: string | null;
+  }) => Promise<UploadedAttachment | { error: string }>;
   /** Beschriftungen der Anzeige — bislang nur der Codeblock. */
   labels?: Partial<RichTextLabels>;
   className?: string;
@@ -87,6 +95,7 @@ export function EditableRichText({
   issues,
   onUploadAttachment,
   onRemoveAttachment,
+  onAddLinkAttachment,
   labels,
   className,
   readOnly = false,
@@ -107,6 +116,19 @@ export function EditableRichText({
    * das Feld würde mitten im Ziehen zuklappen. Der Merker hält es offen.
    */
   const pressedInside = useRef(false);
+
+  /**
+   * Ob gerade ein nativer Datei-Dialog offen ist (Anhang/Bild hochladen).
+   *
+   * Der native Dialog liegt außerhalb der Seite — das Fenster verliert dabei
+   * den Fokus, und `relatedTarget` im `blur`-Ereignis ist `null`, genau wie
+   * bei einem Klick ins Leere. Ohne diesen Merker beendete das Bearbeiten
+   * sich selbst, sobald der Dialog aufgeht, der Editor würde abgehängt, und
+   * die Auswahl einer Datei liefe ins Leere. Zurückgesetzt wird er, sobald
+   * das Fenster den Fokus zurückbekommt — der Dialog ist dann in jedem Fall
+   * zu, ob mit oder ohne Auswahl.
+   */
+  const filePickerOpen = useRef(false);
 
   // Ein neuer Wert von außen gewinnt; während des Bearbeitens bleibt er außen
   // vor, sonst überschriebe eine eintreffende Antwort das Getippte. Angleich
@@ -149,6 +171,15 @@ export function EditableRichText({
     };
     window.addEventListener("mouseup", release);
     return () => window.removeEventListener("mouseup", release);
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const release = () => {
+      filePickerOpen.current = false;
+    };
+    window.addEventListener("focus", release);
+    return () => window.removeEventListener("focus", release);
   }, [isEditing]);
 
   const commit = () => {
@@ -207,31 +238,44 @@ export function EditableRichText({
   return (
     <div className={className}>
       {/* Werkzeugleiste und Schreibfläche gehören zusammen, deshalb ein
-          `fieldset`. Der Fokus wandert zwischen beiden — erst wenn er den
-          Editor ganz verlässt, wird übernommen. */}
+          `fieldset`. Mit eigenen Knöpfen (`actions`) ist das reine Verlassen
+          ohne Bedeutung — siehe `onBlur` unten. */}
       <fieldset
         className={styles.shell}
         onMouseDown={() => {
           pressedInside.current = true;
         }}
-        onBlur={(e) => {
-          if (e.currentTarget.contains(e.relatedTarget)) return;
-          // Am Ziehgriff gedrückt: der Fokus ist zwar weg, der Editor aber
-          // nicht verlassen. Übernommen wird erst beim nächsten echten Blur.
-          if (pressedInside.current) return;
-          // Vorschlagsliste, Kalenderblatt und Adresszeile hängen per Portal
-          // am `body` und liegen damit außerhalb dieses Baums. Der Fokus ist
-          // zwar aus dem Text heraus, der Editor aber nicht verlassen — ohne
-          // die Ausnahme klappte er beim Öffnen sofort wieder zu und nähme das
-          // Portal gleich mit. Alle drei tragen dafür `data-editor-floating`.
-          if (
-            (e.relatedTarget as HTMLElement | null)?.closest(
-              "[data-editor-floating]",
-            )
-          )
-            return;
-          commit();
-        }}
+        onBlur={
+          // Mit eigenen Knöpfen bleibt die Bearbeitung stehen, ganz gleich
+          // wohin der Fokus wandert — verlassen wird sie nur über Speichern,
+          // Abbrechen oder Escape (wie bei Jira). Ohne Knöpfe (`actions={false}`,
+          // z.B. im Anlegen-Fenster mit eigenem „Fertig") gibt es diesen Weg
+          // nicht, dort übernimmt weiterhin das Verlassen des Felds.
+          actions
+            ? undefined
+            : (e) => {
+                if (e.currentTarget.contains(e.relatedTarget)) return;
+                // Am Ziehgriff gedrückt: der Fokus ist zwar weg, der Editor
+                // aber nicht verlassen. Übernommen wird erst beim nächsten
+                // echten Blur.
+                if (pressedInside.current) return;
+                // Ein nativer Datei-Dialog ist offen — siehe `filePickerOpen`.
+                if (filePickerOpen.current) return;
+                // Vorschlagsliste, Kalenderblatt und Adresszeile hängen per
+                // Portal am `body` und liegen damit außerhalb dieses Baums.
+                // Der Fokus ist zwar aus dem Text heraus, der Editor aber
+                // nicht verlassen — ohne die Ausnahme klappte er beim Öffnen
+                // sofort wieder zu und nähme das Portal gleich mit. Alle drei
+                // tragen dafür `data-editor-floating`.
+                if (
+                  (e.relatedTarget as HTMLElement | null)?.closest(
+                    "[data-editor-floating]",
+                  )
+                )
+                  return;
+                commit();
+              }
+        }
       >
         <RichTextEditor
           value={draft}
@@ -247,6 +291,10 @@ export function EditableRichText({
           issues={issues}
           onUploadAttachment={onUploadAttachment}
           onRemoveAttachment={onRemoveAttachment}
+          onAddLinkAttachment={onAddLinkAttachment}
+          onFilePickerOpen={() => {
+            filePickerOpen.current = true;
+          }}
         />
       </fieldset>
 
@@ -256,22 +304,20 @@ export function EditableRichText({
             variant="ghost"
             size="sm"
             tabIndex={-1}
-            icon={<Icon icon="lucide:x" width={15} />}
-            aria-label={cancelLabel}
-            title={cancelLabel}
             onMouseDown={(e) => e.preventDefault()}
             onClick={cancel}
-          />
+          >
+            {cancelLabel}
+          </Button>
           <Button
             variant="primary"
             size="sm"
             tabIndex={-1}
-            icon={<Icon icon="lucide:check" width={15} />}
-            aria-label={saveLabel}
-            title={saveLabel}
             onMouseDown={(e) => e.preventDefault()}
             onClick={commit}
-          />
+          >
+            {saveLabel}
+          </Button>
         </div>
       )}
     </div>

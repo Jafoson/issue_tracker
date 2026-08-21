@@ -2,7 +2,10 @@
 
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
-import { deleteIssueAttachment } from "@/features/issues/actions";
+import {
+  addIssueLinkAttachment,
+  deleteIssueAttachment,
+} from "@/features/issues/actions";
 import { IssueRichText } from "@/features/issues/components/IssueRichText/IssueRichText";
 import type { IssueEditorData, IssuePatch } from "@/features/issues/types";
 import { uploadIssueAttachment } from "@/features/issues/uploadAttachment";
@@ -85,6 +88,32 @@ export function IssueDescription({
                 const result = await deleteIssueAttachment(issueId, id);
                 if ("error" in result) throw new Error(result.error);
                 onRefresh();
+              }
+        }
+        onAddLinkAttachment={
+          readOnly
+            ? undefined
+            : async ({ url, name, mimeType }) => {
+                const result = await addIssueLinkAttachment(issueId, {
+                  url,
+                  name,
+                  mimeType,
+                });
+                if ("error" in result) return result;
+                const { attachment } = result;
+                if (!attachment.url) {
+                  return { error: t("editor.attachmentUploadFailed") };
+                }
+                // Nicht abwarten: der Knoten soll sofort erscheinen, die
+                // Anhänge-Sektion zieht kurz danach nach.
+                onRefresh();
+                return {
+                  id: attachment.id,
+                  url: attachment.url,
+                  name: attachment.name,
+                  mimeType: attachment.mimeType,
+                  size: attachment.size,
+                };
               }
         }
       />

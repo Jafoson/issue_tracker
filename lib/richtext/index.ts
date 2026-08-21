@@ -3,6 +3,10 @@ export type {
   ResolvedAttachmentRef,
 } from "./attachments";
 export {
+  ATTACHMENT_IMAGE_DEFAULT_WIDTH,
+  ATTACHMENT_IMAGE_MAX_WIDTH,
+  ATTACHMENT_IMAGE_MIN_WIDTH,
+  clampAttachmentWidth,
   formatBytes,
   stripAttachmentAttrs,
   withResolvedAttachments,
@@ -17,6 +21,7 @@ export {
   toPlainDoc,
 } from "./doc";
 export { fromMarkdown } from "./fromMarkdown";
+export { guessImageMimeType } from "./imageMime";
 export { mentionedUserIds, toPlainText, toPreview } from "./text";
 export type {
   DateChipAttrs,

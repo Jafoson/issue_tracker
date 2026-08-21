@@ -658,7 +658,7 @@ function isWebUrl(href: string): boolean {
 
 export async function addIssueLinkAttachment(
   issueId: string,
-  input: { url: string; name?: string },
+  input: { url: string; name?: string; mimeType?: string | null },
 ): Promise<{ ok: true; attachment: IssueAttachment } | { error: string }> {
   const actorId = await requireAttachmentAccess(issueId);
 
@@ -673,6 +673,7 @@ export async function addIssueLinkAttachment(
       kind: "link",
       name: input.name?.trim() || hostOf(href),
       url: href,
+      mimeType: input.mimeType ?? null,
     },
   });
 
@@ -684,7 +685,7 @@ export async function addIssueLinkAttachment(
       kind: "link",
       name: row.name,
       url: row.url,
-      mimeType: null,
+      mimeType: row.mimeType,
       size: null,
       createdAt: row.created.getTime(),
       authorId: row.authorId,

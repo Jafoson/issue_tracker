@@ -177,3 +177,30 @@
   background: transparent;
   cursor: default;
 }
+
+/* Die Auswahl im Anhang-Dialog — URL oder Datei-Upload. Fläche wie
+   `LinkForm`s `.form`, aus demselben Grund. */
+.attachmentChooser {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+
+.attachmentChooserOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--on-surface);
+  font-size: var(--text-sm);
+  text-align: left;
+  transition: background .12s;
+
+  &:hover { background: var(--surface-container-high); }
+}

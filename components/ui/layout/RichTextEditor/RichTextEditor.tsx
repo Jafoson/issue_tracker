@@ -20,6 +20,7 @@ import { modKey } from "@/lib/a11y";
 import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
 import { lowlight } from "@/lib/richtext/highlight";
+import { guessImageMimeType } from "@/lib/richtext/imageMime";
 import type { PMDoc } from "@/lib/richtext/types";
 import richText from "../../atoms/RichText/richText.module.scss";
 import { CodeBlockView } from "./components/CodeBlockView/CodeBlockView";
@@ -109,6 +110,24 @@ export interface RichTextEditorProps {
   ) => Promise<UploadedAttachment | { error: string }>;
   /** Löscht einen Anhang serverseitig — an den `attachment`-Knoten gereicht. */
   onRemoveAttachment?: (id: string) => Promise<void>;
+  /**
+   * Registriert eine externe Adresse als Anhang (kein Upload — der Anhang
+   * *ist* der Link), damit sie wie ein hochgeladener Anhang im Text erscheint
+   * und im Anhänge-Bereich auftaucht. Fehlt sie, bietet der Bild-Dialog nur
+   * den Datei-Upload (oder, fehlt auch der, das alte URL-Prompt).
+   */
+  onAddLinkAttachment?: (input: {
+    url: string;
+    name?: string;
+    mimeType?: string | null;
+  }) => Promise<UploadedAttachment | { error: string }>;
+  /**
+   * Läuft unmittelbar bevor ein nativer Datei-Dialog aufgeht (Anhang- oder
+   * Bild-Upload). Der Aufrufer (`EditableRichText`) hält damit das Bearbeiten
+   * offen, obwohl der Dialog dem Fenster kurz den Fokus nimmt — sonst bräche
+   * `onBlur` die Bearbeitung mitten im Hochladen ab.
+   */
+  onFilePickerOpen?: () => void;
   className?: string;
 }
 
@@ -123,6 +142,8 @@ export function RichTextEditor({
   issues = [],
   onUploadAttachment,
   onRemoveAttachment,
+  onAddLinkAttachment,
+  onFilePickerOpen,
   className,
 }: RichTextEditorProps) {
   const t = useTranslations("editor");
@@ -134,11 +155,18 @@ export function RichTextEditor({
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
 
-  /**
-   * Lädt hoch und fügt bei Erfolg den Knoten an der Cursor-Position ein — ein
-   * Absatz danach, sonst hat der Cursor nach einem Block-Atom keinen Platz,
-   * an dem es weitergeht.
-   */
+  /** Setzt den Knoten an der Cursor-Position — ein Inline-Atom wie ein Chip,
+   *  keine eigene Zeile: so passen mehrere kleine Bilder nebeneinander in
+   *  eine Zeile, statt dass jedes einen eigenen Absatz erzwingt. */
+  const insertAttachmentNode = useCallback((attrs: UploadedAttachment) => {
+    editorRef.current
+      ?.chain()
+      .focus()
+      .insertContent({ type: "attachment", attrs })
+      .run();
+  }, []);
+
+  /** Lädt hoch und fügt bei Erfolg den Knoten ein. */
   const pickAttachment = useCallback(
     async (file: File) => {
       if (!onUploadAttachment) return;
@@ -148,16 +176,31 @@ export function RichTextEditor({
         setAttachmentError(result.error);
         return;
       }
-      editorRef.current
-        ?.chain()
-        .focus()
-        .insertContent([
-          { type: "attachment", attrs: result },
-          { type: "paragraph" },
-        ])
-        .run();
+      insertAttachmentNode(result);
     },
-    [onUploadAttachment],
+    [onUploadAttachment, insertAttachmentNode],
+  );
+
+  /** Registriert eine URL als Anhang und fügt bei Erfolg den Knoten ein. Der
+   *  MIME-Type wird nur geraten, falls die Endung auf ein Bild schließen
+   *  lässt (`guessImageMimeType`) — bei allem anderen bleibt er `null` und
+   *  der Anhang landet als generische Datei-Karte statt als Bildvorschau. */
+  const pickAttachmentUrl = useCallback(
+    async (url: string, name: string) => {
+      if (!onAddLinkAttachment) return;
+      setAttachmentError(null);
+      const result = await onAddLinkAttachment({
+        url,
+        name: name || undefined,
+        mimeType: guessImageMimeType(url),
+      });
+      if ("error" in result) {
+        setAttachmentError(result.error);
+        return;
+      }
+      insertAttachmentNode(result);
+    },
+    [onAddLinkAttachment, insertAttachmentNode],
   );
 
   /**
@@ -201,6 +244,43 @@ export function RichTextEditor({
       withName: view.state.selection.empty,
     });
   }, []);
+
+  /** Wo der Anhang-Dialog steht, und ob er die Auswahl oder schon die
+   *  Adresszeile zeigt. `null` heißt: zu. */
+  const [attachmentPicker, setAttachmentPicker] = useState<{
+    x: number;
+    y: number;
+    mode: "choose" | "url";
+  } | null>(null);
+
+  /**
+   * Öffnet den Anhang-Dialog am Cursor — mit Auswahl zwischen URL und Upload,
+   * wenn beides zur Verfügung steht, sonst direkt mit dem, was da ist. Bietet
+   * die Editor-Instanz keins von beidem (Kommentare, Create-Issue-Composer),
+   * bleibt es beim alten, schlichten URL-Prompt (setzt einen rohen
+   * `image`-Knoten statt eines Anhangs — ohne Upload gibt es nichts, das
+   * getrackt werden könnte).
+   */
+  const openAttachmentPicker = useCallback(() => {
+    if (!onUploadAttachment && !onAddLinkAttachment) {
+      const src = window.prompt("https://");
+      if (src) editorRef.current?.chain().focus().setImage({ src }).run();
+      return;
+    }
+    if (!onAddLinkAttachment) {
+      onFilePickerOpen?.();
+      attachmentInputRef.current?.click();
+      return;
+    }
+    const view = editorRef.current?.view;
+    if (!view) return;
+    const at = view.coordsAtPos(view.state.selection.from);
+    setAttachmentPicker({
+      x: at.left,
+      y: at.bottom + 6,
+      mode: onUploadAttachment ? "choose" : "url",
+    });
+  }, [onUploadAttachment, onAddLinkAttachment, onFilePickerOpen]);
 
   /**
    * Zwei Wege, je nachdem, ob etwas markiert ist:
@@ -447,7 +527,11 @@ export function RichTextEditor({
         name: "slashCommand",
         char: "/",
         emptyLabel: () => t("noCommands"),
-        items: (query) => filterSlashItems(slashItems(t, openLink), query),
+        items: (query) =>
+          filterSlashItems(
+            slashItems(t, openLink, openAttachmentPicker),
+            query,
+          ),
         onSelect: ({ editor, range, item }) => item.run({ editor, range }),
       }),
     });
@@ -510,6 +594,7 @@ export function RichTextEditor({
     t,
     openCalendar,
     openLink,
+    openAttachmentPicker,
     onRemoveAttachment,
   ]);
 
@@ -585,11 +670,7 @@ export function RichTextEditor({
       <EditorToolbar
         editor={editor}
         onLink={openLink}
-        onAttachment={
-          onUploadAttachment
-            ? () => attachmentInputRef.current?.click()
-            : undefined
-        }
+        onAttachment={onUploadAttachment ? openAttachmentPicker : undefined}
       />
       {onUploadAttachment && (
         <input
@@ -687,6 +768,72 @@ export function RichTextEditor({
           </>,
           document.body,
         )}
+
+      {attachmentPicker &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              className={styles.floatingBackdrop}
+              data-editor-floating
+              aria-label={t("close")}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={dismiss(() => setAttachmentPicker(null))}
+            />
+            <div
+              className={styles.floatingLayer}
+              data-editor-floating
+              style={{ left: attachmentPicker.x, top: attachmentPicker.y }}
+            >
+              {attachmentPicker.mode === "choose" ? (
+                <div className={styles.attachmentChooser}>
+                  <button
+                    type="button"
+                    className={styles.attachmentChooserOption}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() =>
+                      setAttachmentPicker((p) =>
+                        p ? { ...p, mode: "url" } : p,
+                      )
+                    }
+                  >
+                    <Icon icon="lucide:link" width={15} />
+                    {t("attachmentFromUrl")}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.attachmentChooserOption}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setAttachmentPicker(null);
+                      onFilePickerOpen?.();
+                      attachmentInputRef.current?.click();
+                    }}
+                  >
+                    <Icon icon="lucide:upload" width={15} />
+                    {t("attachmentUpload")}
+                  </button>
+                </div>
+              ) : (
+                <LinkForm
+                  withName
+                  onSubmit={(href, name) => {
+                    setAttachmentPicker(null);
+                    pickAttachmentUrl(href, name);
+                  }}
+                  onCancel={dismiss(() => setAttachmentPicker(null))}
+                  label={t("attachmentUrlLabel")}
+                  placeholder={t("attachmentUrlPlaceholder")}
+                  nameLabel={t("linkName")}
+                  namePlaceholder={t("linkNamePlaceholder")}
+                  applyLabel={t("attachmentApply")}
+                  removeLabel={t("linkRemove")}
+                />
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -718,6 +865,7 @@ export function RichTextEditor({
 function slashItems(
   t: EditorTranslator,
   openLink: () => void,
+  openAttachmentPicker: () => void,
 ): SlashCommandItem[] {
   /** Erst den `/…`-Text wegnehmen, dann den Befehl ausführen. */
   const at = (editor: Editor, range: { from: number; to: number }) =>
@@ -890,6 +1038,28 @@ function slashItems(
       run: ({ editor, range }) => {
         at(editor, range).run();
         openLink();
+      },
+    },
+    {
+      id: "attachment",
+      label: t("attachment"),
+      keywords: [
+        "attachment",
+        "anhang",
+        "image",
+        "bild",
+        "foto",
+        "photo",
+        "picture",
+        "datei",
+        "file",
+        "upload",
+      ],
+      group: t("groupInsert"),
+      icon: <Icon icon="lucide:paperclip" width={16} />,
+      run: ({ editor, range }) => {
+        at(editor, range).run();
+        openAttachmentPicker();
       },
     },
     {

@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Chip } from "@/components/ui/atoms/Chip/Chip";
 import { CopyButton } from "@/components/ui/layout/CopyButton/CopyButton";
-import { formatBytes } from "@/lib/richtext/attachments";
+import { clampAttachmentWidth, formatBytes } from "@/lib/richtext/attachments";
 import { languageLabel } from "@/lib/richtext/code";
 import { formatChipDate } from "@/lib/richtext/date";
 import { toDoc } from "@/lib/richtext/doc";
@@ -232,23 +232,31 @@ function renderNode(
       }
 
       if (mimeType.startsWith("image/")) {
+        const width = clampAttachmentWidth(node.attrs?.width);
         return (
-          <div key={key} className={styles.attachmentImage}>
+          <div
+            key={key}
+            className={styles.attachmentImage}
+            style={{ width, maxWidth: "100%" }}
+          >
             {/* biome-ignore lint/performance/noImgElement: presignte URL, next/image kann sie nicht optimieren */}
-            <img src={src} alt={name} className={styles.attachmentPreview} />
-            <div className={styles.attachmentCaption}>
-              <span className={styles.attachmentName}>{name}</span>
-              {sizeLabel && (
-                <span className={styles.attachmentSize}>{sizeLabel}</span>
-              )}
-            </div>
+            <img
+              src={src}
+              alt={name}
+              className={styles.attachmentImagePreview}
+            />
           </div>
         );
       }
 
       if (mimeType.startsWith("video/")) {
+        const width = clampAttachmentWidth(node.attrs?.width);
         return (
-          <div key={key} className={styles.attachmentVideo}>
+          <div
+            key={key}
+            className={styles.attachmentVideo}
+            style={{ width, maxWidth: "100%" }}
+          >
             {/* biome-ignore lint/a11y/useMediaCaption: hochgeladene Anhänge tragen keine Untertitel */}
             <video src={src} controls className={styles.attachmentPreview} />
             <div className={styles.attachmentCaption}>

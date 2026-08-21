@@ -7,7 +7,17 @@ import { AttachmentView } from "../components/AttachmentView/AttachmentView";
  * sonstige Datei unterscheiden sich nur in der Darstellung (`mimeType`), nicht
  * im Schema.
  *
- * Persistiert wird **nur** `id` (als `data-id`) — `url`/`name`/`mimeType`/
+ * Ein Inline-Atom statt eines Blocks — wie ein sehr breiter Chip. So fließen
+ * mehrere kleine Bilder nebeneinander in einer Zeile statt dass jedes zwingend
+ * eine eigene Zeile bekommt (`ATTACHMENT_IMAGE_DEFAULT_WIDTH` in
+ * `lib/richtext/attachments.ts` hält sie dafür kompakt). Video und Datei
+ * bleiben trotzdem block-artig — nicht über das Schema, sondern über CSS
+ * (`display: block` in `attachmentView.module.scss`/`richText.module.scss`):
+ * bei ihnen wäre ein Nebeneinander unpraktisch, aber ein zweites Schema nur
+ * dafür unnötig.
+ *
+ * Persistiert werden **nur** `id` (als `data-id`) und `width` (als
+ * `data-width`, vom Ziehgriff im Editor gesetzt) — `url`/`name`/`mimeType`/
  * `size` sind reine Laufzeit-Attribute, mit `renderHTML: () => ({})` bewusst
  * vom HTML-Export ausgenommen: eine presignte URL läuft nach einer Stunde ab,
  * sie über Kopieren/Einfügen weiterzutragen wäre sinnlos. Beim nächsten Laden
@@ -25,7 +35,8 @@ export interface AttachmentOptions {
 
 export const AttachmentNode = Node.create<AttachmentOptions>({
   name: "attachment",
-  group: "block",
+  group: "inline",
+  inline: true,
   atom: true,
   selectable: true,
   draggable: true,
@@ -46,6 +57,18 @@ export const AttachmentNode = Node.create<AttachmentOptions>({
       name: { default: "", renderHTML: () => ({}) },
       mimeType: { default: null, renderHTML: () => ({}) },
       size: { default: null, renderHTML: () => ({}) },
+      width: {
+        default: null,
+        parseHTML: (element: HTMLElement) => {
+          const raw = element.getAttribute("data-width");
+          const n = raw ? Number(raw) : Number.NaN;
+          return Number.isFinite(n) ? n : null;
+        },
+        renderHTML: (attrs: Record<string, unknown>) =>
+          typeof attrs.width === "number"
+            ? { "data-width": String(attrs.width) }
+            : {},
+      },
     };
   },
 

@@ -227,6 +227,7 @@ describe("addIssueLinkAttachment()", () => {
       id: "att-2",
       name: "Figma",
       url: "https://figma.com/file/x",
+      mimeType: null,
       created: new Date("2026-01-01T00:00:00Z"),
       authorId: ACTOR,
     });
@@ -241,12 +242,35 @@ describe("addIssueLinkAttachment()", () => {
         kind: "link",
         name: "Figma",
         url: "https://figma.com/file/x",
+        mimeType: null,
       }),
     });
     if (!("ok" in result)) throw new Error("expected ok result");
     expect(result.attachment.kind).toBe("link");
     expect(result.attachment.mimeType).toBeNull();
     expect(result.attachment.size).toBeNull();
+  });
+
+  it("reicht einen geratenen Bild-MIME-Type durch", async () => {
+    mockAttachmentCreate.mockResolvedValue({
+      id: "att-img",
+      name: "photo.png",
+      url: "https://example.com/photo.png",
+      mimeType: "image/png",
+      created: new Date("2026-01-01T00:00:00Z"),
+      authorId: ACTOR,
+    });
+
+    const result = await addIssueLinkAttachment(ISSUE_ID, {
+      url: "https://example.com/photo.png",
+      mimeType: "image/png",
+    });
+
+    expect(mockAttachmentCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ mimeType: "image/png" }),
+    });
+    if (!("ok" in result)) throw new Error("expected ok result");
+    expect(result.attachment.mimeType).toBe("image/png");
   });
 
   it("leitet den Namen aus dem Hostnamen ab, wenn keiner angegeben ist", async () => {

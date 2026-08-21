@@ -1,6 +1,45 @@
 /* Anhang im Editor — dieselbe Optik wie in der Anzeige (`richText.module.scss`),
    nur mit einer Entfernen-Schaltfläche obendrauf. */
 
+/* Tiptap hängt einen Inline-Node-View (siehe `inline: true` in
+   `extensions/attachment.ts`) in eine eigene `<span class="node-attachment">`
+   — die `ReactNodeView`-Klasse in `@tiptap/react` erzeugt sie automatisch
+   und reicht sie als tatsächliches DOM-Element an ProseMirror weiter.
+   *Diese* Spanne bekommt beim Auswählen `.ProseMirror-selectednode`
+   (`richTextEditor.module.scss`), nicht `.image`/`.video`/… selbst — die
+   sitzen als Kind darin. Ohne eigenes `display` bliebe die Spanne ein reines
+   Inline-Element, nach der Zeilenhöhe des umgebenden Fließtexts vermessen —
+   die Markierung säße dann sichtbar über dem Bild statt es zu umschließen.
+   `:has()` spiegelt hier nur nach außen, was das Kind an Layout ohnehin will
+   (`.image` fließt inline, `.video`/`.file`/`.missing` bleiben je eine
+   eigene Zeile). Bei `.image` bleibt die Markierung selbst ganz aus: die acht
+   Ziehgriffe zeigen die Auswahl schon an, wie beim Bild-Resizen sonst üblich
+   (Word, PowerPoint, …) — ein zusätzlicher Rahmen wäre doppelt.
+
+   Das `:has()` prüft ein `data-kind`-Attribut statt der Klasse
+   `.image`/`.video`/… selbst — Attribute sind nie vom Hashing lokaler
+   CSS-Modul-Klassen betroffen, ein Klassenname innerhalb eines `:has()`
+   unter `:global(...)` dagegen schon, je nach genauer Sass/PostCSS-Kette.
+
+   `outline: none` steht mit `!important`: Die eigentliche Auswahl-Markierung
+   kommt aus `richTextEditor.module.scss` (`.surface .ProseMirror-selectednode`)
+   — zwei Klassen, exakt dieselbe Spezifität wie `.node-attachment:has(…)`
+   hier. Bei Gleichstand entscheidet allein die Lade-Reihenfolge der
+   CSS-Chunks, welche Regel gewinnt — ohne `!important` blitzte die fremde
+   Outline je nach Bundling mal durch, mal nicht. */
+:global(.node-attachment) {
+  &:has([data-kind="image"]) {
+    display: inline-block;
+    vertical-align: top;
+    outline: none !important;
+  }
+  &:has([data-kind="video"]),
+  &:has([data-kind="file"]),
+  &:has([data-kind="missing"]) {
+    display: block;
+  }
+}
+
 .remove {
   position: absolute;
   top: 6px;
@@ -23,27 +62,69 @@
 
 .image, .video, .file { &:hover .remove { opacity: 1; } }
 
-.image, .video {
+.image {
   position: relative;
+  max-width: 100%;
+  /* Inline-Atom (siehe `extensions/attachment.ts`) — mehrere kleine Bilder
+     fließen so nebeneinander wie in Word, statt dass jedes eine eigene Zeile
+     erzwingt. `vertical-align: top`, damit unterschiedlich hohe Bilder in
+     einer Zeile nicht an der Grundlinie ausgerichtet werden. */
+  display: inline-block;
+  vertical-align: top;
+  margin: 2px 6px 2px 0;
+  /* Kein Rahmen, kein Hintergrund, keine Rundung — nur das Bild selbst und
+     seine Ziehgriffe, wie beim Bild-Resizen in Word/PowerPoint/Google Docs. */
+}
+
+/* Bleibt eine Karte mit Rahmen — Video behält seine Bildunterschrift (Name,
+   Größe), die braucht eine sichtbare Fläche, an der sie hängt. Kein
+   `overflow: hidden` (mehr): das schnitte die halb herausragenden Ziehgriffe
+   ab. Die Rundung übernehmen `.videoPlayer` (oben) und `.caption` (unten)
+   deshalb einzeln, statt sie vom Rahmen abschneiden zu lassen. */
+.video {
+  position: relative;
+  max-width: 100%;
+  display: block;
   margin: .7em 0;
   border-radius: var(--radius-sm);
-  overflow: hidden;
   border: 1px solid var(--outline-variant);
   background: var(--surface-container-high);
 }
 
 .imagePreview {
   display: block;
-  max-height: 360px;
-  width: auto;
-  max-width: 100%;
-  margin: 0 auto;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
+/* Die acht Ziehgriffe — vier Ecken, vier Kantenmitten —, mittig auf dem Rand
+   sitzend wie in jedem gängigen Programm. Erscheinen nur, solange der Anhang
+   ausgewählt ist (`AttachmentView.tsx` rendert sie dann erst). */
+.resizeHandle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -5px;
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  box-sizing: border-box;
+
+  &[data-pos="tl"] { top: 0; left: 0; }
+  &[data-pos="t"]  { top: 0; left: 50%; }
+  &[data-pos="tr"] { top: 0; left: 100%; }
+  &[data-pos="r"]  { top: 50%; left: 100%; }
+  &[data-pos="br"] { top: 100%; left: 100%; }
+  &[data-pos="b"]  { top: 100%; left: 50%; }
+  &[data-pos="bl"] { top: 100%; left: 0; }
+  &[data-pos="l"]  { top: 50%; left: 0; }
 }
 
 .videoPlayer {
   display: block;
   width: 100%;
-  max-height: 360px;
+  height: auto;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
 .caption {
@@ -52,6 +133,7 @@
   gap: 8px;
   padding: 6px 10px;
   border-top: 1px solid var(--outline-variant);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   font-size: var(--text-xs);
 }
 

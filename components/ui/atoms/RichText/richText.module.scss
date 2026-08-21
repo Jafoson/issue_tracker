@@ -348,20 +348,44 @@
 /* Dieselbe Optik wie `AttachmentView` im Editor (`attachmentView.module.scss`)
    — beim Speichern soll nichts springen, nur ohne die Entfernen-Schaltfläche. */
 
+/* Die tatsächliche Breite kommt als Inline-Stil (siehe `RichText.tsx`,
+   `clampAttachmentWidth` in `lib/richtext/attachments.ts`) — dieselbe, die
+   beim Bearbeiten am Ziehgriff gesetzt wurde. Hier nur die Obergrenze, damit
+   sie die Spalte nie sprengt. */
 .attachmentImage, .attachmentVideo {
-  margin: .7em 0;
+  max-width: 100%;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--outline-variant);
   background: var(--surface-container-high);
 }
 
+/* Inline im Fließtext wie im Editor (`attachmentView.module.scss`) — mehrere
+   kleine Bilder passen so nebeneinander in eine Zeile. */
+.attachmentImage {
+  display: inline-block;
+  vertical-align: top;
+  margin: 2px 6px 2px 0;
+}
+
+/* Bleibt block-artig, trotz desselben Schemas wie das Bild — siehe
+   Kommentar in `extensions/attachment.ts`. */
+.attachmentVideo {
+  display: block;
+  margin: .7em 0;
+}
+
+.attachmentImagePreview {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
 .attachmentPreview {
   display: block;
-  max-height: 360px;
-  width: auto;
-  max-width: 100%;
-  margin: 0 auto;
+  width: 100%;
+  height: auto;
 }
 
 .attachmentCaption {

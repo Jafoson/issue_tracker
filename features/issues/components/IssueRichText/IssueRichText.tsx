@@ -45,6 +45,12 @@ interface IssueRichTextProps {
     file: File,
   ) => Promise<UploadedAttachment | { error: string }>;
   onRemoveAttachment?: (id: string) => Promise<void>;
+  /** Siehe `RichTextEditor` — Bild-URL als Anhang registrieren. */
+  onAddLinkAttachment?: (input: {
+    url: string;
+    name?: string;
+    mimeType?: string | null;
+  }) => Promise<UploadedAttachment | { error: string }>;
   className?: string;
 }
 
@@ -93,6 +99,7 @@ export function IssueRichText({
   readOnly,
   onUploadAttachment,
   onRemoveAttachment,
+  onAddLinkAttachment,
   className,
 }: IssueRichTextProps) {
   const { members, issues } = useEditorSources(data);
@@ -118,6 +125,7 @@ export function IssueRichText({
       issues={issues}
       onUploadAttachment={onUploadAttachment}
       onRemoveAttachment={onRemoveAttachment}
+      onAddLinkAttachment={onAddLinkAttachment}
       className={className}
     />
   );

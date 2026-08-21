@@ -33,12 +33,14 @@ function iconFor(mimeType: string | null): string {
   return "lucide:file";
 }
 
-/** Vorschau einer einzelnen Kachel: echtes Bild bei einem Bild-Anhang, das
- *  Favicon der Seite bei einem Link (dieselbe Herleitung wie beim Link-Chip
- *  im Editor, `lib/richtext/link.ts`), sonst ein Symbol nach Art der Datei. */
+/** Vorschau einer einzelnen Kachel: echtes Bild bei einem Bild-Anhang — Upload
+ *  oder Link mit erkanntem Bild-MIME-Type (siehe `guessImageMimeType`,
+ *  `lib/richtext/imageMime.ts`) —, das Favicon der Seite bei einem sonstigen
+ *  Link (dieselbe Herleitung wie beim Link-Chip im Editor,
+ *  `lib/richtext/link.ts`), sonst ein Symbol nach Art der Datei. */
 function TilePreview({ a }: { a: IssueAttachment }) {
-  if (a.kind === "file" && a.mimeType?.startsWith("image/") && a.url) {
-    // biome-ignore lint/performance/noImgElement: presignte URL, next/image kann sie nicht optimieren
+  if (a.mimeType?.startsWith("image/") && a.url) {
+    // biome-ignore lint/performance/noImgElement: presignte bzw. externe Adresse, next/image kann sie nicht optimieren
     return <img src={a.url} alt="" />;
   }
   const favicon = a.kind === "link" ? faviconOf(a.url ?? "") : null;
@@ -59,6 +61,66 @@ function TilePreview({ a }: { a: IssueAttachment }) {
   );
 }
 
+/**
+ * Menü hinter dem Hinzufügen-Knopf: Datei hochladen oder Link setzen — wie
+ * der Bild-Dialog im Editor (`RichTextEditor.tsx`s `imagePicker`). Eigene
+ * Komponente statt Zustand im Aufrufer, weil `Popover` seinen Inhalt beim
+ * Schließen ganz aushängt (`if (!open) return null`) — jedes Öffnen beginnt
+ * damit von selbst wieder bei der Auswahl, nie mitten im Link-Formular.
+ */
+function AddAttachmentMenu({
+  onPickFile,
+  onSubmitLink,
+  close,
+}: {
+  onPickFile: () => void;
+  onSubmitLink: (href: string, name: string) => void;
+  close: () => void;
+}) {
+  const t = useTranslations();
+  const [mode, setMode] = useState<"choose" | "link">("choose");
+
+  if (mode === "link") {
+    return (
+      <LinkForm
+        withName
+        onSubmit={onSubmitLink}
+        onCancel={close}
+        label={t("editor.link")}
+        placeholder={t("editor.linkPlaceholder")}
+        nameLabel={t("editor.linkName")}
+        namePlaceholder={t("editor.linkNamePlaceholder")}
+        applyLabel={t("editor.linkApply")}
+        removeLabel={t("editor.linkRemove")}
+      />
+    );
+  }
+
+  return (
+    <div className={styles.attachmentChooser}>
+      <button
+        type="button"
+        className={styles.attachmentChooserOption}
+        onClick={() => {
+          close();
+          onPickFile();
+        }}
+      >
+        <Icon icon="lucide:upload" width={15} />
+        {t("attachments.addFile")}
+      </button>
+      <button
+        type="button"
+        className={styles.attachmentChooserOption}
+        onClick={() => setMode("link")}
+      >
+        <Icon icon="lucide:link" width={15} />
+        {t("attachments.addLink")}
+      </button>
+    </div>
+  );
+}
+
 export function IssueAttachments({
   issueId,
   attachments,
@@ -66,15 +128,13 @@ export function IssueAttachments({
   onRefresh,
 }: IssueAttachmentsProps) {
   const t = useTranslations();
-  const [tab, setTab] = useState<"file" | "link">("file");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const rows = attachments.filter((a) => a.kind === tab);
   const canAdd = !readOnly;
-  const isEmpty = rows.length === 0;
+  const isEmpty = attachments.length === 0;
 
   const upload = async (file: File) => {
     setError(null);
@@ -134,22 +194,47 @@ export function IssueAttachments({
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
-    if (tab !== "file" || !canAdd) return;
+    if (!canAdd) return;
     if (e.dataTransfer.files.length) uploadAll(e.dataTransfer.files);
   };
 
-  const linkForm = (close: () => void) => (
-    <LinkForm
-      withName
-      onSubmit={(href, name) => addLink(href, name, close)}
-      onCancel={close}
-      label={t("editor.link")}
-      placeholder={t("editor.linkPlaceholder")}
-      nameLabel={t("editor.linkName")}
-      namePlaceholder={t("editor.linkNamePlaceholder")}
-      applyLabel={t("editor.linkApply")}
-      removeLabel={t("editor.linkRemove")}
-    />
+  /** Derselbe Hinzufügen-Knopf für die leere Box und die Kachel-Übersicht —
+   *  nur die Beschriftung/Größe unterscheidet sich. */
+  const addTrigger = (variant: "empty" | "tile") => (
+    <InlinePicker
+      width={200}
+      align="start"
+      stop
+      trigger={
+        variant === "empty" ? (
+          <button
+            type="button"
+            className={styles.attachmentEmptyAction}
+            disabled={busy}
+          >
+            <Icon icon="lucide:paperclip" width={20} aria-hidden="true" />
+            <span>{t("attachments.dropHint")}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={styles.attachmentTileAdd}
+            disabled={busy}
+          >
+            <Icon icon="lucide:plus" width={18} aria-hidden="true" />
+            <span>{t("attachments.add")}</span>
+          </button>
+        )
+      }
+    >
+      {(close) => (
+        <AddAttachmentMenu
+          close={close}
+          onPickFile={() => fileInputRef.current?.click()}
+          onSubmitLink={(href, name) => addLink(href, name, close)}
+        />
+      )}
+    </InlinePicker>
   );
 
   return (
@@ -159,39 +244,16 @@ export function IssueAttachments({
         <h3 className={styles.sectionTitle}>{t("attachments.title")}</h3>
       </header>
 
-      <div className={styles.attachmentTabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "file"}
-          className={styles.attachmentTab}
-          data-active={tab === "file" ? "" : undefined}
-          onClick={() => setTab("file")}
-        >
-          {t("attachments.files")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "link"}
-          className={styles.attachmentTab}
-          data-active={tab === "link" ? "" : undefined}
-          onClick={() => setTab("link")}
-        >
-          {t("attachments.links")}
-        </button>
-      </div>
-
-      {/* Eine Box für beides: Drag&Drop-Ziel bei „Dateien" (auf eine Adresse
-          lässt sich nichts fallen) und die Kachel-Übersicht des Reiters. Leer
-          ist sie selbst schon die Aufforderung, statt nur eine Fehlanzeige
-          zu zeigen. */}
+      {/* Eine Box für beides: Drag&Drop-Ziel und Kachel-Übersicht zugleich —
+          ein fallen gelassener Anhang landet in genau der Fläche, die ihn
+          ohnehin schon zeigen würde. Leer ist sie selbst schon die
+          Aufforderung, statt nur eine Fehlanzeige zu zeigen. */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: Drag&Drop-Ziel — die eigentliche Bedienung sitzt in den Kacheln/Knöpfen darin */}
       <div
         className={styles.attachmentBox}
         data-drag-over={dragOver ? "" : undefined}
         onDragOver={(e) => {
-          if (tab !== "file" || !canAdd) return;
+          if (!canAdd) return;
           e.preventDefault();
           setDragOver(true);
         }}
@@ -200,47 +262,15 @@ export function IssueAttachments({
       >
         {isEmpty ? (
           canAdd ? (
-            tab === "file" ? (
-              <button
-                type="button"
-                className={styles.attachmentEmptyAction}
-                disabled={busy}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Icon icon="lucide:upload" width={20} aria-hidden="true" />
-                <span>{t("attachments.dropHintFiles")}</span>
-              </button>
-            ) : (
-              <InlinePicker
-                width={280}
-                align="start"
-                stop
-                trigger={
-                  <button
-                    type="button"
-                    className={styles.attachmentEmptyAction}
-                    disabled={busy}
-                  >
-                    <Icon icon="lucide:link" width={20} aria-hidden="true" />
-                    <span>{t("attachments.dropHintLinks")}</span>
-                  </button>
-                }
-              >
-                {linkForm}
-              </InlinePicker>
-            )
+            addTrigger("empty")
           ) : (
             <span className={styles.attachmentEmpty}>
-              {t(
-                tab === "file"
-                  ? "attachments.emptyFiles"
-                  : "attachments.emptyLinks",
-              )}
+              {t("attachments.empty")}
             </span>
           )
         ) : (
           <div className={styles.attachmentGrid}>
-            {rows.map((a) => (
+            {attachments.map((a) => (
               <div key={a.id} className={styles.attachmentTile}>
                 <a
                   href={a.url ?? undefined}
@@ -277,36 +307,7 @@ export function IssueAttachments({
               </div>
             ))}
 
-            {canAdd &&
-              (tab === "file" ? (
-                <button
-                  type="button"
-                  className={styles.attachmentTileAdd}
-                  disabled={busy}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Icon icon="lucide:plus" width={18} aria-hidden="true" />
-                  <span>{t("attachments.add")}</span>
-                </button>
-              ) : (
-                <InlinePicker
-                  width={280}
-                  align="start"
-                  stop
-                  trigger={
-                    <button
-                      type="button"
-                      className={styles.attachmentTileAdd}
-                      disabled={busy}
-                    >
-                      <Icon icon="lucide:plus" width={18} aria-hidden="true" />
-                      <span>{t("attachments.addLink")}</span>
-                    </button>
-                  }
-                >
-                  {linkForm}
-                </InlinePicker>
-              ))}
+            {canAdd && addTrigger("tile")}
           </div>
         )}
       </div>

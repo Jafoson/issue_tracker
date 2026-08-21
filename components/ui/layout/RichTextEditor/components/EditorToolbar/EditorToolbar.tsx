@@ -31,14 +31,15 @@ type ToolId =
   | "taskList"
   | "quote"
   | "link"
-  | "image"
   | "attachment";
 
 interface ToolbarActions {
   /** Öffnet die Adresszeile des Editors. */
   onLink: () => void;
-  /** Öffnet den Datei-Dialog für einen Anhang. Fehlt, wo die Editor-Instanz
-   *  keine Anhänge anbietet (Kommentare, Create-Issue-Composer). */
+  /** Öffnet den Anhang-Dialog (URL oder Upload, je nachdem, was die
+   *  Editor-Instanz anbietet) — Bild, Video oder sonstige Datei, eine
+   *  Auswahl statt getrennter Knöpfe. Fehlt, wo die Editor-Instanz keine
+   *  Anhänge anbietet (Kommentare, Create-Issue-Composer). */
   onAttachment?: () => void;
 }
 
@@ -122,18 +123,10 @@ const GROUPS: ToolButton[][] = [
       active: (e) => e.isActive("link"),
     },
     {
-      id: "image",
-      icon: "lucide:image",
-      run: (e) => {
-        const src = window.prompt("https://");
-        if (src) e.chain().focus().setImage({ src }).run();
-      },
-    },
-    {
       id: "attachment",
       icon: "lucide:paperclip",
-      // Öffnet den Datei-Dialog — der eigentliche Upload läuft in
-      // `RichTextEditor.tsx`, nach der Auswahl.
+      // Öffnet den Anhang-Dialog — die eigentliche Auswahl (URL/Upload) und
+      // der Upload selbst laufen in `RichTextEditor.tsx`.
       run: (_editor, { onAttachment }) => onAttachment?.(),
     },
   ],
@@ -143,7 +136,7 @@ interface EditorToolbarProps {
   editor: Editor | null;
   /** Öffnet die Adresszeile für Links. */
   onLink: () => void;
-  /** Öffnet den Datei-Dialog für einen Anhang. Fehlt ⇒ kein Knopf dafür. */
+  /** Öffnet den Anhang-Dialog. Fehlt ⇒ kein Knopf dafür. */
   onAttachment?: () => void;
 }
 

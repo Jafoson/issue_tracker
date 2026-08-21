@@ -7,6 +7,29 @@ export interface AttachmentAttrs {
   name: string;
   mimeType: string | null;
   size: number | null;
+  /** Breite in Pixeln, vom Ziehgriff im Editor gesetzt. `null` ⇒ Standardbreite. */
+  width: number | null;
+}
+
+export const ATTACHMENT_IMAGE_MIN_WIDTH = 160;
+export const ATTACHMENT_IMAGE_MAX_WIDTH = 720;
+export const ATTACHMENT_IMAGE_DEFAULT_WIDTH = 320;
+
+/**
+ * Erzwingt eine Breite innerhalb des ziehbaren Bereichs — dieselbe Spanne für
+ * den Ziehgriff im Editor (`AttachmentView`) und die Anzeige (`RichText`), so
+ * dass ein gespeicherter Wert nie in beiden verschieden groß erscheint. Fehlt
+ * die Breite (kein Attribut oder kein gültiger Zahlenwert), gilt der Standard.
+ */
+export function clampAttachmentWidth(width: unknown): number {
+  const n =
+    typeof width === "number" && Number.isFinite(width)
+      ? width
+      : ATTACHMENT_IMAGE_DEFAULT_WIDTH;
+  return Math.min(
+    ATTACHMENT_IMAGE_MAX_WIDTH,
+    Math.max(ATTACHMENT_IMAGE_MIN_WIDTH, Math.round(n)),
+  );
 }
 
 /** Was eine aufgelöste `Attachment`-Zeile für die Wiedergabe im Dokument beisteuert. */
@@ -69,23 +92,35 @@ export function withResolvedAttachments(
         name: resolved?.name ?? "",
         mimeType: resolved?.mimeType ?? null,
         size: resolved?.size ?? null,
+        // Anders als die übrigen Attribute keine Ableitung aus der
+        // `Attachment`-Zeile, sondern eine Einstellung des Dokuments selbst
+        // — bleibt deshalb aus dem ursprünglichen Knoten erhalten statt aus
+        // `byId` zu kommen.
+        width: typeof attrs?.width === "number" ? attrs.width : null,
       };
     }),
   };
 }
 
 /**
- * Schreibpfad: wirft an jedem `attachment`-Knoten alles außer `id` wieder ab,
- * bevor `description` in die Datenbank geschrieben wird — verteidigt gegen
- * einen Client, der die nur zur Anzeige angereicherten Attribute versehentlich
- * mit zurückschickt. Eine presignte URL läuft nach einer Stunde ab; sie zu
+ * Schreibpfad: wirft an jedem `attachment`-Knoten die zur Anzeige
+ * aufgelösten Attribute wieder ab, bevor `description` in die Datenbank
+ * geschrieben wird — verteidigt gegen einen Client, der sie versehentlich mit
+ * zurückschickt. Eine presignte URL läuft nach einer Stunde ab; sie zu
  * speichern wäre ohnehin sinnlos (wie bei Avataren, siehe `lib/storage`).
+ *
+ * `width` bleibt davon ausgenommen: anders als `url`/`name`/`mimeType`/`size`
+ * ist es keine Ableitung aus der `Attachment`-Zeile, sondern eine echte
+ * Einstellung des Dokuments (vom Ziehgriff im Editor gesetzt) — geht sie
+ * verloren, springt das Bild beim nächsten Laden auf die Standardbreite
+ * zurück.
  */
 export function stripAttachmentAttrs(doc: PMDoc): PMDoc {
   return {
     ...doc,
     content: mapAttachmentNodes(doc.content, (attrs) => ({
       id: typeof attrs?.id === "string" ? attrs.id : null,
+      width: typeof attrs?.width === "number" ? attrs.width : null,
     })),
   };
 }

@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  ATTACHMENT_IMAGE_DEFAULT_WIDTH,
+  ATTACHMENT_IMAGE_MAX_WIDTH,
+  ATTACHMENT_IMAGE_MIN_WIDTH,
+  clampAttachmentWidth,
   formatBytes,
   type ResolvedAttachmentRef,
   stripAttachmentAttrs,
@@ -37,6 +41,7 @@ describe("withResolvedAttachments()", () => {
       name: "screenshot.png",
       mimeType: "image/png",
       size: 2048,
+      width: null,
     });
   });
 
@@ -49,7 +54,14 @@ describe("withResolvedAttachments()", () => {
       name: "",
       mimeType: null,
       size: null,
+      width: null,
     });
+  });
+
+  test("übernimmt die im Dokument gespeicherte Breite unverändert", () => {
+    const doc = docWith({ id: "att-1", width: 480 });
+    const resolved = withResolvedAttachments(doc, RESOLVED);
+    expect(resolved.content?.[1].attrs?.width).toBe(480);
   });
 
   test("läuft rekursiv durch verschachtelte Knoten (z.B. in einem Zitat)", () => {
@@ -78,7 +90,7 @@ describe("withResolvedAttachments()", () => {
 });
 
 describe("stripAttachmentAttrs()", () => {
-  test("wirft alles außer id ab — auch versehentlich mitgeschickte Attribute", () => {
+  test("wirft alles außer id und width ab — auch versehentlich mitgeschickte Attribute", () => {
     const doc = docWith({
       id: "att-1",
       url: "https://s3.example/attachments/i-1/x.png",
@@ -87,7 +99,13 @@ describe("stripAttachmentAttrs()", () => {
       size: 2048,
     });
     const stripped = stripAttachmentAttrs(doc);
-    expect(stripped.content?.[1].attrs).toEqual({ id: "att-1" });
+    expect(stripped.content?.[1].attrs).toEqual({ id: "att-1", width: null });
+  });
+
+  test("behält eine gesetzte Breite", () => {
+    const doc = docWith({ id: "att-1", width: 480 });
+    const stripped = stripAttachmentAttrs(doc);
+    expect(stripped.content?.[1].attrs).toEqual({ id: "att-1", width: 480 });
   });
 
   test("läuft rekursiv durch verschachtelte Knoten", () => {
@@ -107,7 +125,34 @@ describe("stripAttachmentAttrs()", () => {
     };
     expect(stripAttachmentAttrs(doc).content?.[0].content?.[0].attrs).toEqual({
       id: "att-1",
+      width: null,
     });
+  });
+});
+
+describe("clampAttachmentWidth()", () => {
+  test("übernimmt einen Wert innerhalb der Spanne", () => {
+    expect(clampAttachmentWidth(400)).toBe(400);
+  });
+
+  test("rundet auf ganze Pixel", () => {
+    expect(clampAttachmentWidth(400.6)).toBe(401);
+  });
+
+  test("deckelt nach unten und oben", () => {
+    expect(clampAttachmentWidth(10)).toBe(ATTACHMENT_IMAGE_MIN_WIDTH);
+    expect(clampAttachmentWidth(5000)).toBe(ATTACHMENT_IMAGE_MAX_WIDTH);
+  });
+
+  test("fällt auf die Standardbreite zurück — fehlender oder ungültiger Wert", () => {
+    expect(clampAttachmentWidth(null)).toBe(ATTACHMENT_IMAGE_DEFAULT_WIDTH);
+    expect(clampAttachmentWidth(undefined)).toBe(
+      ATTACHMENT_IMAGE_DEFAULT_WIDTH,
+    );
+    expect(clampAttachmentWidth(Number.NaN)).toBe(
+      ATTACHMENT_IMAGE_DEFAULT_WIDTH,
+    );
+    expect(clampAttachmentWidth("400")).toBe(ATTACHMENT_IMAGE_DEFAULT_WIDTH);
   });
 });
 
