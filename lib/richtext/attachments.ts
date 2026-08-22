@@ -40,6 +40,30 @@ export interface ResolvedAttachmentRef {
   size: number | null;
 }
 
+/**
+ * MIME-Type für das Ziehen einer vorhandenen Anhang-Kachel aus der
+ * Anhänge-Sektion (`IssueAttachments.tsx`) in den Editor — dort landet sie
+ * als ganz normaler `attachment`-Knoten, ohne erneuten Upload, einfach per
+ * Verweis auf dieselbe `Attachment`-Zeile. Ein eigener MIME-Type statt
+ * `text/plain`/`text/html`, damit `RichTextEditor.tsx`s `handleDrop` einen
+ * externen Datei-Drop (echte Datei vom Betriebssystem) von diesem internen
+ * Referenz-Drop unterscheiden kann. Hier definiert statt in einer der beiden
+ * UI-Schichten, weil sowohl die Anhänge-Sektion (Quelle, in `features/`) als
+ * auch der Editor (Ziel, in `components/ui`) ihn brauchen, ohne dass eine der
+ * beiden von der anderen abhängen soll.
+ */
+export const ATTACHMENT_DRAG_MIME = "application/x-issue-tracker-attachment";
+
+/** Nutzlast hinter `ATTACHMENT_DRAG_MIME` — dieselben Felder wie ein frisch
+ *  hochgeladener Anhang (`UploadedAttachment` in `RichTextEditor.tsx`). */
+export interface AttachmentDragPayload {
+  id: string;
+  url: string;
+  name: string;
+  mimeType: string | null;
+  size: number | null;
+}
+
 /** Menschenlesbare Dateigröße — `RichText`, `AttachmentView` und die
  *  Anhänge-Sektion zeigen alle dasselbe Format, deshalb eine Stelle dafür. */
 export function formatBytes(bytes: number): string {

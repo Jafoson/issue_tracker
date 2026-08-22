@@ -1,10 +1,11 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clampAttachmentWidth, formatBytes } from "@/lib/richtext/attachments";
 import styles from "./attachmentView.module.scss";
 
@@ -45,12 +46,63 @@ export function AttachmentView({
   extension,
   deleteNode,
   updateAttributes,
-  selected,
+  editor,
+  getPos,
 }: NodeViewProps) {
   const t = useTranslations("editor");
   const [isRemoving, setIsRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * ProseMirrors eigene Koordinaten-zu-Position-Auflösung (`posFromCaret` in
+   * `prosemirror-view`) entscheidet bei einem Klick auf einen Atom-Knoten per
+   * Halbierung seines Rahmens: links der Mitte → davor, rechts der Mitte →
+   * dahinter — gedacht für schmale Inline-Symbole. Bei einem 300px+ breiten,
+   * hohen Bild kollabiert diese Heuristik: liegt der Anhang nach einem
+   * Verschieben am Rand eines Absatzes (nur auf einer Seite Text), bleibt
+   * jeder Klick wirkungslos — keine Markierung, keine Ziehgriffe. Der
+   * offizielle Ausweg (siehe Tiptaps eigene Beispiele für große Node-Views,
+   * ebenso Atlassians ProseMirror-Editor für Medien-Embeds): die Markierung
+   * nicht dem Browser/ProseMirror-Klick-Heuristik überlassen, sondern hier
+   * direkt über die eigene, immer aktuelle Position (`getPos()`) setzen.
+   */
+  const selectSelf = () => {
+    const pos = getPos();
+    if (typeof pos !== "number") return;
+    editor.commands.setNodeSelection(pos);
+  };
+
+  /**
+   * `@tiptap/react`s eigene `selected`-Prop verlässt sich auf eine intern
+   * gecachte Position (`currentPos`), die beim erneuten `update()` desselben
+   * Node-View-Objekts nicht immer nachgezogen wird, wenn ProseMirror dieselbe
+   * Node-Referenz weiterreicht — sichtbar genau in den Fällen, in denen
+   * `selectSelf()` oben eingreift (verschobener Anhang am Absatzrand): die
+   * echte Auswahl (`editor.state.selection`) ist danach eine korrekte
+   * `NodeSelection` auf dieser Position, die `selected`-Prop bleibt trotzdem
+   * `false`. Deshalb hier selbst geführt, immer anhand der frischen
+   * `getPos()` verglichen statt eines gecachten Werts.
+   */
+  const [isSelected, setIsSelected] = useState(false);
+  const getPosRef = useRef(getPos);
+  getPosRef.current = getPos;
+  useEffect(() => {
+    const sync = () => {
+      const pos = getPosRef.current();
+      const sel = editor.state.selection;
+      setIsSelected(
+        typeof pos === "number" &&
+          sel instanceof NodeSelection &&
+          sel.from === pos,
+      );
+    };
+    sync();
+    editor.on("selectionUpdate", sync);
+    return () => {
+      editor.off("selectionUpdate", sync);
+    };
+  }, [editor]);
 
   const id = node.attrs.id as string | null;
   const url = node.attrs.url as string | null;
@@ -110,7 +162,7 @@ export function AttachmentView({
    *  `.column-resize-handle`) — dieselbe Ausnahme von Tastaturbedienung gilt
    *  schon dort. */
   const resizeHandles =
-    selected &&
+    isSelected &&
     HANDLES.map((h) => (
       <div
         key={h.pos}
@@ -170,6 +222,7 @@ export function AttachmentView({
         data-kind="image"
         style={{ width, maxWidth: "100%" }}
         contentEditable={false}
+        onClick={selectSelf}
       >
         {/* biome-ignore lint/performance/noImgElement: presignte URL, next/image kann sie nicht optimieren */}
         <img src={url} alt={name} className={styles.imagePreview} />
@@ -188,6 +241,7 @@ export function AttachmentView({
         data-kind="video"
         style={{ width, maxWidth: "100%" }}
         contentEditable={false}
+        onClick={selectSelf}
       >
         {/* biome-ignore lint/a11y/useMediaCaption: hochgeladene Anhänge tragen keine Untertitel */}
         <video src={url} controls className={styles.videoPlayer} />

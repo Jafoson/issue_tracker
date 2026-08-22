@@ -84,6 +84,43 @@ export const AttachmentNode = Node.create<AttachmentOptions>({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AttachmentView);
+    return ReactNodeViewRenderer(AttachmentView, {
+      // `@tiptap/core`s Standard-`stopEvent` lässt ProseMirror ein natives
+      // `dragstart` nur dann selbst verarbeiten, wenn `event.target` exakt
+      // der äußere Node-View-Knoten ist. Das sichtbare, tatsächlich gezogene
+      // Element ist bei uns aber immer eine Ebene tiefer (`<img>` in
+      // `AttachmentView.tsx`) — jedes echte Ziehen verschluckt Tiptap damit
+      // stillschweigend, ProseMirrors eigener `dragstart`-Handler (der
+      // `view.dragging` fürs spätere Verschieben setzt) läuft nie. Ein Drop
+      // fällt dann auf rohes HTML-Parsing zurück, das auf den `image`-Knoten
+      // aus `RichTextEditor.tsx` trifft statt auf `attachment` — sichtbar als
+      // zweiter, andersartiger Knoten, während der ursprüngliche liegen
+      // bleibt oder unkontrolliert vom Browser selbst entfernt wird. Drag-
+      // Ereignisse deshalb immer an ProseMirror durchreichen, unabhängig vom
+      // genauen Ziel; für alles andere (Klick auf den Entfernen-Knopf etc.)
+      // bleibt es bei der bisherigen Faustregel.
+      stopEvent: ({ event }) => {
+        if (event.type.startsWith("drag")) return false;
+        const target = event.target as HTMLElement;
+        return ["INPUT", "BUTTON", "SELECT", "TEXTAREA"].includes(
+          target.tagName,
+        );
+      },
+      // `@tiptap/react`s `ReactNodeView.update()` überspringt das Nachziehen
+      // der eigenen, gecachten Position (`currentPos`), sobald ProseMirror
+      // dieselbe Node-Objektreferenz weiterreicht (z.B. wenn nur Geschwister-
+      // Inhalt vor dem Knoten sich ändert, ohne diesen Knoten selbst
+      // anzufassen — genau das passiert nach einem Verschieben, sobald
+      // irgendwo davor weitergetippt wird). Die Auswahl-Markierung
+      // (`handleSelectionUpdate`) vergleicht danach gegen die falsche, alte
+      // Position — ein Klick auf den (korrekt verschobenen) Anhang selektiert
+      // ihn dann nicht mehr, die Ziehgriffe zum Vergrößern bleiben aus. Eine
+      // eigene `update`-Funktion lässt Tiptap `currentPos` bei jedem Aufruf
+      // aktualisieren.
+      update: ({ updateProps }) => {
+        updateProps();
+        return true;
+      },
+    });
   },
 });

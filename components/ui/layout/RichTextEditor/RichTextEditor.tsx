@@ -17,6 +17,10 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Calendar } from "@/components/ui/atoms/Calendar/Calendar";
 import { modKey } from "@/lib/a11y";
+import {
+  ATTACHMENT_DRAG_MIME,
+  type AttachmentDragPayload,
+} from "@/lib/richtext/attachments";
 import { formatChipDate, isoDate, parseDateInput } from "@/lib/richtext/date";
 import { toDoc, toPlainDoc } from "@/lib/richtext/doc";
 import { lowlight } from "@/lib/richtext/highlight";
@@ -641,7 +645,48 @@ export function RichTextEditor({
       // Screenshot) laufen über denselben Upload-Pfad wie der
       // Werkzeugleisten-Knopf. Ohne `onUploadAttachment` bleibt das
       // Standardverhalten (Bild einfügen als Base64, Datei im Tab öffnen).
-      handleDrop: (_view, event) => {
+      //
+      // `moved` ist `true`, wenn ProseMirror den Drop bereits als internes
+      // Verschieben eines vorhandenen Knotens erkannt hat (Ziehen eines
+      // Bildes an eine andere Stelle im selben Dokument). Chrome/Safari legen
+      // dabei trotzdem eine synthetische `File` in `dataTransfer.files` ab,
+      // weil im gezogenen DOM ein `<img>` steckt — ohne diese Abfrage würde
+      // das Bild also erneut hochgeladen und als *zweiter*, neuer
+      // `attachment`-Knoten (ohne die gespeicherte `width`, daher in
+      // Standardgröße) eingefügt, während der ursprüngliche Knoten liegen
+      // bleibt: aus dem Verschieben wird eine Kopie. Der eigentliche interne
+      // Umzug läuft weiter über ProseMirrors eigene Behandlung, wenn hier
+      // `false` zurückkommt.
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false;
+
+        // Aus der Anhänge-Sektion gezogen (`IssueAttachments.tsx`s
+        // `onDragStart`, per `ATTACHMENT_DRAG_MIME`) — kein Upload, nur ein
+        // Verweis auf dieselbe `Attachment`-Zeile, eingefügt genau an der
+        // Position, über der losgelassen wurde (nicht am aktuellen Cursor,
+        // der könnte ganz woanders stehen).
+        const dragged = event.dataTransfer?.getData(ATTACHMENT_DRAG_MIME);
+        if (dragged && onUploadAttachment) {
+          let attrs: AttachmentDragPayload;
+          try {
+            attrs = JSON.parse(dragged);
+          } catch {
+            return false;
+          }
+          event.preventDefault();
+          const target = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+          const pos = target ? target.pos : view.state.selection.from;
+          editorRef.current
+            ?.chain()
+            .focus()
+            .insertContentAt(pos, { type: "attachment", attrs })
+            .run();
+          return true;
+        }
+
         if (!onUploadAttachment) return false;
         const file = event.dataTransfer?.files?.[0];
         if (!file) return false;

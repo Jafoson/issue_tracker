@@ -10,7 +10,11 @@ import {
   deleteIssueAttachment,
 } from "@/features/issues/actions";
 import { uploadIssueAttachment } from "@/features/issues/uploadAttachment";
-import { formatBytes } from "@/lib/richtext/attachments";
+import {
+  ATTACHMENT_DRAG_MIME,
+  type AttachmentDragPayload,
+  formatBytes,
+} from "@/lib/richtext/attachments";
 import { faviconOf } from "@/lib/richtext/link";
 import type { IssueAttachment } from "@/types";
 import styles from "../issueDetail.module.scss";
@@ -271,7 +275,34 @@ export function IssueAttachments({
         ) : (
           <div className={styles.attachmentGrid}>
             {attachments.map((a) => (
-              <div key={a.id} className={styles.attachmentTile}>
+              // biome-ignore lint/a11y/noStaticElementInteractions: `draggable` trägt nur den Ziehgriff — Klick/Öffnen bleibt beim Link/Kachel-Inhalt darin
+              <div
+                key={a.id}
+                className={styles.attachmentTile}
+                draggable={!!a.url}
+                onDragStart={
+                  a.url
+                    ? (e) => {
+                        // In den Editor gezogen (`RichTextEditor.tsx`s
+                        // `handleDrop`) landet die Kachel dort als
+                        // gewöhnlicher `attachment`-Knoten per Verweis —
+                        // kein erneuter Upload, dieselbe `Attachment`-Zeile.
+                        const payload: AttachmentDragPayload = {
+                          id: a.id,
+                          url: a.url as string,
+                          name: a.name,
+                          mimeType: a.mimeType,
+                          size: a.size,
+                        };
+                        e.dataTransfer.setData(
+                          ATTACHMENT_DRAG_MIME,
+                          JSON.stringify(payload),
+                        );
+                        e.dataTransfer.effectAllowed = "copy";
+                      }
+                    : undefined
+                }
+              >
                 <a
                   href={a.url ?? undefined}
                   target="_blank"

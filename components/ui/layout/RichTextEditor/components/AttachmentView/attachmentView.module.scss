@@ -37,6 +37,12 @@
   &:has([data-kind="file"]),
   &:has([data-kind="missing"]) {
     display: block;
+    /* Ohne das streckt sich die Spanne als Block-Element auf die volle
+       Editorbreite — die Markierung (`.ProseMirror-selectednode`, oben)
+       würde dann weit über die eigentliche, per `max-width`/eigenem Inhalt
+       schmalere Karte hinausragen statt sie zu umschließen. */
+    width: fit-content;
+    max-width: 100%;
   }
 }
 
