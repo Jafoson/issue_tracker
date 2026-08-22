@@ -1,0 +1,44 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-pill);
+  background: var(--surface-container-high);
+  font-size: 12px;
+  transition: background .12s, border-color .12s;
+
+  &:hover { border-color: var(--outline); }
+
+  &[data-active] {
+    border-color: var(--tertiary);
+    background: color-mix(in oklab, var(--tertiary) 12%, transparent);
+  }
+}
+
+.count {
+  color: var(--on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  color: var(--outline);
+  transition: background .12s, color .12s;
+
+  &:hover { background: var(--surface-container-high); color: var(--on-surface); }
+}

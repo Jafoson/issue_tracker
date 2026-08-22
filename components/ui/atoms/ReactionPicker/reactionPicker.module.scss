@@ -1,0 +1,46 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 220px;
+  padding: 8px;
+}
+
+.quickRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.quickOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  font-size: 17px;
+  transition: background .12s;
+
+  &:hover { background: var(--surface-container-high); }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.gridOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  transition: background .12s;
+
+  &:hover { background: var(--surface-container-high); }
+}

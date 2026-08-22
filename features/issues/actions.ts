@@ -9,7 +9,7 @@ import type {
   StatusChangeMeta,
 } from "@/lib/audit/actions";
 import { db } from "@/lib/db";
-import type { Prisma } from "@/lib/generated/prisma/client";
+import { Prisma } from "@/lib/generated/prisma/client";
 import {
   ISSUE_SHARE_LINK_DAYS,
   issueShareUrl,
@@ -1181,6 +1181,8 @@ export async function addComment(
   issueId: string,
   body: PMDoc,
   _authorId: string,
+  /** Antwort auf einen anderen Kommentar — `undefined` heißt Top-Level. */
+  parentId?: string,
 ) {
   const issue = await db.issue.findUnique({
     where: { id: issueId },
@@ -1197,6 +1199,20 @@ export async function addComment(
     projectId: issue.projectId,
   });
 
+  if (parentId) {
+    // Verhindert, dass eine Antwort über die `issueId` eines fremden Issues
+    // an einen Kommentar dort andockt — der Client liefert `issueId` und
+    // `parentId` getrennt, ein manipulierter Aufruf könnte sie sonst
+    // auseinanderreißen.
+    const parent = await db.comment.findUnique({
+      where: { id: parentId },
+      select: { issueId: true },
+    });
+    if (!parent || parent.issueId !== issueId) {
+      throw new PermissionError("comment.create");
+    }
+  }
+
   await db.comment.create({
     data: {
       id: uid("c"),
@@ -1204,6 +1220,7 @@ export async function addComment(
       bodyText: toPlainText(body),
       issueId,
       authorId: userId,
+      parentId,
     },
   });
 
@@ -1260,5 +1277,67 @@ export async function deleteComment(commentId: string) {
     },
   ]);
   await db.comment.delete({ where: { id: commentId } });
+  await revalidate();
+}
+
+export async function updateComment(commentId: string, body: PMDoc) {
+  const comment = await db.comment.findUnique({
+    where: { id: commentId },
+    select: { authorId: true, issue: { select: { projectId: true } } },
+  });
+  if (!comment) throw new PermissionError("comment.update.any");
+  const ctx = { projectId: comment.issue.projectId };
+  await requirePermissionOr([
+    { permission: "comment.update.any", ctx },
+    {
+      permission: "comment.update.own",
+      ctx,
+      ownerIds: [comment.authorId],
+    },
+  ]);
+  await db.comment.update({
+    where: { id: commentId },
+    data: {
+      body: body as unknown as Prisma.InputJsonValue,
+      bodyText: toPlainText(body),
+      updated: new Date(),
+    },
+  });
+  await revalidate();
+}
+
+/**
+ * Reaktion an/aus — je Person, Kommentar und Emoji höchstens eine Zeile
+ * (`@@unique([commentId, userId, emoji])`). Statt vorher nachzusehen, ob sie
+ * schon existiert (Zeitfenster für einen Doppelklick-Race), wird direkt
+ * erstellt und ein Konflikt als „schon da, also weg damit" gelesen — der
+ * eindeutige Index macht den Erstversuch selbst zum Test.
+ */
+export async function toggleCommentReaction(commentId: string, emoji: string) {
+  const comment = await db.comment.findUnique({
+    where: { id: commentId },
+    select: { issue: { select: { projectId: true } } },
+  });
+  if (!comment) throw new PermissionError("comment.react");
+  const userId = await requirePermission("comment.react", {
+    projectId: comment.issue.projectId,
+  });
+
+  try {
+    await db.commentReaction.create({
+      data: { id: uid("cr"), commentId, userId, emoji },
+    });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      await db.commentReaction.delete({
+        where: { commentId_userId_emoji: { commentId, userId, emoji } },
+      });
+    } else {
+      throw err;
+    }
+  }
   await revalidate();
 }

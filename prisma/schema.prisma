@@ -148,13 +148,14 @@ model User {
   /// (Schatten-Zeile beim Einladen, `features/workspaces/actions.ts` /
   /// `features/projects/actions.ts`) setzen es sofort bei der Erstellung —
   /// die Einladung selbst bleibt dadurch reibungslos, ohne Zwischenschritt.
-  onboardedAt DateTime?
+  onboardedAt   DateTime?
 
   workspaces          WorkspaceMember[]
   assignedIssues      Issue[]                        @relation("IssueAssignee")
   reportedIssues      Issue[]                        @relation("IssueReporter")
   sharedIssues        Issue[]                        @relation("IssueSharedBy")
   comments            Comment[]
+  commentReactions    CommentReaction[]
   attachments         Attachment[]
   leadingTeams        Team[]                         @relation("TeamLead")
   teamMemberships     TeamMember[]
@@ -165,7 +166,7 @@ model User {
   authenticators      Authenticator[]
   invitations         Invitation[]
   invitationsSent     Invitation[]                   @relation("InvitationInvitedBy")
-  inviteLinksCreated  InviteLink[]                    @relation("InviteLinkCreatedBy")
+  inviteLinksCreated  InviteLink[]                   @relation("InviteLinkCreatedBy")
   preferences         UserPreferences?
   dashboards          DashboardPreference[]
   workspaceDashboards WorkspaceDashboardPreference[]
@@ -197,18 +198,18 @@ model UserPreferences {
   // Benachrichtigungen, je Anlass einmal für die App und einmal für die Mail.
   // Es gibt noch keinen Mailversand; die Spalten stehen trotzdem hier, damit die
   // Wahl schon getroffen werden kann und nicht später nachgeholt werden muss.
-  assignedInApp  Boolean @default(true)
-  assignedEmail  Boolean @default(true)
-  mentionedInApp Boolean @default(true)
-  mentionedEmail Boolean @default(true)
-  commentInApp   Boolean @default(true)
-  commentEmail   Boolean @default(false)
-  statusInApp    Boolean @default(true)
-  statusEmail    Boolean @default(false)
-  inviteInApp    Boolean @default(true)
-  inviteEmail    Boolean @default(true)
-  roleInApp      Boolean @default(true)
-  roleEmail      Boolean @default(true)
+  assignedInApp    Boolean @default(true)
+  assignedEmail    Boolean @default(true)
+  mentionedInApp   Boolean @default(true)
+  mentionedEmail   Boolean @default(true)
+  commentInApp     Boolean @default(true)
+  commentEmail     Boolean @default(false)
+  statusInApp      Boolean @default(true)
+  statusEmail      Boolean @default(false)
+  inviteInApp      Boolean @default(true)
+  inviteEmail      Boolean @default(true)
+  roleInApp        Boolean @default(true)
+  roleEmail        Boolean @default(true)
   issueSharedInApp Boolean @default(true)
   issueSharedEmail Boolean @default(true)
 
@@ -459,7 +460,7 @@ model ProjectMember {
 
   /// Siehe `ProjectMemberOrigin`. Default `manual`, damit jede bestehende und
   /// jede von Hand gesetzte Zeile unangetastet bleibt.
-  origin ProjectMemberOrigin @default(manual)
+  origin       ProjectMemberOrigin @default(manual)
   /// Nur bei `origin = team` gesetzt: welches Team diese Rolle zuletzt
   /// begründet hat — reine Anzeige ("via Team X"). `SetNull`, weil das Team
   /// verschwinden kann, ohne dass die (dann verwaiste) Zeile mitgerissen wird;
@@ -780,7 +781,7 @@ model Issue {
   /// aktiven Link pro Issue, kein Verlauf, kein Zähler — genau das, was ein
   /// „an/aus mit Regenerieren"-Schalter braucht, jede Änderung steht zusätzlich
   /// im Audit-Log (`issue.shared`/`issue.share.revoked`).
-  shareToken String? @unique
+  shareToken            String?   @unique
   /// Wer/wann des *aktuell aktiven* Links — anders als das Audit-Log (das jede
   /// Änderung für immer behält) nur der jeweils letzte Stand, für die
   /// Anzeige auf `/share/[token]` selbst. Mit `shareToken` zusammen gesetzt
@@ -811,18 +812,50 @@ model Issue {
 // ─── Comments ────────────────────────────────────────────────────────────────
 
 model Comment {
-  id       String   @id
+  id       String    @id
   // Wie `Issue.description`: ProseMirror-Dokument plus abgeleiteter Fließtext
   // für Vorschauen (Inbox) und spätere Suche.
   body     Json
-  bodyText String   @default("")
-  created  DateTime @default(now())
+  bodyText String    @default("")
+  created  DateTime  @default(now())
+  /// `null` = nie bearbeitet — steuert den „bearbeitet"-Hinweis in der UI.
+  updated  DateTime?
 
   issueId  String
   authorId String
+  /// Selbstbezug für echtes, beliebig tiefes Threading. `null` = Top-Level.
+  parentId String?
 
-  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  author User  @relation(fields: [authorId], references: [id])
+  issue     Issue             @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author    User              @relation(fields: [authorId], references: [id])
+  /// Löscht man den Elternkommentar, verlieren seine Antworten ihren Sinn —
+  /// dieselbe Kaskade wie `Comment.issue`, nur eine Ebene tiefer, und wirkt
+  /// über beliebig viele Ebenen: Postgres wertet die Fremdschlüssel-Kaskade
+  /// je Zeile aus, das Löschen einer Antwort löst also seinerseits die
+  /// Kaskade für ihre eigenen Antworten aus.
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]         @relation("CommentReplies")
+  reactions CommentReaction[]
+}
+
+/// Eine Zeile je Person, Kommentar und Emoji — `@@unique` verhindert doppelte
+/// Reaktionen und ist zugleich der Konfliktpunkt, über den `toggleCommentReaction`
+/// (`features/issues/actions.ts`) das Umschalten race-sicher per
+/// „erst erstellen, bei Konflikt löschen" statt einer vorherigen Abfrage löst.
+model CommentReaction {
+  id        String   @id
+  commentId String
+  userId    String
+  emoji     String
+  created   DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  // Kein `onDelete: Cascade` hier — konsistent mit `Comment.author`, das
+  // ebenfalls keins trägt. Ein Konto wird ohnehin stillgelegt statt gelöscht
+  // (`User.deactivatedAt`).
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([commentId, userId, emoji])
 }
 
 // ─── Anhänge ─────────────────────────────────────────────────────────────────
@@ -909,9 +942,9 @@ model Team {
   leadId String
   lead   User   @relation("TeamLead", fields: [leadId], references: [id])
 
-  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  members   TeamMember[]
-  projects  TeamProject[]
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members        TeamMember[]
+  projects       TeamProject[]
   // Zeilen, deren Rolle zuletzt von diesem Team begründet wurde (Anzeige,
   // siehe `ProjectMember.originTeam`).
   grantedMembers ProjectMember[]

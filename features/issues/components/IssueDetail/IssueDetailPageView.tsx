@@ -123,10 +123,14 @@ export function IssueDetailPageView({
           />
           <IssueComments
             issueId={issue.id}
+            workspaceId={data.workspaceId}
+            identifier={identifier}
             comments={issue.comments}
             members={data.members}
             me={data.me}
             data={data}
+            canUpdateAnyComment={issue.access.canUpdateAnyComment}
+            canDeleteAnyComment={issue.access.canDeleteAnyComment}
             onSubmit={onComment}
             onRefresh={onRefresh}
           />

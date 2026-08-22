@@ -52,6 +52,8 @@ const READ_AND_COMMENT: Permission[] = [
   "project.view",
   "comment.create",
   "comment.delete.own",
+  "comment.update.own",
+  "comment.react",
 ];
 
 const CONTRIBUTE: Permission[] = [
@@ -63,6 +65,8 @@ const CONTRIBUTE: Permission[] = [
   "issue.share.manage",
   "comment.create",
   "comment.delete.own",
+  "comment.update.own",
+  "comment.react",
   "label.create",
   "label.update",
 ];

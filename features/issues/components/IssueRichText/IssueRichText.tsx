@@ -52,6 +52,9 @@ interface IssueRichTextProps {
     mimeType?: string | null;
   }) => Promise<UploadedAttachment | { error: string }>;
   className?: string;
+  /** Siehe `EditableRichText` — steuert den Bearbeitungszustand von außen. */
+  editing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 /** Baut die Vorschlagslisten einmal pro Datenstand. */
@@ -101,6 +104,8 @@ export function IssueRichText({
   onRemoveAttachment,
   onAddLinkAttachment,
   className,
+  editing,
+  onEditingChange,
 }: IssueRichTextProps) {
   const { members, issues } = useEditorSources(data);
   const t = useTranslations("editor");
@@ -127,6 +132,8 @@ export function IssueRichText({
       onRemoveAttachment={onRemoveAttachment}
       onAddLinkAttachment={onAddLinkAttachment}
       className={className}
+      editing={editing}
+      onEditingChange={onEditingChange}
     />
   );
 }

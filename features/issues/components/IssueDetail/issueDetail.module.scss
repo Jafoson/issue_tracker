@@ -748,6 +748,59 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  border-radius: var(--radius-sm);
+  transition: background 1.6s ease-out;
+
+  /* Kurzes Aufleuchten nach einem Sprung über „Link kopieren" — die lange
+     Übergangsdauer läuft rückwärts: sofort sichtbar, dann langsam verblassend. */
+  &[data-flash] {
+    background: color-mix(in oklab, var(--tertiary) 14%, transparent);
+    transition: background 1.6s ease-out;
+  }
+}
+
+/* Verschachtelte Antworten — dieselbe Liste wie `.commentList`, nur ohne
+   deren oberen Abstand (der kommt schon vom Elternkommentar). */
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.commentEdited {
+  font-size: var(--text-xs);
+  color: var(--outline);
+}
+
+.commentMenuTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  border-radius: var(--radius-sm);
+  color: var(--outline);
+  opacity: 0;
+  transition: opacity .12s, background .12s, color .12s;
+
+  &:hover { background: var(--surface-container-high); color: var(--on-surface); }
+}
+
+.comment:hover .commentMenuTrigger {
+  opacity: 1;
+}
+
+/* ---------- Auf einen Kommentar antworten ---------- */
+
+.reply {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 10px;
 }
 
 .commentBody {

@@ -184,10 +184,14 @@ export function IssueDetailView({
           <IssueMeta issue={issue} data={data} layout="column" />
           <IssueComments
             issueId={issue.id}
+            workspaceId={data.workspaceId}
+            identifier={identifier}
             comments={issue.comments}
             members={data.members}
             me={data.me}
             data={data}
+            canUpdateAnyComment={issue.access.canUpdateAnyComment}
+            canDeleteAnyComment={issue.access.canDeleteAnyComment}
             onSubmit={onComment}
             onRefresh={onRefresh}
           />
@@ -216,10 +220,14 @@ export function IssueDetailView({
             />
             <IssueComments
               issueId={issue.id}
+              workspaceId={data.workspaceId}
+              identifier={identifier}
               comments={issue.comments}
               members={data.members}
               me={data.me}
               data={data}
+              canUpdateAnyComment={issue.access.canUpdateAnyComment}
+              canDeleteAnyComment={issue.access.canDeleteAnyComment}
               onSubmit={onComment}
               onRefresh={onRefresh}
             />

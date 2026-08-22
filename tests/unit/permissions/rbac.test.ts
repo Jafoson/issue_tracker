@@ -285,6 +285,8 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
       "project.view",
       "comment.create",
       "comment.delete.own",
+      "comment.update.own",
+      "comment.react",
     ];
 
     it("beschränkt die einschränkenden Rollen allein über ihre Liste", () => {

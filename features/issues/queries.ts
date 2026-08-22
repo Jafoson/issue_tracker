@@ -34,27 +34,40 @@ import type {
 
 // ── Shared DB → client mappers ────────────────────────────────────────────────
 
-function mapIssue(i: {
-  id: string;
-  key: number;
-  title: string;
-  status: string;
-  priority: number;
-  // `JsonValue` aus der Datenbank: was in der Spalte steht, ist erst einmal
-  // beliebiges JSON. `toDoc` macht daraus ein gültiges Dokument — oder ein
-  // leeres, falls die Zeile beschädigt ist.
-  description: unknown;
-  type: string;
-  labels: string[];
-  rank: number;
-  assigneeId: string | null;
-  reporterId: string;
-  projectId: string;
-  created: Date;
-  updated: Date;
-  comments: { id: string; body: unknown; authorId: string; created: Date }[];
-  shareToken?: string | null;
-}): Issue {
+function mapIssue(
+  i: {
+    id: string;
+    key: number;
+    title: string;
+    status: string;
+    priority: number;
+    // `JsonValue` aus der Datenbank: was in der Spalte steht, ist erst einmal
+    // beliebiges JSON. `toDoc` macht daraus ein gültiges Dokument — oder ein
+    // leeres, falls die Zeile beschädigt ist.
+    description: unknown;
+    type: string;
+    labels: string[];
+    rank: number;
+    assigneeId: string | null;
+    reporterId: string;
+    projectId: string;
+    created: Date;
+    updated: Date;
+    comments: {
+      id: string;
+      body: unknown;
+      authorId: string;
+      created: Date;
+      updated: Date | null;
+      parentId: string | null;
+      reactions: { userId: string; emoji: string }[];
+    }[];
+    shareToken?: string | null;
+  },
+  // Für `reactedByMe` — wer nicht eingeloggt ist (öffentliche Aufrufe gibt es
+  // hier nicht, aber der Typ bleibt ehrlich), sieht keine Reaktion als eigene.
+  viewerId: string | null,
+): Issue {
   return {
     id: i.id,
     key: i.key,
@@ -75,9 +88,28 @@ function mapIssue(i: {
       body: toDoc(c.body),
       author: c.authorId,
       time: c.created.getTime(),
+      updated: c.updated ? c.updated.getTime() : null,
+      parentId: c.parentId,
+      reactions: groupReactions(c.reactions, viewerId),
     })),
     shareUrl: i.shareToken ? issueShareUrl(i.shareToken) : null,
   };
+}
+
+/** Rohe Reaktionszeilen nach Emoji gruppiert — die Kommentarleiste zeigt nur
+ *  die Zusammenfassung, nie die einzelnen Personen dahinter. */
+function groupReactions(
+  reactions: { userId: string; emoji: string }[],
+  viewerId: string | null,
+): { emoji: string; count: number; reactedByMe: boolean }[] {
+  const byEmoji = new Map<string, { count: number; reactedByMe: boolean }>();
+  for (const r of reactions) {
+    const entry = byEmoji.get(r.emoji) ?? { count: 0, reactedByMe: false };
+    entry.count += 1;
+    if (viewerId && r.userId === viewerId) entry.reactedByMe = true;
+    byEmoji.set(r.emoji, entry);
+  }
+  return [...byEmoji.entries()].map(([emoji, v]) => ({ emoji, ...v }));
 }
 
 /**
@@ -484,9 +516,15 @@ export async function getIssuesByProject(
     // Der Ausschnitt steht hinter den Filtern: kein Slug in der URL kann ihn
     // überschreiben.
     where: { ...where, projectId },
-    include: { comments: { orderBy: { created: "asc" } } },
+    include: {
+      comments: {
+        orderBy: { created: "asc" },
+        include: { reactions: true },
+      },
+    },
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
+  const viewerId = await currentUserId();
   // `issueAccessFor` löst je Projekt einmal auf und ist `cache()`d — bei allen
   // Zeilen desselben Projekts kostet das keine weitere Datenbankfrage. Board
   // und Liste zeigen sonst Titel, Status, Priorität und Zuständigkeit als
@@ -496,7 +534,7 @@ export async function getIssuesByProject(
   // `resolveIssueAttachments`).
   return Promise.all(
     rows.map(async (i) => ({
-      ...mapIssue(i),
+      ...mapIssue(i, viewerId),
       access: await issueAccessFor(i),
       attachments: [],
     })),
@@ -527,7 +565,12 @@ export async function getMyIssues(
     // Zuständigkeit und Ausschnitt stehen hinter den Filtern — ein `?assignee=`
     // in der Adresse macht aus „meinen“ keine fremden Aufgaben.
     where: { ...where, assigneeId: userId, projectId: { in: scoped } },
-    include: { comments: { orderBy: { created: "asc" } } },
+    include: {
+      comments: {
+        orderBy: { created: "asc" },
+        include: { reactions: true },
+      },
+    },
     // Wie im Projekt: nach Rang, damit eine gezogene Zeile dort liegen bleibt,
     // wo sie fallen gelassen wurde.
     orderBy: [{ rank: "asc" }, { created: "asc" }],
@@ -537,7 +580,7 @@ export async function getMyIssues(
   // `getIssuesByProject`.
   return Promise.all(
     rows.map(async (i) => ({
-      ...mapIssue(i),
+      ...mapIssue(i, userId),
       access: await issueAccessFor(i),
       attachments: [],
     })),
@@ -566,6 +609,8 @@ async function issueAccessFor(issue: {
       canAssign: false,
       canDelete: false,
       canShare: false,
+      canUpdateAnyComment: false,
+      canDeleteAnyComment: false,
     };
 
   const access = await accessFor(userId, { projectId: issue.projectId });
@@ -583,6 +628,8 @@ async function issueAccessFor(issue: {
     canAssign: canEdit && access.has("issue.assign"),
     canDelete,
     canShare: access.has("issue.share.manage"),
+    canUpdateAnyComment: access.has("comment.update.any"),
+    canDeleteAnyComment: access.has("comment.delete.any"),
   };
 }
 
@@ -590,7 +637,10 @@ export async function getIssueById(id: string): Promise<IssueDetail | null> {
   const i = await db.issue.findUnique({
     where: { id },
     include: {
-      comments: { orderBy: { created: "asc" } },
+      comments: {
+        orderBy: { created: "asc" },
+        include: { reactions: true },
+      },
       attachments: { orderBy: { created: "asc" } },
     },
   });
@@ -602,7 +652,11 @@ export async function getIssueById(id: string): Promise<IssueDetail | null> {
     return null;
   const access = await issueAccessFor(i);
   const attachments = await resolveIssueAttachments(i.attachments);
-  return { ...withIssueAttachments(mapIssue(i), attachments), access };
+  const viewerId = await currentUserId();
+  return {
+    ...withIssueAttachments(mapIssue(i, viewerId), attachments),
+    access,
+  };
 }
 
 /**
@@ -631,14 +685,21 @@ export const getIssueByRef = cache(
     const i = await db.issue.findUnique({
       where: { projectId_key: { projectId: project.id, key } },
       include: {
-        comments: { orderBy: { created: "asc" } },
+        comments: {
+          orderBy: { created: "asc" },
+          include: { reactions: true },
+        },
         attachments: { orderBy: { created: "asc" } },
       },
     });
     if (!i) return null;
     const access = await issueAccessFor(i);
     const attachments = await resolveIssueAttachments(i.attachments);
-    return { ...withIssueAttachments(mapIssue(i), attachments), access };
+    const viewerId = await currentUserId();
+    return {
+      ...withIssueAttachments(mapIssue(i, viewerId), attachments),
+      access,
+    };
   },
 );
 

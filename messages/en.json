@@ -416,6 +416,11 @@
     "title": "Comments",
     "commentedOn": "commented on",
     "empty": "No comments yet. Start the discussion.",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a reply…",
+    "edited": "(edited)",
+    "addReaction": "Add reaction",
+    "reactionSearchPlaceholder": "Search emoji…",
     "toSend": "to send"
   },
   "attachments": {

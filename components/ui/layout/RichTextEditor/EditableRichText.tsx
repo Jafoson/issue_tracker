@@ -80,6 +80,14 @@ interface EditableRichTextProps {
   className?: string;
   /** Nur Anzeige: kein Klick öffnet den Editor, `onCommit` wird nie aufgerufen. */
   readOnly?: boolean;
+  /**
+   * Macht den Bearbeitungszustand von außen steuerbar — z.B. ein Kebab-Menü-
+   * Eintrag „Bearbeiten", der den Editor öffnet, ohne dass auf den Text
+   * geklickt wurde. Fehlt eine der beiden Props, bleibt der Zustand intern
+   * (`useState`, das bisherige Verhalten) — beide zusammen übernehmen ihn.
+   */
+  editing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 export function EditableRichText({
@@ -99,10 +107,15 @@ export function EditableRichText({
   labels,
   className,
   readOnly = false,
+  editing: editingProp,
+  onEditingChange,
 }: EditableRichTextProps) {
   const [draft, setDraft] = useState<PMDoc>(() => toDoc(value));
   const [source, setSource] = useState(value);
-  const [isEditing, setIsEditing] = useState(false);
+  const [internalEditing, setInternalEditing] = useState(false);
+  // Kontrolliert, sobald beide Props da sind — sonst wie bisher rein intern.
+  const isEditing = editingProp ?? internalEditing;
+  const setIsEditing = onEditingChange ?? setInternalEditing;
   // Der Vergleich läuft über den serialisierten Stand: zwei Dokumente sind
   // gleich, wenn ihr JSON gleich ist, und `onUpdate` liefert bei jedem
   // Tastendruck ein neues Objekt.
@@ -162,7 +175,7 @@ export function EditableRichText({
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [isEditing, value]);
+  }, [isEditing, value, setIsEditing]);
 
   useEffect(() => {
     if (!isEditing) return;

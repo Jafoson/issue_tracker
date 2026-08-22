@@ -276,6 +276,18 @@ export const PERMISSIONS = {
     desc: "Nur eigene Kommentare löschen",
     scopes: PROJECT_ONLY,
   },
+  "comment.update.any": {
+    desc: "Beliebige Kommentare bearbeiten",
+    scopes: PROJECT_ONLY,
+  },
+  "comment.update.own": {
+    desc: "Nur eigene Kommentare bearbeiten",
+    scopes: PROJECT_ONLY,
+  },
+  "comment.react": {
+    desc: "Auf Kommentare reagieren",
+    scopes: PROJECT_ONLY,
+  },
 } as const satisfies Record<string, PermissionDef>;
 
 export type Permission = keyof typeof PERMISSIONS;

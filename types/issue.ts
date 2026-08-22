@@ -37,12 +37,26 @@ export interface IssueType {
   color: string;
 }
 
+/** Eine Reaktion, schon nach Emoji gruppiert. */
+export interface CommentReactionSummary {
+  emoji: string;
+  count: number;
+  /** Ob der aktuelle Betrachter selbst mit diesem Emoji reagiert hat —
+   *  steuert die Hervorhebung der Pille und das Umschalten per Klick. */
+  reactedByMe: boolean;
+}
+
 export interface Comment {
   id: string;
   author: string;
   time: number;
+  /** `null` = nie bearbeitet — steuert den „bearbeitet"-Hinweis. */
+  updated: number | null;
+  /** `null` = Top-Level-Kommentar, sonst die Id des Elternkommentars. */
+  parentId: string | null;
   /** ProseMirror-Dokument — angezeigt von `components/ui/atoms/RichText`. */
   body: PMDoc;
+  reactions: CommentReactionSummary[];
 }
 
 /**
@@ -104,6 +118,10 @@ export interface IssueAccess {
   canDelete: boolean;
   /** `issue.share.manage` — öffentlichen Lese-Link erstellen/widerrufen. */
   canShare: boolean;
+  /** `comment.update.any` — fremde Kommentare bearbeiten, nicht nur eigene. */
+  canUpdateAnyComment: boolean;
+  /** `comment.delete.any` — fremde Kommentare löschen, nicht nur eigene. */
+  canDeleteAnyComment: boolean;
 }
 
 /** Ein Issue, wie es die Detailansicht (Panel, Dialog, Vollseite) lädt. */
