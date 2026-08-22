@@ -78,6 +78,18 @@ export function formatBytes(bytes: number): string {
   return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`;
 }
 
+/** Symbol für einen Anhang ohne echte Miniatur (Kachel-Fallback,
+ *  Vorschau-Dialog) — `RichText`, `AttachmentView`, die Anhänge-Sektion und
+ *  der Vorschau-Dialog sollen alle denselben Blick auf einen MIME-Typ haben,
+ *  deshalb eine Stelle dafür wie bei `formatBytes`. */
+export function iconForMimeType(mimeType: string | null): string {
+  if (mimeType === "application/pdf") return "lucide:file-text";
+  if (mimeType?.startsWith("image/")) return "lucide:image";
+  if (mimeType?.startsWith("video/")) return "lucide:film";
+  if (mimeType?.startsWith("audio/")) return "lucide:file-audio";
+  return "lucide:file";
+}
+
 function mapAttachmentNodes(
   nodes: PMNode[] | undefined,
   fn: (

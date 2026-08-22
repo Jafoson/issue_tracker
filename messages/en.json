@@ -422,8 +422,12 @@
     "add": "Add attachment",
     "addFile": "Upload a file",
     "addLink": "Add link",
+    "download": "Download",
+    "downloadFailed": "Download failed",
     "dropHint": "Drag a file here or click to add",
     "empty": "No attachments",
+    "noPreview": "No preview available",
+    "openOriginal": "Open original",
     "remove": "Remove",
     "title": "Attachments"
   },

@@ -3,6 +3,7 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { type DragEvent, useRef, useState } from "react";
+import { FilePreview } from "@/components/ui/atoms/FilePreview/FilePreview";
 import { InlinePicker } from "@/components/ui/atoms/InlinePicker/InlinePicker";
 import { LinkForm } from "@/components/ui/layout/RichTextEditor/components/LinkForm/LinkForm";
 import {
@@ -10,12 +11,15 @@ import {
   deleteIssueAttachment,
 } from "@/features/issues/actions";
 import { uploadIssueAttachment } from "@/features/issues/uploadAttachment";
+import { useModal } from "@/lib/context/ModalContext/modalContext";
 import {
   ATTACHMENT_DRAG_MIME,
   type AttachmentDragPayload,
   formatBytes,
+  iconForMimeType,
 } from "@/lib/richtext/attachments";
 import { faviconOf } from "@/lib/richtext/link";
+import { useTimeAgo } from "@/lib/utils/useTimeAgo";
 import type { IssueAttachment } from "@/types";
 import styles from "../issueDetail.module.scss";
 
@@ -26,15 +30,6 @@ interface IssueAttachmentsProps {
   /** Holt das Issue neu — Uploads/Löschen laufen über eigene Server Actions,
    *  das Panel hängt an keinem Server-Render (`useIssueDetail`). */
   onRefresh: () => Promise<void>;
-}
-
-/** Symbol für die Kachel-Vorschau, wenn keine echte Miniatur möglich ist —
- *  eine PDF bekommt wenigstens ein eigenes Zeichen statt des generischen. */
-function iconFor(mimeType: string | null): string {
-  if (mimeType === "application/pdf") return "lucide:file-text";
-  if (mimeType?.startsWith("video/")) return "lucide:film";
-  if (mimeType?.startsWith("audio/")) return "lucide:file-audio";
-  return "lucide:file";
 }
 
 /** Vorschau einer einzelnen Kachel: echtes Bild bei einem Bild-Anhang — Upload
@@ -58,7 +53,7 @@ function TilePreview({ a }: { a: IssueAttachment }) {
   }
   return (
     <Icon
-      icon={a.kind === "link" ? "lucide:link" : iconFor(a.mimeType)}
+      icon={a.kind === "link" ? "lucide:link" : iconForMimeType(a.mimeType)}
       width={22}
       aria-hidden="true"
     />
@@ -132,6 +127,8 @@ export function IssueAttachments({
   onRefresh,
 }: IssueAttachmentsProps) {
   const t = useTranslations();
+  const timeAgo = useTimeAgo();
+  const { openModal } = useModal();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -139,6 +136,35 @@ export function IssueAttachments({
 
   const canAdd = !readOnly;
   const isEmpty = attachments.length === 0;
+
+  /** Statt direkt zur (bei Uploads presignten, ablaufenden) Adresse zu
+   *  verlinken: eine Vorschau im Dialog, aus der heraus man gezielt
+   *  herunterladen kann. Nur `kind: "file"` bekommt den echten
+   *  Download-Knopf — bei einem Link-Anhang ist die Adresse fremder Inhalt,
+   *  kein eigener Upload, den man forciert herunterladen könnte. */
+  const openPreview = (a: IssueAttachment) => {
+    if (!a.url) return;
+    const url = a.url;
+    openModal(
+      ({ close }) => (
+        <FilePreview
+          url={url}
+          name={a.name}
+          mimeType={a.mimeType}
+          size={a.size}
+          downloadable={a.kind === "file"}
+          addedAt={timeAgo(a.createdAt)}
+          close={close}
+          closeLabel={t("actions.close")}
+          downloadLabel={t("attachments.download")}
+          downloadFailedLabel={t("attachments.downloadFailed")}
+          openOriginalLabel={t("attachments.openOriginal")}
+          noPreviewLabel={t("attachments.noPreview")}
+        />
+      ),
+      { label: a.name },
+    );
+  };
 
   const upload = async (file: File) => {
     setError(null);
@@ -305,20 +331,20 @@ export function IssueAttachments({
                     : undefined
                 }
               >
-                <a
-                  href={a.url ?? undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
                   className={styles.attachmentTileVisual}
                   title={a.name}
-                  onClick={(e) => {
-                    if (!a.url) e.preventDefault();
-                  }}
+                  disabled={!a.url}
+                  onClick={() => openPreview(a)}
                 >
                   <TilePreview a={a} />
-                </a>
+                </button>
                 <div className={styles.attachmentTileCaption} title={a.name}>
                   <span>{a.name}</span>
+                  <span className={styles.attachmentTileSize}>
+                    {timeAgo(a.createdAt)}
+                  </span>
                   {a.size != null && (
                     <span className={styles.attachmentTileSize}>
                       {formatBytes(a.size)}

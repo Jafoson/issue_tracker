@@ -422,8 +422,12 @@
     "add": "Anhang hinzufügen",
     "addFile": "Datei hochladen",
     "addLink": "Link hinzufügen",
+    "download": "Herunterladen",
+    "downloadFailed": "Herunterladen fehlgeschlagen",
     "dropHint": "Datei hierher ziehen oder klicken zum Hinzufügen",
     "empty": "Keine Anhänge",
+    "noPreview": "Keine Vorschau verfügbar",
+    "openOriginal": "Original öffnen",
     "remove": "Entfernen",
     "title": "Anhänge"
   },
