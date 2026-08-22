@@ -274,6 +274,8 @@ export function IssueAttachments({
           )
         ) : (
           <div className={styles.attachmentGrid}>
+            {canAdd && addTrigger("tile")}
+
             {attachments.map((a) => (
               // biome-ignore lint/a11y/noStaticElementInteractions: `draggable` trägt nur den Ziehgriff — Klick/Öffnen bleibt beim Link/Kachel-Inhalt darin
               <div
@@ -337,8 +339,6 @@ export function IssueAttachments({
                 )}
               </div>
             ))}
-
-            {canAdd && addTrigger("tile")}
           </div>
         )}
       </div>
