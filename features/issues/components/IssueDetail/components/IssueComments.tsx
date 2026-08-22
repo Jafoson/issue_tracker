@@ -8,8 +8,13 @@ import { Avatar } from "@/components/ui/atoms/Avatar/Avatar";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import { RichText } from "@/components/ui/atoms/RichText/RichText";
 import { ModalShortcut } from "@/components/ui/layout/Modal/components/ModalFooter";
+import {
+  addIssueLinkAttachment,
+  deleteIssueAttachment,
+} from "@/features/issues/actions";
 import { useEditorSources } from "@/features/issues/components/IssueRichText/IssueRichText";
 import type { IssueEditorData } from "@/features/issues/types";
+import { uploadIssueAttachment } from "@/features/issues/uploadAttachment";
 import { emptyDoc, isEmptyDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 import { fullName } from "@/lib/utils/string";
@@ -34,6 +39,7 @@ const RichTextEditor = dynamic(
 );
 
 interface IssueCommentsProps {
+  issueId: string;
   comments: Comment[];
   members: User[];
   me: User;
@@ -41,14 +47,24 @@ interface IssueCommentsProps {
   data: IssueEditorData;
   /** Schreibt den Kommentar; erst danach leert sich das Feld. */
   onSubmit: (body: PMDoc) => Promise<void>;
+  /**
+   * Holt das Issue neu — ein Anhang im Kommentarfeld läuft über dieselben
+   * `issueId`-Actions wie in der Beschreibung (`Attachment` kennt keinen
+   * eigenen Kommentarbezug, siehe `IssueDescription.tsx`) und landet damit
+   * automatisch auch in der Anhänge-Sektion, die selbst an keinem
+   * Server-Render hängt und erst darüber vom neuen Stand erfährt.
+   */
+  onRefresh: () => Promise<void>;
 }
 
 export function IssueComments({
+  issueId,
   comments,
   members,
   me,
   data,
   onSubmit,
+  onRefresh,
 }: IssueCommentsProps) {
   const t = useTranslations();
   const timeAgo = useTimeAgo();
@@ -125,6 +141,49 @@ export function IssueComments({
             placeholder={t("placeholders.addComment")}
             members={sources.members}
             issues={sources.issues}
+            onUploadAttachment={async (file) => {
+              const result = await uploadIssueAttachment(issueId, file);
+              if ("error" in result) return result;
+              const { attachment } = result;
+              if (!attachment.url) {
+                return { error: t("editor.attachmentUploadFailed") };
+              }
+              // Nicht abwarten: der Knoten soll sofort im Kommentarfeld
+              // erscheinen, die Anhänge-Sektion zieht kurz danach nach.
+              onRefresh();
+              return {
+                id: attachment.id,
+                url: attachment.url,
+                name: attachment.name,
+                mimeType: attachment.mimeType,
+                size: attachment.size,
+              };
+            }}
+            onRemoveAttachment={async (id) => {
+              const result = await deleteIssueAttachment(issueId, id);
+              if ("error" in result) throw new Error(result.error);
+              onRefresh();
+            }}
+            onAddLinkAttachment={async ({ url, name, mimeType }) => {
+              const result = await addIssueLinkAttachment(issueId, {
+                url,
+                name,
+                mimeType,
+              });
+              if ("error" in result) return result;
+              const { attachment } = result;
+              if (!attachment.url) {
+                return { error: t("editor.attachmentUploadFailed") };
+              }
+              onRefresh();
+              return {
+                id: attachment.id,
+                url: attachment.url,
+                name: attachment.name,
+                mimeType: attachment.mimeType,
+                size: attachment.size,
+              };
+            }}
           />
           <div className={styles.composerFoot}>
             <ModalShortcut keys={["⌘", "↵"]}>

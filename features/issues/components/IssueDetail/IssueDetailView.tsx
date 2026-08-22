@@ -183,11 +183,13 @@ export function IssueDetailView({
           />
           <IssueMeta issue={issue} data={data} layout="column" />
           <IssueComments
+            issueId={issue.id}
             comments={issue.comments}
             members={data.members}
             me={data.me}
             data={data}
             onSubmit={onComment}
+            onRefresh={onRefresh}
           />
         </div>
       ) : (
@@ -213,11 +215,13 @@ export function IssueDetailView({
               onRefresh={onRefresh}
             />
             <IssueComments
+              issueId={issue.id}
               comments={issue.comments}
               members={data.members}
               me={data.me}
               data={data}
               onSubmit={onComment}
+              onRefresh={onRefresh}
             />
           </div>
 

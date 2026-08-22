@@ -203,4 +203,5 @@
   transition: background .12s;
 
   &:hover { background: var(--surface-container-high); }
+  &.active { background: var(--surface-container-highest); }
 }

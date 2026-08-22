@@ -618,7 +618,7 @@
     "weeks": "{count}w ago"
   },
   "editor": {
-    "attachment": "Attachment",
+    "attachment": "Insert image, video, or file",
     "attachmentApply": "Insert attachment",
     "attachmentFromUrl": "From a URL",
     "attachmentRemove": "Remove attachment",

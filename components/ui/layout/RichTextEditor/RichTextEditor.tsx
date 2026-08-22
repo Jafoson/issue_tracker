@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReferenceElement } from "@floating-ui/dom";
 import { Icon } from "@iconify/react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
@@ -48,6 +49,7 @@ import {
 } from "./extensions/SlashCommand";
 import { createSuggestion } from "./extensions/suggestion";
 import styles from "./richTextEditor.module.scss";
+import { useFloatingPosition } from "./useFloatingPosition";
 
 /**
  * Der Editor. Läuft nur im Browser — geladen wird er von `EditableRichText`
@@ -65,6 +67,19 @@ import styles from "./richTextEditor.module.scss";
  * den Wurzel-Namensraum meint.
  */
 export type EditorTranslator = ReturnType<typeof useTranslations<"editor">>;
+
+/**
+ * Ein virtuelles Bezugselement am Cursor — für Floating UI ununterscheidbar
+ * von einem echten DOM-Knoten wie einem Werkzeugleisten-Knopf. Trägt eine
+ * Einblendung (Adresszeile, Anhang-Dialog) an die Schreibposition, wenn kein
+ * Knopf sie ausgelöst hat (Tastenkürzel, `/`-Menü).
+ */
+function cursorReference(view: Editor["view"]): ReferenceElement {
+  const { top, bottom, left } = view.coordsAtPos(view.state.selection.from);
+  return {
+    getBoundingClientRect: () => new DOMRect(left, top, 0, bottom - top),
+  };
+}
 
 /** Ein Mitglied, wie es der `@`-Trigger braucht. */
 export interface MentionSource {
@@ -222,69 +237,100 @@ export function RichTextEditor({
     setCalendar({ x: at.left, y: at.bottom + 6 });
   }, []);
 
-  /** Wo die Adresszeile steht und womit sie startet. `null` heißt: zu. */
+  /** Woran die Adresszeile hängt und womit sie startet. `null` heißt: zu. */
   const [linkAt, setLinkAt] = useState<{
-    x: number;
-    y: number;
+    reference: ReferenceElement;
     initial: string;
     withName: boolean;
   } | null>(null);
 
   /**
-   * Öffnet die Adresszeile am Cursor. Steht der Cursor schon in einem Link,
-   * ist dessen Adresse vorbelegt — dann wird sie geändert statt neu gesetzt.
+   * Öffnet die Adresszeile — am angeklickten Knopf, oder ohne einen (Tasten-
+   * kürzel, `/`-Menü) am Cursor. Steht der Cursor schon in einem Link, ist
+   * dessen Adresse vorbelegt — dann wird sie geändert statt neu gesetzt.
    */
-  const openLink = useCallback(() => {
+  const openLink = useCallback((anchor?: HTMLElement) => {
     const editor = editorRef.current;
     const view = editor?.view;
     if (!editor || !view) return;
-    const at = view.coordsAtPos(view.state.selection.from);
     const current = editor.getAttributes("link").href;
     setLinkAt({
-      x: at.left,
-      y: at.bottom + 6,
+      reference: anchor ?? cursorReference(view),
       initial: typeof current === "string" ? current : "",
       // Ohne Markierung entsteht ein Chip — der braucht einen Namen.
       withName: view.state.selection.empty,
     });
   }, []);
 
-  /** Wo der Anhang-Dialog steht, und ob er die Auswahl oder schon die
+  /** Woran der Anhang-Dialog hängt, und ob er die Auswahl oder schon die
    *  Adresszeile zeigt. `null` heißt: zu. */
   const [attachmentPicker, setAttachmentPicker] = useState<{
-    x: number;
-    y: number;
+    reference: ReferenceElement;
     mode: "choose" | "url";
   } | null>(null);
 
+  /** Welche Option der Auswahl gerade markiert ist — Pfeiltasten wandern hier
+   *  wie im `/`-Menü, nur ohne dessen `SuggestionMenu`: der Anhang-Dialog
+   *  hängt nicht am Suggestion-Plugin, sondern ist eine eigene, freischwebende
+   *  Einblendung, deren Tastatur direkt über `handleKeyDown` unten läuft. */
+  const [attachmentChoiceIndex, setAttachmentChoiceIndex] = useState(0);
+
   /**
-   * Öffnet den Anhang-Dialog am Cursor — mit Auswahl zwischen URL und Upload,
+   * Öffnet den Anhang-Dialog — am angeklickten Knopf, oder ohne einen
+   * (Tastenkürzel, `/`-Menü) am Cursor — mit Auswahl zwischen URL und Upload,
    * wenn beides zur Verfügung steht, sonst direkt mit dem, was da ist. Bietet
    * die Editor-Instanz keins von beidem (Kommentare, Create-Issue-Composer),
    * bleibt es beim alten, schlichten URL-Prompt (setzt einen rohen
    * `image`-Knoten statt eines Anhangs — ohne Upload gibt es nichts, das
    * getrackt werden könnte).
    */
-  const openAttachmentPicker = useCallback(() => {
-    if (!onUploadAttachment && !onAddLinkAttachment) {
-      const src = window.prompt("https://");
-      if (src) editorRef.current?.chain().focus().setImage({ src }).run();
-      return;
-    }
-    if (!onAddLinkAttachment) {
-      onFilePickerOpen?.();
-      attachmentInputRef.current?.click();
-      return;
-    }
-    const view = editorRef.current?.view;
-    if (!view) return;
-    const at = view.coordsAtPos(view.state.selection.from);
-    setAttachmentPicker({
-      x: at.left,
-      y: at.bottom + 6,
-      mode: onUploadAttachment ? "choose" : "url",
-    });
-  }, [onUploadAttachment, onAddLinkAttachment, onFilePickerOpen]);
+  const openAttachmentPicker = useCallback(
+    (anchor?: HTMLElement) => {
+      if (!onUploadAttachment && !onAddLinkAttachment) {
+        const src = window.prompt("https://");
+        if (src) editorRef.current?.chain().focus().setImage({ src }).run();
+        return;
+      }
+      if (!onAddLinkAttachment) {
+        onFilePickerOpen?.();
+        attachmentInputRef.current?.click();
+        return;
+      }
+      const view = editorRef.current?.view;
+      if (!view) return;
+      setAttachmentChoiceIndex(0);
+      setAttachmentPicker({
+        reference: anchor ?? cursorReference(view),
+        mode: onUploadAttachment ? "choose" : "url",
+      });
+    },
+    [onUploadAttachment, onAddLinkAttachment, onFilePickerOpen],
+  );
+
+  /** Die beiden Einträge der Auswahl — eine Liste, damit Tastatur (Pfeile,
+   *  Enter) und Maus (Klick, Hover) denselben Weg zum Ausführen nehmen. */
+  const attachmentChooserOptions = useMemo(
+    () => [
+      {
+        id: "upload",
+        label: t("attachmentUpload"),
+        icon: <Icon icon="lucide:upload" width={15} />,
+        onSelect: () => {
+          setAttachmentPicker(null);
+          onFilePickerOpen?.();
+          attachmentInputRef.current?.click();
+        },
+      },
+      {
+        id: "url",
+        label: t("attachmentFromUrl"),
+        icon: <Icon icon="lucide:link" width={15} />,
+        onSelect: () =>
+          setAttachmentPicker((p) => (p ? { ...p, mode: "url" as const } : p)),
+      },
+    ],
+    [t, onFilePickerOpen],
+  );
 
   /**
    * Zwei Wege, je nachdem, ob etwas markiert ist:
@@ -622,6 +668,39 @@ export function RichTextEditor({
       handleKeyDown: (_view, event) => {
         const mod = event.metaKey || event.ctrlKey;
 
+        // Die Auswahl im Anhang-Dialog ist keine `SuggestionMenu`-Instanz
+        // (die hängt am Suggestion-Plugin, dieser Dialog nicht) — die
+        // Tastatur läuft deshalb hier statt über deren `onKeyDown`. Gleiche
+        // Bedienung wie im `/`-Menü: ↑ ↓ wandern, ↵/Tab wählt, Esc schließt.
+        if (attachmentPicker?.mode === "choose") {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setAttachmentPicker(null);
+            return true;
+          }
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setAttachmentChoiceIndex(
+              (i) => (i + 1) % attachmentChooserOptions.length,
+            );
+            return true;
+          }
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setAttachmentChoiceIndex(
+              (i) =>
+                (i - 1 + attachmentChooserOptions.length) %
+                attachmentChooserOptions.length,
+            );
+            return true;
+          }
+          if (event.key === "Enter" || event.key === "Tab") {
+            event.preventDefault();
+            attachmentChooserOptions[attachmentChoiceIndex]?.onSelect();
+            return true;
+          }
+        }
+
         if (event.key === "Enter" && mod) {
           event.preventDefault();
           onSubmit?.();
@@ -710,6 +789,12 @@ export function RichTextEditor({
 
   editorRef.current = editor;
 
+  const linkPosition = useFloatingPosition(linkAt?.reference ?? null);
+  const attachmentPosition = useFloatingPosition(
+    attachmentPicker?.reference ?? null,
+    attachmentPicker?.mode,
+  );
+
   return (
     <div className={[styles.editor, className].filter(Boolean).join(" ")}>
       <EditorToolbar
@@ -792,9 +877,10 @@ export function RichTextEditor({
               onClick={dismiss(() => setLinkAt(null))}
             />
             <div
+              ref={linkPosition.floatingRef}
               className={styles.floatingLayer}
               data-editor-floating
-              style={{ left: linkAt.x, top: linkAt.y }}
+              style={linkPosition.style}
             >
               <LinkForm
                 initial={linkAt.initial}
@@ -826,38 +912,36 @@ export function RichTextEditor({
               onClick={dismiss(() => setAttachmentPicker(null))}
             />
             <div
+              ref={attachmentPosition.floatingRef}
               className={styles.floatingLayer}
               data-editor-floating
-              style={{ left: attachmentPicker.x, top: attachmentPicker.y }}
+              style={attachmentPosition.style}
             >
               {attachmentPicker.mode === "choose" ? (
-                <div className={styles.attachmentChooser}>
-                  <button
-                    type="button"
-                    className={styles.attachmentChooserOption}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() =>
-                      setAttachmentPicker((p) =>
-                        p ? { ...p, mode: "url" } : p,
-                      )
-                    }
-                  >
-                    <Icon icon="lucide:link" width={15} />
-                    {t("attachmentFromUrl")}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.attachmentChooserOption}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setAttachmentPicker(null);
-                      onFilePickerOpen?.();
-                      attachmentInputRef.current?.click();
-                    }}
-                  >
-                    <Icon icon="lucide:upload" width={15} />
-                    {t("attachmentUpload")}
-                  </button>
+                <div className={styles.attachmentChooser} role="listbox">
+                  {attachmentChooserOptions.map((option, index) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="option"
+                      aria-selected={index === attachmentChoiceIndex}
+                      data-index={index}
+                      className={`${styles.attachmentChooserOption}${
+                        index === attachmentChoiceIndex
+                          ? ` ${styles.active}`
+                          : ""
+                      }`}
+                      // Der Fokus muss im Editor bleiben, sonst greift die
+                      // Pfeiltasten-/Enter-Behandlung in `handleKeyDown` nicht
+                      // mehr, weil der Editor sie nur bei eigenem Fokus sieht.
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => setAttachmentChoiceIndex(index)}
+                      onClick={() => option.onSelect()}
+                    >
+                      {option.icon}
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               ) : (
                 <LinkForm
@@ -1096,6 +1180,7 @@ function slashItems(
         "foto",
         "photo",
         "picture",
+        "video",
         "datei",
         "file",
         "upload",

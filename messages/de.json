@@ -618,7 +618,7 @@
     "weeks": "vor {count} Wo."
   },
   "editor": {
-    "attachment": "Anhang",
+    "attachment": "Bild, Video, Datei einfügen",
     "attachmentApply": "Anhang einfügen",
     "attachmentFromUrl": "Von einer URL",
     "attachmentRemove": "Anhang entfernen",

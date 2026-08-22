@@ -122,11 +122,13 @@ export function IssueDetailPageView({
             onRefresh={onRefresh}
           />
           <IssueComments
+            issueId={issue.id}
             comments={issue.comments}
             members={data.members}
             me={data.me}
             data={data}
             onSubmit={onComment}
+            onRefresh={onRefresh}
           />
         </div>
 

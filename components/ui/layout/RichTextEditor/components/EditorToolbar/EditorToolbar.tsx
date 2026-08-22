@@ -34,13 +34,15 @@ type ToolId =
   | "attachment";
 
 interface ToolbarActions {
-  /** Öffnet die Adresszeile des Editors. */
-  onLink: () => void;
+  /** Öffnet die Adresszeile des Editors — direkt unter `anchor`, statt am
+   *  Cursor, der beim Klick auf einen Werkzeugleisten-Knopf woanders im Text
+   *  stehen kann. */
+  onLink: (anchor?: HTMLElement) => void;
   /** Öffnet den Anhang-Dialog (URL oder Upload, je nachdem, was die
    *  Editor-Instanz anbietet) — Bild, Video oder sonstige Datei, eine
    *  Auswahl statt getrennter Knöpfe. Fehlt, wo die Editor-Instanz keine
    *  Anhänge anbietet (Kommentare, Create-Issue-Composer). */
-  onAttachment?: () => void;
+  onAttachment?: (anchor?: HTMLElement) => void;
 }
 
 interface ToolButton {
@@ -48,7 +50,9 @@ interface ToolButton {
   icon: string;
   /** Tastenkürzel, das im Tooltip hinter dem Namen steht. */
   shortcut?: string;
-  run: (editor: Editor, actions: ToolbarActions) => void;
+  /** `anchor` ist der geklickte Knopf selbst — für Einblendungen, die sich
+   *  daran statt am Cursor ausrichten sollen. */
+  run: (editor: Editor, actions: ToolbarActions, anchor: HTMLElement) => void;
   /** Wann der Knopf als aktiv gilt. */
   active?: (editor: Editor) => boolean;
 }
@@ -119,7 +123,7 @@ const GROUPS: ToolButton[][] = [
       shortcut: "K",
       // Setzen, ändern und entfernen macht die Adresszeile — sie kennt den
       // bestehenden Link und bietet dann auch das Lösen an.
-      run: (_editor, { onLink }) => onLink(),
+      run: (_editor, { onLink }, anchor) => onLink(anchor),
       active: (e) => e.isActive("link"),
     },
     {
@@ -127,7 +131,7 @@ const GROUPS: ToolButton[][] = [
       icon: "lucide:paperclip",
       // Öffnet den Anhang-Dialog — die eigentliche Auswahl (URL/Upload) und
       // der Upload selbst laufen in `RichTextEditor.tsx`.
-      run: (_editor, { onAttachment }) => onAttachment?.(),
+      run: (_editor, { onAttachment }, anchor) => onAttachment?.(anchor),
     },
   ],
 ];
@@ -185,7 +189,9 @@ export function EditorToolbar({
                 // Der Fokus muss im Text bleiben — sonst verliert der Befehl
                 // die Auswahl, auf die er sich bezieht.
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => button.run(editor, { onLink, onAttachment })}
+                onClick={(e) =>
+                  button.run(editor, { onLink, onAttachment }, e.currentTarget)
+                }
               >
                 <Icon icon={button.icon} width={15} />
               </button>
