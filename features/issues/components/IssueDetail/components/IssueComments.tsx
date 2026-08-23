@@ -170,28 +170,48 @@ export function IssueComments({
     }
     return map;
   }, [comments]);
+  // Löst jenseits von MAX_INDENT_DEPTH den tatsächlichen Elternkommentar auf
+  // („Antwort auf …" in CommentThread.tsx) — der Einzug verrät es dort nicht
+  // mehr, weil ganze Äste als Geschwister nebeneinander landen.
+  const commentsById = useMemo(
+    () => new Map(comments.map((c) => [c.id, c])),
+    [comments],
+  );
   const topLevel = childrenByParent.get(null) ?? [];
   const visibleTopLevel = topLevel.slice(0, visibleCount);
   const remainingCount = topLevel.length - visibleTopLevel.length;
 
   const highlightId = searchParams.get("comment");
+  // Antworten sind jetzt standardmäßig eingeklappt (siehe CommentThread.tsx) —
+  // ein verlinkter Kommentar braucht deshalb seine ganze Vorfahren-Kette schon
+  // beim ersten Rendern aufgeklappt, sonst findet `scrollIntoView` unten kein
+  // Element (es steht gar nicht im DOM).
+  const highlightAncestorIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!highlightId) return ids;
+    let node = commentsById.get(highlightId);
+    while (node?.parentId) {
+      ids.add(node.parentId);
+      node = commentsById.get(node.parentId);
+    }
+    return ids;
+  }, [highlightId, commentsById]);
 
   // Ein verlinkter Kommentar kann außerhalb der ersten Seite liegen (oder
   // eine Antwort auf einen dieser späteren Threads sein) — vor dem Scrollen
   // erst so viele Top-Level-Threads aufdecken, dass sein Ast mit dabei ist.
   useEffect(() => {
     if (!highlightId) return;
-    const byId = new Map(comments.map((c) => [c.id, c]));
-    let node = byId.get(highlightId);
+    let node = commentsById.get(highlightId);
     while (node?.parentId) {
-      const parent = byId.get(node.parentId);
+      const parent = commentsById.get(node.parentId);
       if (!parent) break;
       node = parent;
     }
     if (!node) return;
     const index = topLevel.findIndex((c) => c.id === node.id);
     if (index >= 0 && index + 1 > visibleCount) setVisibleCount(index + 1);
-  }, [highlightId, comments, topLevel, visibleCount]);
+  }, [highlightId, commentsById, topLevel, visibleCount]);
 
   useEffect(() => {
     // `comments` erscheint nicht im Effekt-Körper, löst aber trotzdem einen
@@ -270,6 +290,8 @@ export function IssueComments({
                 comment={comment}
                 depth={0}
                 childrenByParent={childrenByParent}
+                commentsById={commentsById}
+                highlightAncestorIds={highlightAncestorIds}
                 members={members}
                 me={me}
                 data={data}

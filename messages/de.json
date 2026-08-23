@@ -424,7 +424,8 @@
     "toSend": "zum Senden",
     "showReplies": "{count, plural, one {# Antwort anzeigen} other {# Antworten anzeigen}}",
     "hideReplies": "{count, plural, one {# Antwort ausblenden} other {# Antworten ausblenden}}",
-    "loadMore": "{count, plural, one {# weiteren Kommentar laden} other {# weitere Kommentare laden}}"
+    "loadMore": "{count, plural, one {# weiteren Kommentar laden} other {# weitere Kommentare laden}}",
+    "replyingTo": "Antwort auf {name}"
   },
   "attachments": {
     "add": "Anhang hinzufügen",
