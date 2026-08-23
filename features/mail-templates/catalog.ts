@@ -16,6 +16,7 @@ export const MAIL_TEMPLATE_KEYS = [
   "notification.assigned",
   "notification.mentioned",
   "notification.comment",
+  "notification.commentReply",
   "notification.status",
   "notification.invite",
   "notification.role",
@@ -149,6 +150,18 @@ export const MAIL_TEMPLATE_CATALOG: Record<MailTemplateKey, MailTemplateMeta> =
         ISSUE_ID,
         ISSUE_TITLE,
         { key: "text", description: "Kommentar-Vorschau" },
+      ],
+    },
+    "notification.commentReply": {
+      key: "notification.commentReply",
+      label: "Antwort auf eigenen Kommentar",
+      group: "Benachrichtigungen",
+      wired: true,
+      placeholders: [
+        ACTOR,
+        ISSUE_ID,
+        ISSUE_TITLE,
+        { key: "text", description: "Vorschau der Antwort" },
       ],
     },
     "notification.status": {

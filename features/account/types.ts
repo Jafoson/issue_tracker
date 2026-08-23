@@ -14,6 +14,7 @@ export const NOTIFICATION_EVENTS = [
   "assigned",
   "mentioned",
   "comment",
+  "commentReply",
   "status",
   "invite",
   "role",

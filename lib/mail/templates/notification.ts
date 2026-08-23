@@ -29,6 +29,7 @@ const HEADING: Record<NotificationEvent, string> = {
   assigned: "Dir wurde ein Issue zugewiesen",
   mentioned: "Du wurdest erwähnt",
   comment: "Neuer Kommentar",
+  commentReply: "Antwort auf deinen Kommentar",
   status: "Status geändert",
   invite: "Du bist jetzt Mitglied",
   role: "Deine Rolle wurde geändert",
@@ -39,6 +40,7 @@ const CTA_LABEL: Record<NotificationEvent, string> = {
   assigned: "Issue öffnen",
   mentioned: "Issue öffnen",
   comment: "Issue öffnen",
+  commentReply: "Issue öffnen",
   status: "Issue öffnen",
   invite: "Mitglieder ansehen",
   role: "Mitglieder ansehen",
@@ -55,6 +57,10 @@ const SUBJECT: Record<
     i.issue ? `Du wurdest in ${i.issue.identifier} erwähnt` : HEADING.mentioned,
   comment: (i) =>
     i.issue ? `Neuer Kommentar zu ${i.issue.identifier}` : HEADING.comment,
+  commentReply: (i) =>
+    i.issue
+      ? `Antwort auf deinen Kommentar in ${i.issue.identifier}`
+      : HEADING.commentReply,
   status: (i) =>
     i.issue ? `Status geändert: ${i.issue.identifier}` : HEADING.status,
   invite: (i) =>
@@ -80,6 +86,8 @@ function defaultIntro(input: NotificationEmailInput): string {
       return `${input.actorLabel} hat dich in ${issueLabel} erwähnt.`;
     case "comment":
       return `${input.actorLabel} hat ${issueLabel} kommentiert.`;
+    case "commentReply":
+      return `${input.actorLabel} hat auf deinen Kommentar in ${issueLabel} geantwortet.`;
     case "status":
       return `${input.actorLabel} hat den Status von ${issueLabel} auf ${humanizeKey(input.text)} geändert.`;
     case "invite":
@@ -97,6 +105,7 @@ function defaultIntro(input: NotificationEmailInput): string {
 function quoteFor(input: NotificationEmailInput): string | null {
   if (
     input.type !== "comment" &&
+    input.type !== "commentReply" &&
     input.type !== "mentioned" &&
     input.type !== "issueShared"
   )

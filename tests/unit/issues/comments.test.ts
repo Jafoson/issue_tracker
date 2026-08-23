@@ -36,6 +36,14 @@ mock.module("@/lib/permissions", () => ({
   PermissionError: MockPermissionError,
 }));
 
+// Nicht der echte `notify()` — der bräuchte `db.userPreferences`, das der
+// `@/lib/db`-Mock oben nicht kennt. Getestet wird hier nur, *wer* für eine
+// Antwort benachrichtigt wird (`commentReply` an den Elternautor statt der
+// generischen `comment`-Zeile), nicht der Versand selbst — dafür gibt es
+// `tests/unit/notifications/notify.test.ts`, in einem eigenen Prozess.
+const mockNotify = mock();
+mock.module("@/lib/notify", () => ({ notify: mockNotify }));
+
 mock.module("next/cache", () => ({ revalidatePath: mock() }));
 
 import {
@@ -69,6 +77,7 @@ function reset() {
     mockCommentReactionDelete,
     mockRequirePermission,
     mockRequirePermissionOr,
+    mockNotify,
   ]) {
     m.mockReset();
   }
@@ -120,6 +129,42 @@ describe("addComment() — Antworten", () => {
     expect(mockCommentCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({ parentId: undefined }),
     });
+  });
+
+  it("benachrichtigt den Elternautor mit `commentReply`, nicht mit `comment` — auch wenn er zufällig Bearbeiter ist", async () => {
+    // Bearbeiter = Elternautor: ohne die Ausschluss-Logik in `addComment`
+    // bekäme diese Person beide Benachrichtigungen für dieselbe Antwort.
+    mockIssueFindUnique.mockResolvedValue(
+      issueRow({ assigneeId: "u-parent-author" }),
+    );
+    mockCommentFindUnique.mockResolvedValue({
+      issueId: ISSUE_ID,
+      authorId: "u-parent-author",
+    });
+
+    await addComment(ISSUE_ID, emptyDoc(), ACTOR, "c-parent");
+
+    expect(mockNotify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "u-parent-author",
+        type: "commentReply",
+        actorId: ACTOR,
+      }),
+    );
+    // Genau ein Aufruf: die generische "comment"-Benachrichtigung an den
+    // Bearbeiter entfällt, weil er hier derselbe wie der Elternautor ist.
+    expect(mockNotify).toHaveBeenCalledTimes(1);
+  });
+
+  it("benachrichtigt niemanden, wenn man auf den eigenen Kommentar antwortet", async () => {
+    mockCommentFindUnique.mockResolvedValue({
+      issueId: ISSUE_ID,
+      authorId: ACTOR,
+    });
+
+    await addComment(ISSUE_ID, emptyDoc(), ACTOR, "c-parent");
+
+    expect(mockNotify).not.toHaveBeenCalled();
   });
 });
 

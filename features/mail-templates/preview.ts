@@ -129,6 +129,21 @@ export function renderMailPreview(
         },
         override,
       );
+    case "notification.commentReply":
+      return notificationEmail(
+        {
+          to: SAMPLE_TO,
+          type: "commentReply",
+          actorLabel: "Jonas Reuter",
+          text: "Guter Punkt — ich passe das noch vor dem Release an.",
+          workspaceName: "Acme",
+          project: { name: "Apollo Redesign" },
+          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          url: SAMPLE_URL,
+          manageUrl: SAMPLE_MANAGE_URL,
+        },
+        override,
+      );
     case "notification.status":
       return notificationEmail(
         {

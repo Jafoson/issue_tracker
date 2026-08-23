@@ -204,6 +204,11 @@ model UserPreferences {
   mentionedEmail   Boolean @default(true)
   commentInApp     Boolean @default(true)
   commentEmail     Boolean @default(false)
+  // Antwort auf einen eigenen Kommentar (nicht bloß ein neuer Kommentar am
+  // selben Issue) — direkter adressiert als der allgemeine `comment`-Anlass,
+  // deshalb wie bei `mentioned` per Default auch per Mail an.
+  commentReplyInApp Boolean @default(true)
+  commentReplyEmail Boolean @default(true)
   statusInApp      Boolean @default(true)
   statusEmail      Boolean @default(false)
   inviteInApp      Boolean @default(true)
@@ -902,7 +907,7 @@ model Notification {
   id        String    @id @default(cuid())
   userId    String
   /// Schlüssel aus `NOTIFICATION_EVENTS` — assigned, mentioned, comment,
-  /// status, invite, role.
+  /// commentReply, status, invite, role, issueShared.
   type      String
   createdAt DateTime  @default(now())
   readAt    DateTime?
@@ -915,7 +920,7 @@ model Notification {
   actorId    String?
   actorLabel String  @default("")
   /// Zusatztext je nach `type`: Rollenname (role/invite), Statuskey (status)
-  /// oder Kommentar-Vorschau (comment/mentioned).
+  /// oder Kommentar-Vorschau (comment/commentReply/mentioned).
   text       String  @default("")
 
   user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)

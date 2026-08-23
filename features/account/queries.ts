@@ -51,6 +51,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   mentionedEmail: true,
   commentInApp: true,
   commentEmail: false,
+  commentReplyInApp: true,
+  commentReplyEmail: true,
   statusInApp: true,
   statusEmail: false,
   inviteInApp: true,

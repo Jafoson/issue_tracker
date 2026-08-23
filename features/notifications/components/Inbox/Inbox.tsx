@@ -34,6 +34,7 @@ const EVENT_ICON: Record<NotificationEvent, string> = {
   assigned: "lucide:user-check",
   mentioned: "lucide:at-sign",
   comment: "lucide:message-circle",
+  commentReply: "lucide:reply",
   status: "lucide:refresh-cw",
   invite: "lucide:user-plus",
   role: "lucide:shield",
@@ -77,6 +78,8 @@ export function Inbox({ notifications, workspaceId, filter, statuses }: Props) {
         return t("inbox.event.mentioned", { actor, issue });
       case "comment":
         return t("inbox.event.comment", { actor, issue });
+      case "commentReply":
+        return t("inbox.event.commentReply", { actor, issue });
       case "status": {
         const label = statuses.find((s) => s.id === n.text)?.name ?? n.text;
         return t("inbox.event.status", { actor, issue, status: label });

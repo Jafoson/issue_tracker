@@ -1199,6 +1199,7 @@ export async function addComment(
     projectId: issue.projectId,
   });
 
+  let parentAuthorId: string | null = null;
   if (parentId) {
     // Verhindert, dass eine Antwort über die `issueId` eines fremden Issues
     // an einen Kommentar dort andockt — der Client liefert `issueId` und
@@ -1206,11 +1207,12 @@ export async function addComment(
     // auseinanderreißen.
     const parent = await db.comment.findUnique({
       where: { id: parentId },
-      select: { issueId: true },
+      select: { issueId: true, authorId: true },
     });
     if (!parent || parent.issueId !== issueId) {
       throw new PermissionError("comment.create");
     }
+    parentAuthorId = parent.authorId;
   }
 
   await db.comment.create({
@@ -1241,9 +1243,34 @@ export async function addComment(
   // Benachrichtigung, nicht zusätzlich die generische "comment" für dieselbe
   // Zeile.
   const mentioned = new Set(mentionedIds);
+
+  // Bei einer Antwort bekommt der ursprüngliche Autor die genauere
+  // "commentReply"-Benachrichtigung statt der generischen "comment" — auch
+  // wenn er zufällig Bearbeiter oder Ersteller des Issues ist.
+  const replyRecipientId =
+    parentAuthorId &&
+    parentAuthorId !== userId &&
+    !mentioned.has(parentAuthorId)
+      ? parentAuthorId
+      : null;
+  if (replyRecipientId) {
+    await notify({
+      userId: replyRecipientId,
+      type: "commentReply",
+      actorId: userId,
+      workspaceId: issue.project.workspaceId,
+      projectId: issue.projectId,
+      issueId,
+      text,
+    });
+  }
+
   const commentRecipients = [
     ...new Set([issue.assigneeId, issue.reporterId]),
-  ].filter((id): id is string => !!id && id !== userId && !mentioned.has(id));
+  ].filter(
+    (id): id is string =>
+      !!id && id !== userId && !mentioned.has(id) && id !== replyRecipientId,
+  );
   if (commentRecipients.length > 0) {
     await notify(
       commentRecipients.map((recipientId) => ({
