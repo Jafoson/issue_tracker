@@ -421,7 +421,10 @@
     "edited": "(bearbeitet)",
     "addReaction": "Reaktion hinzufügen",
     "reactionSearchPlaceholder": "Emoji suchen…",
-    "toSend": "zum Senden"
+    "toSend": "zum Senden",
+    "showReplies": "{count, plural, one {# Antwort anzeigen} other {# Antworten anzeigen}}",
+    "hideReplies": "{count, plural, one {# Antwort ausblenden} other {# Antworten ausblenden}}",
+    "loadMore": "{count, plural, one {# weiteren Kommentar laden} other {# weitere Kommentare laden}}"
   },
   "attachments": {
     "add": "Anhang hinzufügen",

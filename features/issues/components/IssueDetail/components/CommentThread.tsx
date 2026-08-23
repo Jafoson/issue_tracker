@@ -36,7 +36,6 @@ const RichTextEditor = dynamic(
  *  wird trotzdem immer exakt auf den angeklickten Kommentar geantwortet,
  *  unabhängig vom sichtbaren Deckel. */
 const MAX_INDENT_DEPTH = 4;
-const INDENT_PX = 22;
 
 interface AttachmentHandlers {
   onUploadAttachment: (
@@ -101,13 +100,15 @@ export function CommentThread({
   const [isReplying, setIsReplying] = useState(false);
   const [replyBody, setReplyBody] = useState<PMDoc>(emptyDoc);
   const [isSending, setIsSending] = useState(false);
+  // Antworten sind standardmäßig eingeblendet — nur wer aktiv einklappt,
+  // bekommt einen ruhigeren Thread.
+  const [repliesCollapsed, setRepliesCollapsed] = useState(false);
 
   const author = members.find((m) => m.id === comment.author) ?? null;
   const isOwn = comment.author === me.id;
   const canEdit = isOwn || canUpdateAnyComment;
   const canDelete = isOwn || canDeleteAnyComment;
   const replies = childrenByParent.get(comment.id) ?? [];
-  const indent = Math.min(depth, MAX_INDENT_DEPTH) * INDENT_PX;
 
   const reactions: ReactionSummary[] = comment.reactions;
 
@@ -159,7 +160,6 @@ export function CommentThread({
       id={`comment-${comment.id}`}
       className={styles.comment}
       data-flash={flashId === comment.id ? "" : undefined}
-      style={indent ? { marginLeft: indent } : undefined}
     >
       <Avatar avatar={author} size={28} placeholder />
       <div className={styles.commentBody}>
@@ -263,7 +263,39 @@ export function CommentThread({
         )}
 
         {replies.length > 0 && (
-          <ol className={styles.replies}>
+          <button
+            type="button"
+            className={styles.repliesToggle}
+            onClick={() => setRepliesCollapsed((v) => !v)}
+            aria-expanded={!repliesCollapsed}
+          >
+            <Icon
+              icon={
+                repliesCollapsed
+                  ? "lucide:chevron-right"
+                  : "lucide:chevron-down"
+              }
+              width={14}
+              aria-hidden="true"
+            />
+            {t(
+              repliesCollapsed
+                ? "comments.showReplies"
+                : "comments.hideReplies",
+              { count: replies.length },
+            )}
+          </button>
+        )}
+
+        {replies.length > 0 && !repliesCollapsed && (
+          <ol
+            className={[
+              styles.replies,
+              depth + 1 > MAX_INDENT_DEPTH && styles.repliesFlat,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
             {replies.map((reply) => (
               <CommentThread
                 key={reply.id}

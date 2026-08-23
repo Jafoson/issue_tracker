@@ -43,6 +43,11 @@ const RichTextEditor = dynamic(
   { ssr: false, loading: () => <div className={styles.composerLoading} /> },
 );
 
+/** So viele Top-Level-Threads (samt aller Antworten) stehen sofort da — der
+ *  Rest kommt erst über „Weitere Kommentare laden" nach, in gleich großen
+ *  Schritten. */
+const COMMENTS_PAGE_SIZE = 5;
+
 interface IssueCommentsProps {
   issueId: string;
   /** Für den kopierbaren Link auf einen einzelnen Kommentar. */
@@ -147,6 +152,7 @@ export function IssueComments({
   // ändert sich nach jedem `onRefresh()` (neue Referenz), ohne den Merker
   // sprängen wir bei jeder Folgeaktion (z.B. einer Reaktion) erneut hin.
   const scrolledTo = useRef<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(COMMENTS_PAGE_SIZE);
 
   const isEmpty = isEmptyDoc(body);
   const attachmentHandlers = makeAttachmentHandlers(
@@ -165,14 +171,36 @@ export function IssueComments({
     return map;
   }, [comments]);
   const topLevel = childrenByParent.get(null) ?? [];
+  const visibleTopLevel = topLevel.slice(0, visibleCount);
+  const remainingCount = topLevel.length - visibleTopLevel.length;
 
   const highlightId = searchParams.get("comment");
+
+  // Ein verlinkter Kommentar kann außerhalb der ersten Seite liegen (oder
+  // eine Antwort auf einen dieser späteren Threads sein) — vor dem Scrollen
+  // erst so viele Top-Level-Threads aufdecken, dass sein Ast mit dabei ist.
+  useEffect(() => {
+    if (!highlightId) return;
+    const byId = new Map(comments.map((c) => [c.id, c]));
+    let node = byId.get(highlightId);
+    while (node?.parentId) {
+      const parent = byId.get(node.parentId);
+      if (!parent) break;
+      node = parent;
+    }
+    if (!node) return;
+    const index = topLevel.findIndex((c) => c.id === node.id);
+    if (index >= 0 && index + 1 > visibleCount) setVisibleCount(index + 1);
+  }, [highlightId, comments, topLevel, visibleCount]);
+
   useEffect(() => {
     // `comments` erscheint nicht im Effekt-Körper, löst aber trotzdem einen
     // erneuten Versuch aus: das Ziel kann bei der ersten Runde noch fehlen,
     // wenn `onRefresh()` nach einer Antwort/Bearbeitung eine neue Liste
-    // bringt, in der es jetzt steht.
+    // bringt, in der es jetzt steht. `visibleCount` ebenso — der Anker taucht
+    // erst auf, nachdem der Effekt oben ihn freigelegt hat.
     void comments;
+    void visibleCount;
     if (!highlightId || scrolledTo.current === highlightId) return;
     const el = document.getElementById(`comment-${highlightId}`);
     if (!el) return;
@@ -181,7 +209,7 @@ export function IssueComments({
     setFlashId(highlightId);
     const timeout = setTimeout(() => setFlashId(null), 2000);
     return () => clearTimeout(timeout);
-  }, [highlightId, comments]);
+  }, [highlightId, comments, visibleCount]);
 
   const submit = async () => {
     if (isEmpty || isSending) return;
@@ -234,28 +262,49 @@ export function IssueComments({
       {comments.length === 0 ? (
         <p className={styles.commentsEmpty}>{t("comments.empty")}</p>
       ) : (
-        <ol className={styles.commentList}>
-          {topLevel.map((comment) => (
-            <CommentThread
-              key={comment.id}
-              comment={comment}
-              depth={0}
-              childrenByParent={childrenByParent}
-              members={members}
-              me={me}
-              data={data}
-              canUpdateAnyComment={canUpdateAnyComment}
-              canDeleteAnyComment={canDeleteAnyComment}
-              flashId={flashId}
-              attachmentHandlers={attachmentHandlers}
-              onEdit={editComment}
-              onDelete={removeComment}
-              onReply={replyToComment}
-              onToggleReaction={toggleReaction}
-              onCopyLink={copyLink}
-            />
-          ))}
-        </ol>
+        <>
+          <ol className={styles.commentList}>
+            {visibleTopLevel.map((comment) => (
+              <CommentThread
+                key={comment.id}
+                comment={comment}
+                depth={0}
+                childrenByParent={childrenByParent}
+                members={members}
+                me={me}
+                data={data}
+                canUpdateAnyComment={canUpdateAnyComment}
+                canDeleteAnyComment={canDeleteAnyComment}
+                flashId={flashId}
+                attachmentHandlers={attachmentHandlers}
+                onEdit={editComment}
+                onDelete={removeComment}
+                onReply={replyToComment}
+                onToggleReaction={toggleReaction}
+                onCopyLink={copyLink}
+              />
+            ))}
+          </ol>
+
+          {remainingCount > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              full
+              className={styles.loadMoreComments}
+              onClick={() =>
+                setVisibleCount((v) =>
+                  Math.min(v + COMMENTS_PAGE_SIZE, topLevel.length),
+                )
+              }
+            >
+              {t("comments.loadMore", {
+                count: Math.min(COMMENTS_PAGE_SIZE, remainingCount),
+              })}
+            </Button>
+          )}
+        </>
       )}
 
       {/* Kein `<form action=…>` mehr: der Editor ist kein Formularfeld, und

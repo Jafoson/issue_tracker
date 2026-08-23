@@ -744,6 +744,10 @@
   list-style: none;
 }
 
+.loadMoreComments {
+  margin-top: 18px;
+}
+
 .comment {
   display: flex;
   gap: 12px;
@@ -760,14 +764,42 @@
 }
 
 /* Verschachtelte Antworten — dieselbe Liste wie `.commentList`, nur ohne
-   deren oberen Abstand (der kommt schon vom Elternkommentar). */
+   deren oberen Abstand (der kommt schon vom Elternkommentar). Die Einrücktiefe
+   wächst rein durch die DOM-Verschachtelung (jede Ebene bringt ihr eigenes
+   `padding-left` mit) — keine JS-Multiplikation nötig. `border-left` zieht
+   die Führungslinie aus dem Screenshot; ab `MAX_INDENT_DEPTH` übernimmt
+   `.repliesFlat` und lässt weitere Ebenen ohne zusätzlichen Einzug laufen,
+   damit ein sehr langer Rückfrage-Thread nicht aus der Spalte wandert. */
 .replies {
   display: flex;
   flex-direction: column;
   gap: 14px;
   margin: 12px 0 0;
-  padding: 0;
+  padding: 0 0 0 20px;
   list-style: none;
+  border-left: 2px solid var(--outline-variant);
+
+  &.repliesFlat {
+    padding-left: 0;
+    border-left: none;
+  }
+}
+
+.repliesToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  margin-top: 10px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--outline);
+  cursor: pointer;
+
+  &:hover { color: var(--on-surface); }
 }
 
 .commentEdited {

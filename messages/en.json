@@ -421,7 +421,10 @@
     "edited": "(edited)",
     "addReaction": "Add reaction",
     "reactionSearchPlaceholder": "Search emoji…",
-    "toSend": "to send"
+    "toSend": "to send",
+    "showReplies": "{count, plural, one {Show # reply} other {Show # replies}}",
+    "hideReplies": "{count, plural, one {Hide # reply} other {Hide # replies}}",
+    "loadMore": "{count, plural, one {Load # more comment} other {Load # more comments}}"
   },
   "attachments": {
     "add": "Add attachment",
