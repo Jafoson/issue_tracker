@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { enabledOAuthProviders, passkeyLoginEnabled } from "@/auth.config";
 import { AccountSecurity } from "@/features/account/components/AccountSecurity/AccountSecurity";
 import { getMySecurity } from "@/features/account/queries";
 import { setCurrentWorkspaceId } from "@/lib/current-workspace";
@@ -24,6 +25,8 @@ export default async function AccountSecurityPage({
       // Der Pfad kennt den Workspace, die Komponente nicht — sie bekommt ihn
       // fertig, wie überall in der App.
       connectionsHref={accountPath(workspace, "connections")}
+      hasOAuthProviders={enabledOAuthProviders.length > 0}
+      passkeyLoginEnabled={passkeyLoginEnabled}
     />
   );
 }

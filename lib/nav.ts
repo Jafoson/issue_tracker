@@ -377,7 +377,11 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
  * niemandem außer dem, der sie öffnet. Die Reihenfolge folgt der Häufigkeit:
  * zuerst, wer man ist, dann wie es aussieht, dann was einen erreicht — und
  * zuletzt, womit man sich anmeldet. Rechte spielen hier keine Rolle: jeder sieht
- * genau seine eigenen Einstellungen, also ist auch keine Zeile je verborgen.
+ * genau seine eigenen Einstellungen.
+ *
+ * Eine Ausnahme: "connections" verschwindet, wenn `auth.config.ts` keinen
+ * einzigen OAuth-Anbieter aktiviert hat (`account/layout.tsx` filtert das
+ * heraus) — ein Tab zu einer Liste, die immer leer wäre, hilft niemandem.
  */
 export const ACCOUNT_SETTINGS_NAV: NavEntry[] = [
   { section: "", icon: "lucide:user", labelKey: "general" },

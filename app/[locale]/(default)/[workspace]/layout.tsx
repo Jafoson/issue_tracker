@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { passkeyLoginEnabled } from "@/auth.config";
 import { AppShell } from "@/components/ui/layout/AppShell/AppShell";
 import { getMySecurity } from "@/features/account/queries";
 import { PasskeyNudge } from "@/features/auth/components/PasskeyNudge/PasskeyNudge";
@@ -40,7 +41,7 @@ export default async function AppLayout({
 
   return (
     <AppShell>
-      {security && security.passkeys.length === 0 && (
+      {passkeyLoginEnabled && security && security.passkeys.length === 0 && (
         <PasskeyNudge securityHref={accountPath(workspaceId, "security")} />
       )}
       {children}

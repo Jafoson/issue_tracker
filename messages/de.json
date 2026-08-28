@@ -508,6 +508,7 @@
     "withPasskey": "Mit Passkey anmelden",
     "registerWithPasskey": "Mit Passkey registrieren",
     "passkeyFailed": "Passkey-Anmeldung abgebrochen oder fehlgeschlagen.",
+    "noMethodConfigured": "Für diesen Server ist kein Anmeldeweg eingerichtet.",
     "orMagicLink": "oder per Magic Link",
     "workEmail": "E-Mail-Adresse",
     "sendMagicLink": "Magic Link senden",
@@ -860,7 +861,6 @@
     "connected": "Verbunden",
     "connectedDesc": "Du kannst dich über dieses Konto anmelden.",
     "connectDesc": "Melde dich einmal bei {provider} an, um den Weg an dein Konto zu hängen.",
-    "providerUnavailable": "Auf diesem Server nicht eingerichtet.",
     "lastMethod": "Dein einziger Weg herein. Lege erst einen Passkey an, dann lässt sich dieses Konto trennen.",
     "connectionsNote": "Du hast einen Passkey — verbundene Konten kannst du jederzeit wieder trennen.",
     "connectionsNoteNoPassword": "Ohne Passkey ist ein verbundenes Konto dein einziger Weg herein. Der letzte lässt sich deshalb nicht trennen."

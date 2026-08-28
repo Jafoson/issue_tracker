@@ -19,13 +19,13 @@ import { resolveAvatarUrl } from "@/lib/storage";
 // Über `cache()` pro Request dedupliziert, wie in `features/workspaces/queries`.
 
 /**
- * Die Anbieter, die dieses Konto kennen kann — unabhängig davon, ob sie hier
- * konfiguriert sind.
+ * Alle bekannten OAuth-Anbieter — die Marken-Liste, aus der `getMyConnections`
+ * die tatsächlich eingerichteten (`enabledOAuthProviders`) auswählt.
  *
- * Steht als feste Liste da und nicht als das, was `auth.config.ts` gerade
- * aktiviert: die Seite zeigt auch den nicht eingerichteten Anbieter, dann aber
- * ohne Knopf. Sonst hinge die Existenz einer Zeile an einer Umgebungsvariablen,
- * und niemand könnte sehen, dass es die Möglichkeit überhaupt gibt.
+ * Wer hier steht, muss nicht konfiguriert sein: die Zeile erscheint erst,
+ * wenn `auth.config.ts` die zugehörigen Env-Vars gesetzt findet. Ist keiner
+ * eingerichtet, gibt es weder eine Zeile noch den Reiter „Verbundene Konten"
+ * überhaupt (siehe `account/layout.tsx` und `account/connections/page.tsx`).
  */
 export const OAUTH_PROVIDERS = [
   "github",
@@ -178,17 +178,17 @@ export const getMyConnections = cache(
 
     return {
       accounts: [
-        ...OAUTH_PROVIDERS.map((provider) => ({
+        ...OAUTH_PROVIDERS.filter((provider) =>
+          enabledOAuthProviders.includes(provider),
+        ).map((provider) => ({
           provider,
           connected: connected.has(provider),
-          available: enabledOAuthProviders.includes(provider),
         })),
         ...(oidcEnabled
           ? [
               {
                 provider: OIDC_PROVIDER_ID,
                 connected: connected.has(OIDC_PROVIDER_ID),
-                available: true,
                 label: oidcProviderName,
               },
             ]

@@ -21,6 +21,14 @@ interface Props extends AccountSecurityView {
   /** Weg zu den verbundenen Konten — der Pfad kennt den Workspace, diese
    *  Komponente nicht. */
   connectionsHref: string;
+  /** Mindestens ein OAuth-Anbieter ist in `auth.config.ts` eingerichtet.
+   *  Sonst gibt es die Seite dahinter gar nicht (siehe `connections/page.tsx`)
+   *  — dann fehlt auch die Zeile, die dorthin verweist. */
+  hasOAuthProviders: boolean;
+  /** `AUTH_PASSKEY_LOGIN_ENABLED` (`auth.config.ts`). Aus — dann fehlt der
+   *  "Passkey hinzufügen"-Knopf, schon hinterlegte Passkeys bleiben sichtbar
+   *  und entfernbar. */
+  passkeyLoginEnabled: boolean;
 }
 
 /**
@@ -43,6 +51,8 @@ export function AccountSecurity({
   emailVerified,
   connectedProviders,
   connectionsHref,
+  hasOAuthProviders,
+  passkeyLoginEnabled,
   passkeys,
 }: Props) {
   const t = useTranslations();
@@ -108,21 +118,29 @@ export function AccountSecurity({
         </Button>
       ),
     })),
-    {
-      id: "add-passkey",
-      label: t("account.addPasskey"),
-      desc: t("account.addPasskeyDesc"),
-      control: (
-        <Button
-          variant="outline"
-          disabled={isPasskeyPending}
-          icon={<Icon icon="lucide:fingerprint" width={14} />}
-          onClick={addPasskey}
-        >
-          {t("account.addPasskey")}
-        </Button>
-      ),
-    },
+    // Aus (`AUTH_PASSKEY_LOGIN_ENABLED=false`) → der Server hat den
+    // WebAuthn-Provider gar nicht registriert, `addPasskey` würde also nur
+    // fehlschlagen. Schon hinterlegte Passkeys bleiben trotzdem sichtbar und
+    // entfernbar — reine Kontoverwaltung, kein Anmeldeversuch.
+    ...(passkeyLoginEnabled
+      ? [
+          {
+            id: "add-passkey",
+            label: t("account.addPasskey"),
+            desc: t("account.addPasskeyDesc"),
+            control: (
+              <Button
+                variant="outline"
+                disabled={isPasskeyPending}
+                icon={<Icon icon="lucide:fingerprint" width={14} />}
+                onClick={addPasskey}
+              >
+                {t("account.addPasskey")}
+              </Button>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const login: SettingsRow[] = [
@@ -166,19 +184,25 @@ export function AccountSecurity({
         </span>
       ),
     },
-    {
-      id: "providers",
-      label: t("nav.connections"),
-      desc: t("account.providersDesc"),
-      control: (
-        <Link href={connectionsHref} className={styles.link}>
-          {connectedProviders.length === 0
-            ? t("account.noProviders")
-            : t("account.providerCount", { count: connectedProviders.length })}
-          <Icon icon="lucide:arrow-right" width={14} />
-        </Link>
-      ),
-    },
+    ...(hasOAuthProviders
+      ? [
+          {
+            id: "providers",
+            label: t("nav.connections"),
+            desc: t("account.providersDesc"),
+            control: (
+              <Link href={connectionsHref} className={styles.link}>
+                {connectedProviders.length === 0
+                  ? t("account.noProviders")
+                  : t("account.providerCount", {
+                      count: connectedProviders.length,
+                    })}
+                <Icon icon="lucide:arrow-right" width={14} />
+              </Link>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -190,7 +214,9 @@ export function AccountSecurity({
       />
 
       <SettingsBody>
-        <SettingsList title={t("account.passkeys")} rows={passkeyRows} />
+        {passkeyRows.length > 0 && (
+          <SettingsList title={t("account.passkeys")} rows={passkeyRows} />
+        )}
         {passkeyError && (
           <p className={styles.error} role="alert">
             <Icon icon="lucide:circle-alert" width={14} />

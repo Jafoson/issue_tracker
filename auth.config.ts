@@ -70,6 +70,21 @@ if (
   enabledOAuthProviders.push("oidc");
 }
 
+// Passkeys laufen seit je ohne Konfiguration — beide Schalter sind reine
+// Opt-outs für Umgebungen, die den Weg nicht (mehr) wollen, keine
+// Freischaltung wie bei den OAuth-Providern oben. Default an, nur das
+// wörtliche "false" schaltet ab (siehe `auth.ts`, wo beides greift, und
+// `example.env` für die Warnung vor einem kompletten Lockout).
+export const passkeyLoginEnabled =
+  process.env.AUTH_PASSKEY_LOGIN_ENABLED !== "false";
+// Nur wirksam, wenn `passkeyLoginEnabled` an ist: verhindert ein komplett
+// neues Konto per Passkey (LoginForm "Passkey registrieren"). Bestehende
+// Konten können sich weiter per Passkey anmelden und sich in den eigenen
+// Sicherheitseinstellungen weitere Passkeys hinzufügen — das ist keine
+// Registrierung im Sinne dieses Schalters, sondern Kontoverwaltung.
+export const passkeyRegistrationEnabled =
+  process.env.AUTH_PASSKEY_REGISTRATION_ENABLED !== "false";
+
 export const authConfig = {
   trustHost: true,
   session: { strategy: "jwt" },

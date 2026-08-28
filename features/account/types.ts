@@ -61,8 +61,6 @@ export interface ConnectedAccount {
   provider: string;
   /** Am Konto hinterlegt — trennbar, solange ein anderer Weg bleibt. */
   connected: boolean;
-  /** Der Server hat für diesen Anbieter Zugangsdaten. Sonst nur zu sehen. */
-  available: boolean;
   /** Nur für OIDC gesetzt — sein Name kommt aus `AUTH_OIDC_NAME`, nicht aus
    *  einer festen Marken-Liste wie bei GitHub/Google. */
   label?: string;

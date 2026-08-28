@@ -4,7 +4,11 @@ import NextAuth from "next-auth";
 import type { Adapter, AdapterUser } from "next-auth/adapters";
 import Nodemailer from "next-auth/providers/nodemailer";
 import WebAuthn from "next-auth/providers/webauthn";
-import { authConfig } from "@/auth.config";
+import {
+  authConfig,
+  passkeyLoginEnabled,
+  passkeyRegistrationEnabled,
+} from "@/auth.config";
 import { appBaseUrl } from "@/lib/app-url";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
@@ -198,18 +202,58 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   providers: [
     ...authConfig.providers,
     // Passkeys — der einzige Weg herein, den diese App selbst betreibt (kein
-    // Passwort mehr). `relayingParty.id` ist nur der Hostname (kein
+    // Passwort mehr), sofern `AUTH_PASSKEY_LOGIN_ENABLED` nicht explizit auf
+    // "false" steht. `relayingParty.id` ist nur der Hostname (kein
     // Schema/Port) — Browser binden einen Passkey an genau diesen Wert,
     // `origin` bleibt die volle Basis-URL. `enableConditionalUI` erlaubt
     // Autofill über das E-Mail-Feld der Login-Seite.
-    WebAuthn({
-      relayingParty: {
-        id: new URL(appBaseUrl()).hostname,
-        name: "Orbit",
-        origin: appBaseUrl(),
-      },
-      enableConditionalUI: true,
-    }),
+    ...(passkeyLoginEnabled
+      ? [
+          WebAuthn({
+            relayingParty: {
+              id: new URL(appBaseUrl()).hostname,
+              name: "Orbit",
+              origin: appBaseUrl(),
+            },
+            enableConditionalUI: true,
+            // Ohne eigenes `getUserInfo` würde next-auth für jede noch
+            // unbekannte E-Mail ein `exists: false` zurückgeben und damit ein
+            // ganz neues Konto per Passkey erlauben (`LoginForm`s
+            // "Passkey registrieren", die einzige Stelle, die ohne Sitzung
+            // eine `email` mitschickt — siehe `NO_EMAIL_SENTINEL_DOMAIN`
+            // oben). Ist die Registrierung abgeschaltet, bleibt nur der
+            // Login-Zweig übrig: `null` lässt next-auth (`inferWebAuthnOptions`
+            // in `@auth/core`) auf reine Authentifizierung ohne vorgegebene
+            // Credentials zurückfallen, die für dieses Sentinel-Konto immer
+            // fehlschlägt — `registerWithPasskey` fängt das ab
+            // (`login.passkeyFailed`).
+            //
+            // Bereits angemeldete Personen, die sich in den eigenen
+            // Sicherheitseinstellungen einen weiteren Passkey anlegen
+            // (`AccountSecurity#addPasskey`), laufen nie hier durch — bei
+            // bestehender Sitzung liest next-auth den Benutzer direkt aus der
+            // Sitzung, ohne `getUserInfo` aufzurufen. Das ist Absicht: dieser
+            // Schalter betrifft nur ganz neue Konten, keine Kontoverwaltung.
+            ...(!passkeyRegistrationEnabled
+              ? {
+                  async getUserInfo(_options, request) {
+                    const { query, body, method } = request;
+                    const email = (
+                      method === "POST" ? body?.email : query?.email
+                    ) as unknown;
+                    if (!email || typeof email !== "string") return null;
+                    const existingUser = await db.user.findUnique({
+                      where: { email },
+                    });
+                    return existingUser
+                      ? { user: existingUser, exists: true as const }
+                      : null;
+                  },
+                }
+              : {}),
+          }),
+        ]
+      : []),
     // Magic Link — nur aktiv, wenn SMTP konfiguriert ist (siehe
     // `isMailConfigured()`); ohne SMTP bleibt der Provider ganz weg, statt
     // eine Mail vorzutäuschen, die nie ankommt. `server` ist ein Dummy-Wert,

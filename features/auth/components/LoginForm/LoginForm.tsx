@@ -24,6 +24,14 @@ interface LoginFormProps {
    *  SMTP bleibt der ganze Magic-Link-Abschnitt weg — Passkey-Login und
    *  -Registrierung brauchen kein SMTP und stehen unabhängig davon oben. */
   mailConfigured: boolean;
+  /** `AUTH_PASSKEY_LOGIN_ENABLED` (`auth.config.ts`). Aus — dann fehlt der
+   *  ganze Passkey-Block, nicht nur einzelne Knöpfe darin. */
+  passkeyLoginEnabled: boolean;
+  /** `AUTH_PASSKEY_REGISTRATION_ENABLED` — nur relevant, wenn
+   *  `passkeyLoginEnabled` an ist. Aus: der Login-Knopf bleibt (bestehende
+   *  Konten kommen weiter per Passkey herein), der Registrieren-Knopf fällt
+   *  weg, weil `auth.ts`s `getUserInfo`-Override ihn ohnehin ablehnen würde. */
+  passkeyRegistrationEnabled: boolean;
   /** Aus `?error=` nach einem fehlgeschlagenen Code-Versuch (`auth.config.ts`s
    *  `pages.error`) — die Seite landet dabei neu, jeder Client-State ist weg. */
   initialError?: string;
@@ -35,20 +43,29 @@ interface LoginFormProps {
  * Drei Blöcke von oben nach unten, jeder nur sichtbar, wenn er auch
  * funktioniert:
  *
- * 1. Passkey — immer da, zwei Knöpfe: anmelden (`PasskeyLoginButton`, rein
+ * 1. Passkey — nur ohne `AUTH_PASSKEY_LOGIN_ENABLED=false`, sonst fehlt der
+ *    Block ganz. Zwei Knöpfe: anmelden (`PasskeyLoginButton`, rein
  *    discoverable, der Browser zeigt die auf diesem Gerät hinterlegten
  *    Passkeys selbst an) oder registrieren (`registerWithPasskey`, legt ein
  *    komplett neues Konto an, siehe dort für die technische Notwendigkeit
- *    einer intern erzeugten Adresse).
+ *    einer intern erzeugten Adresse — fehlt zusätzlich bei
+ *    `AUTH_PASSKEY_REGISTRATION_ENABLED=false`, dort auch serverseitig
+ *    durchgesetzt, siehe `auth.ts`).
  * 2. Magic Link — nur mit SMTP, sonst bleibt der ganze Block weg.
  * 3. Single Sign-On — nur mit konfigurierten Anbietern, über `AuthCard`s
  *    eingebauten OAuth-/OIDC-Abschnitt.
+ *
+ * Sind alle drei aus, zeigt die Karte einen Hinweis statt leer dazustehen —
+ * ein Fehlkonfigurations-Fall (kein Passkey, kein SMTP, kein OAuth), den es
+ * vor diesem Schalter nicht geben konnte.
  */
 export function LoginForm({
   callbackUrl,
   oauthProviders = [],
   oidcLabel,
   mailConfigured,
+  passkeyLoginEnabled,
+  passkeyRegistrationEnabled,
   initialError,
 }: LoginFormProps) {
   const t = useTranslations();
@@ -98,6 +115,9 @@ export function LoginForm({
     });
   };
 
+  const hasAnyMethod =
+    passkeyLoginEnabled || mailConfigured || oauthProviders.length > 0;
+
   return (
     <AuthCard
       title={t("login.signInTitle")}
@@ -105,16 +125,27 @@ export function LoginForm({
       oauthProviders={oauthProviders}
       oauthLabels={oidcLabel ? { oidc: oidcLabel } : undefined}
     >
-      <div className={styles.group}>
-        <PasskeyLoginButton callbackUrl={callbackUrl} onError={setError} />
-        <OptionButton
-          variant="outline"
-          disabled={isPasskeyPending}
-          icon={<Icon icon="lucide:user-plus" width={18} />}
-          title={t("login.registerWithPasskey")}
-          onClick={registerWithPasskey}
-        />
-      </div>
+      {!hasAnyMethod && (
+        <p className={styles.empty}>
+          <Icon icon="lucide:circle-alert" width={14} />
+          {t("login.noMethodConfigured")}
+        </p>
+      )}
+
+      {passkeyLoginEnabled && (
+        <div className={styles.group}>
+          <PasskeyLoginButton callbackUrl={callbackUrl} onError={setError} />
+          {passkeyRegistrationEnabled && (
+            <OptionButton
+              variant="outline"
+              disabled={isPasskeyPending}
+              icon={<Icon icon="lucide:user-plus" width={18} />}
+              title={t("login.registerWithPasskey")}
+              onClick={registerWithPasskey}
+            />
+          )}
+        </div>
+      )}
 
       {mailConfigured && (
         <>

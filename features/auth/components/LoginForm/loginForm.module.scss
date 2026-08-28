@@ -4,6 +4,15 @@
   gap: 12px;
 }
 
+.empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: var(--text-sm);
+}
+
 .divider {
   display: flex;
   align-items: center;

@@ -508,6 +508,7 @@
     "withPasskey": "Sign in with passkey",
     "registerWithPasskey": "Register with passkey",
     "passkeyFailed": "Passkey sign-in was cancelled or failed.",
+    "noMethodConfigured": "No sign-in method is configured for this server.",
     "orMagicLink": "or get a magic link",
     "workEmail": "Email address",
     "sendMagicLink": "Send magic link",
@@ -860,7 +861,6 @@
     "connected": "Connected",
     "connectedDesc": "You can sign in through this account.",
     "connectDesc": "Sign in with {provider} once to attach it to your account.",
-    "providerUnavailable": "Not configured on this server.",
     "lastMethod": "Your only way in. Add a passkey first, then this account can be disconnected.",
     "connectionsNote": "You have a passkey — connected accounts can be disconnected at any time.",
     "connectionsNoteNoPassword": "Without a passkey, a connected account is your only way in. The last one therefore cannot be disconnected."

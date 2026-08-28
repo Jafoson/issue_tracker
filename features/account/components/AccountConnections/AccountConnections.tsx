@@ -70,13 +70,11 @@ export function AccountConnections({
     return {
       id: account.provider,
       label: name,
-      desc: !account.available
-        ? t("account.providerUnavailable")
-        : isLastWayIn
-          ? t("account.lastMethod")
-          : account.connected
-            ? t("account.connectedDesc")
-            : t("account.connectDesc", { provider: name }),
+      desc: isLastWayIn
+        ? t("account.lastMethod")
+        : account.connected
+          ? t("account.connectedDesc")
+          : t("account.connectDesc", { provider: name }),
       control: (
         <span className={styles.control}>
           <Icon
@@ -103,7 +101,7 @@ export function AccountConnections({
           ) : (
             <Button
               variant="outline"
-              disabled={!account.available || isPending}
+              disabled={isPending}
               onClick={() => signInWithOAuth(account.provider)}
             >
               {t("account.connect")}

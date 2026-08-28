@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { enabledOAuthProviders } from "@/auth.config";
 import { SettingsHeader } from "@/components/ui/layout/SettingsHeader/SettingsHeader";
 import {
   SettingsNav,
@@ -78,7 +79,14 @@ export default async function AccountLayout({
     },
   );
 
-  const items: SettingsNavItem[] = ACCOUNT_SETTINGS_NAV.map((entry) => ({
+  // Kein Anbieter eingerichtet → keine Liste zum Zeigen. Der Reiter fällt
+  // ganz weg, statt leer dazustehen (siehe security/page.tsx für den
+  // passenden Fall in der Sicherheits-Ansicht).
+  const hasOAuthProviders = enabledOAuthProviders.length > 0;
+
+  const items: SettingsNavItem[] = ACCOUNT_SETTINGS_NAV.filter(
+    (entry) => entry.section !== "connections" || hasOAuthProviders,
+  ).map((entry) => ({
     href: accountPath(workspace, entry.section),
     label: t(`nav.${entry.labelKey}`),
     icon: entry.icon,
