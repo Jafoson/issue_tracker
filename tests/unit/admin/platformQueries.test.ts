@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// Die Grenze der Plattformverwaltung, als Test.
+// The boundary of platform administration, as a test.
 //
-// Die Regel „Stammdaten ja, Inhalte nein" steht sonst nur als Kommentar in
-// `features/admin/queries.ts` — ein Kommentar hält niemanden auf, der in einem
-// halben Jahr schnell die Issue-Titel mitladen will, damit die Liste
-// „hilfreicher" wird. Diese Datei liest deshalb nach, was die Abfragen
-// tatsächlich beim Server bestellen.
+// The rule "metadata yes, content no" otherwise exists only as a comment in
+// `features/admin/queries.ts` — a comment won't stop someone who, six months
+// from now, quickly wants to load issue titles along to make the list "more
+// helpful." This file therefore checks what the queries actually request
+// from the server.
 
 const mockUserFindMany = mock();
 const mockProjectFindMany = mock();
@@ -28,7 +28,7 @@ mock.module("react", () => ({ cache: <T>(fn: T) => fn }));
 
 import { getAllProjects, getAllUsers } from "@/features/admin/queries";
 
-/** Alle Schlüssel einer verschachtelten Auswahl, flach. */
+/** All keys of a nested selection, flattened. */
 function keysOf(select: unknown, path = ""): string[] {
   if (!select || typeof select !== "object") return [];
   return Object.entries(select as Record<string, unknown>).flatMap(
@@ -60,11 +60,11 @@ describe("Projekt-Stammdaten", () => {
 
     const keys = keysOf(mockProjectFindMany.mock.calls[0][0].select);
 
-    // Zählen ja: `_count.select.issues` sagt, wie viel drin liegt.
+    // Counting yes: `_count.select.issues` says how many are inside.
     expect(keys).toContain("_count.select.issues");
 
-    // Lesen nein: eine Auswahl auf der Relation selbst gäbe es nicht als Zahl,
-    // sondern als Zeilen — und damit als Titel, Beschreibungen, Kommentare.
+    // Reading no: a selection on the relation itself wouldn't come back as a
+    // number, but as rows — and thus as titles, descriptions, comments.
     expect(keys).not.toContain("issues");
     expect(keys).not.toContain("comments");
     for (const key of keys) {
@@ -75,8 +75,8 @@ describe("Projekt-Stammdaten", () => {
 
   it("holt private Projekte mit — sie sind der Grund für die Liste", async () => {
     await getAllProjects();
-    // Kein `where` heißt: alle. Verwaiste private Projekte sind genau die, die
-    // sonst niemandem auffallen.
+    // No `where` means: all. Orphaned private projects are exactly the ones
+    // that nobody else would otherwise notice.
     expect(mockProjectFindMany.mock.calls[0][0].where).toBeUndefined();
   });
 });
@@ -90,8 +90,8 @@ describe("Benutzerverwaltung", () => {
   });
 
   it("beantwortet die Frage nach dem Passkey über eine Zählung, nie über die Zeile selbst", async () => {
-    // Kein eigenes Passwort mehr — `hasPasskey` kommt aus
-    // `_count.select.authenticators`, nicht aus einer zweiten Abfrage.
+    // No password of its own anymore — `hasPasskey` comes from
+    // `_count.select.authenticators`, not from a second query.
     await getAllUsers();
 
     const keys = keysOf(mockUserFindMany.mock.calls[0][0].select);

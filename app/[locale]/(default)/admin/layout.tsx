@@ -17,10 +17,10 @@ export default async function AppLayout({
   const session = await getSession();
   if (!session) redirect(`/${locale}/login`);
 
-  // Der Plattform-Bereich hängt am Scope PLATFORM. `notFound` statt einer
-  // Weiterleitung, damit die Existenz des Bereichs nicht verrät, wer ihn sehen
-  // darf. Jede Unterseite lädt zusätzlich ihre eigenen Daten erst nach dieser
-  // Prüfung — Layouts allein sind kein Schutz für Server Actions.
+  // The platform section is gated on the PLATFORM scope. `notFound` instead of
+  // a redirect, so the section's existence doesn't reveal who is allowed to
+  // see it. Every subpage additionally loads its own data only after this
+  // check — layouts alone are not protection for Server Actions.
   const access = await getAccess(PLATFORM);
   if (!access.has("platform.access")) notFound();
 

@@ -6,23 +6,23 @@ import styles from "./issueTitleField.module.scss";
 
 interface IssueTitleFieldProps {
   value: string;
-  /** Läuft beim Verlassen des Feldes — und nur, wenn sich etwas geändert hat. */
+  /** Runs on leaving the field — and only if something actually changed. */
   onSave: (title: string) => void;
-  /** Das Schreiben ist vorbei; der Aufrufer zeigt wieder seine Ansicht. */
+  /** Editing is over; the caller goes back to showing its own view. */
   onDone: () => void;
-  /** Typografie der Umgebung — das Feld soll aussehen wie der Titel davor. */
+  /** Typography of the surroundings — the field should look like the title before it. */
   className?: string;
 }
 
 /**
- * Der Titel eines Issues, an Ort und Stelle geschrieben — auf der Board-Karte
- * wie in der Liste. Beide zeigen denselben Text an derselben Stelle, also soll
- * er sich auch gleich anfassen und gleich wieder verlassen lassen.
+ * An issue's title, edited right in place — on the board card as well as
+ * in the list. Both show the same text in the same spot, so it should be
+ * just as easy to enter and leave editing from either one.
  *
- * Die Hülle ist kein Bedienelement, sondern zweierlei Wache: Sie fängt Klicks
- * ab, die sonst im Aufrufer landen (die Karte öffnete sonst das Issue), und sie
- * merkt am durchziehenden `focusout`, dass das Schreiben vorbei ist —
- * `EditableText` übernimmt in genau diesem Moment.
+ * The wrapper isn't a control itself, but a guard doing two things: it
+ * intercepts clicks that would otherwise reach the caller (the card would
+ * otherwise open the issue), and it notices from the bubbling `focusout`
+ * that editing is over — `EditableText` takes over at exactly that moment.
  */
 export function IssueTitleField({
   value,
@@ -33,8 +33,8 @@ export function IssueTitleField({
   const t = useTranslations();
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: kein Bedienelement, das Feld darin bringt seine Tastatur mit
-    // biome-ignore lint/a11y/noStaticElementInteractions: nur Riegel und Fokuswächter um das Feld
+    // biome-ignore lint/a11y/useKeyWithClickEvents: not a control itself, the field inside brings its own keyboard handling
+    // biome-ignore lint/a11y/noStaticElementInteractions: just a click guard and focus watcher around the field
     <div
       className={[styles.field, className].filter(Boolean).join(" ")}
       onClick={(event) => event.stopPropagation()}

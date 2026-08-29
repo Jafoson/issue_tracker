@@ -10,34 +10,34 @@ import { getMailTemplateOverride } from "@/lib/mail/overrides";
 import type { TemplateOverride } from "@/lib/mail/templates/override";
 import { accountPath, projectPath, workspacePath } from "@/lib/nav";
 
-// ─── Benachrichtigungen: schreiben ────────────────────────────────────────────
+// ─── Notifications: writing ──────────────────────────────────────────────────
 //
-// Dasselbe Muster wie `lib/audit`: eine schmale Schreibfunktion, die aus
-// mehreren Feature-Domänen heraus aufgerufen wird (issues, workspaces,
-// projects), ohne dass diese sich gegenseitig kennen müssen. Fehler werden
-// geschluckt und nur geloggt — eine hakende Benachrichtigung darf nie eine
-// Zuweisung, einen Kommentar oder einen Rollenwechsel verhindern.
+// Same pattern as `lib/audit`: a narrow write function called from multiple
+// feature domains (issues, workspaces, projects), without those needing to
+// know about each other. Errors are swallowed and only logged — a
+// stumbling notification must never block an assignment, a comment, or a
+// role change.
 
 export interface NotifyInput {
-  /** Empfänger. */
+  /** Recipient. */
   userId: string;
   type: NotificationEvent;
-  /** Wer die Benachrichtigung ausgelöst hat. Fehlt sie oder ist sie gleich
-   *  `userId`, entsteht keine Zeile — niemand benachrichtigt sich selbst. */
+  /** Who triggered the notification. If missing or equal to `userId`, no
+   *  row is created — no one notifies themselves. */
   actorId?: string | null;
   workspaceId: string;
-  /** Gesetzt = projekt-, `null`/fehlend = workspace-bezogen. */
+  /** Set = project-related, `null`/missing = workspace-related. */
   projectId?: string | null;
   issueId?: string | null;
-  /** Rollenname, Statuskey oder Kommentar-Vorschau, je nach `type`. */
+  /** Role name, status key, or comment preview, depending on `type`. */
   text?: string;
 }
 
 const UNKNOWN_ACTOR = "Unbekannt";
 
-/** Wie beim Audit-Log: der Name wird zur Schreibzeit eingefroren, nicht beim
- *  Lesen aufgelöst — ein später umbenanntes oder verlorenes Konto verändert
- *  damit keine schon zugestellte Benachrichtigung rückwirkend. */
+/** As with the audit log: the name is frozen at write time, not resolved
+ *  at read time — an account renamed or lost later doesn't retroactively
+ *  change a notification that's already been delivered. */
 async function actorLabelsFor(
   actorIds: string[],
 ): Promise<Map<string, string>> {
@@ -51,11 +51,11 @@ async function actorLabelsFor(
   );
 }
 
-/** Wer welchen Kanal für welchen Anlass eingestellt hat — fehlt die Zeile,
- *  gilt der Schema-Default (siehe `EMAIL_DEFAULT` unten für die Mail-Spalten;
- *  jede `*InApp`-Spalte ist per Default `true`). Beide Kanäle in einer
- *  Abfrage, weil sie an derselben Zeile hängen und für jede Benachrichtigung
- *  ohnehin gemeinsam gebraucht werden. */
+/** Who set which channel for which event — if the row is missing, the
+ *  schema default applies (see `EMAIL_DEFAULT` below for the mail columns;
+ *  every `*InApp` column defaults to `true`). Both channels in one query,
+ *  because they hang off the same row and are needed together for every
+ *  notification anyway. */
 async function notificationPrefsFor(
   userIds: string[],
 ): Promise<Map<string, Partial<Record<NotificationKey, boolean>>>> {
@@ -85,9 +85,9 @@ async function notificationPrefsFor(
   return new Map(rows.map(({ userId, ...settings }) => [userId, settings]));
 }
 
-/** Die Default-Werte der `*Email`-Spalten aus `prisma/schema.prisma` — Statuswechsel
- *  und Kommentare sind erfahrungsgemäß zu häufig fürs Postfach, alles andere
- *  ist selten genug, dass die Mail per Default an ist. */
+/** Default values of the `*Email` columns from `prisma/schema.prisma` —
+ *  experience shows status changes and comments are too frequent for the
+ *  inbox, everything else is rare enough that email defaults to on. */
 const EMAIL_DEFAULT: Record<NotificationEvent, boolean> = {
   assigned: true,
   mentioned: true,
@@ -107,10 +107,10 @@ interface EmailContext {
 }
 
 /**
- * Namen und Ziel-URL für eine Benachrichtigungsmail — gecacht je
- * Workspace/Projekt/Issue-Kombination, damit ein Stapel (etwa an Bearbeiter
- * *und* Ersteller bei einem Statuswechsel) nicht dieselben Zeilen mehrfach
- * lädt.
+ * Names and target URL for a notification email — cached per
+ * workspace/project/issue combination, so a batch (e.g. to the assignee
+ * *and* the reporter on a status change) doesn't load the same rows
+ * multiple times.
  */
 async function emailContextFor(
   cache: Map<string, EmailContext>,
@@ -140,8 +140,8 @@ async function emailContextFor(
   ]);
 
   const identifier = issue && project ? `${project.prefix}-${issue.key}` : null;
-  // Dieselbe Vollseiten-Route wie `features/issues/issue-links.ts#issuePath`
-  // — von dort lässt sie sich nicht importieren, die Datei ist `"use client"`.
+  // The same full-page route as `features/issues/issue-links.ts#issuePath`
+  // — it can't be imported from there, that file is `"use client"`.
   const url =
     identifier && issue
       ? appUrl(`/${item.workspaceId}/issue/${identifier}`)
@@ -159,9 +159,9 @@ async function emailContextFor(
   return context;
 }
 
-/** Der Admin-Override für einen Anlass, gecacht je `type` — ein Stapel
- *  derselben Art (z. B. Bearbeiter *und* Ersteller bei einem Statuswechsel)
- *  fragt `MailTemplate` sonst mehrfach für dieselbe Zeile. */
+/** The admin override for an event, cached per `type` — a batch of the
+ *  same kind (e.g. assignee *and* reporter on a status change) would
+ *  otherwise query `MailTemplate` multiple times for the same row. */
 async function overrideFor(
   cache: Map<NotificationEvent, TemplateOverride | undefined>,
   type: NotificationEvent,
@@ -172,9 +172,9 @@ async function overrideFor(
   return override;
 }
 
-/** Wer für seinen Anlass eine Mail sehen will, bekommt eine — unabhängig
- *  davon, ob die In-App-Zeile oben geschrieben wurde: beide Kanäle sind im
- *  Schema bewusst getrennte Spalten. */
+/** Whoever wants an email for their event gets one — regardless of whether
+ *  the in-app row was written above: both channels are deliberately
+ *  separate columns in the schema. */
 async function sendNotificationEmails(
   items: NotifyInput[],
   prefs: Map<string, Partial<Record<NotificationKey, boolean>>>,
@@ -229,13 +229,13 @@ async function sendNotificationEmails(
 }
 
 /**
- * Legt eine oder mehrere Benachrichtigungen an und verschickt, wer es für
- * seinen Kanal so eingestellt hat, dieselbe Nachricht per Mail.
+ * Creates one or more notifications and, for whoever has their channel set
+ * that way, sends the same message by email too.
  *
- * Selbstbenachrichtigungen werden vor beidem herausgefiltert. In-App- und
- * Mail-Kanal sind unabhängige Spalten (siehe `notificationPrefsFor`) — wer
- * beide abgeschaltet hat, bekommt konsequent nichts, ohne SMTP-Konfiguration
- * bleibt es beim In-App-Weg wie bisher.
+ * Self-notifications are filtered out before either happens. In-app and
+ * email channels are independent columns (see `notificationPrefsFor`) —
+ * whoever has turned both off consistently gets nothing; without SMTP
+ * configuration, it stays at the in-app path as before.
  */
 export async function notify(
   input: NotifyInput | NotifyInput[],

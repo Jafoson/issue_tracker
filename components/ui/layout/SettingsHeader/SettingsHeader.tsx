@@ -5,36 +5,36 @@ import styles from "./settingsHeader.module.scss";
 
 interface Props {
   /**
-   * Fertig gebaut und gefiltert vom Layout — `settingsScopeItems()` plus
-   * `visibleSettingsScope()` in `lib/nav.ts`. Nur, was ohne Berechtigung ODER
-   * ohne Adresse fehlt: das Layout lässt diese Komponente ganz weg, sobald
-   * nur noch ein Segment übrig bliebe (siehe dort).
+   * Already built and filtered by the layout — `settingsScopeItems()` plus
+   * `visibleSettingsScope()` in `lib/nav.ts`. Only what's missing due to
+   * permissions OR a missing address: the layout omits this component
+   * entirely once only one segment would remain (see there).
    */
   items: VisibleSettingsScopeEntry[];
-  /** Der Bereich, in dem man gerade steht. */
+  /** The scope currently active. */
   active: SettingsScopeKey;
-  /** Benennt den Umschalter für Screenreader, z. B. „Einstellungsbereich". */
+  /** Names the switcher for screen readers, e.g. "Settings scope". */
   label: string;
 }
 
 /**
- * Die oberste Zeile der Einstellungen: der Umschalter zwischen Persönlich,
- * Projekt und Workspace.
+ * The topmost row of the settings: the switcher between Personal, Project,
+ * and Workspace.
  *
- * Sie liegt quer über beiden Spalten darunter — über der Bereichsleiste und
- * über dem Bereich selbst. Das ist keine Kosmetik, sondern die Rangfolge: der
- * Umschalter wechselt beide Spalten auf einmal, also darf er in keiner von
- * beiden stehen. In der Leiste (208px) blieb außerdem für „Persönlich" kein
- * ganzes Wort übrig; hier ist Platz für Zeichen und Beschriftung.
+ * It spans across both columns below it — above the scope nav and above the
+ * scope itself. That's not cosmetic, it's the hierarchy: the switcher
+ * changes both columns at once, so it can't belong to either one. In the nav
+ * (208px), there also wasn't room left for a full word for "Personal"; here
+ * there's space for both the icon and the label.
  *
- * Die Zeile setzt selbst keine Kante nach unten. Der Strich darunter entsteht
- * aus den Oberkanten der beiden Spalten (`SettingsNav`, `PageHeader`) — er läuft
- * damit über die ganze Breite und bleibt einer statt zwei.
+ * The row itself sets no bottom edge. The line below it comes from the top
+ * edges of the two columns (`SettingsNav`, `PageHeader`) — that way it runs
+ * across the full width and stays one line instead of two.
  *
- * Bewusst aus Links statt aus Knöpfen: jeder Bereich hat eine eigene Adresse,
- * und ein Link lässt sich in einem neuen Reiter öffnen. Dadurch braucht die
- * Zeile kein `"use client"` — welcher Bereich gilt, weiß das Layout, das sie
- * rendert, und nicht der Browser.
+ * Deliberately built from links rather than buttons: each scope has its own
+ * address, and a link can be opened in a new tab. That means the row needs
+ * no `"use client"` — which scope is active is known by the layout that
+ * renders it, not by the browser.
  */
 export function SettingsHeader({ items, active, label }: Props) {
   return (

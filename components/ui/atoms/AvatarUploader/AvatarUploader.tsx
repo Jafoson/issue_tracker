@@ -25,30 +25,30 @@ interface AvatarUploaderProps {
   size?: number;
   shape?: AvatarShape;
   disabled?: boolean;
-  /** Beschriftung des Entfernen-Knopfs, z. B. „Profilbild entfernen" —
-   *  domänenspezifisch, deshalb von außen statt fest hier drin. Ohne Angabe
-   *  ein neutrales „Entfernen". */
+  /** Label for the remove button, e.g. "Remove profile picture" —
+   *  domain-specific, so it's passed in from outside rather than hardcoded
+   *  here. Defaults to a neutral "Remove" when omitted. */
   removeLabel?: string;
-  /** Erster Schritt: Server validiert Rechte/Mime/Größe und stellt eine
-   *  presigned PUT-URL aus. */
+  /** First step: the server validates permissions/mime type/size and issues
+   *  a presigned PUT URL. */
   onRequestUpload: (input: {
     contentType: string;
     contentLength: number;
   }) => Promise<UploadUrlResult>;
-  /** Zweiter Schritt: nach dem direkten Upload gegen S3 den Key in der DB
-   *  hinterlegen. */
+  /** Second step: after uploading directly to S3, persist the key in the
+   *  DB. */
   onConfirmUpload: (key: string) => Promise<ActionResult>;
   onRemove?: () => Promise<ActionResult>;
-  /** Läuft nach einem erfolgreichen Upload/Entfernen — üblicherweise
-   *  `router.refresh()`, da die neue Bild-URL vom Server kommt. */
+  /** Runs after a successful upload/removal — typically `router.refresh()`,
+   *  since the new image URL comes from the server. */
   onDone?: () => void;
 }
 
 /**
- * Domänenfreier Datei-Upload für Avatare (`components/ui` kennt weder
- * Workspace noch Prisma) — Feature-Komponenten reichen die passenden
- * Server-Actions als Props herein. Lädt direkt gegen die presigned URL
- * (Browser → S3), nicht über den Server.
+ * Domain-free file upload for avatars (`components/ui` knows nothing about
+ * Workspace or Prisma) — feature components pass in the appropriate
+ * server actions as props. Uploads directly against the presigned URL
+ * (browser → S3), not through the server.
  */
 export function AvatarUploader({
   avatar,
@@ -99,9 +99,9 @@ export function AvatarUploader({
           body: file,
         });
       } catch {
-        // Netzwerkfehler, CORS-Ablehnung durch den Bucket, o.ä. — `fetch`
-        // wirft in diesen Fällen statt eine Antwort mit Fehlerstatus zu
-        // liefern.
+        // Network error, CORS rejection by the bucket, etc. — `fetch`
+        // throws in these cases instead of returning a response with an
+        // error status.
         setError(t("avatarUploader.uploadFailed"));
         return;
       }
@@ -149,9 +149,9 @@ export function AvatarUploader({
       >
         <Avatar avatar={avatar} size={size} shape={shape} />
         <span className={styles.overlay} aria-hidden>
-          {/* Ändern eines vorhandenen Bildes vs. erstmaliges Hinzufügen sind
-              unterschiedliche Handlungen und verdienen unterschiedliche
-              Symbole: Stift nur, wo es etwas zu bearbeiten gibt. */}
+          {/* Changing an existing image vs. adding one for the first time are
+              different actions and deserve different icons: pencil only
+              where there's something to edit. */}
           <Icon
             icon={hasImage ? "lucide:pencil" : "lucide:camera"}
             width={Math.round(size * (hasImage ? 0.24 : 0.3))}

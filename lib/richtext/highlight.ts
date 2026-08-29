@@ -26,25 +26,26 @@ import { createLowlight } from "lowlight";
 import { findLanguage } from "./code";
 
 /**
- * Die Syntax-Hervorhebung — einmal für beide Renderer.
+ * Syntax highlighting — one setup for both renderers.
  *
- * Dieselbe Instanz versorgt die Anzeige (`RichText`, serverseitig) und den
- * Editor (über `@tiptap/extension-code-block-lowlight`). Zwei verschiedene
- * Hervorheber hießen: beim Schreiben andere Farben als beim Lesen.
+ * The same instance serves the display (`RichText`, server-side) and the
+ * editor (via `@tiptap/extension-code-block-lowlight`). Two different
+ * highlighters would mean different colors while writing than while
+ * reading.
  *
- * Registriert werden nur die Sprachen aus `CODE_LANGUAGES` — `highlight.js`
- * bringt knapp zweihundert mit, und die will niemand im Browser haben. Wer die
- * Liste dort erweitert, muss die Grammatik hier nachtragen; `LANGUAGE_GRAMMARS`
- * unten hält beide Seiten zusammen.
+ * Only the languages from `CODE_LANGUAGES` are registered — `highlight.js`
+ * ships close to two hundred, and nobody wants those in the browser.
+ * Extending the list there means adding the grammar here too;
+ * `LANGUAGE_GRAMMARS` below keeps both sides in sync.
  */
 
 /**
- * Grammatik je Eintrag aus `CODE_LANGUAGES`.
+ * Grammar for each entry in `CODE_LANGUAGES`.
  *
- * Ein paar teilen sich eine: TSX und JSX laufen über TypeScript bzw.
- * JavaScript, HTML über die XML-Grammatik, TOML über die von INI. Prisma hat
- * keine eigene — dort steht die von TypeScript, deren Schlüsselwörter und
- * Zeichenketten nah genug liegen, um lesbar zu sein.
+ * A few share one: TSX and JSX run through TypeScript and JavaScript
+ * respectively, HTML through the XML grammar, TOML through the one for INI.
+ * Prisma has none of its own — it uses TypeScript's, whose keywords and
+ * string literals are close enough to stay readable.
  */
 const LANGUAGE_GRAMMARS = {
   ts: typescript,
@@ -83,16 +84,16 @@ for (const [name, grammar] of Object.entries(LANGUAGE_GRAMMARS)) {
   lowlight.register(name, grammar);
 }
 
-/** Ein Stück Code mit seiner Rolle — `className` fehlt bei schlichtem Text. */
+/** A piece of code with its role — `className` is absent for plain text. */
 export interface CodeToken {
   text: string;
   className?: string;
 }
 
-/** Eine Zeile. Leere Zeilen sind leere Listen, damit ihre Nummer stehen bleibt. */
+/** One line. Empty lines are empty arrays, so their line number still shows. */
 export type CodeLine = CodeToken[];
 
-/** Der Knotentyp, den lowlight liefert — bewusst schmal statt `@types/hast`. */
+/** The node type that lowlight returns — deliberately narrow instead of `@types/hast`. */
 interface HastNode {
   type: string;
   value?: string;
@@ -102,11 +103,11 @@ interface HastNode {
 }
 
 /**
- * Flacht den Baum zu einer Folge von Stücken ab.
+ * Flattens the tree into a sequence of pieces.
  *
- * `highlight.js` verschachtelt Bereiche (eine Zeichenkette kann eine
- * Ersetzung enthalten). Die Klassen werden dabei aufgesammelt, damit die
- * innere Rolle die äußere nicht verliert.
+ * `highlight.js` nests regions (a string can contain a substitution). The
+ * classes are collected along the way, so the inner role doesn't lose the
+ * outer one.
  */
 function flatten(nodes: HastNode[], inherited: string[], out: CodeToken[]) {
   for (const node of nodes) {
@@ -127,16 +128,15 @@ function flatten(nodes: HastNode[], inherited: string[], out: CodeToken[]) {
 }
 
 /**
- * Zerlegt den Code in Zeilen aus hervorgehobenen Stücken.
+ * Splits the code into lines of highlighted pieces.
  *
- * Zeilenweise, weil die Nummern daneben stehen: ein Baum, der über Umbrüche
- * hinweggeht, ließe sich nicht Zeile für Zeile ausgeben. Ein Stück, das einen
- * Umbruch enthält, wird deshalb aufgeteilt — seine Rolle behalten beide
- * Hälften.
+ * Line by line, because the line numbers sit next to it: a tree that spans
+ * across line breaks couldn't be rendered line by line. A piece that
+ * contains a line break is therefore split — both halves keep its role.
  *
- * Ohne (oder mit unbekannter) Sprache bleibt der Text, wie er ist. Bewusst
- * kein `highlightAuto`: geraten sähe mal so und mal so aus, und der Block
- * trägt seine Sprache ohnehin.
+ * Without a language (or with an unknown one), the text stays as it is.
+ * Deliberately no `highlightAuto`: a guess would look different every time,
+ * and the block already carries its language anyway.
  */
 export function highlightLines(code: string, language: unknown): CodeLine[] {
   const text = code.endsWith("\n") ? code.slice(0, -1) : code;
@@ -162,25 +162,25 @@ export function highlightLines(code: string, language: unknown): CodeLine[] {
 }
 
 /**
- * Rät die Sprache eines Codeblocks — oder gibt `null` zurück.
+ * Guesses the language of a code block — or returns `null`.
  *
- * `highlight.js` probiert dafür jede registrierte Grammatik durch und bewertet,
- * wie gut sie passt. Zwei Bremsen dagegen, dass daraus Unsinn wird:
+ * `highlight.js` does this by trying every registered grammar and scoring
+ * how well it fits. Two safeguards against that turning into nonsense:
  *
- * - **Zu wenig Text wird nicht geraten.** Drei Wörter passen auf ein Dutzend
- *   Sprachen; die Erkennung wäre dann ein Münzwurf.
- * - **Eine Schwelle für die Bewertung.** `highlight.js` liefert immer einen
- *   Sieger, auch wenn keiner überzeugt. Unter der Schwelle bleibt der Block
- *   lieber schlicht als falsch beschriftet.
+ * - **Too little text isn't guessed at all.** Three words fit a dozen
+ *   languages; detection would then be a coin flip.
+ * - **A threshold on the score.** `highlight.js` always returns a winner,
+ *   even when none of them are convincing. Below the threshold, the block
+ *   stays plain rather than mislabeled.
  *
- * Die Schwelle ist gemessen, nicht geschätzt: echter Code kommt in Stichproben
- * auf 6 bis 16 (TypeScript 6, SQL 6, Go 6, CSS 7, Python 14, Shell 16), reine
- * Prosa dagegen auf 1 — die trifft sonst zufällig irgendeine Grammatik. Fünf
- * liegt sauber dazwischen.
+ * The threshold is measured, not estimated: real code scores 6 to 16 in
+ * samples (TypeScript 6, SQL 6, Go 6, CSS 7, Python 14, Shell 16), plain
+ * prose scores 1 — which would otherwise randomly hit some grammar or
+ * other. Five sits cleanly in between.
  *
- * Aufgerufen wird das genau einmal je Block — das Ergebnis landet als Attribut
- * im Dokument. Bei jedem Tastendruck neu zu raten hieße, dass die Farben beim
- * Schreiben springen.
+ * This is called exactly once per block — the result is stored as an
+ * attribute in the document. Re-guessing on every keystroke would mean the
+ * colors jump around while typing.
  */
 export function detectLanguage(code: string): string | null {
   const text = code.trim();

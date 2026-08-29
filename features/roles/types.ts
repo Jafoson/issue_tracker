@@ -1,12 +1,12 @@
 import type { RoleScope } from "@/lib/rbac";
 
 /**
- * Welcher Topf von Rollen gemeint ist.
+ * Which pool of roles is meant.
  *
- * Der Scope PROJECT kommt zweimal vor: mit `projectId: null` sind es die Rollen,
- * die der Workspace für alle seine Projekte anlegt; mit `projectId` die Rollen
- * genau eines Projekts. Die geteilten System-Rollen gehören zu jedem Topf ihres
- * Scopes — sie haben keinen Eigentümer.
+ * The PROJECT scope occurs twice: with `projectId: null` these are the
+ * roles the workspace creates for all of its projects; with `projectId`,
+ * the roles of exactly one project. The shared system roles belong to every
+ * pool of their scope — they have no owner.
  */
 export type RoleTarget =
   | { scope: "PLATFORM" }
@@ -19,59 +19,60 @@ export interface RoleView {
   name: string;
   desc: string;
   rank: number;
-  /** Geteilte Default-Rolle: gehört niemandem, gilt für alle Mandanten. */
+  /** Shared default role: belongs to nobody, applies to every tenant. */
   system: boolean;
-  /** Gehört genau einem Projekt statt dem Workspace. */
+  /** Belongs to exactly one project instead of the workspace. */
   local: boolean;
-  /** Die Permission-Keys, die diese Rolle hat. */
+  /** The permission keys this role has. */
   grants: string[];
-  /** Der Handelnde darf diese Rolle ändern (Rang, `editable`, Berechtigung). */
+  /** The actor is allowed to change this role (rank, `editable`, permission). */
   manageable: boolean;
   /**
-   * Wie viele Personen sie **in diesem Topf** tragen — im Projekt also die
-   * Mitglieder dieses Projekts, im Workspace die seinen.
+   * How many people carry it **in this pool** — in a project, the members of
+   * that project; in a workspace, its members.
    *
-   * Geteilte Standardrollen tragen plattformweit Hunderte; die Zahl beantwortet
-   * hier aber „wie viele bei uns", und das ist die einzige, mit der man auf
-   * dieser Seite etwas anfangen kann.
+   * Shared default roles carry hundreds platform-wide; but the number here
+   * answers "how many at our place", and that's the only one useful on this
+   * page.
    */
   memberCount: number;
   /**
-   * Wie viele sie überhaupt tragen, über alle Workspaces und Projekte hinweg.
+   * How many carry it in total, across every workspace and project.
    *
-   * Nur dafür da, die Löschbarkeit zu beantworten: der Fremdschlüssel steht auf
-   * RESTRICT, und der zählt nicht nach Töpfen.
+   * Only here to answer whether it can be deleted: the foreign key is set
+   * to RESTRICT, and that doesn't count per pool.
    */
   totalCarriers: number;
 }
 
 /**
- * Eine Änderung an genau einem Permission-Eintrag.
+ * A change to exactly one permission entry.
  *
- * Dieselbe Form nimmt die Matrix entgegen und die Action wieder an: zwischen
- * beiden liegt der Speichern-Knopf, der einen Stapel davon sammelt.
+ * The same shape is both accepted by the matrix and sent back to the
+ * action: between the two sits the save button, which collects a batch of
+ * these.
  */
 export interface GrantChange {
   roleId: string;
   permission: string;
-  /** `true` gibt der Rolle die Permission, `false` nimmt sie ihr. */
+  /** `true` gives the role the permission, `false` takes it away. */
   granted: boolean;
 }
 
-/** Alles, was ein Rollen-Editor rendert. */
+/** Everything a role editor renders. */
 export interface RoleManagerView {
   target: RoleTarget;
   roles: RoleView[];
-  /** Permissions, die in diesem Scope vergeben werden dürfen. */
+  /** Permissions that may be assigned in this scope. */
   permissions: { key: string; desc: string }[];
-  /** Darf überhaupt etwas geändert werden. */
+  /** Whether anything may be changed at all. */
   canManage: boolean;
   /**
-   * Permissions, die der Handelnde selbst besitzt. Nur diese darf er per ALLOW
-   * weitergeben — sonst könnte sich jeder Rollenverwalter selbst befördern.
+   * Permissions the actor holds themselves. Only these may they pass on via
+   * ALLOW — otherwise any role manager could promote themselves.
    */
   grantable: string[];
-  /** Höchster Rang, den er vergeben darf. */
+  /** Highest rank they're allowed to assign. */
   maxRank: number;
 }
 

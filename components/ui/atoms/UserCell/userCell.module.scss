@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  /* Ohne das würde der Text die Grid-Spalte aufziehen statt zu kürzen. */
+  /* Without this the text would stretch the grid column instead of truncating. */
   min-width: 0;
 }
 
@@ -24,7 +24,7 @@
   color: var(--on-surface);
 }
 
-/* Nur der Name selbst kürzt — ein Badge dahinter bleibt vollständig sichtbar. */
+/* Only the name itself truncates — a badge after it stays fully visible. */
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;

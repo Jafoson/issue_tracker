@@ -1,10 +1,10 @@
 import { defineRouting } from "next-intl/routing";
 
-// Single Source of Truth für die unterstützten Sprachen und das Routing-Verhalten.
+// Single source of truth for the supported languages and the routing behavior.
 export const routing = defineRouting({
   locales: ["de", "en"],
   defaultLocale: "de",
-  // Die App präfixt URLs bislang immer mit der Locale (/de/…, /en/…).
+  // The app always prefixes URLs with the locale so far (/de/…, /en/…).
   localePrefix: "always",
 });
 

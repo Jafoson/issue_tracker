@@ -1,47 +1,46 @@
 #!/usr/bin/env bun
 /**
- * Workaround für einen offenen, ungelösten Bun-Bug (oven-sh/bun#25370, via
- * vercel/next.js#86652/#86866 als Next.js-seitig "closed, ist ein Bun-Bug"
- * eingestuft): Turbopack referenziert Pakete, die es nicht ins SSR-Bundle
- * packt (Next.js' eigene Vorgabe-Liste, u.a. "pg" und "@prisma/client" —
- * `node_modules/next/dist/lib/server-external-packages.jsonc`), zur
- * Laufzeit über einen Namen mit angehängtem Hash (z.B.
- * "pg-587764f78a6c7a9c"). Node/Bun sollen diesen Namen dann per `require()`
- * aus node_modules auflösen — nur dass es kein Paket mit diesem Namen gibt.
- * Ergebnis: "Cannot find module 'pg-<hash>'" bei jedem kalten
- * `.next`-Neubau (leerer/gelöschter Cache), reproduzierbar unabhängig vom
- * eigenen Code.
+ * Workaround for an open, unresolved Bun bug (oven-sh/bun#25370, classified
+ * on the Next.js side via vercel/next.js#86652/#86866 as "closed, it's a Bun
+ * bug"): Turbopack references packages it doesn't bundle for SSR (Next.js's
+ * own default list, including "pg" and "@prisma/client" —
+ * `node_modules/next/dist/lib/server-external-packages.jsonc`), at runtime,
+ * under a name with a hash appended (e.g. "pg-587764f78a6c7a9c"). Node/Bun
+ * are then supposed to resolve that name via `require()` from node_modules —
+ * except no package with that name exists. Result: "Cannot find module
+ * 'pg-<hash>'" on every cold `.next` rebuild (empty/deleted cache),
+ * reproducible independent of our own code.
  *
- * Der Hash ist deterministisch aus dem aktuellen `node_modules`-Layout
- * abgeleitet — stabil, solange sich an den betroffenen Abhängigkeiten
- * nichts ändert, und identisch auf jeder Maschine mit demselben `bun.lock`.
- * Dieses Skript legt für jedes bekannte Paket einen echten Symlink unter
- * genau diesem Namen an, damit die Auflösung klappt. Läuft automatisch nach
- * jedem `bun install` (siehe `package.json` → `postinstall`).
+ * The hash is deterministically derived from the current `node_modules`
+ * layout — stable as long as the affected dependencies don't change, and
+ * identical on every machine with the same `bun.lock`. This script creates a
+ * real symlink under exactly that name for each known package, so resolution
+ * succeeds. Runs automatically after every `bun install` (see `package.json`
+ * → `postinstall`).
  *
- * ── Wenn nach einem Dependency-Update wieder "Cannot find module '<pkg>-
- *    <hash>'" auftaucht ──
- * Der Hash hat sich verschoben (neue Version, neuer Lockfile-Stand). Neuen
- * Hash aus der Fehlermeldung ablesen und unten in `KNOWN_HASHES` eintragen.
+ * ── If "Cannot find module '<pkg>-<hash>'" comes back after a dependency
+ *    update ──
+ * The hash has shifted (new version, new lockfile state). Read the new hash
+ * off the error message and add it to `KNOWN_HASHES` below.
  *
- * Sobald Bun/Turbopack das upstream beheben, kann diese Datei plus der
- * `postinstall`-Eintrag ersatzlos wieder raus.
+ * Once Bun/Turbopack fix this upstream, this file plus the `postinstall`
+ * entry can be removed without replacement.
  */
 import { existsSync, symlinkSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
 const NODE_MODULES = path.resolve(import.meta.dir, "..", "node_modules");
 
-/** Bekannte Hashes für den aktuellen `bun.lock`-Stand. Bei "Cannot find
- *  module" mit einem anderen Hash: hier den neuen eintragen. */
+/** Known hashes for the current `bun.lock` state. On "Cannot find module"
+ *  with a different hash: add the new one here. */
 const KNOWN_HASHES: Record<string, string[]> = {
   pg: ["587764f78a6c7a9c"],
   "@prisma/client": ["2c3a283f134fdcb6"],
 };
 
-/** Reales Ziel, auf das der Symlink zeigen soll — für Pakete mit
- *  Subpath-Importen (`@prisma/client/runtime/client`) reicht ein Symlink
- *  auf den Paketordner selbst, Node löst den Rest normal auf. */
+/** Real target the symlink should point to — for packages with subpath
+ *  imports (`@prisma/client/runtime/client`), a symlink to the package
+ *  folder itself is enough, Node resolves the rest normally. */
 const REAL_TARGET: Record<string, string> = {
   pg: path.join(NODE_MODULES, "pg"),
   "@prisma/client": path.join(NODE_MODULES, "@prisma", "client"),
@@ -50,7 +49,7 @@ const REAL_TARGET: Record<string, string> = {
 let created = 0;
 for (const [pkg, hashes] of Object.entries(KNOWN_HASHES)) {
   const target = REAL_TARGET[pkg];
-  if (!target || !existsSync(target)) continue; // Paket (noch) nicht installiert.
+  if (!target || !existsSync(target)) continue; // Package not installed (yet).
 
   for (const hash of hashes) {
     const linkPath = pkg.startsWith("@")
@@ -65,7 +64,7 @@ for (const [pkg, hashes] of Object.entries(KNOWN_HASHES)) {
     try {
       unlinkSync(linkPath);
     } catch {
-      // Gab es noch nicht — normal.
+      // Didn't exist yet — normal.
     }
     symlinkSync(target, linkPath, "dir");
     created++;
@@ -74,6 +73,6 @@ for (const [pkg, hashes] of Object.entries(KNOWN_HASHES)) {
 
 if (created > 0) {
   console.log(
-    `[fix-turbopack-bun-externals] ${created} Symlink(s) für Turbopacks externe Module angelegt.`,
+    `[fix-turbopack-bun-externals] Created ${created} symlink(s) for Turbopack's external modules.`,
   );
 }

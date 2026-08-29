@@ -13,16 +13,17 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface PasswordResetEmailInput {
   to: string;
   requestedAt: Date;
-  /** Aus dem `User-Agent`, z. B. "Chrome auf macOS" — optional: die App wertet
-   *  das heute nirgends aus, das Feld ist für einen späteren Ausbau da. */
+  /** From the `User-Agent`, e.g. "Chrome on macOS" — optional: the app
+   *  doesn't evaluate this anywhere today, the field exists for a later
+   *  extension. */
   device?: string;
-  /** Aus einer IP-Geolokation, z. B. "Hamburg, DE" — dieselbe Einschränkung
-   *  wie bei `device`. */
+  /** From IP geolocation, e.g. "Hamburg, DE" — the same caveat as
+   *  `device`. */
   location?: string;
   expiresInMinutes: number;
   resetUrl: string;
-  /** Link zu den Sicherheitseinstellungen, für die Warnbox — optional, weil
-   *  die Frage „welcher Workspace“ nicht in dieser Datei beantwortet wird. */
+  /** Link to the security settings, for the alert box — optional, because
+   *  the question "which workspace" isn't answered in this file. */
   securityUrl?: string;
 }
 
@@ -34,9 +35,9 @@ function formatTimeDe(date: Date): string {
 }
 
 /**
- * Für den Passwort-vergessen-Weg — es gibt noch keinen Reset-Token (Ausstellung,
- * Frist, Einlösen), diese Vorlage nimmt nur die fertige URL entgegen, analog zu
- * `invitationEmail`/`emailVerificationEmail`.
+ * For the forgot-password path — there's no reset token yet (issuing,
+ * deadline, redeeming), this template only accepts the finished URL,
+ * analogous to `invitationEmail`/`emailVerificationEmail`.
  */
 export function passwordResetEmail(
   input: PasswordResetEmailInput,

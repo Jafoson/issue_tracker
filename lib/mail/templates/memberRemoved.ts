@@ -9,17 +9,17 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface MemberRemovedEmailInput {
   to: string;
   workspaceName: string;
-  /** Gesetzt = nur aus diesem Projekt entfernt, Workspace-Zugriff bleibt. */
+  /** Set = removed only from this project, workspace access remains. */
   projectName?: string | null;
   actorName: string;
 }
 
-/** Für `removeMember`/`removeProjectMember` — die einzige Rückmeldung an die
- *  entfernte Person: der In-App-Weg scheidet aus, das Workspace-Layout
- *  blockt sie schon vor der Inbox aus (`canEnterWorkspace`).
+/** For `removeMember`/`removeProjectMember` — the only feedback to the
+ *  removed person: the in-app path is out, the workspace layout already
+ *  blocks them before the inbox loads (`canEnterWorkspace`).
  *
- *  `override` kommt aus `MailTemplate` (Admin-Bearbeitung, siehe
- *  `features/mail-templates`) — ersetzt Betreff/Überschrift/Einleitung. */
+ *  `override` comes from `MailTemplate` (admin editing, see
+ *  `features/mail-templates`) — replaces subject/heading/intro. */
 export function memberRemovedEmail(
   input: MemberRemovedEmailInput,
   override?: TemplateOverride,

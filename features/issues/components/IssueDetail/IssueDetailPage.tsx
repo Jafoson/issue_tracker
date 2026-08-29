@@ -8,24 +8,24 @@ import { IssueDetailPageView } from "./IssueDetailPageView";
 import { useIssueDetail } from "./useIssueDetail";
 
 interface IssueDetailPageProps {
-  /** Vom Server geladen — die Seite fängt nie leer an. */
+  /** Loaded from the server — the page never starts out empty. */
   issue: IssueDetail;
   data: IssueComposerData;
 }
 
 /**
- * Die Vollseite unter `/[workspace]/issue/[ref]`.
+ * The full page at `/[workspace]/issue/[ref]`.
  *
- * Sie teilt sich mit dem Seitenpanel den Hook, nicht die Hülle: geladen und
- * geschrieben wird gleich, dargestellt nicht. Ein Panel liegt über einer Liste
- * und lässt sich schließen — eine Seite steht für sich und führt zurück.
+ * It shares the hook with the side panel, not the shell: loading and
+ * writing work the same, rendering doesn't. A panel sits over a list and
+ * can be closed — a page stands on its own and leads back.
  */
 export function IssueDetailPage({ issue, data }: IssueDetailPageProps) {
   const router = useRouter();
   const project = data.projects.find((p) => p.id === issue.project) ?? null;
 
-  // Wohin es zurückgeht: zum Projekt des Issues, nicht in die Browser-Historie
-  // — ein Link, der auch dann trägt, wenn die Seite direkt aufgerufen wurde.
+  // Where it goes back to: the issue's project, not the browser history —
+  // a link that still works even when the page was opened directly.
   const backHref = project
     ? projectPath(data.workspaceId, project.slug, "")
     : `/${data.workspaceId}`;
@@ -40,7 +40,7 @@ export function IssueDetailPage({ issue, data }: IssueDetailPageProps) {
     issueRef: issue.id,
     data,
     initialIssue: issue,
-    // Gelöscht heißt hier: die Seite zeigt nichts mehr. Also weiter zum Projekt.
+    // Deleted means here: the page has nothing left to show. So on to the project.
     onDeleted: () => router.push(backHref),
   });
 

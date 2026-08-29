@@ -1,12 +1,12 @@
 .board {
   display: flex;
   gap: 0;
-  /* Füllt die Restspalte unter der Topbar; die Spalten scrollen, nicht die Seite. */
+  /* Fills the remaining space below the topbar; the columns scroll, not the page. */
   flex: 1;
   min-height: 0;
   overflow-x: auto;
-  /* Über das letzte Spaltenende hinaus zu wischen darf nicht die
-     Zurück-Navigation des Browsers auslösen. */
+  /* Swiping past the last column's edge must not trigger the browser's
+     back navigation. */
   overscroll-behavior-x: contain;
   padding: 16px;
   align-items: stretch;

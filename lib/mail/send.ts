@@ -3,14 +3,14 @@ import { mailConfig } from "@/lib/mail/config";
 import type { MailContent } from "@/lib/mail/templates/types";
 import { getTransport } from "@/lib/mail/transport";
 
-// ─── Mailversand: die eine Stelle, die tatsächlich mit SMTP spricht ──────────
+// ─── Mail sending: the one place that actually talks to SMTP ────────────────
 //
-// Dasselbe Muster wie `lib/notify` und `lib/audit`: eine schmale Funktion, über
-// die jeder Aufrufer verschickt, ohne selbst etwas von Transport oder
-// Konfiguration zu wissen. Fehler werden geschluckt und nur geloggt — eine
-// hakende Mail darf nie eine Einladung, eine Rollenänderung oder eine
-// Statusaktualisierung verhindern. Wer wissen muss, ob überhaupt versendet
-// wurde, prüft vorher selbst mit `isMailConfigured()`.
+// Same pattern as `lib/notify` and `lib/audit`: a narrow function that every
+// caller sends through, without knowing anything itself about transport or
+// configuration. Errors are swallowed and only logged — a stumbling email
+// must never block an invitation, a role change, or a status update.
+// Whoever needs to know whether sending even happened checks beforehand
+// with `isMailConfigured()`.
 
 export interface MailMessage extends MailContent {
   to: string;

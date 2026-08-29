@@ -7,13 +7,13 @@ import {
   openInvitation,
 } from "@/lib/invitations";
 
-// ── Ein Fake-Client, der nur kann, was diese Funktionen brauchen ──────────────
+// ── A fake client that can only do what these functions need ──────────────────
 
 const deleteMany = mock();
 const create = mock();
 const findUnique = mock();
 
-// biome-ignore lint/suspicious/noExplicitAny: Test-Doppel für den Prisma-Client
+// biome-ignore lint/suspicious/noExplicitAny: test double for the Prisma client
 const db = { invitation: { deleteMany, create, findUnique } } as any;
 
 const NOW = new Date("2026-08-04T12:00:00Z");
@@ -24,7 +24,7 @@ function reset() {
   create.mockResolvedValue({});
 }
 
-/** Eine offene Einladung, wie die Datenbank sie liefert. */
+/** An open invitation, as delivered by the database. */
 function row(
   overrides: {
     expires?: Date;
@@ -132,8 +132,8 @@ describe("openInvitation()", () => {
     expect((await openInvitation(db, "tok", NOW))?.hasPasskey).toBe(true);
   });
 
-  // Unbekannt, abgelaufen, benutzt, gesperrt: alle vier enden gleich, damit der
-  // Endpunkt kein Orakel für gültige Tokens ist.
+  // Unknown, expired, used, suspended: all four end the same way, so the
+  // endpoint isn't an oracle for valid tokens.
   it("gibt null für einen unbekannten Token", async () => {
     findUnique.mockResolvedValue(null);
     expect(await openInvitation(db, "tok", NOW)).toBeNull();

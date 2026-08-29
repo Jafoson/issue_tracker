@@ -2,11 +2,12 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import panel from "../../../atoms/RichText/richText.module.scss";
 
 /**
- * Der farbige Hinweisblock, den Jira „Panel" nennt — Info oder Warnung.
+ * The colored callout block that Jira calls a "Panel" — info or warning.
  *
- * Ein Block, der andere Blöcke enthält: Absätze, Listen, was auch immer. Das
- * Zeichen davor (ℹ / ⚠) steht im CSS, nicht im Dokument — so bleibt es beim
- * Wechsel der Art automatisch richtig und landet nicht im Fließtext.
+ * A block that contains other blocks: paragraphs, lists, whatever. The
+ * symbol before it (ℹ / ⚠) lives in CSS, not in the document — that way it
+ * stays automatically correct when the kind changes and never ends up in
+ * the text content.
  */
 
 export type PanelKind = "info" | "warning";
@@ -14,7 +15,7 @@ export type PanelKind = "info" | "warning";
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     panel: {
-      /** Setzt den Block unter dem Cursor in ein Panel — oder wieder heraus. */
+      /** Turns the block under the cursor into a panel — or back out of one. */
       togglePanel: (kind: PanelKind) => ReturnType;
     };
   }
@@ -56,8 +57,8 @@ export const Panel = Node.create({
       togglePanel:
         (kind) =>
         ({ commands, editor }) => {
-          // Schon ein Panel dieser Art? Dann wieder auflösen — derselbe Befehl
-          // schaltet hin und zurück, wie bei Zitat und Überschrift auch.
+          // Already a panel of this kind? Then dissolve it again — the same
+          // command toggles it back and forth, just like for quote and heading.
           if (editor.isActive(this.name, { kind })) {
             return commands.lift(this.name);
           }

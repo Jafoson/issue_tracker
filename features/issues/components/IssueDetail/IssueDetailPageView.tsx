@@ -19,26 +19,26 @@ import styles from "./issueDetail.module.scss";
 
 interface IssueDetailPageViewProps {
   issue: IssueDetail;
-  /** Aufgelöst, weil die Kopfzeile es braucht — `null`, wenn es fehlt. */
+  /** Resolved because the header needs it — `null` if it's missing. */
   project: Project | null;
   data: IssueComposerData;
-  /** Ziel des Zurück-Pfeils und der Projekt-Stufe im Pfad. */
+  /** Target of the back arrow and the project step in the breadcrumb path. */
   backHref: string;
   onPatch: (patch: IssuePatch) => void;
   onComment: (body: PMDoc) => Promise<void>;
   onDelete: () => void;
-  /** Holt das Issue neu — für Anhänge, die am Hook vorbei geschrieben werden. */
+  /** Refetches the issue — for attachments that are written past the hook. */
   onRefresh: () => Promise<void>;
 }
 
 /**
- * Reine Darstellung der Vollseite — alles, was schreibt, kommt als Callback
- * herein.
+ * Pure rendering of the full page — everything that writes comes in as a
+ * callback.
  *
- * Der Aufbau ist der des großen Dialogs (Inhalt links, Attribute rechts, jede
- * Spalte für sich scrollend), die Kopfzeile ist es nicht: statt Titel und
- * Kreuz steht dort der Pfad, über den man hergekommen ist und wieder
- * zurückkommt. Eine Seite schließt man nicht, man verlässt sie.
+ * The layout matches the large dialog's (content on the left, attributes on
+ * the right, each column scrolling on its own), the header doesn't: instead
+ * of a title and a cross, it shows the breadcrumb path that led here and
+ * leads back. A page isn't closed, it's left.
  */
 export function IssueDetailPageView({
   issue,
@@ -68,8 +68,8 @@ export function IssueDetailPageView({
           <Icon icon="lucide:arrow-left" width={16} aria-hidden="true" />
         </Link>
 
-        {/* Zwei Stufen genügen: das Projekt, in dem das Issue steckt, und das
-            Issue selbst. Der Workspace steht ohnehin in der Seitenleiste. */}
+        {/* Two steps are enough: the project the issue lives in, and the
+            issue itself. The workspace is already shown in the sidebar. */}
         <nav className={styles.crumbs} aria-label={t("nav.breadcrumb")}>
           <Link href={backHref} className={styles.crumb}>
             <span className="dot" style={{ background: project?.color }} />
@@ -92,7 +92,7 @@ export function IssueDetailPageView({
               me={data.me}
             />
           )}
-          {/* Ohne `OpenPageButton` daneben — hier ist die Seite schon. */}
+          {/* No `OpenPageButton` next to it — this already is the page. */}
           <IssueActionsMenu
             onDelete={onDelete}
             canDelete={issue.access.canDelete}

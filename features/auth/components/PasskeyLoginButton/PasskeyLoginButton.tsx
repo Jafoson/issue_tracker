@@ -12,19 +12,19 @@ interface Props {
 }
 
 /**
- * Login per Passkey — ohne E-Mail-Feld. Ohne `email`-Parameter fällt
- * next-auths `getUserInfo` auf `undefined` zurück, was auf „authenticate"
- * ohne vorgegebenen Nutzer entscheidet: der Browser zeigt alle für diese
- * Seite hinterlegten Passkeys selbst an (discoverable credentials) — dieselbe
- * „nutzerlos"-Ceremony wie 1Password, GitHub & Co.
+ * Sign in via passkey — no email field. Without an `email` parameter,
+ * next-auth's `getUserInfo` falls back to `undefined`, which resolves to
+ * "authenticate" with no predetermined user: the browser shows all passkeys
+ * registered for this site by itself (discoverable credentials) — the same
+ * "userless" ceremony as 1Password, GitHub, and others.
  *
- * Die Ceremony (Browser-Prompt, Prüfung) übernimmt `next-auth/webauthn`s
- * `signIn` vollständig — sie holt die Optionen vom Server, ruft
- * `@simplewebauthn/browser` auf und postet die Antwort zurück.
+ * The ceremony (browser prompt, verification) is handled entirely by
+ * `next-auth/webauthn`'s `signIn` — it fetches the options from the server,
+ * calls `@simplewebauthn/browser`, and posts the response back.
  *
- * Bricht die Person den Browser-Prompt ab (kein Passkey ausgewählt, Timeout),
- * wirft `startAuthentication` vor jedem Server-Kontakt — das fängt nur dieser
- * try/catch ab, `next-auth/webauthn` selbst tut es nicht.
+ * If the person cancels the browser prompt (no passkey selected, timeout),
+ * `startAuthentication` throws before any server contact — only this
+ * try/catch catches that, `next-auth/webauthn` itself doesn't.
  */
 export function PasskeyLoginButton({ callbackUrl, onError }: Props) {
   const t = useTranslations();

@@ -11,22 +11,22 @@ import type { PMDoc, PMMark, PMNode } from "@/lib/richtext/types";
 import styles from "./richText.module.scss";
 
 /**
- * Zeigt ein ProseMirror-Dokument an — ohne ProseMirror.
+ * Displays a ProseMirror document — without ProseMirror.
  *
- * Der Editor ist schwer und läuft nur im Browser; gelesen wird ein Issue aber
- * viel öfter als geschrieben. Deshalb übersetzt diese Komponente das gespeicherte
- * JSON von Hand nach React: keine Abhängigkeit, kein `generateHTML`, vor allem
- * kein `dangerouslySetInnerHTML` — fremder Text landet niemals als HTML im
- * Dokument. Adressen laufen durch `safeUrl`, damit `javascript:`-Links gar nicht
- * erst entstehen.
+ * The editor is heavy and only runs in the browser; an issue is read far
+ * more often than it's written, though. So this component translates the
+ * stored JSON to React by hand: no dependency, no `generateHTML`, and above
+ * all no `dangerouslySetInnerHTML` — foreign text never ends up as HTML in
+ * the document. URLs go through `safeUrl` so `javascript:` links can't even
+ * arise.
  *
- * Keine Client-Direktive: rendert in Server Components.
+ * No client directive: renders in Server Components.
  *
- * Wer hier einen Knotentyp ergänzt, muss die passende Extension im
- * `RichTextEditor` mitliefern — und umgekehrt.
+ * Whoever adds a node type here must also supply the matching extension in
+ * `RichTextEditor` — and vice versa.
  */
 
-/** Nur Adressen, die im Browser harmlos sind — alles andere bleibt Text. */
+/** Only URLs that are harmless in the browser — everything else stays text. */
 function safeUrl(url: unknown): string | null {
   if (typeof url !== "string") return null;
   return /^(?:https?:\/\/|mailto:|\/|#)/i.test(url) ? url : null;
@@ -38,8 +38,8 @@ function attr(node: PMNode, key: string): string {
 }
 
 /**
- * Legt die Auszeichnungen um einen Textknoten. Von innen nach außen, damit die
- * Reihenfolge im Baum der im Editor entspricht.
+ * Wraps the marks around a text node. Inside out, so the order in the tree
+ * matches the editor's.
  */
 function applyMarks(
   content: ReactNode,
@@ -64,8 +64,8 @@ function applyMarks(
           <a
             key={markKey}
             href={href}
-            // Beim Überfahren steht die Adresse da — im Fließtext sieht man
-            // dem Wort sonst nicht an, wohin es führt.
+            // The URL shows up on hover — in running text you otherwise
+            // can't tell where a word leads.
             title={href}
             target="_blank"
             rel="noopener noreferrer"
@@ -137,7 +137,7 @@ function renderNode(
       const checked = node.attrs?.checked === true;
       return (
         <li key={key} className={styles.taskItem} data-checked={checked}>
-          {/* Nur Anzeige — abgehakt wird im Editor, nicht im gelesenen Text. */}
+          {/* Display only — checking off happens in the editor, not in the read view. */}
           <input type="checkbox" checked={checked} disabled readOnly />
           <div>{children()}</div>
         </li>
@@ -148,13 +148,13 @@ function renderNode(
       return <blockquote key={key}>{children()}</blockquote>;
 
     case "codeBlock": {
-      // Der Inhalt eines Codeblocks ist reiner Text — keine Auszeichnungen,
-      // keine Kindknoten außer Textknoten. Deshalb hier direkt zusammengelegt
-      // statt über `children()`: die Zeilen brauchen je ein eigenes Element,
-      // damit die Nummern daneben stehen können.
+      // The content of a code block is plain text — no marks, no child
+      // nodes other than text nodes. So it's joined directly here instead
+      // of going through `children()`: the lines each need their own
+      // element so the numbers can sit next to them.
       const code = (node.content ?? []).map((n) => n.text ?? "").join("");
       const language = attr(node, "language");
-      // Hervorgehoben wird zeilenweise, weil die Nummern daneben stehen.
+      // Highlighted line by line, because the numbers sit next to them.
       const lines = highlightLines(code, language);
 
       return (
@@ -171,17 +171,17 @@ function renderNode(
           <pre>
             <code data-language={language || undefined}>
               {lines.map((line, index) => (
-                // Die Nummer steht im CSS (`::before`), nicht im Text: so
-                // wandert sie beim Markieren und Kopieren nicht mit.
+                // The line number lives in CSS (`::before`), not in the
+                // text: this way it isn't carried along when selecting and copying.
                 <span
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Zeilen haben keine Kennung, ihre Position ist die Kennung
+                  // biome-ignore lint/suspicious/noArrayIndexKey: lines have no identifier, their position is the identifier
                   key={index}
                   className={styles.codeLine}
                 >
                   {line.map((token, at) =>
                     token.className ? (
                       <span
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Stücke einer Zeile haben keine Kennung
+                        // biome-ignore lint/suspicious/noArrayIndexKey: pieces of a line have no identifier
                         key={at}
                         className={token.className}
                       >
@@ -208,15 +208,15 @@ function renderNode(
     case "image": {
       const src = safeUrl(node.attrs?.src);
       if (!src) return null;
-      // biome-ignore lint/performance/noImgElement: fremde Adresse, kein bekanntes Format und keine bekannten Maße — `next/image` kann hier nichts optimieren
+      // biome-ignore lint/performance/noImgElement: foreign URL, no known format and no known dimensions — `next/image` can't optimize this
       return <img key={key} src={src} alt={attr(node, "alt")} />;
     }
 
     case "attachment": {
-      // `url`/`name`/`mimeType`/`size` sind bereits aufgelöst — der Aufrufer
-      // (`features/issues/queries.ts`, `withResolvedAttachments`) reichert sie
-      // an, bevor das Dokument hierher kommt. Fehlt `url` (Anhang gelöscht),
-      // bleibt ein stiller Platzhalter statt eines toten Bildes.
+      // `url`/`name`/`mimeType`/`size` are already resolved — the caller
+      // (`features/issues/queries.ts`, `withResolvedAttachments`) enriches
+      // them before the document reaches here. If `url` is missing
+      // (attachment deleted), a quiet placeholder remains instead of a broken image.
       const src = safeUrl(node.attrs?.url);
       const name = attr(node, "name");
       const mimeType = attr(node, "mimeType");
@@ -239,7 +239,7 @@ function renderNode(
             className={styles.attachmentImage}
             style={{ width, maxWidth: "100%" }}
           >
-            {/* biome-ignore lint/performance/noImgElement: presignte URL, next/image kann sie nicht optimieren */}
+            {/* biome-ignore lint/performance/noImgElement: presigned URL, next/image can't optimize it */}
             <img
               src={src}
               alt={name}
@@ -257,7 +257,7 @@ function renderNode(
             className={styles.attachmentVideo}
             style={{ width, maxWidth: "100%" }}
           >
-            {/* biome-ignore lint/a11y/useMediaCaption: hochgeladene Anhänge tragen keine Untertitel */}
+            {/* biome-ignore lint/a11y/useMediaCaption: uploaded attachments carry no captions */}
             <video src={src} controls className={styles.attachmentPreview} />
             <div className={styles.attachmentCaption}>
               <span className={styles.attachmentName}>{name}</span>
@@ -287,7 +287,7 @@ function renderNode(
 
     case "table":
       return (
-        // Breite Tabellen scrollen in ihrem Block, statt das Panel zu dehnen.
+        // Wide tables scroll within their block instead of stretching the panel.
         <div key={key} className={styles.tableWrap}>
           <table>
             <tbody>{children()}</tbody>
@@ -324,8 +324,8 @@ function renderNode(
       );
 
     case "mention":
-      // Das `@` gehört in den Text, nicht in einen eigenen Slot: so sitzt es
-      // von selbst auf der Grundlinie und wird beim Markieren mitkopiert.
+      // The `@` belongs in the text, not in a separate slot: this way it
+      // naturally sits on the baseline and gets copied along when selected.
       return (
         <Chip key={key} as="span" size="inline" variant="elevated" data-mention>
           @{attr(node, "label")}
@@ -335,9 +335,9 @@ function renderNode(
     case "issueLink": {
       const identifier = attr(node, "identifier");
       if (!identifier) return null;
-      // Dieselbe Adresse, über die Board, Inbox und Palette ein Issue öffnen:
-      // ein `issue`-Parameter an der aktuellen Route. Der Chip liegt im Link
-      // statt selbst einer zu sein — `Chip` kennt nur `div` und `span`.
+      // The same URL that board, inbox, and command palette use to open an
+      // issue: an `issue` parameter on the current route. The chip sits
+      // inside the link rather than being one itself — `Chip` only knows `div` and `span`.
       return (
         <a
           key={key}
@@ -362,8 +362,8 @@ function renderNode(
       if (!href) return null;
       const label = attr(node, "label") || hostOf(href);
       const favicon = faviconOf(href);
-      // Wie beim Issue: der Chip liegt im Link, statt selbst einer zu sein —
-      // `Chip` kennt nur `div` und `span`.
+      // Like the issue link: the chip sits inside the link rather than
+      // being one itself — `Chip` only knows `div` and `span`.
       return (
         <a
           key={key}
@@ -381,8 +381,8 @@ function renderNode(
             icon={
               <span
                 className={styles.linkIcon}
-                // Das Favicon liegt als Hintergrund darüber; lädt es nicht,
-                // bleibt das Kettenglied darunter stehen.
+                // The favicon overlays it as a background; if it fails to
+                // load, the chain-link icon underneath remains visible.
                 style={
                   favicon
                     ? ({ "--favicon": `url("${favicon}")` } as CSSProperties)
@@ -407,12 +407,12 @@ function renderNode(
           size="inline"
           variant="elevated"
           icon={<span className={styles.dateIcon} aria-hidden="true" />}
-          // Der maschinenlesbare Wert gehört an ein `<time>`; der Chip ist
-          // nur die Hülle darum.
+          // The machine-readable value belongs on a `<time>`; the chip is
+          // just the wrapper around it.
           title={iso}
-          // Die Schreibweise richtet sich nach der Umgebung, und die ist auf
-          // dem Server eine andere als im Browser. Der maschinenlesbare Wert
-          // steht unverändert im `datetime`-Attribut.
+          // The formatted output depends on the environment, and that
+          // differs between server and browser. The machine-readable value
+          // stays unchanged in the `datetime` attribute.
         >
           <time dateTime={iso} suppressHydrationWarning>
             {formatChipDate(iso)}
@@ -428,20 +428,19 @@ function renderNode(
         </span>
       );
 
-    // Unbekannter Knoten (älteres Dokument, neuere Extension): der Inhalt soll
-    // trotzdem lesbar bleiben, nur ohne seine Hülle.
+    // Unknown node (older document, newer extension): the content should
+    // still stay readable, just without its wrapper.
     default:
       return node.content?.length ? <div key={key}>{children()}</div> : null;
   }
 }
 
 /**
- * Die wenigen Beschriftungen, die die Anzeige selbst braucht — bislang nur der
- * Codeblock.
+ * The few labels the display itself needs — so far only the code block.
  *
- * Als Prop und nicht über `next-intl`: die Komponente rendert in Server
- * Components und in Tests ohne Provider. Die Vorgaben sind englisch, damit sie
- * ohne Zutun etwas Sinnvolles zeigen; die Anwendung reicht übersetzte herein.
+ * As a prop rather than via `next-intl`: the component renders in Server
+ * Components and in tests without a provider. The defaults are English so
+ * they show something sensible on their own; the app passes translated ones in.
  */
 export interface RichTextLabels {
   copy: string;
@@ -456,7 +455,7 @@ const DEFAULT_LABELS: RichTextLabels = {
 };
 
 interface RichTextProps {
-  /** Das gespeicherte Dokument — ungeprüftes JSON aus der Datenbank ist erlaubt. */
+  /** The stored document — unvalidated JSON from the database is allowed. */
   value: PMDoc | unknown;
   labels?: Partial<RichTextLabels>;
   className?: string;

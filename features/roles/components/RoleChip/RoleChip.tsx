@@ -3,29 +3,29 @@ import styles from "./roleChip.module.scss";
 
 interface Props {
   name: string;
-  /** Rang der Rolle — er bestimmt die Farbe des Punktes. */
+  /** Rank of the role — it determines the dot's color. */
   rank: number;
-  /** Herkunft der Rolle („Projektlokal"), falls sie eine hat. */
+  /** Origin of the role ("Project-local"), if it has one. */
   tag?: string | null;
-  /** Nicht bearbeitbar — der Chip tritt dann zurück. */
+  /** Not editable — the chip recedes in that case. */
   locked?: boolean;
   className?: string;
 }
 
 /**
- * Der Name einer Rolle als Chip — mit ihrer Herkunft im selben Feld.
+ * A role's name as a chip — with its origin in the same field.
  *
- * Nicht `components/ui/atoms/Label`: dessen gefüllte Variante färbt Fläche,
- * Rahmen *und* Schrift aus einer Farbe, und die Rangfarben tragen das nicht.
- * Bei `--outline` (Rang 1) und `--amber` steht der Name blass auf blass, und
- * der farbige Punkt daneben verschwindet im gleichfarbigen Text. Hier trägt
- * die Farbe nur der Punkt, den Namen liest man in `--on-surface` — dieselbe
- * Aufteilung wie im Kopf der Matrix, die dieselben Rollen zeigt.
+ * Not `components/ui/atoms/Label`: its filled variant colors fill, border,
+ * *and* text from one color, and the rank colors can't carry that. At
+ * `--outline` (rank 1) and `--amber` the name would sit pale on pale, and
+ * the colored dot next to it would vanish into text of the same color.
+ * Here, only the dot carries the color; the name is read in `--on-surface`
+ * — the same split as in the matrix header, which shows the same roles.
  *
- * Die Herkunft steht als zweites Feld im Chip statt als eigene Pille daneben:
- * „Projektlokal" ist eine Eigenschaft dieser Rolle, kein zweiter Gegenstand
- * neben ihr — und zwei gleich große Kästen nebeneinander lassen offen, welcher
- * der Name ist.
+ * The origin sits as a second field inside the chip instead of as a
+ * separate pill next to it: "Project-local" is a property of this role, not
+ * a second object beside it — and two equal-sized boxes side by side would
+ * leave it open which one is the name.
  */
 export function RoleChip({ name, rank, tag, locked, className }: Props) {
   return (

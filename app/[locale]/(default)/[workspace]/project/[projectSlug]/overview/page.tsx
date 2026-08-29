@@ -20,18 +20,18 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * Die Startseite eines Projekts, in zwei Ansichten: „Übersicht" mit dem
- * Steckbrief und „Dashboard" mit den Zahlen. Beide kommen aus einem Aufruf,
- * umgeschaltet wird im Client — `?view=` in der Adresse hält den Stand fest.
+ * A project's landing page, in two views: "Overview" with its profile and
+ * "Dashboard" with the numbers. Both come from a single call, switching
+ * happens client-side — `?view=` in the URL keeps track of the current state.
  *
- * ── Woher Zeitraum und Ansicht kommen ──
+ * ── Where the time range and view come from ──
  *
- * Beide folgen derselben Rangfolge: erst die Adresse, dann das Konto, dann die
- * Vorgabe. Das ist die richtige Reihenfolge — ein geteilter Link soll zeigen,
- * was der Absender gesehen hat, und nicht das, was der Empfänger sich einmal
- * eingestellt hat. Ohne Adresse gilt, was die Person zuletzt offen hatte: die
- * Projektzeile in der Seitenleiste führt genau hierher, und wer dort zuletzt die
- * Zahlen ansah, will sie beim nächsten Klick nicht erst wieder aufrufen.
+ * Both follow the same precedence: URL first, then the account, then the
+ * default. That's the right order — a shared link should show what the
+ * sender saw, not whatever the recipient once configured for themselves.
+ * Without a URL, whatever the person last had open applies: the project row
+ * in the sidebar leads exactly here, and whoever last looked at the numbers
+ * there doesn't want to set them up again on the next click.
  */
 export default async function ProjectDashboardPage({
   params,
@@ -52,9 +52,8 @@ export default async function ProjectDashboardPage({
   const project = projects.find((p) => p.slug === projectSlug);
   if (!project) notFound();
 
-  // Ein Aufruf für beides — `getMyDashboardLayout` ist über `cache()` pro
-  // Anfrage dedupliziert und wird gleich von `getProjectDashboard` noch einmal
-  // gebraucht.
+  // One call for both — `getMyDashboardLayout` is deduplicated per request
+  // via `cache()` and is about to be needed again by `getProjectDashboard`.
   const stored = await getMyDashboardLayout(project.id);
 
   const range = toRange(rangeParam ?? stored.range ?? undefined);
@@ -64,8 +63,8 @@ export default async function ProjectDashboardPage({
   const data = await getProjectDashboard(project.id, range, scope);
   if (!data) notFound();
 
-  // Nur ein Ausschnitt für die Karte in der Übersicht — die volle Liste steht
-  // unter den Einstellungen (`.../settings/activity`).
+  // Just an excerpt for the card in the overview — the full list lives
+  // under settings (`.../settings/activity`).
   const activity = await getProjectActivity(
     project.id,
     ACTIVITY_OVERVIEW_LIMIT,

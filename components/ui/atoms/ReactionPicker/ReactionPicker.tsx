@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/layout/RichTextEditor/extensions/emojiData";
 import styles from "./reactionPicker.module.scss";
 
-/** Sechs gängige Reaktionen, ohne erst zu suchen — dieselbe Sorte Auswahl wie
- *  bei GitHub/Slack. Alles darüber hinaus liegt hinter dem Suchfeld. */
+/** Six common reactions, no need to search first — the same kind of
+ *  selection as GitHub/Slack. Anything beyond that sits behind the search field. */
 const QUICK_EMOJI = ["👍", "❤️", "😄", "🎉", "👀", "🚀"];
 
 interface ReactionPickerProps {
@@ -18,10 +18,10 @@ interface ReactionPickerProps {
 }
 
 /**
- * Emoji-Auswahl für Reaktionen: eine Schnellzeile plus Suchfeld über die
- * volle `EMOJI`-Liste (`extensions/emojiData.ts`, sonst nur dem `:`-Trigger
- * im Editor vorbehalten). Reine Präsentation, keine Übersetzungen selbst —
- * wie `LinkForm` bekommt sie ihre Beschriftung von außen.
+ * Emoji picker for reactions: a quick row plus a search field over the full
+ * `EMOJI` list (`extensions/emojiData.ts`, otherwise reserved for the `:`
+ * trigger in the editor). Purely presentational, no translations of its
+ * own — like `LinkForm`, it gets its labels from outside.
  */
 export function ReactionPicker({
   onPick,

@@ -14,9 +14,9 @@ mock.module("@/lib/db", () => ({
 const mockGetSession = mock();
 mock.module("@/lib/session", () => ({ getSession: mockGetSession }));
 
-// Das Token trägt Name und Farbe — nach einer Änderung muss es nachgezogen
-// werden, sonst zeigt das Menü unten links bis zur nächsten Anmeldung den alten
-// Stand.
+// The token carries name and color — after a change it must be refreshed,
+// otherwise the menu in the bottom left keeps showing the old state until the
+// next login.
 const mockUnstableUpdate = mock();
 mock.module("@/auth", () => ({ unstable_update: mockUnstableUpdate }));
 
@@ -43,7 +43,7 @@ function reset() {
     m.mockReset();
   }
   mockGetSession.mockResolvedValue({ userId: ME });
-  // Kein anderer trägt den Benutzernamen.
+  // No one else has this username.
   mockUserFindUnique.mockResolvedValue(null);
   mockUserUpdate.mockResolvedValue({ id: ME });
   mockUnstableUpdate.mockResolvedValue(null);

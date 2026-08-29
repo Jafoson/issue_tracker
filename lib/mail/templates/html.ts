@@ -1,9 +1,9 @@
 /**
- * Werte in E-Mail-Vorlagen kommen aus der Datenbank und letztlich von
- * Benutzereingaben (Namen, Issue-Titel, Kommentar-Vorschauen) — anders als
- * JSX escaped ein Template-String nichts von sich aus. Ohne dieses Escaping
- * ließe sich über einen Titel wie `<img src=x onerror=...>` Markup ins
- * Postfach jedes Empfängers schmuggeln.
+ * Values in email templates come from the database and ultimately from
+ * user input (names, issue titles, comment previews) — unlike JSX, a
+ * template string doesn't escape anything on its own. Without this
+ * escaping, a title like `<img src=x onerror=...>` could smuggle markup
+ * into every recipient's inbox.
  */
 export function escapeHtml(value: string): string {
   return value
@@ -14,9 +14,9 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** `in_progress` → `In progress` — eine Annäherung an den Statusnamen ohne
- *  Rückgriff auf die (pro Workspace anpassbare) Statusliste, die hier nicht
- *  zur Verfügung steht. */
+/** `in_progress` → `In progress` — an approximation of the status name
+ *  without falling back on the (per-workspace customizable) status list,
+ *  which isn't available here. */
 export function humanizeKey(value: string): string {
   const spaced = value.replace(/[_-]+/g, " ").trim();
   if (!spaced) return spaced;
@@ -24,11 +24,11 @@ export function humanizeKey(value: string): string {
 }
 
 /**
- * `21. August 2026` — fest auf Deutsch statt über `toLocaleDateString(undefined, …)`
- * wie `lib/utils/date.ts`: das dort verwendete `undefined`-Gebietsschema
- * bräuchte einen Browser, der es hat. Eine Mail wird server-seitig gebaut,
- * ohne diesen Kontext — das Ergebnis wäre vom Server-Locale abhängig statt
- * vorhersagbar.
+ * `21. August 2026` — hardcoded to German instead of going through
+ * `toLocaleDateString(undefined, …)` like `lib/utils/date.ts`: the
+ * `undefined` locale used there needs a browser that has one set. An email
+ * is built server-side, without that context — the result would depend on
+ * the server's locale instead of being predictable.
  */
 export function formatDateDe(date: Date): string {
   return date.toLocaleDateString("de-DE", {

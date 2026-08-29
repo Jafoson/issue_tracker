@@ -1,15 +1,15 @@
-// Die Ansichten der eigenen Einstellungen. Jede ist das, was genau eine Seite
-// rendert.
+// The views of your own settings. Each one is exactly what a single page
+// renders.
 //
-// Rechte kommen hier nicht vor: jeder sieht ausschließlich sein eigenes Konto,
-// also gibt es nichts zu entscheiden außer der Frage, wer eingeloggt ist. Was
-// die Seiten stattdessen brauchen, ist der Zustand des Kontos — welche
-// Passkeys und Anmeldewege daran hängen, ob die Adresse bestätigt wurde.
+// Permissions don't come up here: everyone sees only their own account, so
+// there's nothing to decide besides who's logged in. What the pages need
+// instead is the state of the account — which passkeys and sign-in methods
+// are attached to it, whether the address has been verified.
 
-/** Das gewählte Design — landet als `data-theme` am Dokument. */
+/** The chosen theme — lands as `data-theme` on the document. */
 export type Theme = "dark" | "light" | "system";
 
-/** Die Anlässe, zu denen die App etwas von sich hören lässt. */
+/** The occasions on which the app sends word of itself. */
 export const NOTIFICATION_EVENTS = [
   "assigned",
   "mentioned",
@@ -23,67 +23,68 @@ export const NOTIFICATION_EVENTS = [
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
 
-/** Die Wege, auf denen sie es tut. */
+/** The channels through which it does so. */
 export const NOTIFICATION_CHANNELS = ["InApp", "Email"] as const;
 
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
-/** Ein Spaltenname der Tabelle: `assignedInApp`, `commentEmail`, … */
+/** A table column name: `assignedInApp`, `commentEmail`, … */
 export type NotificationKey = `${NotificationEvent}${NotificationChannel}`;
 
 export type NotificationSettings = Record<NotificationKey, boolean>;
 
-/** Was jemand für sich eingestellt hat — mit den Vorgaben, wenn noch nichts. */
+/** What someone has set for themselves — with the defaults if nothing yet. */
 export interface Preferences extends NotificationSettings {
   theme: Theme;
-  /** Ob der Hinweis im Plattform-Bereich weggeklickt wurde. */
+  /** Whether the notice in the platform area has been dismissed. */
   adminNoticeHidden: boolean;
 }
 
-/** Allgemein: wer man ist und wie man erscheint. */
+/** General: who you are and how you appear. */
 export interface AccountProfileView {
   id: string;
   firstName: string;
   lastName: string;
   handle: string;
-  /** Passkey-Konten können ganz ohne Adresse existieren — dann `null`, bis
-   *  die Person selbst eine nachträgt (`account.actions#setEmail`). */
+  /** Passkey accounts can exist with no address at all — then `null`, until
+   *  the person adds one themselves (`account.actions#setEmail`). */
   email: string | null;
   color: string;
   avatarUrl: string | null;
-  /** Die Adresse ist bestätigt. Ohne Mailversand bleibt das offen — die
-   *  Seite sagt das, statt es zu verschweigen. */
+  /** The address is verified. Without mail sending, this stays open — the
+   *  page says so instead of hiding it. */
   emailVerified: boolean;
 }
 
-/** Ein Anmeldeweg über einen fremden Anbieter. */
+/** A sign-in method via a third-party provider. */
 export interface ConnectedAccount {
   provider: string;
-  /** Am Konto hinterlegt — trennbar, solange ein anderer Weg bleibt. */
+  /** Attached to the account — detachable as long as another method remains. */
   connected: boolean;
-  /** Nur für OIDC gesetzt — sein Name kommt aus `AUTH_OIDC_NAME`, nicht aus
-   *  einer festen Marken-Liste wie bei GitHub/Google. */
+  /** Only set for OIDC — its name comes from `AUTH_OIDC_NAME`, not from a
+   *  fixed brand list like GitHub/Google. */
   label?: string;
 }
 
 export interface AccountConnectionsView {
   accounts: ConnectedAccount[];
-  /** Am Konto hängt ein Passkey — dann ist kein fremder Anbieter nötig. */
+  /** A passkey is attached to the account — then no third-party provider is
+   *  needed. */
   hasPasskey: boolean;
 }
 
-/** Ein hinterlegter Passkey. */
+/** A registered passkey. */
 export interface PasskeyInfo {
   credentialID: string;
   deviceType: string;
   createdAt: Date;
 }
 
-/** Sicherheit: womit man hereinkommt. */
+/** Security: what you get in with. */
 export interface AccountSecurityView {
   email: string | null;
   emailVerified: boolean;
-  /** Anbieter, über die man sich anmelden kann — für den Verweis dorthin. */
+  /** Providers you can sign in with — for linking there. */
   connectedProviders: string[];
   passkeys: PasskeyInfo[];
 }

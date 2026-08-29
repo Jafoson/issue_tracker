@@ -6,12 +6,12 @@ import { getAccess, PLATFORM } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Mandanten der Plattform.
+ * The platform's tenants.
  *
- * Sehen darf sie jeder, der den Bereich betreten darf; anfassen nur, wer das
- * jeweilige Recht trägt. Die beiden Flags gehen als Props hinein, damit die
- * Ansicht nichts anbietet, was der Server danach ablehnen würde — geprüft wird
- * trotzdem dort noch einmal (`features/admin/actions.ts`).
+ * Anyone allowed into the section may view them; touching them requires the
+ * respective permission. Both flags go in as props, so the view doesn't
+ * offer anything the server would reject afterward — it's still checked
+ * again there regardless (`features/admin/actions.ts`).
  */
 export default async function AdminWorkspacesPage() {
   const [{ rows: workspaces, nextCursor }, access] = await Promise.all([

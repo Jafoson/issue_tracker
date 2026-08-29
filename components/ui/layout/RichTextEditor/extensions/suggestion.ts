@@ -10,40 +10,42 @@ import {
 import styles from "../components/SuggestionMenu/suggestionMenu.module.scss";
 
 /**
- * Der gemeinsame Unterbau aller vier Trigger (`@`, `#`, `:`, `/`).
+ * The shared foundation of all four triggers (`@`, `#`, `:`, `/`).
  *
- * Jeder von ihnen unterscheidet sich nur in drei Punkten: welches Zeichen ihn
- * öffnet, welche Einträge er zeigt und was beim Wählen passiert. Alles andere —
- * Liste rendern, Tasten abfangen, ein- und ausblenden — steht hier einmal.
+ * Each of them differs in only three respects: which character opens it,
+ * which entries it shows, and what happens on selection. Everything else —
+ * rendering the list, intercepting keys, showing and hiding — is defined
+ * once here.
  *
- * Positioniert wird über `props.mount`: das hängt das Element per Floating UI
- * an den Cursor und hält es beim Scrollen und Umbrechen dort. Deshalb braucht
- * es hier weder eigene Koordinaten noch Listener.
+ * Positioned via `props.mount`: that attaches the element to the cursor via
+ * Floating UI and keeps it there while scrolling and text wrapping. That's
+ * why this needs neither its own coordinates nor listeners.
  */
 
 interface TriggerConfig<I extends SuggestionItem> {
   /**
-   * Eindeutiger Name des Triggers — wird zum ProseMirror-Plugin-Schlüssel.
+   * Unique name of the trigger — becomes the ProseMirror plugin key.
    *
-   * Ohne ihn liefen alle vier unter dem Standardschlüssel `suggestion`, den
-   * `@tiptap/suggestion` modulweit anlegt. ProseMirror lässt zwei verschiedene
-   * Plugins unter demselben Schlüssel nicht zu und wirft beim Erzeugen des
-   * Editors `RangeError: Adding different instances of a keyed plugin`.
+   * Without it, all four would run under the default key `suggestion` that
+   * `@tiptap/suggestion` creates module-wide. ProseMirror doesn't allow two
+   * different plugins under the same key and throws
+   * `RangeError: Adding different instances of a keyed plugin` when the
+   * editor is created.
    */
   name: string;
   char: string;
-  /** Die Treffer zur aktuellen Eingabe. Darf asynchron sein. */
+  /** The matches for the current input. May be asynchronous. */
   items: (query: string) => I[] | Promise<I[]>;
-  /** Setzt den gewählten Eintrag in das Dokument. */
+  /** Inserts the selected entry into the document. */
   onSelect: (props: { editor: Editor; range: Range; item: I }) => void;
-  /** Steht in der Liste, wenn nichts passt. */
+  /** Shown in the list when nothing matches. */
   emptyLabel: () => string;
   /**
-   * `/` gilt nur am Zeilenanfang — mitten im Satz ist ein Schrägstrich meist
-   * ein Schrägstrich. Die Erwähnungen dagegen dürfen überall stehen.
+   * `/` only counts at the start of a line — mid-sentence, a slash is
+   * usually just a slash. Mentions, by contrast, are allowed anywhere.
    */
   startOfLine?: boolean;
-  /** `allowSpaces` für Namen, die aus zwei Wörtern bestehen. */
+  /** `allowSpaces` for names made up of two words. */
   allowSpaces?: boolean;
 }
 
@@ -75,8 +77,8 @@ export function createSuggestion<I extends SuggestionItem>({
         onStart: (props) => {
           renderer = new ReactRenderer(SuggestionMenu, {
             editor: props.editor,
-            // Die Hülle ist das Element, das Floating UI positioniert — und
-            // damit das einzige, an dem eine Ebene überhaupt wirkt.
+            // The wrapper is the element that Floating UI positions — and
+            // thus the only one a z-index layer can actually affect.
             className: styles.floating,
             props: {
               items: props.items,
@@ -85,8 +87,8 @@ export function createSuggestion<I extends SuggestionItem>({
               command: (item: SuggestionItem) => props.command(item as I),
             },
           });
-          // Markiert die Hülle als Teil des Editors: `EditableRichText` darf
-          // den Fokuswechsel hierher nicht als Verlassen werten.
+          // Marks the wrapper as part of the editor: `EditableRichText`
+          // must not treat a focus change into it as leaving the editor.
           renderer.updateAttributes({ "data-editor-floating": "" });
           unmount = props.mount(renderer.element as HTMLElement);
         },
@@ -101,8 +103,8 @@ export function createSuggestion<I extends SuggestionItem>({
         },
 
         onKeyDown: (props) => {
-          // Escape schließt nur die Liste. Es darf nicht weiter nach oben
-          // laufen, sonst verwirft der Editor gleich die ganze Bearbeitung.
+          // Escape only closes the list. It must not bubble up further,
+          // otherwise the editor would discard the whole edit right away.
           if (props.event.key === "Escape") {
             props.event.stopPropagation();
             unmount?.();

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
-// Mockt nur `@/lib/storage/client` (kein eigener Test in diesem Segment) —
-// `@/lib/storage/config` bleibt echt (wie `config.test.ts`), env-Variablen
-// werden direkt gesetzt/gelöscht, damit dieser Test zusammen mit
-// `config.test.ts` im selben Prozess laufen kann.
+// Mocks only `@/lib/storage/client` (no test of its own in this segment) —
+// `@/lib/storage/config` stays real (like `config.test.ts`), env variables
+// are set/cleared directly so this test can run together with
+// `config.test.ts` in the same process.
 
 const mockClient = { sign: mock(), fetch: mock() };
 const mockGetClient = mock(() => mockClient as unknown);

@@ -16,15 +16,15 @@ interface VerifyCodeFormProps {
 }
 
 /**
- * Eigene Seite statt Inline-Feld unter dem "Magic Link senden"-Button: acht
- * einzelne Kästchen für den Code aus der Mail (`auth.ts`s
- * `generateMagicCode()` — selbes Alphabet, selbe Länge). Verifiziert wird per
- * `fetch` gegen dieselbe next-auth-Route, die auch der Link ansteuert
- * (`/api/auth/callback/nodemailer`) — bei Erfolg setzt schon die Antwort das
- * Session-Cookie, ein voller Redirect reicht danach zum Einloggen. Ein
- * Fehlschlag bleibt bewusst auf dieser Seite statt auf next-auths
- * `pages.error`-Ziel zu landen: die eingegebene E-Mail bleibt so erhalten,
- * ein erneuter Versuch braucht kein erneutes Eintippen.
+ * Its own page instead of an inline field below the "send magic link"
+ * button: eight individual boxes for the code from the email (`auth.ts`'s
+ * `generateMagicCode()` — same alphabet, same length). Verification happens
+ * via `fetch` against the same next-auth route the link also targets
+ * (`/api/auth/callback/nodemailer`) — on success, the response already sets
+ * the session cookie, a plain redirect afterward is enough to be signed in.
+ * A failure deliberately stays on this page instead of landing on
+ * next-auth's `pages.error` destination: this way the entered email is
+ * preserved, and a retry doesn't require typing it again.
  */
 export function VerifyCodeForm({ email, callbackUrl }: VerifyCodeFormProps) {
   const t = useTranslations();
@@ -36,14 +36,14 @@ export function VerifyCodeForm({ email, callbackUrl }: VerifyCodeFormProps) {
   const [isVerifying, startVerifying] = useTransition();
   const [isResending, startResending] = useTransition();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  // `isVerifying` (aus useTransition) greift erst nach dem nächsten Render —
-  // zwischen dem Auto-Submit auf das achte Zeichen und einem Klick auf „Code
-  // bestätigen" (der Knopf ist ja längst nicht mehr disabled, sobald alle
-  // Kästchen voll sind) passt noch ein zweiter Aufruf hindurch. next-auths
-  // Magic-Link-Token ist einmalig — zwei fast gleichzeitige Anfragen lösen
-  // zwei volle Navigationen aus (`window.location.href`), die zweite sieht
-  // dann eine Einladung, die die erste gerade schon angenommen hat. Diese Ref
-  // sperrt synchron, noch bevor React neu rendert.
+  // `isVerifying` (from useTransition) only takes effect after the next
+  // render — between the auto-submit on the eighth character and a click on
+  // "confirm code" (the button is, after all, no longer disabled once every
+  // box is full), a second call can still slip through. next-auth's
+  // magic-link token is single-use — two nearly simultaneous requests
+  // trigger two full navigations (`window.location.href`), and the second
+  // one then sees an invitation the first has just already accepted. This
+  // ref locks synchronously, before React even re-renders.
   const verifyingRef = useRef(false);
 
   const verify = (fullCode: string) => {
@@ -159,7 +159,7 @@ export function VerifyCodeForm({ email, callbackUrl }: VerifyCodeFormProps) {
         {digits.map((digit, i) => (
           <input
             key={`code-box-${
-              // biome-ignore lint/suspicious/noArrayIndexKey: feste, nie umsortierte Länge (CODE_LENGTH)
+              // biome-ignore lint/suspicious/noArrayIndexKey: fixed length that's never reordered (CODE_LENGTH)
               i
             }`}
             ref={(el) => {

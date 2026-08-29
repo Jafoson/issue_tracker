@@ -1,6 +1,6 @@
-/* Mittig in dem Platz, den die Karte hergibt. Eine Verteilung ist zwei Zeilen
-   hoch und steht damit oft in einer Karte, die ihr Nachbar in die Höhe zieht —
-   oben angeschlagen sähe sie darin verloren aus. */
+/* Centered in the space the card offers. A distribution is two lines tall
+   and thus often sits in a card that its neighbor stretches taller — pinned
+   to the top it would look lost in there. */
 .wrap {
   display: flex;
   flex: 1;
@@ -9,8 +9,8 @@
   gap: 14px;
 }
 
-/* Dieselbe Dicke und derselbe Radius wie die Spur der `BarList` — beide sind
-   dasselbe Zeichen, einmal geteilt und einmal gefüllt. */
+/* Same thickness and same radius as `BarList`'s track — both are the same
+   mark, once divided and once filled. */
 .bar {
   display: flex;
   gap: 2px;
@@ -21,14 +21,14 @@
 
 .segment {
   min-width: 3px;
-  /* Ohne diese Zeile schrumpften schmale Stücke unter ihre Mindestbreite,
-     sobald viele nebeneinander stehen. */
+  /* Without this line, narrow segments would shrink below their minimum
+     width as soon as many stand side by side. */
   flex-shrink: 0;
   flex-basis: 0;
 }
 
-/* Kein einziger Wert: eine leere Spur statt eines fehlenden Balkens. „Null
-   Aufgaben" sieht sonst aus wie „hier fehlt etwas". */
+/* Not a single value: an empty track instead of a missing bar. "Zero tasks"
+   would otherwise look like "something's missing here". */
 .empty {
   flex: 1;
   background: var(--surface-container-high);
@@ -57,8 +57,8 @@
   border-radius: 2px;
 }
 
-/* Textfarbe, nie die Farbe des Abschnitts — ein heller Farbton ist als Schrift
-   unlesbar. Die Zugehörigkeit trägt das Kästchen davor. */
+/* Text color, never the segment's color — a light hue is unreadable as
+   text. The swatch before it carries the association. */
 .name {
   color: var(--on-surface-variant);
 }
@@ -69,7 +69,7 @@
   color: var(--on-surface);
 }
 
-/* ── Tabellenansicht ──────────────────────────────────────────────────────── */
+/* ── Table view ──────────────────────────────────────────────────────── */
 
 .table {
   width: 100%;

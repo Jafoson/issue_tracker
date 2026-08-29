@@ -9,13 +9,13 @@ import { getAccess, PLATFORM } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Stammdaten aller Projekte.
+ * Core data of all projects.
  *
- * Die Liste der möglichen Besitzer wird nur geladen, wenn jemand überhaupt
- * zuordnen darf — sie hängt an `user.manage`, und ohne die Berechtigung wäre die
- * Abfrage nicht nur überflüssig, sondern eine Rechteverletzung. Stillgelegte
- * Konten stehen nicht darin: `reassignProject` lehnt sie ab, und eine Auswahl,
- * die eine Fehlermeldung erzeugt, ist keine Auswahl.
+ * The list of possible owners is only loaded if someone can actually
+ * reassign at all — it's gated on `user.manage`, and without that permission
+ * the query would be not just superfluous but a permissions violation.
+ * Deactivated accounts aren't in it: `reassignProject` rejects them, and a
+ * choice that produces an error message isn't a choice.
  */
 export default async function AdminProjectsPage() {
   const access = await getAccess(PLATFORM);

@@ -18,33 +18,33 @@ import { Link } from "@/i18n/navigation";
 import styles from "./accountSecurity.module.scss";
 
 interface Props extends AccountSecurityView {
-  /** Weg zu den verbundenen Konten — der Pfad kennt den Workspace, diese
-   *  Komponente nicht. */
+  /** Path to the connected accounts — the route knows the workspace, this
+   *  component doesn't. */
   connectionsHref: string;
-  /** Mindestens ein OAuth-Anbieter ist in `auth.config.ts` eingerichtet.
-   *  Sonst gibt es die Seite dahinter gar nicht (siehe `connections/page.tsx`)
-   *  — dann fehlt auch die Zeile, die dorthin verweist. */
+  /** At least one OAuth provider is set up in `auth.config.ts`. Otherwise
+   *  the page behind it doesn't exist at all (see `connections/page.tsx`)
+   *  — then the row linking to it is also missing. */
   hasOAuthProviders: boolean;
-  /** `AUTH_PASSKEY_LOGIN_ENABLED` (`auth.config.ts`). Aus — dann fehlt der
-   *  "Passkey hinzufügen"-Knopf, schon hinterlegte Passkeys bleiben sichtbar
-   *  und entfernbar. */
+  /** `AUTH_PASSKEY_LOGIN_ENABLED` (`auth.config.ts`). Off — then the "Add
+   *  passkey" button is missing, while already-registered passkeys remain
+   *  visible and removable. */
   passkeyLoginEnabled: boolean;
 }
 
 /**
- * Womit man hereinkommt.
+ * What you get in with.
  *
- * Kein Passwort mehr — Passkeys und verbundene Anbieter sind die einzigen
- * Wege. Die Ceremony (Browser-Prompt) übernimmt `next-auth/webauthn`s
- * `signIn` vollständig, der letzte-Weg-hinein-Schutz steckt im Server
- * (`removePasskey`); die Oberfläche macht die Regel nur sichtbar.
+ * No more password — passkeys and connected providers are the only ways in.
+ * The ceremony (browser prompt) is handled entirely by `next-auth/webauthn`'s
+ * `signIn`, the last-way-in protection lives on the server (`removePasskey`);
+ * the UI only makes the rule visible.
  *
- * Was hier fehlt, fehlt bewusst: eine bestehende Adresse zu *ändern* ließe
- * sich ohne Mailversand nicht bestätigen (siehe `addEmail`), und „überall
- * abmelden" wäre ein Knopf ohne Wirkung — die Sitzung steckt in einem
- * signierten Token, das der Server nicht zurückrufen kann. Eine ganz neue
- * Adresse *hinzufügen* (Passkey-Konto ohne Adresse) geht dagegen — dafür
- * gibt es noch nichts zu bestätigen, das kaputtgehen könnte.
+ * What's missing here is missing deliberately: *changing* an existing
+ * address couldn't be verified without mail sending (see `addEmail`), and
+ * "sign out everywhere" would be a button with no effect — the session lives
+ * in a signed token that the server can't recall. *Adding* a brand-new
+ * address (passkey account with no address), on the other hand, works — for
+ * that there's nothing yet to confirm that could break.
  */
 export function AccountSecurity({
   email,
@@ -118,10 +118,10 @@ export function AccountSecurity({
         </Button>
       ),
     })),
-    // Aus (`AUTH_PASSKEY_LOGIN_ENABLED=false`) → der Server hat den
-    // WebAuthn-Provider gar nicht registriert, `addPasskey` würde also nur
-    // fehlschlagen. Schon hinterlegte Passkeys bleiben trotzdem sichtbar und
-    // entfernbar — reine Kontoverwaltung, kein Anmeldeversuch.
+    // Off (`AUTH_PASSKEY_LOGIN_ENABLED=false`) → the server hasn't
+    // registered the WebAuthn provider at all, so `addPasskey` would just
+    // fail. Already-registered passkeys stay visible and removable anyway
+    // — pure account management, not a sign-in attempt.
     ...(passkeyLoginEnabled
       ? [
           {

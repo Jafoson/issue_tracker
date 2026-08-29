@@ -14,8 +14,9 @@
   min-width: 0;
 }
 
-/* Name links, Wert rechts — beide über dem Balken statt daneben. So bleibt der
-   Balken über die ganze Breite lesbar, auch wenn ein Name lang ist. */
+/* Name on the left, value on the right — both above the bar rather than
+   beside it. This keeps the bar readable across its full width even when a
+   name is long. */
 .head {
   display: flex;
   align-items: baseline;
@@ -39,9 +40,9 @@
   border-radius: 50%;
 }
 
-/* Der Slot für ein fertiges Element (Avatar, Zeichen). `align-self` statt der
-   Grundlinie des Elternteils: ein Avatar hat keine, und ohne diese Zeile
-   rutschte er unter die Schrift. */
+/* The slot for a finished element (avatar, icon). `align-self` instead of
+   the parent's baseline: an avatar doesn't have one, and without this line
+   it would slip below the text. */
 .leading {
   display: flex;
   align-self: center;
@@ -64,8 +65,8 @@
   color: var(--on-surface);
 }
 
-/* Die Spur zeigt, wovon der Balken ein Teil ist — dieselbe Höhe, eine Stufe
-   neben der Fläche. */
+/* The track shows what the bar is part of — same height, one step off from
+   the surface. */
 .track {
   position: relative;
   height: 6px;
@@ -86,7 +87,7 @@
   color: var(--outline);
 }
 
-/* ── Tabellenansicht ──────────────────────────────────────────────────────── */
+/* ── Table view ──────────────────────────────────────────────────────── */
 
 .table {
   width: 100%;

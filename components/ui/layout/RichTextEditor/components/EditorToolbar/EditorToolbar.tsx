@@ -9,17 +9,18 @@ import { modKey } from "@/lib/a11y";
 import styles from "./editorToolbar.module.scss";
 
 /**
- * Die Werkzeugleiste über dem Editor.
+ * The toolbar above the editor.
  *
- * Sie zeigt nur, was man oft braucht — alles Weitere steht im `/`-Menü. Jeder
- * Knopf leuchtet, wenn die Auszeichnung an der Cursorposition gerade gilt.
+ * It only shows what's used often — everything else lives in the `/` menu.
+ * Each button lights up when its mark applies at the current cursor
+ * position.
  *
- * Der aktive Zustand kommt über `useEditorState`: das rechnet einmal pro
- * Transaktion und rendert nur neu, wenn sich am Ergebnis etwas ändert. Ohne das
- * würde jede Taste die ganze Leiste neu zeichnen.
+ * The active state comes via `useEditorState`: that computes once per
+ * transaction and only re-renders when the result actually changes. Without
+ * it, every keystroke would redraw the whole toolbar.
  */
 
-/** Zugleich der Schlüssel in `messages/*.json` unter `editor`. */
+/** Also the key in `messages/*.json` under `editor`. */
 type ToolId =
   | "bold"
   | "italic"
@@ -34,26 +35,26 @@ type ToolId =
   | "attachment";
 
 interface ToolbarActions {
-  /** Öffnet die Adresszeile des Editors — direkt unter `anchor`, statt am
-   *  Cursor, der beim Klick auf einen Werkzeugleisten-Knopf woanders im Text
-   *  stehen kann. */
+  /** Opens the editor's address bar — directly below `anchor`, instead of at
+   *  the cursor, which can sit elsewhere in the text when a toolbar button
+   *  is clicked. */
   onLink: (anchor?: HTMLElement) => void;
-  /** Öffnet den Anhang-Dialog (URL oder Upload, je nachdem, was die
-   *  Editor-Instanz anbietet) — Bild, Video oder sonstige Datei, eine
-   *  Auswahl statt getrennter Knöpfe. Fehlt, wo die Editor-Instanz keine
-   *  Anhänge anbietet (Kommentare, Create-Issue-Composer). */
+  /** Opens the attachment dialog (URL or upload, depending on what the
+   *  editor instance offers) — image, video, or other file, one picker
+   *  instead of separate buttons. Missing where the editor instance doesn't
+   *  offer attachments (comments, the create-issue composer). */
   onAttachment?: (anchor?: HTMLElement) => void;
 }
 
 interface ToolButton {
   id: ToolId;
   icon: string;
-  /** Tastenkürzel, das im Tooltip hinter dem Namen steht. */
+  /** Keyboard shortcut shown in the tooltip after the name. */
   shortcut?: string;
-  /** `anchor` ist der geklickte Knopf selbst — für Einblendungen, die sich
-   *  daran statt am Cursor ausrichten sollen. */
+  /** `anchor` is the clicked button itself — for popovers that should
+   *  position against it rather than against the cursor. */
   run: (editor: Editor, actions: ToolbarActions, anchor: HTMLElement) => void;
-  /** Wann der Knopf als aktiv gilt. */
+  /** When the button counts as active. */
   active?: (editor: Editor) => boolean;
 }
 
@@ -121,16 +122,16 @@ const GROUPS: ToolButton[][] = [
       id: "link",
       icon: "lucide:link",
       shortcut: "K",
-      // Setzen, ändern und entfernen macht die Adresszeile — sie kennt den
-      // bestehenden Link und bietet dann auch das Lösen an.
+      // Setting, changing, and removing is handled by the address bar — it
+      // knows the existing link and also offers removal there.
       run: (_editor, { onLink }, anchor) => onLink(anchor),
       active: (e) => e.isActive("link"),
     },
     {
       id: "attachment",
       icon: "lucide:paperclip",
-      // Öffnet den Anhang-Dialog — die eigentliche Auswahl (URL/Upload) und
-      // der Upload selbst laufen in `RichTextEditor.tsx`.
+      // Opens the attachment dialog — the actual choice (URL/upload) and
+      // the upload itself happen in `RichTextEditor.tsx`.
       run: (_editor, { onAttachment }, anchor) => onAttachment?.(anchor),
     },
   ],
@@ -138,9 +139,9 @@ const GROUPS: ToolButton[][] = [
 
 interface EditorToolbarProps {
   editor: Editor | null;
-  /** Öffnet die Adresszeile für Links. */
+  /** Opens the address bar for links. */
   onLink: () => void;
-  /** Öffnet den Anhang-Dialog. Fehlt ⇒ kein Knopf dafür. */
+  /** Opens the attachment dialog. Missing ⇒ no button for it. */
   onAttachment?: () => void;
 }
 
@@ -171,7 +172,7 @@ export function EditorToolbar({
         <Fragment key={group[0].id}>
           {index > 0 && <span className={styles.divider} />}
           {group
-            // Kein Knopf für ein Feature, das diese Editor-Instanz nicht anbietet.
+            // No button for a feature this editor instance doesn't offer.
             .filter((button) => button.id !== "attachment" || onAttachment)
             .map((button) => (
               <button
@@ -186,8 +187,8 @@ export function EditorToolbar({
                     ? `${t(button.id)} (${modKey()} + ${button.shortcut})`
                     : t(button.id)
                 }
-                // Der Fokus muss im Text bleiben — sonst verliert der Befehl
-                // die Auswahl, auf die er sich bezieht.
+                // Focus must stay in the text — otherwise the command loses
+                // the selection it applies to.
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) =>
                   button.run(editor, { onLink, onAttachment }, e.currentTarget)

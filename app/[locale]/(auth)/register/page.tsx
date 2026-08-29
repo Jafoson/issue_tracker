@@ -2,10 +2,10 @@ import { redirect } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 
 /**
- * Eine eigene Registrierung gibt es nicht mehr — E-Mail eintippen und einen
- * Passkey anlegen ist auf `/login` zugleich Anmeldung und Kontoerstellung
- * (`next-auth/webauthn` entscheidet serverseitig, welches von beidem
- * zutrifft). Diese Route bleibt nur als Weiterleitung für alte Links.
+ * A dedicated registration flow no longer exists — typing an email and
+ * creating a passkey on `/login` is simultaneously sign-in and account
+ * creation (`next-auth/webauthn` decides server-side which of the two
+ * applies). This route remains only as a redirect for old links.
  */
 export default async function RegisterPage({
   params,

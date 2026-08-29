@@ -3,35 +3,35 @@ import type { WidgetKey } from "@/features/dashboard/widgets";
 import type { BucketUnit, RangeKey } from "@/lib/buckets";
 import type { User } from "@/types";
 
-// Was das Dashboard eines Projekts anzeigt — fertig gerechnet, wie überall in
-// diesem Projekt. Die Oberfläche summiert, sortiert und filtert nichts mehr
-// nach: sie zeichnet.
+// What a project's dashboard displays — fully computed, as everywhere in
+// this project. The UI no longer sums, sorts, or filters anything: it just
+// renders.
 
-/** Die Kennzahlenreihe ganz oben. */
+/** The key-figures row at the very top. */
 export interface DashboardStats {
-  /** Aufgaben, die weder erledigt noch verworfen sind. */
+  /** Issues that are neither done nor discarded. */
   open: number;
   inProgress: number;
   inReview: number;
-  /** Im gewählten Zeitraum geschlossen. */
+  /** Closed within the chosen period. */
   closed: number;
-  /** Im gewählten Zeitraum angelegt — die Gegenrichtung zu `closed`. */
+  /** Created within the chosen period — the counterpart to `closed`. */
   created: number;
-  /** Offene Aufgaben höchster Dringlichkeit. */
+  /** Open issues at the highest priority. */
   urgent: number;
-  /** Davon niemandem zugewiesen — eine dringende Aufgabe ohne Namen bleibt liegen. */
+  /** Of those, unassigned to anyone — an urgent issue with no name attached sits idle. */
   urgentUnassigned: number;
-  /** Alle Aufgaben des Projekts, ohne Zeitgrenze. */
+  /** All of the project's issues, with no time bound. */
   total: number;
   /**
-   * Mittlere Durchlaufzeit in Tagen, angelegt bis geschlossen, über die im
-   * Zeitraum geschlossenen Aufgaben. `null`, wenn keine geschlossen wurde —
-   * „0 Tage" wäre die falsche Antwort auf „noch keine".
+   * Average cycle time in days, created to closed, across the issues closed
+   * within the period. `null` if none was closed — "0 days" would be the
+   * wrong answer to "none yet".
    */
   cycleDays: number | null;
 }
 
-/** Ein Status mit der Zahl der Aufgaben, die darin stehen. */
+/** A status with the number of issues in it. */
 export interface StatusSlice {
   id: string;
   name: string;
@@ -40,7 +40,7 @@ export interface StatusSlice {
   count: number;
 }
 
-/** Eine Dringlichkeitsstufe mit der Zahl der offenen Aufgaben darin. */
+/** A priority level with the number of open issues in it. */
 export interface PrioritySlice {
   id: number;
   key: string;
@@ -49,49 +49,49 @@ export interface PrioritySlice {
   count: number;
 }
 
-/** Eine Marke der Zeitachse: was in ihrem Topf angelegt und geschlossen wurde. */
+/** A marker on the time axis: what was created and closed in its bucket. */
 export interface ThroughputPoint {
-  /** Anfang des Topfes, `YYYY-MM-DD`. */
+  /** Start of the bucket, `YYYY-MM-DD`. */
   date: string;
   created: number;
   closed: number;
 }
 
-/** Wie viele offene Aufgaben auf einer Person liegen. */
+/** How many open issues sit with a person. */
 export interface WorkloadRow {
-  /** `null` steht für den Stapel ohne Zuständige. */
+  /** `null` stands for the unassigned pile. */
   user: User | null;
   open: number;
-  /** Davon in Arbeit — der Teil, an dem gerade wirklich jemand sitzt. */
+  /** Of those, in progress — the part someone is actually sitting on right now. */
   inProgress: number;
 }
 
-/** Eine Aufgabe, wie die beiden Listen unten sie zeigen. */
+/** An issue, the way the two lists below display it. */
 export interface DashboardIssue {
   id: string;
-  /** `NIM-142` — die Kennung, unter der man sie sucht. */
+  /** `NIM-142` — the reference you'd search for it by. */
   ref: string;
   title: string;
   status: string;
   statusColor: string;
   priority: number;
   assignee: User | null;
-  /** Zeitpunkt der letzten Änderung, als Millisekunden. */
+  /** Timestamp of the last change, in milliseconds. */
   updated: number;
 }
 
 /**
- * Warum eine Aufgabe in „Braucht Aufmerksamkeit" steht.
+ * Why an issue appears in "needs attention".
  *
- * Eine Aufgabe kann mehrere Gründe haben; gezeigt wird der schwerste. Die
- * Reihenfolge hier ist die Rangfolge.
+ * An issue can have several reasons; the most severe one is shown. The
+ * order here is the order of precedence.
  */
 export type AttentionReason =
-  /** Dringend und niemandem zugewiesen. */
+  /** Urgent and assigned to nobody. */
   | "unassigned"
-  /** Dringend oder hoch, und offen. */
+  /** Urgent or high, and open. */
   | "urgent"
-  /** In Arbeit, aber seit zwei Wochen unangetastet. */
+  /** In progress, but untouched for two weeks. */
   | "stale";
 
 export interface AttentionIssue extends DashboardIssue {
@@ -102,10 +102,10 @@ export interface ProjectDashboardData {
   range: RangeKey;
   unit: BucketUnit;
   /**
-   * Auf wen sich diese Zahlen beziehen — "all" (das ganze Projekt bzw.
-   * Workspace) oder "mine" (nur die eigenen Aufgaben). Der tatsächlich
-   * angewandte Umfang, nicht der angefragte: wer `dashboard.view.all` nicht
-   * trägt, bekommt hier immer "mine", egal was `?scope=` in der Adresse sagt.
+   * Who these numbers refer to — "all" (the whole project or workspace) or
+   * "mine" (only your own issues). The scope actually applied, not the one
+   * requested: anyone without `dashboard.view.all` always gets "mine" here,
+   * regardless of what `?scope=` says in the address.
    */
   scope: DashboardScope;
   stats: DashboardStats;
@@ -116,7 +116,7 @@ export interface ProjectDashboardData {
   attention: AttentionIssue[];
 }
 
-/** Ein Team, das auf dieses Projekt zugreift. */
+/** A team with access to this project. */
 export interface ProjectTeam {
   id: string;
   name: string;
@@ -124,35 +124,35 @@ export interface ProjectTeam {
   color: string;
 }
 
-/** Ein Label, das in diesem Projekt vergeben wird. */
+/** A label assignable in this project. */
 export interface ProjectLabel {
   id: string;
   name: string;
   color: string;
-  /** Der URL-Slug — Filter stehen als Slug in der Adresse, nicht als Id. */
+  /** The URL slug — filters appear as a slug in the address, not an id. */
   slug: string;
-  /** Gehört dem Projekt allein, nicht dem ganzen Workspace. */
+  /** Belongs to the project alone, not the whole workspace. */
   own: boolean;
 }
 
 /**
- * Alle, die im Projekt dieselbe Rolle tragen.
+ * Everyone who holds the same role in the project.
  *
- * Die Gruppen kommen fertig sortiert vom Server (stärkste Rolle zuerst) und
- * tragen den Namen der Rolle, wie er in der Datenbank steht — nicht einen aus
- * einer festen Liste im Code. Ein Workspace, der sich eine projekteigene Rolle
- * „Moderator" anlegt, erscheint damit von selbst als eigene Gruppe, ohne dass
- * hier etwas nachgezogen werden müsste.
+ * The groups arrive pre-sorted from the server (strongest role first) and
+ * carry the role's name as it's stored in the database — not one from a
+ * fixed list in code. If a workspace creates a project-specific "Moderator"
+ * role, it appears here automatically as its own group with its own name,
+ * with nothing needing to be updated here.
  */
 export interface ProjectRoleGroup {
-  /** Der Rollen-Key, zugleich React-Key der Gruppe. */
+  /** The role key, also the group's React key. */
   key: string;
   name: string;
-  /** Rang der Rolle — bestimmt Reihenfolge und Farbe (`roleColor`). */
+  /** The role's rank — determines order and color (`roleColor`). */
   rank: number;
   /**
-   * Trägt diese Rolle mehr als das Mitarbeiten? Solche Gruppen stehen oben und
-   * mit Namen, die übrigen als kompakte Liste darunter — siehe
+   * Does this role carry more than just contributing? Such groups appear at
+   * the top with names, the rest as a compact list below — see
    * `ProjectProfileView`.
    */
   distinguished: boolean;
@@ -160,59 +160,60 @@ export interface ProjectRoleGroup {
 }
 
 /**
- * Der Steckbrief des Projekts — was es ist, wem es gehört, woraus es besteht.
+ * The project's profile card — what it is, who owns it, what it consists of.
  *
- * Bewusst getrennt von `ProjectDashboardData`: hier steht nichts, was sich mit
- * dem Zeitraum ändert. Ein Kürzel hat keine 30 Tage.
+ * Deliberately separate from `ProjectDashboardData`: nothing here changes
+ * with the time period. A reference prefix doesn't have 30 days.
  */
 export interface ProjectProfile {
-  /** Wofür das Projekt da ist. Leer heißt, dass es niemand gesagt hat. */
+  /** What the project is for. Empty means nobody's said. */
   desc: string;
-  /** `NIM` — das Kürzel, unter dem die Aufgaben laufen. */
+  /** `NIM` — the prefix the issues run under. */
   prefix: string;
   visibility: "public" | "private";
   createdAt: number;
   createdBy: User | null;
   /**
-   * `project.update` — ob der Bearbeiten-Knopf in der Kopfkarte erscheint.
+   * `project.update` — whether the edit button appears in the header card.
    *
-   * Reine Sichtbarkeit, kein Schutz: die Einstellungsseite dahinter prüft
-   * selbst. Der Knopf steht nur deshalb nicht für alle da, weil er sonst auf
-   * eine Seite führte, an der nichts zu ändern ist.
+   * Pure visibility, no protection: the settings page behind it checks for
+   * itself. The button is only hidden from everyone else because it would
+   * otherwise lead to a page with nothing to change.
    */
   canUpdate: boolean;
   /**
-   * `role.manage` ODER `label.create` ODER `project.update` — dieselbe Hürde
-   * wie beim Einstellungen-Tab (`lib/nav.ts`, `PROJECT_NAV`). Ohne eines der
-   * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
+   * `role.manage` OR `label.create` OR `project.update` — the same bar as
+   * for the settings tab (`lib/nav.ts`, `PROJECT_NAV`). Without one of the
+   * three, there'd only be read-only views to see there anyway.
    */
   canViewSettings: boolean;
   /**
-   * `dashboard.view.all` — ob der Umschalter zwischen „eigene" und „ganzes
-   * Projekt" auf dem Dashboard erscheint. Ohne diese Berechtigung sieht die
-   * Person ihr Dashboard ohnehin nur mit `scope: "mine"` (`getProjectDashboard`
-   * erzwingt das) — hier steht nur, ob sie überhaupt wählen darf.
+   * `dashboard.view.all` — whether the toggle between "mine" and "whole
+   * project" appears on the dashboard. Without this permission, the person
+   * only ever sees their dashboard with `scope: "mine"` anyway
+   * (`getProjectDashboard` enforces that) — this only states whether they
+   * can even choose.
    */
   canViewAllStats: boolean;
-  /** `label.create` — ob die Labels-Karte einen Hinzufügen-Knopf zeigt. */
+  /** `label.create` — whether the labels card shows an add button. */
   canCreateLabel: boolean;
   /**
-   * `team.project.manage` — ob die Teams-Karte einen Pfeil zur Teamverwaltung
-   * zeigt. Eine Workspace-Permission, geprüft im Workspace-Kontext: Teams
-   * gehören dem Workspace, nicht dem Projekt, und werden auch dort verwaltet
-   * (`workspaceSettingsPath(workspaceId, "teams")`) — dieselbe Karte kann also
-   * nur verlinken, nicht selbst bearbeiten.
+   * `team.project.manage` — whether the teams card shows an arrow to team
+   * management. A workspace permission, checked in the workspace context:
+   * teams belong to the workspace, not the project, and are managed there
+   * too (`workspaceSettingsPath(workspaceId, "teams")`) — so this same card
+   * can only link there, not edit anything itself.
    */
   canManageTeams: boolean;
-  /** Wer Zugriff hat, nach Rollen gruppiert. Stärkste Rolle zuerst. */
+  /** Who has access, grouped by role. Strongest role first. */
   roles: ProjectRoleGroup[];
-  /** Wie viele Personen insgesamt — die Summe über alle Gruppen. */
+  /** How many people in total — the sum across all groups. */
   memberCount: number;
   teams: ProjectTeam[];
   labels: ProjectLabel[];
 }
 
-/** Was die Seite braucht: die Zahlen, der Steckbrief und die Anordnung. */
+/** What the page needs: the numbers, the profile card, and the layout. */
 export interface ProjectDashboardView {
   project: {
     id: string;
@@ -223,20 +224,20 @@ export interface ProjectDashboardView {
   };
   data: ProjectDashboardData;
   profile: ProjectProfile;
-  /** Sichtbare Bausteine in ihrer Reihenfolge, plus die abgewählten. */
+  /** Visible widgets in their order, plus the deselected ones. */
   order: WidgetKey[];
   hidden: WidgetKey[];
 }
 
-// ─── Dasselbe eine Ebene höher: der Workspace ────────────────────────────────
+// ─── The same, one level up: the workspace ───────────────────────────────────
 //
-// Dieselben Bausteine wie beim Projekt, nur über alle seine Projekte hinweg
-// summiert — `WorkspaceDashboardData` trägt deshalb dieselbe Form wie
-// `ProjectDashboardData` und keine eigene.
+// The same widgets as for a project, just summed across all of its projects
+// — `WorkspaceDashboardData` therefore has the same shape as
+// `ProjectDashboardData` and no shape of its own.
 
 export type WorkspaceDashboardData = ProjectDashboardData;
 
-/** Ein Projekt des Workspace, wie der Steckbrief es verlinkt. */
+/** A project in the workspace, as the profile card links to it. */
 export interface WorkspaceProjectSummary {
   id: string;
   name: string;
@@ -246,13 +247,13 @@ export interface WorkspaceProjectSummary {
 }
 
 /**
- * Alle, die im Workspace dieselbe Rolle tragen — dieselbe Form wie
- * `ProjectRoleGroup` eine Ebene tiefer, nur gruppiert nach
- * `WorkspaceMember.role` statt `ProjectMember.role`.
+ * Everyone who holds the same role in the workspace — the same shape as
+ * `ProjectRoleGroup` one level down, just grouped by `WorkspaceMember.role`
+ * instead of `ProjectMember.role`.
  */
 export type WorkspaceRoleGroup = ProjectRoleGroup;
 
-/** Eine wichtige externe Adresse — Dokumentation, Repository, Chat. */
+/** An important external address — documentation, repository, chat. */
 export interface WorkspaceLink {
   id: string;
   label: string;
@@ -260,63 +261,64 @@ export interface WorkspaceLink {
 }
 
 /**
- * Der Steckbrief des Workspace — was er ist, wem er gehört, woraus er besteht.
+ * The workspace's profile card — what it is, who owns it, what it consists of.
  *
- * Kein `prefix`: der Workspace kennt es nicht, anders als ein Projekt. Dafür
- * die Zahl seiner Projekte — die eine Auskunft, die es beim Projekt-Steckbrief
- * nicht braucht, weil sie dort immer eins ist.
+ * No `prefix`: the workspace doesn't have one, unlike a project. In its
+ * place, the count of its projects — the one piece of information the
+ * project's profile card doesn't need, since it's always one there.
  */
 export interface WorkspaceProfile {
-  /** Wozu der Workspace da ist. Leer heißt, dass es niemand gesagt hat. */
+  /** What the workspace is for. Empty means nobody's said. */
   desc: string;
   createdAt: number;
-  /** `workspace.update` — ob der Bearbeiten-Knopf in der Kopfkarte erscheint. */
+  /** `workspace.update` — whether the edit button appears in the header card. */
   canUpdate: boolean;
   /**
-   * `member.view` — ob `roles` die volle Besetzung zeigt (Member/Viewer/Guest)
-   * oder nur noch die Leitung. Steuert auch, ob `memberCount` und der Link zur
-   * vollen Mitgliederliste erscheinen — die Seite dahinter bleibt ohne dieses
-   * Recht ohnehin gesperrt.
+   * `member.view` — whether `roles` shows the full roster (member/viewer/
+   * guest) or only leadership. Also controls whether `memberCount` and the
+   * link to the full member list appear — the page behind it stays locked
+   * without this permission anyway.
    */
   canViewMembers: boolean;
   /**
-   * `role.manage` ODER `label.create` ODER `workspace.update` — dieselbe Hürde
-   * wie beim Einstellungen-Tab (`lib/nav.ts`, `WORKSPACE_NAV`). Ohne eines der
-   * drei gäbe es dort ohnehin nur schreibgeschützte Ansichten zu sehen.
+   * `role.manage` OR `label.create` OR `workspace.update` — the same bar as
+   * for the settings tab (`lib/nav.ts`, `WORKSPACE_NAV`). Without one of the
+   * three, there'd only be read-only views to see there anyway.
    */
   canViewSettings: boolean;
-  /** `dashboard.view.all` — siehe `ProjectProfile.canViewAllStats`. */
+  /** `dashboard.view.all` — see `ProjectProfile.canViewAllStats`. */
   canViewAllStats: boolean;
   /**
-   * Wer führt, steht immer da (`distinguished`) — wer nur mitarbeitet oder
-   * mitliest, nur mit `member.view` (siehe `canViewMembers`). Ohne das Recht
-   * enthält die Liste ausschließlich die ausgezeichneten Gruppen.
+   * Leadership always appears (`distinguished`) — contributors and readers
+   * only with `member.view` (see `canViewMembers`). Without that permission,
+   * the list contains only the distinguished groups.
    */
   roles: WorkspaceRoleGroup[];
   /**
-   * `platform_admin`/`platform_support` mit Durchgriff auf diesen Workspace,
-   * ohne eigene `WorkspaceMember`-Zeile — sonst blieben sie im Steckbrief
-   * unsichtbar, obwohl sie mehr können als fast jeder in `roles`. Wie die
-   * Leitung dort unabhängig von `member.view` sichtbar. Zählt nicht in
-   * `memberCount` — das bleibt die Größe der tatsächlichen Mitgliedschaft.
+   * `platform_admin`/`platform_support` with reach into this workspace, with
+   * no `WorkspaceMember` row of their own — otherwise they'd stay invisible
+   * in the profile card despite being able to do more than almost anyone in
+   * `roles`. Visible independent of `member.view`, like leadership there.
+   * Doesn't count toward `memberCount` — that stays the size of actual
+   * membership.
    */
   platformStaff: WorkspaceRoleGroup[];
   memberCount: number;
   teams: ProjectTeam[];
   projects: WorkspaceProjectSummary[];
-  /** Wichtige Adressen, als große Chips direkt unter der Kopfkarte. */
+  /** Important addresses, as large chips directly below the header card. */
   links: WorkspaceLink[];
-  /** Ob die Teams- bzw. Projekte-Karte einen Hinzufügen-Knopf zeigt. */
+  /** Whether the teams or projects card shows an add button. */
   canCreateProject: boolean;
   canCreateTeam: boolean;
-  /** Für den Team-Dialog aus der Übersicht — dieselben Rechte wie auf der Teams-Seite. */
+  /** For the team dialog from the overview — the same permissions as on the teams page. */
   canManageTeamMembers: boolean;
   canManageTeamProjects: boolean;
-  /** Für den Team-Dialog aus der Übersicht — siehe `WorkspaceTeamsView.assignableProjectRoles`. */
+  /** For the team dialog from the overview — see `WorkspaceTeamsView.assignableProjectRoles`. */
   assignableProjectRoles: { key: string; name: string; rank: number }[];
 }
 
-/** Was die Workspace-Seite braucht: die Zahlen, der Steckbrief, die Anordnung. */
+/** What the workspace page needs: the numbers, the profile card, the layout. */
 export interface WorkspaceDashboardView {
   workspace: {
     id: string;

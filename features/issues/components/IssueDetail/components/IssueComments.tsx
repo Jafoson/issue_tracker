@@ -28,11 +28,11 @@ import styles from "../issueDetail.module.scss";
 import { CommentThread } from "./CommentThread";
 
 /**
- * Der Kommentarverlauf samt Eingabefeld.
+ * The comment history along with the input field.
  *
- * Das Feld ist derselbe Editor wie bei der Beschreibung — gerade hier zahlt
- * sich das aus: eine Erwähnung gehört häufiger in einen Kommentar als in die
- * Beschreibung. Geladen wird er wie dort erst bei Bedarf.
+ * The field is the same editor as for the description — this is exactly
+ * where it pays off: a mention belongs in a comment more often than in the
+ * description. Just as there, it's loaded only on demand.
  */
 
 const RichTextEditor = dynamic(
@@ -43,38 +43,39 @@ const RichTextEditor = dynamic(
   { ssr: false, loading: () => <div className={styles.composerLoading} /> },
 );
 
-/** So viele Top-Level-Threads (samt aller Antworten) stehen sofort da — der
- *  Rest kommt erst über „Weitere Kommentare laden" nach, in gleich großen
- *  Schritten. */
+/** This many top-level threads (with all their replies) are shown right
+ *  away — the rest only follows via "Load more comments", in equal-sized
+ *  batches. */
 const COMMENTS_PAGE_SIZE = 5;
 
 interface IssueCommentsProps {
   issueId: string;
-  /** Für den kopierbaren Link auf einen einzelnen Kommentar. */
+  /** For the copyable link to a single comment. */
   workspaceId: string;
   identifier: string;
   comments: Comment[];
   members: User[];
   me: User;
-  /** Für die Vorschläge hinter `@` und `#`. */
+  /** For the suggestions behind `@` and `#`. */
   data: IssueEditorData;
   /** `issue.access.canUpdateAnyComment`/`canDeleteAnyComment`. */
   canUpdateAnyComment: boolean;
   canDeleteAnyComment: boolean;
-  /** Schreibt den Kommentar; erst danach leert sich das Feld. */
+  /** Submits the comment; only after that does the field clear. */
   onSubmit: (body: PMDoc) => Promise<void>;
   /**
-   * Holt das Issue neu — Antworten, Bearbeiten, Löschen, Reaktionen und
-   * Anhänge im Kommentarfeld laufen über eigene Server Actions statt über
-   * `onSubmit` (das bleibt dem Top-Level-Composer vorbehalten) und melden
-   * sich darüber zurück — das Panel hängt an keinem Server-Render.
+   * Refetches the issue — replies, edits, deletes, reactions, and
+   * attachments in the comment field go through their own server actions
+   * instead of `onSubmit` (that stays reserved for the top-level composer)
+   * and report back through this — the panel isn't tied to any server
+   * render.
    */
   onRefresh: () => Promise<void>;
 }
 
-/** Baut aus den `issueId`-Actions dieselben drei Handler, die `RichTextEditor`
- *  erwartet — einmal für den Top-Level-Composer, einmal je Antwort- und
- *  Bearbeiten-Editor, ohne den Block dreifach auszuschreiben. */
+/** Builds the same three handlers `RichTextEditor` expects out of the
+ *  `issueId`-scoped actions — once for the top-level composer, once per
+ *  reply and edit editor, without writing the block out three times. */
 function makeAttachmentHandlers(
   issueId: string,
   onRefresh: () => Promise<void>,
@@ -88,8 +89,8 @@ function makeAttachmentHandlers(
       if ("error" in result) return result;
       const { attachment } = result;
       if (!attachment.url) return { error: uploadFailedLabel };
-      // Nicht abwarten: der Knoten soll sofort im Kommentarfeld erscheinen,
-      // die Anhänge-Sektion zieht kurz danach nach.
+      // Not awaited: the node should appear in the comment field
+      // immediately, the attachments section catches up shortly after.
       onRefresh();
       return {
         id: attachment.id,
@@ -143,14 +144,14 @@ export function IssueComments({
   const searchParams = useSearchParams();
   const [body, setBody] = useState<PMDoc>(emptyDoc);
   const [isSending, setIsSending] = useState(false);
-  // Zählt bei jedem gesendeten Kommentar hoch und setzt den Editor darüber neu
-  // auf. Ohne das behielte ProseMirror seinen alten Inhalt — `value` ist für
-  // ihn nur der Startwert.
+  // Increments on every submitted comment and remounts the editor via this.
+  // Without it, ProseMirror would keep its old content — `value` is only
+  // its initial value as far as it's concerned.
   const [round, setRound] = useState(0);
   const [flashId, setFlashId] = useState<string | null>(null);
-  // Merkt sich, zu welchem Kommentar schon gesprungen wurde — `comments`
-  // ändert sich nach jedem `onRefresh()` (neue Referenz), ohne den Merker
-  // sprängen wir bei jeder Folgeaktion (z.B. einer Reaktion) erneut hin.
+  // Tracks which comment has already been scrolled to — `comments` changes
+  // after every `onRefresh()` (new reference); without this flag, every
+  // follow-up action (e.g. a reaction) would trigger another jump.
   const scrolledTo = useRef<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(COMMENTS_PAGE_SIZE);
 
@@ -170,9 +171,9 @@ export function IssueComments({
     }
     return map;
   }, [comments]);
-  // Löst jenseits von MAX_INDENT_DEPTH den tatsächlichen Elternkommentar auf
-  // („Antwort auf …" in CommentThread.tsx) — der Einzug verrät es dort nicht
-  // mehr, weil ganze Äste als Geschwister nebeneinander landen.
+  // Resolves the actual parent comment beyond MAX_INDENT_DEPTH ("Reply to
+  // …" in CommentThread.tsx) — indentation no longer reveals it there,
+  // because whole branches end up as siblings next to each other.
   const commentsById = useMemo(
     () => new Map(comments.map((c) => [c.id, c])),
     [comments],
@@ -182,10 +183,10 @@ export function IssueComments({
   const remainingCount = topLevel.length - visibleTopLevel.length;
 
   const highlightId = searchParams.get("comment");
-  // Antworten sind jetzt standardmäßig eingeklappt (siehe CommentThread.tsx) —
-  // ein verlinkter Kommentar braucht deshalb seine ganze Vorfahren-Kette schon
-  // beim ersten Rendern aufgeklappt, sonst findet `scrollIntoView` unten kein
-  // Element (es steht gar nicht im DOM).
+  // Replies are now collapsed by default (see CommentThread.tsx) — a linked
+  // comment therefore needs its entire ancestor chain already expanded on
+  // the first render, otherwise `scrollIntoView` below finds no element (it
+  // simply isn't in the DOM).
   const highlightAncestorIds = useMemo(() => {
     const ids = new Set<string>();
     if (!highlightId) return ids;
@@ -197,9 +198,9 @@ export function IssueComments({
     return ids;
   }, [highlightId, commentsById]);
 
-  // Ein verlinkter Kommentar kann außerhalb der ersten Seite liegen (oder
-  // eine Antwort auf einen dieser späteren Threads sein) — vor dem Scrollen
-  // erst so viele Top-Level-Threads aufdecken, dass sein Ast mit dabei ist.
+  // A linked comment can be outside the first page (or a reply within one
+  // of those later threads) — before scrolling, first reveal enough
+  // top-level threads that its branch is included.
   useEffect(() => {
     if (!highlightId) return;
     let node = commentsById.get(highlightId);
@@ -214,11 +215,11 @@ export function IssueComments({
   }, [highlightId, commentsById, topLevel, visibleCount]);
 
   useEffect(() => {
-    // `comments` erscheint nicht im Effekt-Körper, löst aber trotzdem einen
-    // erneuten Versuch aus: das Ziel kann bei der ersten Runde noch fehlen,
-    // wenn `onRefresh()` nach einer Antwort/Bearbeitung eine neue Liste
-    // bringt, in der es jetzt steht. `visibleCount` ebenso — der Anker taucht
-    // erst auf, nachdem der Effekt oben ihn freigelegt hat.
+    // `comments` doesn't appear in the effect body, but it still triggers a
+    // re-attempt: the target might be missing on the first pass, when
+    // `onRefresh()` after a reply/edit brings a new list that now includes
+    // it. Same for `visibleCount` — the anchor only appears after the
+    // effect above has revealed it.
     void comments;
     void visibleCount;
     if (!highlightId || scrolledTo.current === highlightId) return;
@@ -249,8 +250,8 @@ export function IssueComments({
   };
 
   const removeComment = (commentId: string) => {
-    // Kein Bestätigungsdialog — dieselbe Konvention wie „Aufgabe löschen"
-    // (`IssueDetailActions.tsx`): sofort, ohne Umweg.
+    // No confirmation dialog — the same convention as "delete task"
+    // (`IssueDetailActions.tsx`): immediate, no detour.
     deleteComment(commentId).then(onRefresh);
   };
 
@@ -266,8 +267,8 @@ export function IssueComments({
   const copyLink = (commentId: string) => {
     const url = `${window.location.origin}${issuePath(workspaceId, identifier)}?comment=${commentId}`;
     navigator.clipboard.writeText(url).catch(() => {
-      // Ohne Berechtigung oder über eine unsichere Verbindung gibt es keine
-      // Zwischenablage — dann passiert eben nichts.
+      // Without permission, or over an insecure connection, there is no
+      // clipboard — nothing happens in that case.
     });
   };
 
@@ -329,8 +330,8 @@ export function IssueComments({
         </>
       )}
 
-      {/* Kein `<form action=…>` mehr: der Editor ist kein Formularfeld, und
-          abgeschickt wird über den Knopf oder ⌘/Strg + Enter. */}
+      {/* No more `<form action=…>`: the editor isn't a form field, and
+          submission happens via the button or Cmd/Ctrl + Enter. */}
       <div className={styles.composer}>
         <Avatar avatar={me} size={28} />
         <div className={styles.composerBox}>

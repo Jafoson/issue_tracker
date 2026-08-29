@@ -10,11 +10,11 @@ import {
   windowFor,
 } from "@/lib/buckets";
 
-// Die Zeitachse des Dashboards. Sie ist reine Rechnerei ohne Datenbank — und
-// genau die Sorte Code, die falsch sein kann, ohne dass es jemand sieht: eine um
-// einen Tag verschobene Achse sieht aus wie ein Diagramm.
+// The dashboard's time axis. It's pure arithmetic with no database involved —
+// and exactly the kind of code that can be wrong without anyone noticing: an
+// axis shifted by one day still looks like a chart.
 
-/** Ein Mittwoch, damit die Wochengrenze etwas zu tun hat. */
+/** A Wednesday, so the week boundary has something to do. */
 const WEDNESDAY = new Date(2026, 7, 12, 15, 30);
 
 describe("Töpfe abschneiden", () => {
@@ -23,7 +23,7 @@ describe("Töpfe abschneiden", () => {
   });
 
   it("setzt die Woche auf Montag", () => {
-    // Der 12.08.2026 ist ein Mittwoch, der Montag davor der 10.
+    // 2026-08-12 is a Wednesday, the Monday before it is the 10th.
     expect(truncate(WEDNESDAY, "week")).toEqual(new Date(2026, 7, 10));
   });
 
@@ -33,7 +33,7 @@ describe("Töpfe abschneiden", () => {
   });
 
   it("zieht den Sonntag zur Woche davor", () => {
-    // `getDay()` zählt ab Sonntag — der klassische Off-by-one an dieser Stelle.
+    // `getDay()` counts from Sunday — the classic off-by-one at this spot.
     const sunday = new Date(2026, 7, 16, 23, 59);
     expect(truncate(sunday, "week")).toEqual(new Date(2026, 7, 10));
   });
@@ -45,8 +45,8 @@ describe("Töpfe abschneiden", () => {
 
 describe("Schlüssel", () => {
   it("schreibt das lokale Datum, nicht das nach UTC verschobene", () => {
-    // `toISOString()` rechnet nach UTC um; östlich von Greenwich landete ein
-    // Abendzeitpunkt dadurch einen Tag zu früh.
+    // `toISOString()` converts to UTC; east of Greenwich this would land an
+    // evening timestamp one day too early.
     expect(bucketKey(new Date(2026, 0, 5, 23, 30))).toBe("2026-01-05");
   });
 
@@ -71,8 +71,8 @@ describe("Das Fenster", () => {
   });
 
   it("endet auf dem laufenden Topf", () => {
-    // Der heutige Tag zählt mit, obwohl er noch nicht vorbei ist: eine
-    // Übersicht, die ihn verschweigt, beantwortet „was ist gerade los" nicht.
+    // Today counts too, even though it isn't over yet: an overview that omits
+    // it doesn't answer "what's happening right now".
     const window = windowFor("30d", WEDNESDAY);
     expect(window.keys.at(-1)).toBe("2026-08-12");
     expect(window.keys[0]).toBe("2026-07-14");
@@ -89,7 +89,7 @@ describe("Das Fenster", () => {
     const window = windowFor("90d", WEDNESDAY);
     expect(window.unit).toBe("week");
     expect(window.keys.at(-1)).toBe("2026-08-10");
-    // Jede Marke ist ein Montag.
+    // Every mark is a Monday.
     for (const key of window.keys) {
       expect(new Date(`${key}T00:00:00`).getDay()).toBe(1);
     }
@@ -97,7 +97,7 @@ describe("Das Fenster", () => {
 
   it("schließt oben aus, damit der letzte Topf ganz hineinfällt", () => {
     const window = windowFor("7d", WEDNESDAY);
-    // `to` ist der Anfang des Topfes *nach* dem Zeitraum.
+    // `to` is the start of the bucket *after* the range.
     expect(window.to).toEqual(new Date(2026, 7, 13));
   });
 });
@@ -130,7 +130,7 @@ describe("Veränderung", () => {
   });
 
   it("sagt nichts, wenn vorher nichts war", () => {
-    // Von null auf zehn ist keine Verhundertfachung, sondern ein Anfang.
+    // Going from zero to ten isn't a percentage increase, it's a beginning.
     expect(trend(10, 0)).toBeNull();
     expect(trend(0, 0)).toBeNull();
   });

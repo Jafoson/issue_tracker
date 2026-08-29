@@ -9,29 +9,29 @@ import {
 import { useIssueDetail } from "./useIssueDetail";
 
 interface IssueDetailProps {
-  /** Interne Id oder Referenz der Form „PREFIX-123“. */
+  /** Internal id or reference of the form “PREFIX-123”. */
   issueRef: string;
   data: IssueComposerData;
   onClose: () => void;
   /**
-   * Ob die Ansicht als großer Dialog steht statt als Seitenpanel.
+   * Whether the view is shown as a large dialog instead of a side panel.
    *
-   * Gesteuert von außen, nicht hier: die Entscheidung überdauert das einzelne
-   * Issue (`IssuePeek` merkt sie sich für die Sitzung), und das Panel drumherum
-   * muss sich mit ihr zugleich umstellen — beides ginge nicht, wenn sie hier
-   * drin läge.
+   * Controlled from outside, not here: the decision outlives the individual
+   * issue (`IssuePeek` remembers it for the session), and the surrounding
+   * panel needs to switch layouts at the same time — neither would work if
+   * it lived in here.
    */
   isExpanded?: boolean;
   onToggleExpanded?: () => void;
 }
 
 /**
- * Die Detailansicht als Seitenpanel über Liste, Board und Posteingang. Sie
- * kennt beim Öffnen nur die Referenz aus der URL — geladen wird hier
- * (`useIssueDetail`), dargestellt in `IssueDetailView`.
+ * The detail view as a side panel over the list, board, and inbox. On
+ * opening it only knows the reference from the URL — loading happens here
+ * (`useIssueDetail`), rendering in `IssueDetailView`.
  *
- * Die Vollseite unter `/[workspace]/issue/[ref]` ist keine Variante davon,
- * sondern eine eigene Hülle (`IssueDetailPage`) über demselben Hook.
+ * The full page at `/[workspace]/issue/[ref]` isn't a variant of this, but
+ * its own shell (`IssueDetailPage`) over the same hook.
  */
 export function IssueDetail({
   issueRef,

@@ -21,8 +21,8 @@ export function Badge({
   style,
   ...rest
 }: BadgeProps) {
-  // Ein Badge als <button> ist per Definition bedienbar — Cursor und Hover
-  // ergeben sich daraus, dafür braucht es keinen eigenen Prop.
+  // A badge rendered as <button> is interactive by definition — cursor and
+  // hover follow from that, no separate prop needed for it.
   const interactive = Tag === "button";
 
   const cls = [

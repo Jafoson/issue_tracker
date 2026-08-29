@@ -1,34 +1,37 @@
-/* Typografie kommt von außen (`className`) auf den Rahmen — Anzeige und Editor
-   erben sie, damit der Text beim Wechsel nicht springt. */
+/* Typography comes in from outside (`className`) onto the wrapper — the
+   display and editor paths inherit it, so the text doesn't jump when
+   switching between them. */
 
-/* ---------- Anzeige ---------- */
+/* ---------- Display ---------- */
 
-/* Deckungsgleich mit dem Titelfeld (`EditableText`): Beschreibung und Titel
-   stehen direkt übereinander, jeder Unterschied im Überfahren fiele auf.
-   Maße, Rundung und Übergang sind deshalb von dort übernommen.
+/* Matches the title field (`EditableText`) exactly: description and title
+   sit directly on top of each other, and any difference on hover would
+   stand out. Size, rounding, and transition are therefore carried over from
+   there.
 
-   Kein eigener negativer Rand — den bringt die Hülle von außen mit
-   (`.title`/`.description` in `issueDetail.module.scss`, beide `0 -8px`). Mit
-   einem zweiten hier stünde die Beschreibung um acht Pixel neben dem Titel. */
+   No negative margin of its own — that's brought in by the wrapper from
+   outside (`.title`/`.description` in `issueDetail.module.scss`, both
+   `0 -8px`). With a second one here, the description would sit eight pixels
+   off from the title. */
 .preview {
   position: relative;
   padding: 5px 8px;
   border-radius: var(--radius-sm);
   cursor: text;
 
-  /* Nur Anzeige: kein Text-Cursor, der einen Klick verspricht, den es nicht
-     gibt (`readOnly` in `EditableRichText.tsx`). */
+  /* Display only: no text cursor promising a click that doesn't exist
+     (`readOnly` in `EditableRichText.tsx`). */
   &[data-readonly] {
     cursor: default;
   }
 
-  /* Zustandsschicht statt eigener Flächenfarbe — dasselbe Muster wie beim
-     `Chip`: eine Ebene in Textfarbe, die beim Überfahren aufblendet. Sie liegt
-     hinter dem Inhalt, sonst legte sie sich als Schleier über den Text.
+  /* State layer instead of its own surface color — the same pattern as
+     `Chip`: a layer in text color that fades in on hover. It sits behind
+     the content, otherwise it would lay a veil over the text.
 
-     Bewusst **ohne** `z-index: -1`: eine negative Ebene verschwindet je nach
-     Stapelkontext der Umgebung. Stattdessen wird der Inhalt angehoben — das
-     Ergebnis ist dasselbe und hängt von nichts ab. */
+     Deliberately **without** `z-index: -1`: a negative layer disappears
+     depending on the surrounding stacking context. Instead, the content is
+     raised — the result is the same and doesn't depend on anything else. */
   &::after {
     content: "";
     position: absolute;
@@ -40,16 +43,16 @@
     transition: opacity .12s;
   }
 
-  /* Der Inhalt liegt über der Schicht — ohne das Anheben legte sie sich als
-     Schleier darüber, weil ein positioniertes Pseudo-Element über nicht
-     positioniertem Inhalt malt. */
+  /* The content sits above the layer — without this raise it would lay
+     itself as a veil over the content, because a positioned pseudo-element
+     paints over unpositioned content. */
   > * {
     position: relative;
     z-index: 1;
   }
 
-  /* Derselbe Wert wie beim Titelfeld (`.field` in
-     `editableText.module.scss`) — die beiden stehen übereinander. */
+  /* Same value as the title field (`.field` in
+     `editableText.module.scss`) — the two sit on top of each other. */
   &:not([data-readonly]):hover::after {
     opacity: 0.04;
   }
@@ -61,8 +64,8 @@
 
 /* ---------- Editor ---------- */
 
-/* `fieldset` bringt eigene Ränder mit und weigert sich zu schrumpfen —
-   beides hier zurücksetzen. */
+/* `fieldset` brings its own margins along and refuses to shrink — both
+   reset here. */
 .shell {
   display: flex;
   flex-direction: column;
@@ -72,8 +75,8 @@
   border: none;
 }
 
-/* Steht da, während das Tiptap-Bündel noch lädt. Nimmt ungefähr die Höhe des
-   Editors ein, damit der Text darunter nicht springt, sobald er da ist. */
+/* Shown while the Tiptap bundle is still loading. Takes up roughly the
+   height of the editor so the text below doesn't jump once it arrives. */
 .loading {
   min-height: 132px;
   border: 1px solid var(--outline-variant);

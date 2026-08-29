@@ -1,11 +1,11 @@
-/* Der Chip hebt sich über die Fläche ab, nicht über die Farbe: die Karte liegt
-   auf `--surface-container-lowest`, der Chip zwei Stufen darüber auf
-   `--surface-container`, sein Herkunftsfeld noch eine höher. So bleibt die
-   Reihenfolge lesbar (Name vor Herkunft), ohne dass die Rangfarbe dafür
-   herhalten muss.
+/* The chip stands out through elevation, not color: the card sits on
+   `--surface-container-lowest`, the chip two steps above on
+   `--surface-container`, its origin field one step higher still. That keeps
+   the reading order clear (name before origin) without needing the rank
+   color to carry it.
 
-   `overflow: hidden`, weil das zweite Feld eine eigene Fläche hat: ohne den
-   Beschnitt stünden dessen eckige Ecken über die Pille hinaus. */
+   `overflow: hidden` because the second field has its own surface: without
+   the clipping, its square corners would stick out past the pill. */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -16,21 +16,21 @@
   border-radius: var(--radius-pill);
   background: var(--surface-container);
   font-size: var(--text-xs);
-  /* Ganze, gerade Maße: 3px + 16px + 3px + 2×1px Rahmen = 24px, dieselbe Höhe
-     wie ein `sm`-Label. Krumme Höhen landen in einer zentrierten Zeile auf
-     halben Pixeln und verwischen Punkt und Rahmen. */
+  /* Whole, even measurements: 3px + 16px + 3px + 2×1px border = 24px, the
+     same height as an `sm` label. Odd heights land a centered line on
+     half-pixels and blur the dot and border. */
   line-height: 16px;
 
-  /* Wer die Rolle nicht ändern kann, soll sie trotzdem lesen können: der Chip
-     tritt eine Stufe zurück, statt zu verblassen. In einem Topf sind fast alle
-     Rollen geteilte Standardrollen — die eine eigene fällt so von selbst auf,
-     und das Schloss daneben sagt, warum. */
+  /* Whoever can't change the role should still be able to read it: the chip
+     steps back a level instead of fading out. In a given pool, almost every
+     role is a shared default role — the one that's custom stands out on its
+     own this way, and the lock next to it explains why. */
   &[data-locked] {
     background: var(--surface-container-low);
 
     .name { color: var(--on-surface-variant); }
-    /* Der Punkt behält seine Rangfarbe, nur gedämpft: er ist derselbe Punkt wie
-       im Kopf der Matrix darunter, und der bleibt farbig. */
+    /* The dot keeps its rank color, just muted: it's the same dot as in the
+       matrix header below, and that one stays colored. */
     .dot { opacity: .6; }
     .tag { background: var(--surface-container); }
   }
@@ -53,9 +53,9 @@
   border-radius: var(--radius-pill);
 }
 
-/* Der Name kürzt, die Herkunft nicht: „Geteilt" ist ein festes Wort, der
-   Eigenname kann beliebig lang werden („Project Admin (ohne Issues)"). Vollen
-   Text trägt der `title` des Chips. */
+/* The name truncates, the origin doesn't: "Shared" is a fixed word, the
+   custom name can grow arbitrarily long ("Project Admin (without Issues)").
+   The chip's `title` carries the full text. */
 .text {
   min-width: 0;
   overflow: hidden;
@@ -65,17 +65,17 @@
 
 .tag {
   flex: none;
-  /* Über die volle Höhe, damit die Trennlinie den Chip wirklich teilt. */
+  /* Full height, so the divider line actually splits the chip. */
   align-self: stretch;
   display: flex;
   align-items: center;
-  /* Schmal gehalten: jeder Pixel hier fehlt dem Namen daneben, und der ist das,
-     was gelesen wird. */
+  /* Kept narrow: every pixel here is a pixel the name next to it doesn't
+     get, and the name is what's actually read. */
   padding: 0 7px;
   border-left: 1px solid var(--outline-variant);
-  /* Zwei Stufen über dem Namensfeld statt einer: im hellen Thema liegen die
-     Container-Töne dicht beieinander, und eine Stufe wäre dort allein an der
-     Trennlinie zu erkennen. */
+  /* Two steps above the name field instead of one: in the light theme the
+     container tones sit close together, and one step would be
+     distinguishable there only by the divider line. */
   background: var(--surface-container-highest);
   color: var(--on-surface-variant);
   font-size: var(--text-xxs);

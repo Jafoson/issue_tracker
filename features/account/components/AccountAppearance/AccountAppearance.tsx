@@ -20,17 +20,18 @@ interface Props {
 }
 
 /**
- * Wie die App aussieht und in welcher Sprache sie spricht.
+ * How the app looks and what language it speaks.
  *
- * Ohne Speichern: jede Wahl wirkt sofort sichtbar, und ein Knopf, der eine schon
- * eingetretene Wirkung bestätigt, verwirrt mehr als er hilft. Geschrieben wird
- * im selben Zug — die Attribute stehen am Dokument, die Wahl in der Datenbank,
- * damit sie das nächste Mal und auf dem nächsten Gerät wieder gilt.
+ * No save button: every choice takes visible effect immediately, and a button
+ * confirming an effect that already happened would confuse more than it
+ * helps. Writing happens in the same step — the attributes go on the
+ * document, the choice into the database, so it applies again next time and
+ * on the next device.
  *
- * Die Sprache läuft nicht über die Datenbank, sondern über die Adresse: sie
- * steht als erstes Segment im Pfad, und next-intl merkt sich die Wahl in einem
- * Cookie. Zwei Orte für dieselbe Angabe wären zwei Wahrheiten, die
- * auseinanderlaufen können.
+ * The language doesn't go through the database, but through the address: it's
+ * the first segment in the path, and next-intl remembers the choice in a
+ * cookie. Two places for the same piece of information would be two truths
+ * that could drift apart.
  */
 export function AccountAppearance({ theme }: Props) {
   const t = useTranslations();
@@ -42,13 +43,13 @@ export function AccountAppearance({ theme }: Props) {
   const [currentTheme, setCurrentTheme] = useState<Theme>(theme);
 
   /**
-   * Das gewählte Design am Dokument.
+   * The chosen theme, on the document.
    *
-   * Genau der Wert, den auch das Wurzel-Layout schreibt — „system" wird hier
-   * bewusst nicht zu „dark"/„light" aufgelöst, das macht CSS
-   * (`styles/colors.scss`). Der Griff ans Dokument ist nur der Vorgriff auf die
-   * Antwort des Servers: bis `updateAppearance` zurück ist und das Layout neu
-   * gerendert wurde, stünde sonst noch das alte Design da.
+   * Exactly the value the root layout also writes — "system" is deliberately
+   * not resolved to "dark"/"light" here, CSS does that
+   * (`styles/colors.scss`). Touching the document directly is just getting
+   * ahead of the server's response: until `updateAppearance` returns and the
+   * layout re-renders, the old theme would otherwise still be showing.
    */
   const applyTheme = (value: Theme) => {
     setCurrentTheme(value);

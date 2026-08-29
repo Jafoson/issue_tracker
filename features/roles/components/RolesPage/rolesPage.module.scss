@@ -1,6 +1,6 @@
-/* Die Seitenränder sitzen in den Abschnitten, nicht hier: Kopfzeile und Körper
-   haben unterschiedliche Polster nach oben und unten — dieselbe Aufteilung wie
-   auf den anderen Verwaltungsseiten. */
+/* The page margins live in the sections, not here: header and body have
+   different padding top and bottom — the same layout as on the other
+   management pages. */
 .page {
   flex: 1;
   min-height: 0;
@@ -9,16 +9,16 @@
   overflow: hidden;
 }
 
-/* Der Umschalter gehört in die Kopfzeile, nicht darüber: er stellt den Titel
-   des Bereichs (deshalb `showTitle={false}` am `RoleManager`). Die Linie oben
-   ist dieselbe, die links über der Bereichsleiste steht — zusammen ergeben sie
-   einen durchgehenden Strich. Stünde der Umschalter darüber, bräche er ihn auf,
-   und die Kopfzeile brächte eine zweite Linie mit.
+/* The switcher belongs in the header, not above it: it supplies the
+   section's title (hence `showTitle={false}` on `RoleManager`). The top
+   line is the same one that runs above the section bar on the left —
+   together they form one continuous stroke. If the switcher sat above it,
+   it would break that up, and the header would bring a second line along
+   with it.
 
-   Nach unten grenzt die Kopfzeile des Rollen-Topfes an, die ihre eigene Linie
-   erst unter der Beschreibung zieht (`roleManagerView.module.scss`) — der
-   Umschalter steht damit zwischen den beiden Linien, im selben Band wie der
-   Text, den er erklärt. */
+   Below, it borders the role pool's header, which draws its own line only
+   under the description (`roleManagerView.module.scss`) — the switcher
+   thus sits between the two lines, in the same band as the text it explains. */
 .switcher {
   flex: none;
   display: flex;
@@ -32,7 +32,7 @@
   display: flex;
   flex-direction: column;
 
-  /* `hidden` allein reicht nicht: das `display: flex` oben stäche es aus. */
+  /* `hidden` alone isn't enough: the `display: flex` above would override it. */
   &[hidden] {
     display: none;
   }

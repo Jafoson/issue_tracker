@@ -26,21 +26,21 @@ import styles from "./shareIssueModal.module.scss";
 
 interface Props {
   issueId: string;
-  /** Fertige URL vom Server — `null`, solange Teilen aus ist. */
+  /** Ready-made URL from the server — `null` while sharing is off. */
   shareUrl: string | null;
-  /** Workspace-weit, wie beim Zuständigkeits-Feld — ohne die eigene Person. */
+  /** Workspace-wide, like the assignee field — excluding the current user. */
   members: User[];
   me: { id: string };
   close: () => void;
 }
 
 /**
- * Öffentlichen Lese-Link ein-/ausschalten — bewusst nur der Link-Teil des
- * Jira-Vorbilds, ohne dessen Slack-Tab (nicht angefragt). Zusätzlich zwei
- * direkte Wege, ohne den Link selbst weiterzureichen: an ein Mitglied (in-app
- * + ggf. Mail, `shareIssueWithMember`) oder an eine beliebige Adresse
- * (`shareIssueByEmail`, verschickt immer den öffentlichen Link, schaltet ihn
- * bei Bedarf still mit ein).
+ * Enable/disable the public read-only link — deliberately just the link
+ * part of the Jira model this is based on, without its Slack tab (not
+ * requested). Additionally, two direct routes that don't require passing
+ * the link along yourself: to a member (in-app + optionally mail,
+ * `shareIssueWithMember`) or to any address (`shareIssueByEmail`, always
+ * sends the public link, silently enabling it first if needed).
  */
 export function ShareIssueModal({
   issueId,

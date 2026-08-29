@@ -33,8 +33,8 @@
   }
 }
 
-/* Abgewählt heißt hier zurückgenommen, nicht durchgestrichen: der Baustein ist
-   nicht ungültig, er steht nur gerade nicht da. */
+/* Deselected means muted here, not struck through: the widget isn't
+   invalid, it's just not currently shown. */
 .row[data-off] {
   opacity: 0.5;
 }
@@ -63,8 +63,9 @@
     color: var(--on-surface);
   }
 
-  /* Am Rand der Liste passiert nichts. Der Knopf bleibt stehen und wird stumpf —
-     verschwände er, sprängen die Zeilen darunter beim Verschieben. */
+  /* Nothing happens at the edge of the list. The button stays in place and
+     just goes inert — if it disappeared, the rows below it would jump
+     around during reordering. */
   &:disabled {
     opacity: var(--opacity-disabled);
     cursor: not-allowed;

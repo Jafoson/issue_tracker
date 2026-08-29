@@ -4,9 +4,9 @@ import { getAuditEntries } from "@/features/admin/queries";
 export const dynamic = "force-dynamic";
 
 /**
- * Das Protokoll der Plattform. Lädt seitenweise nach (Infinite Scroll,
- * `AuditLog`/`loadMorePlatformActivity`) statt einer festen Obergrenze — wer
- * weit zurück muss, scrollt einfach weiter.
+ * The platform's audit log. Loads page by page (infinite scroll,
+ * `AuditLog`/`loadMorePlatformActivity`) rather than a fixed upper limit —
+ * anyone needing to go far back just keeps scrolling.
  */
 export default async function AdminAuditPage() {
   const { entries, nextCursor } = await getAuditEntries();

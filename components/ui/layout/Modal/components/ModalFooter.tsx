@@ -1,15 +1,15 @@
 import styles from "../modal.module.scss";
 
 interface ModalFooterProps {
-  /** Linker Slot, meist ein `ModalShortcut`. */
+  /** Left slot, usually a `ModalShortcut`. */
   hint?: React.ReactNode;
-  /** Aktionen — werden immer rechtsbündig ausgerichtet. */
+  /** Actions — always right-aligned. */
   children?: React.ReactNode;
-  /** Trennlinie nach oben. Default: true. */
+  /** Divider above. Default: true. */
   divider?: boolean;
 }
 
-/** Fußzeile eines Modals: Hinweis links, Aktionen rechts. */
+/** Modal footer: hint on the left, actions on the right. */
 export function ModalFooter({
   hint,
   children,
@@ -28,18 +28,18 @@ export function ModalFooter({
 }
 
 interface ModalShortcutProps {
-  /** Tasten in Anzeigereihenfolge, z.B. `["⌘", "↵"]`. */
+  /** Keys in display order, e.g. `["⌘", "↵"]`. */
   keys: string[];
-  /** Beschreibung hinter den Tasten, z.B. „zum Erstellen“. */
+  /** Description after the keys, e.g. "to create". */
   children?: React.ReactNode;
 }
 
-/** Tastenkürzel-Hinweis für den `hint`-Slot des `ModalFooter`. */
+/** Keyboard shortcut hint for the `ModalFooter`'s `hint` slot. */
 export function ModalShortcut({ keys, children }: ModalShortcutProps) {
   return (
     <span className={styles.shortcut}>
       {keys.map((key, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: statische Tastenfolge, kann Wiederholungen enthalten
+        // biome-ignore lint/suspicious/noArrayIndexKey: static key sequence, may contain repeats
         <kbd key={`${key}-${i}`} className={styles.kbd}>
           {key}
         </kbd>

@@ -57,57 +57,58 @@ import { resolveAvatarUrl } from "@/lib/storage";
 import { CLOSED_STATUSES } from "@/lib/workspace-defaults";
 import type { User } from "@/types";
 
-// ─── Das Dashboard eines Projekts ────────────────────────────────────────────
+// ─── A project's dashboard ─────────────────────────────────────────────────────
 //
-// Gezählt wird in der Datenbank, nicht im Speicher. Der naheliegende Weg — alle
-// Aufgaben des Projekts laden und in JavaScript gruppieren — überträgt bei einem
-// gewachsenen Projekt Tausende Zeilen samt ihrer Beschreibungen, um am Ende ein
-// Dutzend Zahlen zu zeigen. Die einzigen Abfragen, die ganze Zeilen holen, sind
-// die beiden Listen unten, und die haben ein `take`.
+// Counting happens in the database, not in memory. The obvious approach —
+// load every issue in the project and group in JavaScript — would, for a
+// project that's grown, transfer thousands of rows including their
+// descriptions, just to show a dozen numbers in the end. The only queries
+// that fetch whole rows are the two lists further down, and those have a
+// `take`.
 //
-// Die Zeitachse dagegen entsteht im Code (`lib/buckets.ts`): eine Gruppierung
-// kennt nur Töpfe, in denen etwas liegt, und eine ruhige Woche wäre sonst keine
-// Null, sondern ein Loch im Diagramm.
+// The time axis, by contrast, is built in code (`lib/buckets.ts`): a
+// `GROUP BY` only knows buckets that have something in them, and a quiet
+// week would otherwise not be a zero but a gap in the chart.
 //
-// **Rechte.** Alles hier hängt an `project.view` — die Zahlen sind der Inhalt des
-// Projekts, in verdichteter Form. Wer die Aufgaben nicht sehen darf, darf auch
-// nicht wissen, wie viele es sind. Wie überall gibt `null` zurück, was es „für
-// dich nicht gibt"; die Seite macht daraus ein 404, ohne zu verraten, ob das
-// Projekt fehlt oder der Zutritt.
+// **Permissions.** Everything here hangs off `project.view` — the numbers
+// are the project's content, in condensed form. Anyone not allowed to see
+// the issues also isn't allowed to know how many there are. As everywhere,
+// `null` returns what "doesn't exist for you"; the page turns that into a
+// 404, without revealing whether the project is missing or access is.
 
 const CLOSED = [...CLOSED_STATUSES];
 
-/** Ab wann eine Aufgabe in Arbeit als liegengeblieben gilt. */
+/** After how long an in-progress issue counts as stale. */
 const STALE_DAYS = 14;
 
-/** Wie viele Zeilen die beiden Listen unten höchstens zeigen. */
+/** How many rows the two lists below show at most. */
 const LIST_LIMIT = 6;
 
 /**
- * Der Rang der Mitarbeit — die untere Schwelle, ab der eine Rolle im Steckbrief
- * einzeln genannt wird (siehe `groupByRole`).
+ * The contributor rank — the lower threshold above which a role is called
+ * out individually in the profile card (see `groupByRole`).
  *
- * Aus der Registry geholt statt als Zahl hingeschrieben: die Ränge stehen in
- * `lib/rbac/roles.ts`, und eine zweite Kopie davon hier wäre genau die Sorte
- * Zahl, die beim Umsortieren der Rollen still falsch wird.
+ * Pulled from the registry rather than written as a number: the ranks live
+ * in `lib/rbac/roles.ts`, and a second copy here would be exactly the kind
+ * of number that silently goes wrong when the roles are reordered.
  */
 const CONTRIBUTOR_RANK =
   systemRolesIn("PROJECT").find((role) => role.key === DEFAULT_PROJECT_ROLE_KEY)
     ?.rank ?? 3;
 
 /**
- * Die System-Rollen, die „arbeitet mit" oder „liest mit" bedeuten. Sie stehen im
- * Steckbrief als Liste, nicht als einzeln genannte Personen.
+ * The system roles that mean "contributes" or "reads along". They appear in
+ * the profile card as a list, not as individually named people.
  *
- * Warum eine Liste von Schlüsseln und nicht bloß eine Rang-Grenze: die Ränge
- * sind ganze Zahlen, und zwischen `contributor` (3) und `project_admin` (4) ist
- * kein Platz. Eine projekteigene Rolle „Moderator" bekäme deshalb in der Praxis
- * ebenfalls die 3 — über den Rang allein wäre sie von der Mitarbeit nicht zu
- * unterscheiden und verschwände in deren Liste, obwohl sie genau das ist, was
- * man auf einer Übersicht namentlich sehen will.
+ * Why a list of keys and not just a rank cutoff: ranks are integers, and
+ * there's no room between `contributor` (3) and `project_admin` (4). A
+ * project-specific "Moderator" role would in practice also get rank 3 — by
+ * rank alone it couldn't be distinguished from a contributor and would
+ * vanish into that list, even though it's exactly the kind of role you'd
+ * want to see called out by name on an overview.
  *
- * Die Schlüssel kommen als Konstanten aus der Registry: eine Umbenennung dort
- * bricht hier den Typecheck, statt still eine Gruppe umzusortieren.
+ * The keys come as constants from the registry: a rename there breaks the
+ * type check here instead of silently reshuffling a group.
  */
 const ROSTER_ROLE_KEYS = new Set<string>([
   DEFAULT_PROJECT_ROLE_KEY,
@@ -117,12 +118,12 @@ const ROSTER_ROLE_KEYS = new Set<string>([
 ]);
 
 /**
- * Plattform-Rollen mit echtem Durchgriff auf jeden Workspace: `platform_admin`
- * (Stammdaten, Sperren — `workspace.suspend`, `project.metadata.manage`) und
- * `platform_support` (`tenant.access`, jeder Inhalt). Beide tragen dafür keine
- * `WorkspaceMember`-Zeile (siehe `prisma/seed.ts`, u18) und blieben im
- * Steckbrief sonst spurlos, obwohl sie mehr können als fast jeder, der dort
- * steht.
+ * Platform roles with real reach into every workspace: `platform_admin`
+ * (metadata, suspension — `workspace.suspend`, `project.metadata.manage`)
+ * and `platform_support` (`tenant.access`, any content). Neither carries a
+ * `WorkspaceMember` row for that (see `prisma/seed.ts`, u18) and would
+ * otherwise leave no trace in the profile card, despite being able to do
+ * more than almost anyone listed there.
  */
 const PLATFORM_STAFF_ROLE_KEYS = [
   PLATFORM_ADMIN_ROLE_KEY,
@@ -130,18 +131,18 @@ const PLATFORM_STAFF_ROLE_KEYS = [
 ];
 
 /**
- * Farblich auf Höhe von Owner/Admin (`roleColor`, Rang ≥ 5) — derselbe
- * Anspruch, nur nicht dieselbe Skala: der Rang aus `lib/rbac/roles.ts` zählt
- * unter Plattform-Rollen (0 bis 2), nicht neben Workspace-Rollen.
+ * Colored at the level of owner/admin (`roleColor`, rank ≥ 5) — the same
+ * standing, just not the same scale: the rank from `lib/rbac/roles.ts` is
+ * counted among platform roles (0 to 2), not alongside workspace roles.
  */
 const PLATFORM_STAFF_RANK_OFFSET = 5;
 
 /**
- * `platform_admin`/`platform_support` neben den eigentlichen Mitgliedern —
- * eigene Gruppen statt ein Eintrag in `groupByRole`, weil hier keine
- * `WorkspaceMember`-Zeile zugrunde liegt. Wer beides zugleich ist (der
- * Ersteller, siehe Seed), steht schon in den Mitgliedern und fällt hier über
- * `excludeIds` heraus, statt doppelt aufzutauchen.
+ * `platform_admin`/`platform_support` alongside the actual members — their
+ * own groups instead of an entry in `groupByRole`, because there's no
+ * `WorkspaceMember` row underlying this. Anyone who's both at once (the
+ * creator, see seed) is already listed among the members and is excluded
+ * here via `excludeIds`, instead of appearing twice.
  */
 async function platformStaffFor(
   excludeIds: Set<string>,
@@ -177,13 +178,13 @@ async function platformStaffFor(
   return [...groups.values()].sort((a, b) => b.rank - a.rank);
 }
 
-/** Dasselbe eine Ebene höher — die Mitarbeit im Workspace statt im Projekt. */
+/** Same thing one level up — being a contributor in the workspace instead of the project. */
 const WS_CONTRIBUTOR_RANK =
   systemRolesIn("WORKSPACE").find(
     (role) => role.key === DEFAULT_WORKSPACE_ROLE_KEY,
   )?.rank ?? 2;
 
-/** Die Workspace-Rollen, die „arbeitet mit" oder „liest mit" bedeuten. */
+/** The workspace roles that mean "contributes" or "reads along". */
 const WS_ROSTER_ROLE_KEYS = new Set<string>([
   DEFAULT_WORKSPACE_ROLE_KEY,
   WORKSPACE_VIEWER_ROLE_KEY,
@@ -223,23 +224,23 @@ const USER_SELECT = {
   avatarKey: true,
 } as const;
 
-/** Personenlisten stehen alphabetisch — wie überall in dieser Anwendung. */
+/** Person lists are alphabetical — as everywhere in this app. */
 const byName = [
   { user: { firstName: "asc" as const } },
   { user: { lastName: "asc" as const } },
 ];
 
-// ── Die Zahlen oben ───────────────────────────────────────────────────────────
+// ── The numbers up top ───────────────────────────────────────────────────────
 
 /**
- * Kennzahlen des Projekts.
+ * The project's key figures.
  *
- * Zwei Sorten stehen hier nebeneinander, und der Unterschied ist wichtig genug
- * für diesen Absatz: `open`, `inProgress`, `urgent` und `total` sind Bestände —
- * sie gelten *jetzt* und kennen keinen Zeitraum. `created` und `closed` sind
- * Bewegungen im gewählten Fenster. Ein Bestand, den man mit dem Zeitraum
- * filterte, beantwortete keine Frage, die jemand stellt: „wie viel ist offen"
- * meint nie „wie viel ist offen und wurde in den letzten 30 Tagen angelegt".
+ * Two kinds sit side by side here, and the difference matters enough for
+ * this paragraph: `open`, `inProgress`, `urgent`, and `total` are stocks —
+ * they hold *right now* and know no period. `created` and `closed` are
+ * movements within the chosen window. A stock filtered by the period would
+ * answer no question anyone actually asks: "how many are open" never means
+ * "how many are open and were created in the last 30 days".
  */
 async function statsFor(
   projectId: string,
@@ -248,7 +249,7 @@ async function statsFor(
   assigneeId: string | null,
 ): Promise<DashboardStats> {
   const window = { gte: from, lt: to };
-  // Bei "mine" auf die eigenen Aufgaben verengt; bei "all" (`null`) unverändert.
+  // Narrowed to your own issues for "mine"; unchanged for "all" (`null`).
   const mine = assigneeId ? { assigneeId } : {};
 
   const [total, open, inProgress, inReview, created, urgent, urgentUnassigned] =
@@ -263,8 +264,8 @@ async function statsFor(
       db.issue.count({
         where: { projectId, status: { notIn: CLOSED }, priority: 4, ...mine },
       }),
-      // Zugewiesen und zugleich unzugewiesen widerspricht sich — im eigenen
-      // Umfang ist die Antwort immer 0, ohne dass es dafür eine Abfrage bräuchte.
+      // Assigned and unassigned at once is a contradiction — in your own
+      // scope the answer is always 0, with no query needed for it.
       assigneeId
         ? Promise.resolve(0)
         : db.issue.count({
@@ -277,9 +278,9 @@ async function statsFor(
           }),
     ]);
 
-  // Zahl und Mittelwert der geschlossenen Aufgaben in einem Zug: beide lesen
-  // dieselben Zeilen, und die Durchlaufzeit ist in SQL eine Subtraktion, die in
-  // JavaScript ein zweiter Datenweg wäre.
+  // Count and average of closed issues in one trip: both read the same
+  // rows, and cycle time in SQL is a subtraction that in JavaScript would
+  // mean a second round trip for the data.
   const [cycle] = await db.$queryRaw<
     { closed: bigint; avg_days: number | null }[]
   >`
@@ -301,22 +302,22 @@ async function statsFor(
     urgent,
     urgentUnassigned,
     closed: Number(cycle?.closed ?? 0),
-    // Auf eine Nachkommastelle: „19,0 Tage" ist eine Angabe, „19,04871" wäre
-    // eine Behauptung von Genauigkeit, die diese Zahl nicht hat.
+    // To one decimal place: "19.0 days" is a figure, "19.04871" would be a
+    // claim of precision this number doesn't have.
     cycleDays:
       cycle?.avg_days == null ? null : Math.round(cycle.avg_days * 10) / 10,
   };
 }
 
-// ── Verteilungen ──────────────────────────────────────────────────────────────
+// ── Distributions ────────────────────────────────────────────────────────────
 
 /**
- * Wie sich alle Aufgaben auf die Status verteilen.
+ * How all issues distribute across statuses.
  *
- * Die Reihenfolge kommt aus den Workspace-Status, nicht aus dem Ergebnis der
- * Gruppierung: der Balken soll die Leiter von „Backlog" bis „Canceled"
- * abbilden, und ein Status ohne Aufgaben darf nicht wegfallen — dass er leer
- * ist, ist die Auskunft.
+ * The order comes from the workspace's statuses, not from the result of the
+ * `GROUP BY`: the bar chart is meant to mirror the ladder from "Backlog" to
+ * "Canceled", and a status with no issues must not drop out — being empty is
+ * the information.
  */
 async function statusesFor(
   projectId: string,
@@ -343,11 +344,11 @@ async function statusesFor(
 }
 
 /**
- * Wie sich die **offenen** Aufgaben auf die Dringlichkeiten verteilen.
+ * How the **open** issues distribute across priorities.
  *
- * Bewusst nur die offenen: was erledigt ist, war einmal dringend und ist es
- * nicht mehr. Die Frage hinter diesem Baustein lautet „was liegt an", nicht
- * „was lag einmal an".
+ * Deliberately only the open ones: whatever's done was urgent once and isn't
+ * anymore. The question behind this widget is "what's pending", not "what
+ * was once pending".
  */
 async function prioritiesFor(
   projectId: string,
@@ -377,20 +378,20 @@ async function prioritiesFor(
         color: priority.color,
         count: counts.get(priority.id) ?? 0,
       }))
-      // Absteigend: die dringendste Zeile zuerst. „Keine Priorität" landet damit
-      // unten, wo sie hingehört — sie ist kein Nullwert, sondern das Ende der
-      // Leiter.
+      // Descending: the most urgent row first. "No priority" ends up at the
+      // bottom this way, where it belongs — it's not a null value, it's the
+      // end of the ladder.
       .sort((a, b) => b.id - a.id)
   );
 }
 
 /**
- * Angelegt und geschlossen je Marke der Zeitachse.
+ * Created and closed per marker on the time axis.
  *
- * Zwei Reihen aus zwei Spalten derselben Tabelle, deshalb zwei Abfragen: ein
- * `UNION` sparte einen Aufruf und kostete die Lesbarkeit. `date_trunc` bekommt
- * die Einheit als Parameter — das erste Argument ist Text, das darf es;
- * Bezeichner stehen fest in der Abfrage.
+ * Two series from two columns of the same table, hence two queries: a
+ * `UNION` would save one round trip and cost readability. `date_trunc` gets
+ * the unit as a parameter — the first argument is text, that's allowed;
+ * identifiers stay fixed in the query.
  */
 async function throughputFor(
   projectId: string,
@@ -421,8 +422,8 @@ async function throughputFor(
     countsIn("closedAt"),
   ]);
 
-  // Die Achse führt, nicht das Ergebnis der Gruppierung: jeder Topf kommt vor,
-  // auch der leere.
+  // The axis leads, not the result of the `GROUP BY`: every bucket appears,
+  // even the empty one.
   return keys.map((date) => ({
     date,
     created: created.get(date) ?? 0,
@@ -431,15 +432,15 @@ async function throughputFor(
 }
 
 /**
- * Wer wie viel offene Arbeit trägt.
+ * Who's carrying how much open work.
  *
- * Der Stapel ohne Zuständige steht mit in der Liste und nicht daneben: er ist
- * die Menge, um die es beim Verteilen geht, und ein Projekt, in dem er der
- * größte Balken ist, hat genau das als Befund.
+ * The unassigned pile is part of the list, not off to the side: it's the
+ * quantity that matters when distributing work, and a project where it's
+ * the tallest bar has exactly that as its finding.
  *
- * Gezählt wird über alle Aufgaben, nicht über die Projektmitglieder: wer das
- * Projekt verlassen hat, aber noch auf Aufgaben steht, verschwände sonst aus
- * der Rechnung, obwohl seine Arbeit liegen bleibt.
+ * Counting happens across all issues, not project members: anyone who left
+ * the project but is still on issues would otherwise vanish from the count,
+ * even though their work stays behind.
  */
 async function workloadFor(
   projectId: string,
@@ -473,9 +474,9 @@ async function workloadFor(
 
   const totals = new Map<string, { open: number; inProgress: number }>();
   for (const row of rows) {
-    // Ein leerer Schlüssel für „niemand" — `null` ginge als Map-Schlüssel, wäre
-    // aber im Typ der Map eine zweite Möglichkeit, die weiter unten jeder Leser
-    // mitdenken müsste.
+    // An empty key for "nobody" — `null` would work as a Map key, but would
+    // be a second case in the Map's type that every reader further down
+    // would have to keep in mind.
     const key = row.assigneeId ?? "";
     const entry = totals.get(key) ?? { open: 0, inProgress: 0 };
     entry.open += row._count._all;
@@ -489,8 +490,8 @@ async function workloadFor(
         user: id ? (byId.get(id) ?? null) : null,
         ...counts,
       }))
-      // Der größte Stapel zuerst; bei Gleichstand entscheidet der Name, damit die
-      // Liste zwischen zwei Aufrufen nicht springt.
+      // The biggest pile first; ties are broken by name, so the list
+      // doesn't jump between two calls.
       .sort(
         (a, b) =>
           b.open - a.open ||
@@ -499,22 +500,22 @@ async function workloadFor(
   );
 }
 
-// ── Die beiden Listen ─────────────────────────────────────────────────────────
+// ── The two lists ────────────────────────────────────────────────────────────
 
 function issueRef(prefix: string, key: number): string {
   return `${prefix}-${key}`;
 }
 
 /**
- * Was liegen zu bleiben droht.
+ * What's at risk of falling by the wayside.
  *
- * Drei Gründe, in dieser Rangfolge: dringend und niemandem zugewiesen, dringend
- * überhaupt, seit zwei Wochen unangerührt in Arbeit. Eine Aufgabe kann mehrere
- * erfüllen — gezeigt wird der schwerste, und sie steht nur einmal da.
+ * Three reasons, in this order of precedence: urgent and unassigned, urgent
+ * at all, in progress and untouched for two weeks. An issue can meet several
+ * — the most severe one is shown, and it appears only once.
  *
- * Bewusst keine Suche über alles, was schiefgehen könnte: die Liste ist kurz und
- * soll es bleiben. Eine „Braucht Aufmerksamkeit"-Liste mit vierzig Zeilen
- * braucht selbst keine Aufmerksamkeit mehr.
+ * Deliberately not a search over everything that could go wrong: the list is
+ * short and meant to stay that way. A "needs attention" list with forty rows
+ * no longer needs attention itself.
  */
 async function attentionFor(
   projectId: string,
@@ -543,8 +544,8 @@ async function attentionFor(
       updated: true,
       assignee: { select: USER_SELECT },
     },
-    // Dringlichkeit vor Alter: was am längsten liegt, ist nicht automatisch das,
-    // was am dringendsten ist.
+    // Urgency before age: what's been sitting the longest isn't
+    // automatically what's most urgent.
     orderBy: [{ priority: "desc" }, { updated: "asc" }],
     take: LIST_LIMIT,
   });
@@ -573,35 +574,36 @@ async function attentionFor(
   );
 }
 
-// ── Der Steckbrief ────────────────────────────────────────────────────────────
+// ── The profile card ─────────────────────────────────────────────────────────
 
 /**
- * Die Mitglieder nach ihrer Projektrolle bündeln, stärkste Rolle zuerst.
+ * Bundle members by their project role, strongest role first.
  *
- * Gruppiert wird nach dem, was in der Datenbank steht, und nicht nach einer
- * Liste bekannter Rollen im Code. Das ist hier keine Bequemlichkeit, sondern der
- * Punkt: neben den System-Rollen gibt es projekteigene (`Role.scope = PROJECT`
- * mit gesetzter `projectId`, siehe `prisma/schema.prisma`). Legt sich ein
- * Workspace eine Rolle „Moderator" an, erscheint sie hier von selbst als eigene
- * Gruppe mit ihrem Namen — mit einer festen Liste wären genau diese Rollen die,
- * die durchs Raster fielen.
+ * Grouping happens by what's in the database, not by a list of known roles
+ * in code. That's not a convenience here, it's the point: besides the
+ * system roles, there are project-specific ones (`Role.scope = PROJECT` with
+ * a set `projectId`, see `prisma/schema.prisma`). If a workspace creates a
+ * "Moderator" role, it appears here automatically as its own group with its
+ * own name — with a fixed list, these are exactly the roles that would fall
+ * through the cracks.
  *
- * `distinguished` trennt die Gruppen, die oben mit Namen und Chip stehen, von
- * denen, die als Liste darunter laufen. Zwei Bedingungen, und beide braucht es:
+ * `distinguished` separates the groups shown at the top with names and a
+ * chip from those that run as a list below. Two conditions, both required:
  *
- *   - **mindestens der Rang der Mitarbeit.** Eine eigene Rolle unterhalb davon
- *     („Praktikant") ist keine Auszeichnung und gehört in die Liste.
- *   - **keine der System-Rollen, die Mitarbeit oder Mitlesen bedeuten**
- *     (`ROSTER_ROLE_KEYS`). Sonst bekäme jeder Contributor eine eigene Zeile mit
- *     Chip, und bei vierzig Leuten wäre die Karte eine Wand.
+ *   - **at least the contributor rank.** A custom role below that
+ *     ("Intern") isn't a distinction and belongs in the list.
+ *   - **none of the system roles that mean contributing or reading along**
+ *     (`ROSTER_ROLE_KEYS`). Otherwise every contributor would get their own
+ *     row with a chip, and with forty people the card would be a wall.
  *
- * Zusammen heißt das: die Leitung und alles, was sich ein Workspace daneben
- * selbst geschaffen hat, steht mit Namen; die Mitarbeitenden und Mitlesenden
- * stehen als Liste.
+ * Taken together: leadership and anything a workspace has created for
+ * itself besides that appears by name; contributors and readers appear as a
+ * list.
  *
- * `contributorRank` und `rosterKeys` kommen herein statt fest zu stehen: dasselbe
- * Verfahren gilt eine Ebene höher für die Mitgliedschaft im Workspace, nur mit
- * anderen Rollen und einem anderen Rang der bloßen Mitarbeit (`getWorkspaceDashboard`).
+ * `contributorRank` and `rosterKeys` come in as parameters instead of being
+ * fixed: the same procedure applies one level up for workspace membership,
+ * just with different roles and a different rank for plain contribution
+ * (`getWorkspaceDashboard`).
  */
 export async function groupByRole(
   members: {
@@ -629,33 +631,33 @@ export async function groupByRole(
     });
   }
 
-  // Nach Rang absteigend; bei gleichem Rang nach Namen, damit die Reihenfolge
-  // zwischen zwei Aufrufen nicht springt.
+  // Descending by rank; same-rank ties by name, so the order doesn't jump
+  // between two calls.
   return [...groups.values()].sort(
     (a, b) => b.rank - a.rank || a.name.localeCompare(b.name),
   );
 }
 
 /**
- * Was das Projekt ist, unabhängig davon, wie es gerade läuft.
+ * What the project is, independent of how it's currently doing.
  *
- * Nichts hiervon kennt einen Zeitraum, und genau deshalb steht es nicht in
- * `ProjectDashboardData`: ein Kürzel hat keine 30 Tage. Beides kommt trotzdem
- * aus einem Aufruf — die Seite zeigt beide Ansichten aus denselben Daten und
- * schaltet ohne Serverlauf zwischen ihnen um.
+ * None of this has a time period, and that's exactly why it's not in
+ * `ProjectDashboardData`: a reference prefix doesn't have 30 days. Both come
+ * from a single call anyway — the page shows both views from the same data
+ * and switches between them without a server round trip.
  *
- * Die Mitgliederliste ist `ProjectMember` und damit dieselbe Quelle, aus der
- * `lib/permissions.ts` den Zugriff entscheidet. Owner und Admins des Workspace,
- * die jedes Projekt sehen, ohne darin einzutragen zu sein, fehlen hier deshalb —
- * das ist Absicht: der Steckbrief zeigt, wer im Projekt *arbeitet*, nicht wer
- * überall hineinsehen darf. Wer die vollständige Zugriffsliste braucht, findet
- * sie unter „Mitglieder" (`getProjectMembersView`).
+ * The member list is `ProjectMember` and thus the same source
+ * `lib/permissions.ts` uses to decide access. Workspace owners and admins
+ * who can see every project without being entered in it are therefore
+ * missing here — that's deliberate: the profile card shows who *works* in
+ * the project, not who's allowed to look into everything. Anyone who needs
+ * the full access list finds it under "Members" (`getProjectMembersView`).
  */
 async function profileFor(projectId: string): Promise<ProjectProfile | null> {
   const userId = await currentUserId();
-  // Dieselbe Erlaubnis, die auch die Einstellungsseite prüft
-  // (`getProjectSettingsView`) — der Knopf soll genau dort erscheinen, wo er
-  // auch zu etwas führt.
+  // The same permission the settings page also checks
+  // (`getProjectSettingsView`) — the button should appear exactly where it
+  // actually leads somewhere.
   const access = await accessFor(userId, { projectId });
 
   const project = await db.project.findUnique({
@@ -687,9 +689,9 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
   });
   if (!project) return null;
 
-  // Die Workspace-Labels gelten in jedem Projekt — bis auf die, die dieses
-  // Projekt ausgeblendet hat. Ohne diesen zweiten Teil zeigte der Steckbrief nur
-  // die projekteigenen und behauptete damit, es gäbe sonst keine.
+  // Workspace labels apply in every project — except the ones this project
+  // has hidden. Without this second part, the profile card would show only
+  // the project's own labels and thereby claim there were no others.
   const shared = await db.label.findMany({
     where: {
       projectId: null,
@@ -700,9 +702,9 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
     orderBy: { name: "asc" },
   });
 
-  // `team.project.manage` ist eine Workspace-Permission (Teams gehören dem
-  // Workspace, nicht dem Projekt) — im Projekt-Kontext gibt es sie gar nicht,
-  // deshalb ein zweiter, workspace-bezogener Blick.
+  // `team.project.manage` is a workspace permission (teams belong to the
+  // workspace, not the project) — it doesn't exist at all in the project
+  // context, hence a second, workspace-scoped lookup.
   const wsAccess = await accessFor(userId, {
     workspaceId: project.workspaceId,
   });
@@ -728,14 +730,15 @@ async function profileFor(projectId: string): Promise<ProjectProfile | null> {
   };
 }
 
-// ── Die Anordnung, wie einer sie eingerichtet hat ─────────────────────────────
+// ── The layout, the way someone has set it up ───────────────────────────────
 
 /**
- * Die eigene Anordnung für dieses Projekt.
+ * Your own layout for this project.
  *
- * Ohne Zeile in der Tabelle gilt die Vorgabe — `resolveLayout` kennt den
- * Unterschied nicht und muss ihn nicht kennen. Auch der Zeitraum steht hier: er
- * ist die eine Einstellung, die man bei jedem Öffnen wieder träfe.
+ * Without a row in the table, the default applies — `resolveLayout` doesn't
+ * know the difference and doesn't need to. The period lives here too: it's
+ * the one setting you'd otherwise have to re-choose every time you open the
+ * page.
  */
 export const getMyDashboardLayout = cache(
   async (
@@ -765,17 +768,17 @@ export const getMyDashboardLayout = cache(
   },
 );
 
-// ── Alles zusammen ────────────────────────────────────────────────────────────
+// ── Everything together ─────────────────────────────────────────────────────
 
 /**
- * Das ganze Dashboard eines Projekts.
+ * A project's entire dashboard.
  *
- * Alle Bausteine werden geladen, auch die ausgeblendeten. Das ist eine bewusste
- * Entscheidung gegen das Naheliegende: wer nur das Sichtbare lädt, spart ein
- * paar Zählabfragen und handelt sich dafür ein, dass jedes Ein- und Ausblenden
- * im Anpassen-Dialog einen neuen Serverlauf braucht — die Vorschau im Dialog
- * wäre dann leer, bis sie nachlädt. Die Abfragen sind Zählungen über einen
- * Index; die teuersten beiden Listen haben ein `take` von sechs.
+ * Every widget is loaded, including the hidden ones. That's a deliberate
+ * decision against the obvious approach: loading only what's visible saves a
+ * few counting queries and, in exchange, means every show/hide toggle in the
+ * customize dialog needs a fresh server round trip — the preview in the
+ * dialog would then sit empty until it reloads. The queries are counts over
+ * an index; the two most expensive lists have a `take` of six.
  */
 export const getProjectDashboard = cache(
   async (
@@ -803,9 +806,9 @@ export const getProjectDashboard = cache(
 
     const window = windowFor(range);
 
-    // Wer `dashboard.view.all` nicht trägt, sieht nur die eigenen Zahlen —
-    // unabhängig davon, was `scope` verlangt. `effectiveScope` landet in
-    // `data.scope` und ist damit immer das, was tatsächlich geliefert wurde.
+    // Anyone without `dashboard.view.all` sees only their own numbers —
+    // regardless of what `scope` requests. `effectiveScope` ends up in
+    // `data.scope` and is therefore always what was actually delivered.
     const canViewAll = await hasPermission("dashboard.view.all", {
       projectId,
     });
@@ -831,8 +834,9 @@ export const getProjectDashboard = cache(
       ]);
     if (!profile) return null;
 
-    // Braucht die Farben der Status und wartet deshalb auf `statuses` — eine
-    // zweite Abfrage derselben Tabelle wäre der einzige Weg, das zu parallelisieren.
+    // Needs the statuses' colors and therefore waits on `statuses` — a
+    // second query against the same table would be the only way to
+    // parallelize this.
     const attention = await attentionFor(
       projectId,
       project.prefix,
@@ -870,7 +874,7 @@ export const getProjectDashboard = cache(
   },
 );
 
-/** Der Zeitraum, mit dem das Dashboard ohne `?range=` in der Adresse aufgeht. */
+/** The period the dashboard opens with when there's no `?range=` in the address. */
 export async function getMyDashboardRange(
   projectId: string,
 ): Promise<string | null> {
@@ -878,8 +882,8 @@ export async function getMyDashboardRange(
 }
 
 /**
- * Die Ansicht, in der die Projektseite ohne `?view=` in der Adresse aufgeht —
- * die zuletzt benutzte. `null`, solange niemand umgeschaltet hat.
+ * The view the project page opens in when there's no `?view=` in the
+ * address — the one last used. `null` as long as nobody has switched it.
  */
 export async function getMyDashboardView(
   projectId: string,
@@ -887,17 +891,18 @@ export async function getMyDashboardView(
   return (await getMyDashboardLayout(projectId)).view;
 }
 
-// ─── Dasselbe eine Ebene höher: das Dashboard eines Workspace ────────────────
+// ─── The same, one level up: a workspace's dashboard ──────────────────────────
 //
-// Dieselben Bausteine wie beim Projekt, nur ohne die Grenze auf ein einzelnes
-// Projekt: jede Zählung geht über `project.workspaceId` statt über `projectId`.
-// Zwei eigene Routen statt eines Umschalters — siehe `WorkspaceDashboardPreference`
-// im Schema —, deshalb kein `view` und kein `setDashboardView`-Gegenstück hier.
+// The same widgets as for a project, just without the boundary to a single
+// project: every count goes through `project.workspaceId` instead of
+// `projectId`. Two separate routes instead of a toggle — see
+// `WorkspaceDashboardPreference` in the schema — hence no `view` and no
+// `setDashboardView` counterpart here.
 //
-// **Rechte.** `currentUserCanEnterWorkspace` statt `project.view`: die Zahlen
-// verdichten alle Projekte, zu denen der Zutritt schon unterschiedlich sein
-// kann — wer sie sehen darf, ist deshalb, wer überhaupt in den Workspace darf,
-// nicht wer jedes einzelne Projekt sehen dürfte.
+// **Permissions.** `currentUserCanEnterWorkspace` instead of `project.view`:
+// the numbers condense every project, and access to those can already
+// differ — so who's allowed to see them is whoever can enter the workspace
+// at all, not whoever could see each individual project.
 
 async function wsStatsFor(
   workspaceId: string,
@@ -1103,7 +1108,7 @@ async function wsWorkloadFor(
     );
 }
 
-/** Wie `attentionFor`, nur über alle Projekte — die Kennung braucht deshalb das Kürzel des Projekts, zu dem die jeweilige Aufgabe gehört, statt eines festen. */
+/** Like `attentionFor`, just across all projects — the reference therefore needs the prefix of the project each issue belongs to, instead of a fixed one. */
 async function wsAttentionFor(
   workspaceId: string,
   statusColors: Map<string, string>,
@@ -1160,21 +1165,21 @@ async function wsAttentionFor(
 }
 
 /**
- * Was der Workspace ist, unabhängig davon, wie es gerade läuft — das
- * Gegenstück zu `profileFor` eine Ebene tiefer.
+ * What the workspace is, independent of how it's currently doing — the
+ * counterpart to `profileFor` one level down.
  *
- * Kein `desc`, kein `prefix`: der Workspace kennt beides nicht. Dafür seine
- * Projekte, die den Platz einnehmen, den beim Projekt-Steckbrief die Labels
- * hatten — die Frage „woraus besteht das hier" beantwortet auf dieser Ebene
- * die Liste der Projekte, nicht die der Labels.
+ * No `desc`, no `prefix`: the workspace has neither. In their place, its
+ * projects, which take the spot labels had in the project's profile card —
+ * at this level, the question "what does this consist of" is answered by
+ * the list of projects, not the list of labels.
  */
 async function wsProfileFor(
   workspaceId: string,
 ): Promise<WorkspaceProfile | null> {
   const userId = await currentUserId();
   const access = await accessFor(userId, { workspaceId });
-  // Dieselbe Sichtbarkeitsregel wie überall (`getProjects`): der Steckbrief ist
-  // nur eine andere Darstellung, kein eigener Weg an private Projekte vorbei.
+  // The same visibility rule as everywhere (`getProjects`): the profile
+  // card is just another view, not a separate path around private projects.
   const visible = await visibleProjectIds(workspaceId);
 
   const [workspace, assignableProjectRoles] = await Promise.all([
@@ -1183,9 +1188,8 @@ async function wsProfileFor(
       select: {
         desc: true,
         createdAt: true,
-        // Wer eingeladen, aber noch nicht beigetreten ist, gehört noch nicht zur
-        // Mannschaft — der Steckbrief zeigt, wer Zugriff *hat*, nicht wer ihn
-        // demnächst bekommt.
+        // Anyone invited but not yet joined isn't part of the team yet —
+        // the profile card shows who *has* access, not who's about to get it.
         members: {
           where: { pending: false },
           select: {
@@ -1215,8 +1219,8 @@ async function wsProfileFor(
         },
       },
     }),
-    // Wie in `getWorkspaceTeamsView`: nur die Projektrollen, die in allen
-    // Projekten des Workspace gelten — siehe Kommentar an
+    // As in `getWorkspaceTeamsView`: only the project roles that apply
+    // across every project in the workspace — see the comment on
     // `WorkspaceTeamsView.assignableProjectRoles`.
     db.role.findMany({
       where: {
@@ -1232,11 +1236,11 @@ async function wsProfileFor(
   const canViewMembers = access.has("member.view");
   const canViewSettings = WORKSPACE_SETTINGS_PERMISSIONS.some(access.has);
 
-  // Wer führt, ist keine geschützte Information — anders als die volle
-  // Besetzung (Member/Viewer/Guest) bleibt die Leitung auch ohne `member.view`
-  // sichtbar, sonst wüsste niemand im Workspace, wer dort das Sagen hat. Die
-  // Belegschaft dahinter (`rest` in der Ansicht) fällt unten über den Filter
-  // ohnehin weg, weil nur noch `distinguished` übrig bleibt.
+  // Who's in charge is not protected information — unlike the full roster
+  // (member/viewer/guest), leadership stays visible even without
+  // `member.view`, otherwise nobody in the workspace would know who's
+  // running it. The rank and file behind them (`rest` in the view) drops out
+  // below via the filter anyway, since only `distinguished` remains.
   const roles = await groupByRole(
     workspace.members,
     WS_CONTRIBUTOR_RANK,
@@ -1253,10 +1257,10 @@ async function wsProfileFor(
     canViewMembers,
     canViewSettings,
     canViewAllStats: access.has("dashboard.view.all"),
-    // Ohne `member.view` nur die Leitung (`distinguished`) — der
-    // Namen-und-E-Mail-Steckbrief der übrigen Mitglieder bleibt weg, sonst
-    // wäre das Ausblenden des Tabs wirkungslos (die Übersicht zeigte ihn sonst
-    // jedem, der den Workspace betreten darf).
+    // Without `member.view`, only leadership (`distinguished`) — the
+    // name-and-email profile of the other members stays hidden, otherwise
+    // hiding the tab would be pointless (the overview would show it to
+    // anyone allowed to enter the workspace).
     roles: canViewMembers ? roles : roles.filter((r) => r.distinguished),
     platformStaff,
     memberCount: workspace.members.length,
@@ -1276,7 +1280,7 @@ async function wsProfileFor(
   };
 }
 
-/** Die eigene Anordnung für diesen Workspace — das Gegenstück zu `getMyDashboardLayout`. */
+/** Your own layout for this workspace — the counterpart to `getMyDashboardLayout`. */
 export const getMyWorkspaceDashboardLayout = cache(
   async (
     workspaceId: string,
@@ -1303,7 +1307,7 @@ export const getMyWorkspaceDashboardLayout = cache(
   },
 );
 
-/** Das ganze Dashboard eines Workspace — das Gegenstück zu `getProjectDashboard`. */
+/** A workspace's entire dashboard — the counterpart to `getProjectDashboard`. */
 export const getWorkspaceDashboard = cache(
   async (
     workspaceId: string,
@@ -1390,7 +1394,7 @@ export const getWorkspaceDashboard = cache(
   },
 );
 
-/** Der Zeitraum, mit dem das Workspace-Dashboard ohne `?range=` in der Adresse aufgeht. */
+/** The period the workspace dashboard opens with when there's no `?range=` in the address. */
 export async function getMyWorkspaceDashboardRange(
   workspaceId: string,
 ): Promise<string | null> {

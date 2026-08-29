@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// Verwaltung der Mail-Vorlagen: `getMailTemplates` (Katalog + DB-Override
-// zusammenführen) und `saveMailTemplate`/`resetMailTemplate` (Admin-Aktionen).
+// Mail template management: `getMailTemplates` (merges catalog + DB
+// override) and `saveMailTemplate`/`resetMailTemplate` (admin actions).
 
 const mockMailTemplateFindMany = mock();
 const mockMailTemplateUpsert = mock();

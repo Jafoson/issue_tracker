@@ -1,7 +1,7 @@
 /**
- * Der admin-editierbare Teil einer Vorlage — Betreff, Überschrift und
- * Einleitungstext, mit `{{platzhalter}}`-Syntax. Alles andere (Layout,
- * Detailtabellen, Knopf) bleibt Sache der jeweiligen Vorlagenfunktion.
+ * The admin-editable part of a template — subject, heading, and intro text,
+ * using `{{placeholder}}` syntax. Everything else (layout, detail tables,
+ * button) stays the responsibility of the respective template function.
  */
 export interface TemplateOverride {
   subject: string;
@@ -10,10 +10,10 @@ export interface TemplateOverride {
 }
 
 /**
- * Ersetzt `{{name}}` durch `values.name` — ein unbekannter oder falsch
- * geschriebener Platzhalter bleibt wörtlich stehen, statt eine leere Stelle
- * oder einen Fehler zu erzeugen. So bricht ein Tippfehler im Admin-Editor
- * nie den Versand, nur die Ausgabe an genau dieser Stelle bleibt auffällig.
+ * Replaces `{{name}}` with `values.name` — an unknown or misspelled
+ * placeholder is left as-is, rather than producing an empty spot or an
+ * error. This way a typo in the admin editor never breaks sending; only the
+ * output at that exact spot stays noticeably wrong.
  */
 export function applyPlaceholders(
   template: string,
@@ -25,17 +25,18 @@ export function applyPlaceholders(
 }
 
 /**
- * Klartext für einen der drei editierbaren Bausteine — der Admin-Override,
- * platzhalter-ersetzt, wenn er für dieses Feld gesetzt ist, sonst der
- * Code-Default. Beide Pfade liefern reinen Text; das HTML entsteht erst beim
- * Aufrufer per `escapeHtml()`, damit Default und Override exakt gleich
- * gerendert werden und nicht zwei verschiedene Formatierungswege pflegen.
+ * Plain text for one of the three editable building blocks — the admin
+ * override, placeholder-substituted, if it's set for this field, otherwise
+ * the code default. Both paths return plain text; the HTML is only produced
+ * by the caller via `escapeHtml()`, so the default and the override render
+ * exactly the same way instead of maintaining two different formatting
+ * paths.
  *
- * Ein leeres Feld zählt als „nicht gesetzt“, nicht als Wunsch nach leerem
- * Text — sonst würde das Ausfüllen nur eines Felds im Admin-Editor die beiden
- * anderen (noch unausgefüllten) auf leer ziehen, statt bei deren Default zu
- * bleiben. Einen wirklich leeren Betreff verschicken zu wollen ist ohnehin
- * kein Fall, den diese Vorlagen abdecken müssen.
+ * An empty field counts as "not set", not as a request for empty text —
+ * otherwise filling in just one field in the admin editor would blank out
+ * the other two (still unfilled) instead of leaving them at their default.
+ * Wanting to actually send a truly empty subject isn't a case these
+ * templates need to cover anyway.
  */
 export function resolveText(
   defaultValue: string,

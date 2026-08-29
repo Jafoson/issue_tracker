@@ -8,28 +8,27 @@ import styles from "./userCell.module.scss";
 
 interface UserCellProps {
   avatar: AvatarData | null;
-  /** Erste Zeile — der Name der Person bzw. Entität. */
+  /** First line — the name of the person or entity. */
   name: ReactNode;
   /**
-   * Zweite Zeile: E-Mail, Handle, Rolle … Ohne sie steht der Name allein neben
-   * dem Avatar statt oberhalb einer leeren Zeile.
+   * Second line: email, handle, role, ... Without it, the name sits alone
+   * next to the avatar instead of above an empty line.
    */
   meta?: ReactNode;
-  /** Steht direkt hinter dem Namen, z. B. ein Badge („Eingeladen"). */
+  /** Sits directly after the name, e.g. a badge ("Invited"). */
   trailing?: ReactNode;
   size?: number;
   shape?: AvatarShape;
-  /** Ohne `avatar` einen Platzhalter statt einer Lücke zeigen. */
+  /** Show a placeholder instead of a gap when there's no `avatar`. */
   placeholder?: boolean;
   placeholderLabel?: string;
   className?: string;
 }
 
 /**
- * Avatar plus Identität in zwei Zeilen — der immer gleiche Weg, eine Person in
- * einer Liste zu zeigen (Mitglieder-Tabellen, Auswahl-Listen, Zuweisungen).
- * Beide Textzeilen kürzen mit Ellipse, damit die Spalte nicht von einer langen
- * E-Mail auseinandergedrückt wird.
+ * Avatar plus identity in two lines — the consistent way to show a person in
+ * a list (member tables, selection lists, assignments). Both text lines
+ * truncate with an ellipsis so the column isn't stretched apart by a long email.
  */
 export function UserCell({
   avatar,

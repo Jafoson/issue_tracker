@@ -1,18 +1,19 @@
 /**
- * Die Beschriftung eines Datums-Chips.
+ * The label of a date chip.
  *
- * Gespeichert wird ISO (`2026-08-14`) — eindeutig und sortierbar. Angezeigt
- * wird die lokale Schreibweise. Beide Renderer teilen sich diese Funktion,
- * sonst stünde im Editor „14. Aug 2026" und in der Anzeige die Rohform.
+ * What's stored is ISO (`2026-08-14`) — unambiguous and sortable. What's
+ * shown is the locale's own notation. Both renderers share this function,
+ * otherwise the editor would show "Aug 14, 2026" and the display the raw
+ * form.
  *
- * Ohne feste Sprache: sie richtet sich nach der Umgebung. Auf dem Server ist
- * das eine andere als im Browser — die Anzeige markiert das `<time>` deshalb
- * mit `suppressHydrationWarning`, und der maschinenlesbare Wert steht ohnehin
- * unverändert im `datetime`-Attribut.
+ * No fixed locale: it follows the environment. On the server that's a
+ * different one than in the browser — the display therefore marks the
+ * `<time>` with `suppressHydrationWarning`, and the machine-readable value
+ * sits unchanged in the `datetime` attribute regardless.
  */
 export function formatChipDate(iso: string): string {
-  // Mittags statt Mitternacht: sonst kippt der Kalendertag in Zeitzonen
-  // westlich von UTC auf den Vortag.
+  // Noon instead of midnight: otherwise the calendar day tips over to the
+  // previous day in time zones west of UTC.
   const parsed = new Date(`${iso}T12:00:00`);
   if (Number.isNaN(parsed.getTime())) return iso;
 
@@ -23,30 +24,30 @@ export function formatChipDate(iso: string): string {
   });
 }
 
-/** Der Kalendertag von heute, verschoben um `offsetDays`. */
+/** Today's calendar day, shifted by `offsetDays`. */
 export function isoDate(offsetDays = 0): string {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
   return toIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
 }
 
-/** `2026-08-14` aus den Einzelteilen — mit führenden Nullen. */
+/** `2026-08-14` from the individual parts — with leading zeros. */
 export function toIso(year: number, month: number, day: number): string {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /**
- * Zweistellige Jahreszahlen: `02` wird 2002, `98` wird 1998.
+ * Two-digit years: `02` becomes 2002, `98` becomes 1998.
  *
- * Die Grenze bei 68 ist die aus POSIX und wird von den meisten Programmen so
- * gezogen — in einem Issue-Tracker liegt ohnehin fast alles in der Zukunft.
+ * The cutoff at 68 is the one from POSIX and is what most programs use —
+ * in an issue tracker, almost everything lies in the future anyway.
  */
 function fullYear(value: number): number {
   if (value >= 100) return value;
   return value <= 68 ? 2000 + value : 1900 + value;
 }
 
-/** Gibt es den Tag wirklich? `31.02.` sieht sonst gültig aus. */
+/** Does the day actually exist? `31.02.` would otherwise look valid. */
 function isRealDate(year: number, month: number, day: number): boolean {
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   const d = new Date(year, month - 1, day);
@@ -57,21 +58,21 @@ function isRealDate(year: number, month: number, day: number): boolean {
   );
 }
 
-/** `1.2.2002` · `01.02.02` · `1.2.` · `1-2-2002` — Tag zuerst, wie hierzulande. */
+/** `1.2.2002` · `01.02.02` · `1.2.` · `1-2-2002` — day first, as customary here. */
 const DAY_FIRST = /^(\d{1,2})[.-](\d{1,2})[.-]?(\d{2,4})?\.?$/;
-/** `2002-02-01` — vier Stellen vorn, also ISO. */
+/** `2002-02-01` — four digits up front, so ISO. */
 const ISO_LIKE = /^(\d{4})[-.](\d{1,2})[-.](\d{1,2})$/;
 
 /**
- * Liest ein getipptes Datum und gibt es als ISO zurück — oder `null`.
+ * Reads a typed date and returns it as ISO — or `null`.
  *
- * Gedacht für das `/`-Menü: wer `/1.2.2002` tippt, soll den Chip direkt
- * angeboten bekommen, ohne den Umweg über den Kalender.
+ * Meant for the `/` menu: whoever types `/1.2.2002` should be offered the
+ * chip directly, without the detour through the calendar.
  *
- * Angenommen werden die hier üblichen Schreibweisen mit Punkt oder Bindestrich
- * sowie die ISO-Form. Ohne Jahr gilt das laufende, zweistellige Jahre werden
- * ergänzt. Der Schrägstrich ist bewusst **nicht** dabei: er öffnet das Menü und
- * würde die Eingabe mittendrin abschneiden.
+ * The notations accepted are the ones customary here, with a dot or a
+ * hyphen, plus the ISO form. Without a year, the current one applies;
+ * two-digit years get expanded. The slash is deliberately **not** among
+ * them: it opens the menu and would cut the input off midway.
  */
 export function parseDateInput(input: string): string | null {
   const text = input.trim();
@@ -87,7 +88,7 @@ export function parseDateInput(input: string): string | null {
   if (local) {
     const day = Number(local[1]);
     const month = Number(local[2]);
-    // Ohne Jahresangabe das laufende Jahr.
+    // The current year when none is given.
     const year =
       local[3] === undefined
         ? new Date().getFullYear()

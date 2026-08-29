@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// „Meine Aufgaben" zeigen dieselben Filter wie Board und Liste eines Projekts,
-// nur über alle Projekte hinweg. Geprüft wird hier, was davon in der Abfrage
-// ankommt — und vor allem, was ein Slug in der Adresse *nicht* verschieben darf.
+// "My Issues" shows the same filters as a project's board and list, just
+// across all projects. This tests what actually reaches the query — and
+// above all, what a slug in the URL must *not* be able to shift.
 
 mock.module("@/lib/db", () => ({
   db: {
@@ -32,7 +32,7 @@ const userFindMany = db.user.findMany as ReturnType<typeof mock>;
 const labelFindMany = db.label.findMany as ReturnType<typeof mock>;
 const projectFindMany = db.project.findMany as ReturnType<typeof mock>;
 
-/** Die `where`-Bedingung des letzten `issue.findMany`-Aufrufs. */
+/** The `where` condition of the last `issue.findMany` call. */
 function lastWhere(): Record<string, unknown> {
   const call = issueFindMany.mock.calls.at(-1)?.[0] as { where: object };
   return call.where as Record<string, unknown>;
@@ -62,8 +62,8 @@ describe("getMyIssues()", () => {
       assigneeId: "u-1",
       projectId: { in: ["p-1", "p-2"] },
     });
-    // Nach Rang wie im Projekt — sonst läge eine gezogene Zeile beim nächsten
-    // Laden woanders.
+    // By rank, same as in the project — otherwise a dragged row would end
+    // up somewhere else on the next load.
     expect(issueFindMany.mock.calls.at(-1)?.[0].orderBy).toEqual([
       { rank: "asc" },
       { created: "asc" },
@@ -85,7 +85,7 @@ describe("getMyIssues()", () => {
   });
 
   it("schneidet den Projektfilter in die zugänglichen Projekte hinein", async () => {
-    // `p-3` ist nicht zugänglich — der Filter darf ihn nicht hereinholen.
+    // `p-3` is not accessible — the filter must not be able to pull it in.
     projectFindMany.mockResolvedValue([{ id: "p-2" }, { id: "p-3" }]);
 
     await getMyIssues("u-1", "ws-1", { project: "app,geheim" });
@@ -105,8 +105,8 @@ describe("getMyIssues()", () => {
 
     await getMyIssues("u-1", "ws-1", { project: "gibtsnicht" });
 
-    // Ein veralteter Link zeigt alles statt nichts — dieselbe Regel wie bei den
-    // übrigen Filtern.
+    // A stale link shows everything instead of nothing — the same rule as
+    // for the other filters.
     expect(lastWhere().projectId).toEqual({ in: ["p-1", "p-2"] });
   });
 

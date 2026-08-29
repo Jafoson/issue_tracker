@@ -27,8 +27,9 @@ describe("resolveText()", () => {
   });
 
   it("nimmt den Default auch bei einem leeren Override-Feld", () => {
-    // Sonst würde das Ausfüllen nur eines Felds im Admin-Editor die anderen,
-    // noch leeren Felder auf leer ziehen statt auf ihrem Default zu bleiben.
+    // Otherwise, filling in just one field in the admin editor would pull
+    // the other, still-empty fields to empty instead of leaving them at
+    // their default.
     expect(resolveText("Default", "", {})).toBe("Default");
   });
 

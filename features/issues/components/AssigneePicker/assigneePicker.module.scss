@@ -1,7 +1,7 @@
-/* Der Auslöser ist nur ein Ring um den Avatar: In Liste wie Board steht dort
-   ohnehin schon ein Bild — eine zusätzliche Schaltfläche drumherum würde die
-   Zeile bzw. die Karte beschweren. Erst beim Überfahren zeigt sich, dass hier
-   etwas zu ändern ist. Der Fokusring kommt global. */
+/* The trigger is just a ring around the avatar: in both list and board there
+   is already an image there — an extra button around it would clutter the
+   row or card. Only on hover does it become apparent that this is
+   changeable. The focus ring comes from the global styles. */
 .trigger {
   display: inline-flex;
   align-items: center;

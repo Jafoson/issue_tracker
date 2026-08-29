@@ -4,7 +4,7 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
 
-/** Design und Sprache. */
+/** Theme and language. */
 export default async function AccountAppearancePage({
   params,
 }: {

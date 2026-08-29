@@ -1,4 +1,4 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
+/* Not the page that scrolls, but the table itself (`fill`). */
 .content {
   flex: 1;
   min-height: 0;
@@ -30,8 +30,8 @@
   font-size: var(--text-base);
   line-height: var(--leading-tight);
 
-  /* Der Name kürzt, die Zeichen dahinter nicht — sonst verschwände zuerst die
-     Auskunft „privat" und der Name bliebe ganz. */
+  /* The name truncates, the icons after it don't — otherwise the "private"
+     indicator would vanish first while the name stayed intact. */
   > :first-child {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -39,8 +39,8 @@
   }
 }
 
-/* Das Schloss sagt „privat" — und steht hier ausdrücklich nicht für „gesperrt":
-   die Zeile ist ja sichtbar. Es sagt, dass der Inhalt es nicht ist. */
+/* The lock means "private" — and explicitly does not mean "locked" here:
+   the row itself is visible after all. It says the content isn't. */
 .lock {
   flex: none;
   color: var(--on-surface-variant);
@@ -54,7 +54,7 @@
   white-space: nowrap;
 }
 
-/* Verwaist: die einzige Plakette, die zum Handeln auffordert. */
+/* Orphaned: the only badge that calls for action. */
 .warnBadge {
   border-color: color-mix(in oklab, var(--amber) 45%, var(--outline-variant));
   color: var(--amber);
@@ -96,8 +96,9 @@
   gap: 2px;
 }
 
-/* Der Notfall-Zugriff färbt sich erst unter dem Zeiger. Dauerhaft rot wäre er
-   ein Alarm in jeder Zeile; ganz farblos sähe er aus wie „Details öffnen". */
+/* Break-glass access only takes on color under the pointer. Permanently red,
+   it would be an alarm in every row; fully colorless it would look like
+   "open details". */
 .breakGlass:hover {
   color: var(--amber);
 }

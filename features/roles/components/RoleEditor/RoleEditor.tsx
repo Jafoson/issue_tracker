@@ -8,7 +8,7 @@ import styles from "./roleEditor.module.scss";
 
 interface Props {
   role: RoleView;
-  /** Höchster Rang, den der Handelnde vergeben darf. */
+  /** Highest rank the actor is allowed to assign. */
   maxRank: number;
   pending: boolean;
   onUpdate: (patch: { name?: string; desc?: string; rank?: number }) => void;
@@ -17,15 +17,15 @@ interface Props {
 }
 
 /**
- * Stammdaten einer Rolle — Name, Beschreibung, Rang, Löschen.
+ * A role's core data — name, description, rank, delete.
  *
- * Steht als Streifen zwischen Karten und Matrix statt in einem Dialog: was hier
- * geändert wird, ist unmittelbar neben der Karte sichtbar, zu der es gehört.
- * Die Berechtigungen selbst gehören nicht hierher, die stehen in der Spalte
- * darunter.
+ * Sits as a strip between the cards and the matrix instead of in a dialog:
+ * what's changed here is immediately visible next to the card it belongs
+ * to. The permissions themselves don't belong here, those live in the
+ * column below.
  *
- * Übernommen wird beim Verlassen des Feldes; jede Änderung ist ein eigener
- * Schreibvorgang, also gibt es nichts zu speichern und nichts zu verwerfen.
+ * Applied on blur; every change is its own write, so there's nothing to
+ * save and nothing to discard.
  */
 export function RoleEditor({
   role,
@@ -65,8 +65,8 @@ export function RoleEditor({
         defaultValue={String(role.rank)}
         inputMode="numeric"
         disabled={pending}
-        // Ohne eigene Rolle im Scope ist die Grenze unendlich — dann sagt der
-        // Hinweis nichts und bleibt weg.
+        // Without a role of your own in scope, the limit is infinite — in
+        // that case the hint has nothing to say and is left out.
         hint={
           Number.isFinite(maxRank)
             ? t("roles.rankHint", { max: maxRank })
@@ -81,11 +81,11 @@ export function RoleEditor({
       <div className={styles.meta}>
         <code className={styles.key}>{role.key}</code>
 
-        {/* Solange jemand die Rolle trägt, lehnt die Action das Löschen ohnehin
-            ab — der Knopf erscheint dann gar nicht erst. Gezählt wird dafür
-            über alle Töpfe: der Fremdschlüssel kennt keine Ausschnitte, und
-            eine Rolle, die nur nebenan getragen wird, bliebe sonst ein Knopf,
-            der nicht tut, was er verspricht. */}
+        {/* As long as anyone carries the role, the action rejects deletion
+            anyway — so the button doesn't even appear. Counted for this
+            across every pool: the foreign key knows no boundaries, and a
+            role carried only next door would otherwise leave a button that
+            doesn't do what it promises. */}
         {role.totalCarriers === 0 ? (
           <button
             type="button"
@@ -100,8 +100,8 @@ export function RoleEditor({
           </button>
         ) : (
           <span className={styles.inUse}>
-            {/* Steht die Rolle hier bei niemandem, aber anderswo schon, dann
-                erklärt nur die zweite Zahl, warum nicht gelöscht werden kann. */}
+            {/* If nobody carries the role here but someone does elsewhere,
+                only the second number explains why it can't be deleted. */}
             {role.memberCount > 0
               ? t("roles.carriers", { count: role.memberCount })
               : t("roles.carriersElsewhere", { count: role.totalCarriers })}

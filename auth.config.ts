@@ -5,12 +5,12 @@ import GitLab from "next-auth/providers/gitlab";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
-// Edge-sichere Basiskonfiguration (KEIN Prisma-Adapter, KEIN bcrypt) — wird sowohl
-// vom vollen Node-Setup (auth.ts) als auch vom Middleware-Gate (proxy.ts) genutzt.
-// Der Credentials-Provider + Adapter kommen erst in auth.ts dazu.
+// Edge-safe base config (NO Prisma adapter, NO bcrypt) — used both by the
+// full Node setup (auth.ts) and by the middleware gate (proxy.ts). The
+// credentials provider + adapter are only added in auth.ts.
 
-// OAuth-Provider nur aktivieren, wenn die zugehörigen Env-Vars gesetzt sind.
-// So läuft die App auch ohne konfiguriertes OAuth (nur Passkey/Magic Link).
+// Only enable an OAuth provider once its env vars are set. That way the app
+// still runs without any OAuth configured (passkey/magic link only).
 const oauthProviders: NextAuthConfig["providers"] = [];
 export const enabledOAuthProviders: string[] = [];
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
@@ -25,9 +25,10 @@ if (process.env.AUTH_GITLAB_ID && process.env.AUTH_GITLAB_SECRET) {
   oauthProviders.push(GitLab);
   enabledOAuthProviders.push("gitlab");
 }
-// `issuer` ist optional — ohne ihn erlaubt Microsoft Entra ID jedes Konto
-// (privat, Schule, Arbeit) über den `/common/`-Tenant. Nur wer den eigenen
-// Tenant erzwingen will, setzt AUTH_MICROSOFT_ENTRA_ID_ISSUER.
+// `issuer` is optional — without it, Microsoft Entra ID allows any account
+// (personal, school, work) via the `/common/` tenant. Only set
+// AUTH_MICROSOFT_ENTRA_ID_ISSUER if you want to restrict sign-in to your own
+// tenant.
 if (
   process.env.AUTH_MICROSOFT_ENTRA_ID_ID &&
   process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET
@@ -41,18 +42,18 @@ if (
   );
   enabledOAuthProviders.push("microsoft-entra-id");
 }
-// Apple verlangt ein JWT als Client Secret (kein statischer String) und
-// funktioniert nur über HTTPS — kein localhost. `npx auth add apple` erzeugt
-// beides interaktiv und trägt AUTH_APPLE_ID/AUTH_APPLE_SECRET selbst ein.
+// Apple requires a JWT as the client secret (not a static string) and only
+// works over HTTPS — no localhost. `npx auth add apple` generates both
+// interactively and writes AUTH_APPLE_ID/AUTH_APPLE_SECRET itself.
 if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
   oauthProviders.push(Apple);
   enabledOAuthProviders.push("apple");
 }
-// Ein generischer OIDC-Provider statt mehrerer benannter — passt zu jedem
-// Standard-IdP (Keycloak, Authentik, Entra ID, Okta, …). `issuer` allein
-// genügt next-auth für die Discovery (`{issuer}/.well-known/openid-
-// configuration`), kein `wellKnown` nötig. `AUTH_OIDC_NAME` ist nur die
-// Beschriftung des Buttons — Vorgabe „SSO", wenn nichts gesetzt ist.
+// A generic OIDC provider instead of several named ones — fits any standard
+// IdP (Keycloak, Authentik, Entra ID, Okta, …). `issuer` alone is enough for
+// next-auth's discovery (`{issuer}/.well-known/openid-configuration`), no
+// `wellKnown` needed. `AUTH_OIDC_NAME` is just the button label — defaults to
+// "SSO" if nothing is set.
 export const oidcProviderName = process.env.AUTH_OIDC_NAME || "SSO";
 if (
   process.env.AUTH_OIDC_ISSUER &&
@@ -70,43 +71,44 @@ if (
   enabledOAuthProviders.push("oidc");
 }
 
-// Passkeys laufen seit je ohne Konfiguration — beide Schalter sind reine
-// Opt-outs für Umgebungen, die den Weg nicht (mehr) wollen, keine
-// Freischaltung wie bei den OAuth-Providern oben. Default an, nur das
-// wörtliche "false" schaltet ab (siehe `auth.ts`, wo beides greift, und
-// `example.env` für die Warnung vor einem kompletten Lockout).
+// Passkeys have always worked without any configuration — both switches
+// below are pure opt-outs for environments that don't (or no longer) want
+// that path, not an unlock like the OAuth providers above. Default on, only
+// the literal "false" turns it off (see auth.ts, where both take effect, and
+// example.env for the warning about a full lockout).
 export const passkeyLoginEnabled =
   process.env.AUTH_PASSKEY_LOGIN_ENABLED !== "false";
-// Nur wirksam, wenn `passkeyLoginEnabled` an ist: verhindert ein komplett
-// neues Konto per Passkey (LoginForm "Passkey registrieren"). Bestehende
-// Konten können sich weiter per Passkey anmelden und sich in den eigenen
-// Sicherheitseinstellungen weitere Passkeys hinzufügen — das ist keine
-// Registrierung im Sinne dieses Schalters, sondern Kontoverwaltung.
+// Only effective when `passkeyLoginEnabled` is on: prevents creating a
+// brand-new account via passkey (LoginForm's "Register with passkey").
+// Existing accounts can still sign in with a passkey and add further
+// passkeys in their own security settings — that's not "registration" in
+// the sense of this switch, it's account management.
 export const passkeyRegistrationEnabled =
   process.env.AUTH_PASSKEY_REGISTRATION_ENABLED !== "false";
 
 export const authConfig = {
   trustHost: true,
   session: { strategy: "jwt" },
-  // `error: "/login"` fängt vor allem einen ungültigen/abgelaufenen
-  // Magic-Link-Code auf (`?error=Verification`) — sonst landet die Person auf
-  // next-auths unstyled Standard-Fehlerseite statt zurück im eigenen Formular.
+  // `error: "/login"` mainly catches an invalid/expired magic-link code
+  // (`?error=Verification`) — otherwise the person would land on next-auth's
+  // unstyled default error page instead of back in our own form.
   pages: { signIn: "/login", error: "/login" },
   providers: oauthProviders,
   callbacks: {
-    // User-Id + Avatar-Farbe + Name in das JWT übernehmen (bei Login liegt `user` vor).
+    // Copy user id + avatar color + name into the JWT (`user` is present on login).
     //
-    // Die Rolle gehört bewusst NICHT ins Token: ein JWT lebt bis zum nächsten
-    // Login, eine Rollenänderung würde also erst verspätet greifen. Rechte
-    // werden in `lib/permissions.ts` bei jeder Prüfung frisch aus der Datenbank
-    // aufgelöst — das Token trägt nur Anzeigedaten.
+    // The role deliberately does NOT go into the token: a JWT lives until the
+    // next login, so a role change would only take effect late. Permissions
+    // are resolved fresh from the database on every check in
+    // `lib/permissions.ts` — the token only carries display data.
     //
-    // `trigger === "update"` ist der zweite Weg hinein: die eigenen
-    // Einstellungen ändern Name und Farbe, und das Token lebt bis zum nächsten
-    // Login. Ohne diesen Zweig stünde im Menü unten links noch tagelang der alte
-    // Name — angezeigt wird ja das Token, nicht die Datenbank. Übernommen werden
-    // nur diese drei Felder: was `unstable_update` sonst mitschickt, ist
-    // Eingabe aus dem Browser und hat in einem Token nichts verloren.
+    // `trigger === "update"` is the second way in: the user's own settings
+    // change name and color, and the token lives until the next login.
+    // Without this branch, the menu in the bottom left would keep showing the
+    // old name for days — what's displayed comes from the token, not the
+    // database. Only these three fields are copied over: anything else
+    // `unstable_update` sends along is input from the browser and has no
+    // business being in a token.
     jwt({ token, user, trigger, session }) {
       if (user?.id) token.id = user.id;
       if (user) {
@@ -125,7 +127,7 @@ export const authConfig = {
 
       return token;
     },
-    // Id + Farbe + Name aus dem Token in die Session spiegeln (serverseitig verfügbar).
+    // Mirror id + color + name from the token into the session (available server-side).
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string;
       session.user.color = (token.color as string) ?? "var(--primary)";

@@ -13,12 +13,13 @@ export default async function VerifyCodePage({
   const session = await getSession();
 
   if (session) {
-    // Nur weg von hier, wenn die Sitzung schon zu genau diesem Konto gehört
-    // — sonst käme man nie zum Code, wenn man gerade als jemand anderes
-    // eingeloggt ist. Genau das passiert beim Einladungs-Flow: die eigene
-    // Sitzung ist noch aktiv, der Code gehört aber zum eingeladenen Konto.
-    // Die Verifizierung selbst (`/api/auth/callback/nodemailer`) tauscht die
-    // Sitzung danach korrekt aus, unabhängig davon, wer vorher eingeloggt war.
+    // Only navigate away from here if the session already belongs to exactly
+    // this account — otherwise you'd never reach the code screen while
+    // signed in as someone else. That's exactly what happens in the
+    // invitation flow: your own session is still active, but the code
+    // belongs to the invited account. Verification itself
+    // (`/api/auth/callback/nodemailer`) correctly swaps the session
+    // afterward, regardless of who was signed in before.
     const target = email
       ? await db.user.findUnique({ where: { email }, select: { id: true } })
       : null;
@@ -27,8 +28,8 @@ export default async function VerifyCodePage({
     }
   }
 
-  // Ohne E-Mail (direkter Aufruf, alter Bookmark) oder ohne SMTP gibt es
-  // nichts zu verifizieren — zurück zum Anfang des Login-Formulars.
+  // Without an email (direct call, old bookmark) or without SMTP, there's
+  // nothing to verify — back to the start of the login form.
   if (!email || !isMailConfigured()) redirect("/login");
 
   return <VerifyCodeForm email={email} callbackUrl={callbackUrl} />;

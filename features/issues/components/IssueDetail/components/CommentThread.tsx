@@ -29,40 +29,38 @@ const RichTextEditor = dynamic(
   { ssr: false, loading: () => <div className={styles.composerLoading} /> },
 );
 
-/** Ab dieser Tiefe wächst der Einzug nicht mehr weiter — sonst läuft ein
- *  langer Rückfrage-Rückfrage-Thread irgendwann aus der Spalte heraus. Es
- *  wird trotzdem immer exakt auf den angeklickten Kommentar geantwortet,
- *  unabhängig vom sichtbaren Deckel.
+/** Beyond this depth, indentation no longer grows — otherwise a long chain
+ *  of replies-to-replies would eventually run out of the column. Replies
+ *  are still always attributed to the exact comment that was clicked,
+ *  regardless of the visible nesting cap.
  *
- *  Reines CSS reicht dafür nicht: jede Ebene bringt über `.comment` (Avatar +
- *  Inhalt als Flex-Row) ihren eigenen Versatz mit, unabhängig vom Padding des
- *  umgebenden `<ol>`. Ab dieser Tiefe wird deshalb der komplette Nachfahren-
- *  Baum (nicht nur die direkten Antworten) mit `collectDescendants` in eine
- *  einzige flache Geschwister-Liste aufgelöst — jeder Kommentar behält seine
- *  echten Handler (Antworten landen weiter beim tatsächlich angeklickten
- *  Elternkommentar), rendert aber selbst keine weitere Verschachtelung mehr
- *  (`skipOwnReplies`). */
+ *  Pure CSS isn't enough for this: every level brings its own offset via
+ *  `.comment` (avatar + content as a flex row), independent of the
+ *  surrounding `<ol>`'s padding. Beyond this depth, the entire descendant
+ *  tree (not just the direct replies) is therefore flattened into a single
+ *  sibling list with `collectDescendants` — each comment keeps its real
+ *  handlers (replies still land on the actually clicked parent comment) but
+ *  no longer renders its own further nesting itself (`skipOwnReplies`). */
 const MAX_INDENT_DEPTH = 3;
 
-/** Horizontaler Versatz, den eine Verschachtelungsebene insgesamt mitbringt:
- *  20px Padding + 2px Rand von `.replies`, plus 28px Avatar + 12px Lücke von
- *  `.comment`. Zieht den Antwort-Editor unten um `depth * diesen Wert` nach
- *  links, damit das Eingabefeld selbst nicht mit einrückt — bei Änderungen an
- *  diesen Maßen in der SCSS-Datei muss der Wert hier mitgepflegt werden. */
+/** Total horizontal offset one nesting level contributes: 20px padding +
+ *  2px border from `.replies`, plus 28px avatar + 12px gap from `.comment`.
+ *  Pulls the reply editor below left by `depth * this value`, so the input
+ *  field itself doesn't get indented — if these measurements change in the
+ *  SCSS file, this value has to be kept in sync. */
 const REPLY_COMPOSER_INDENT_PER_LEVEL = 20 + 2 + 28 + 12;
 
-/** Ein Kommentar in der geflatteten Liste, zusammen mit der ID des direkten
- *  Kindes, aus dessen Ast er stammt (`branchId`) — verschiedene Äste, die
- *  jenseits von `MAX_INDENT_DEPTH` als Geschwister nebeneinander landen,
- *  bekommen so eine Trennlinie zwischen sich (siehe `.branchDivider`). */
+/** A comment in the flattened list, together with the ID of the direct
+ *  child whose branch it originates from (`branchId`) — different branches
+ *  that end up as siblings next to each other beyond `MAX_INDENT_DEPTH` get
+ *  a divider between them this way (see `.branchDivider`). */
 interface FlatReply {
   comment: Comment;
   branchId: string;
 }
 
-/** Löst den kompletten Nachfahren-Baum eines Kommentars in Baum-Reihenfolge
- *  (Vorordnung) auf — genutzt, um ihn jenseits von `MAX_INDENT_DEPTH` als
- *  eine einzige flache Liste zu rendern. */
+/** Resolves a comment's entire descendant tree in tree order (pre-order) —
+ *  used to render it as a single flat list beyond `MAX_INDENT_DEPTH`. */
 function collectDescendants(
   parentId: string,
   childrenByParent: Map<string | null, Comment[]>,
@@ -102,26 +100,27 @@ interface AttachmentHandlers {
 interface CommentThreadProps {
   comment: Comment;
   depth: number;
-  /** Ihre eigenen Nachfahren sind bereits als flache Geschwister von einem
-   *  Vorfahren jenseits von `MAX_INDENT_DEPTH` gerendert (`collectDescendants`)
-   *  — diese Instanz rendert deshalb keine eigene Antworten-Liste mehr. */
+  /** Its own descendants are already rendered as flat siblings by an
+   *  ancestor beyond `MAX_INDENT_DEPTH` (`collectDescendants`) — this
+   *  instance therefore no longer renders its own reply list. */
   skipOwnReplies?: boolean;
   childrenByParent: Map<string | null, Comment[]>;
-  /** Für die Auflösung des tatsächlichen Elternkommentars jenseits von
-   *  `MAX_INDENT_DEPTH` — der Einzug verrät es dort nicht mehr. */
+  /** For resolving the actual parent comment beyond `MAX_INDENT_DEPTH` —
+   *  indentation no longer reveals it there. */
   commentsById: Map<string, Comment>;
-  /** IDs aller Vorfahren des per `?comment=`-Link verlinkten Kommentars —
-   *  steht diese Instanz darin, klappt sie ihre Antworten initial auf, sonst
-   *  fände `scrollIntoView` in `IssueComments.tsx` das Ziel nicht im DOM. */
+  /** IDs of all ancestors of the comment linked via a `?comment=` link — if
+   *  this instance is among them, it expands its replies initially,
+   *  otherwise `scrollIntoView` in `IssueComments.tsx` wouldn't find the
+   *  target in the DOM. */
   highlightAncestorIds: Set<string>;
   members: User[];
   me: User;
   data: IssueEditorData;
-  /** `comment.update.any` — fremde Kommentare bearbeiten, nicht nur eigene. */
+  /** `comment.update.any` — edit others' comments, not just your own. */
   canUpdateAnyComment: boolean;
-  /** `comment.delete.any` — fremde Kommentare löschen, nicht nur eigene. */
+  /** `comment.delete.any` — delete others' comments, not just your own. */
   canDeleteAnyComment: boolean;
-  /** Kurz hervorgehoben nach einem Sprung über „Link kopieren". */
+  /** Briefly highlighted after jumping via "copy link". */
   flashId: string | null;
   attachmentHandlers: AttachmentHandlers;
   onEdit: (commentId: string, body: PMDoc) => Promise<void>;
@@ -132,10 +131,10 @@ interface CommentThreadProps {
 }
 
 /**
- * Ein Kommentar samt seiner Antworten, rekursiv. Kebab-Menü, Bearbeiten-Modus
- * und der eingebettete Antwort-Composer sind lokaler Zustand dieser einen
- * Instanz — die eigentlichen Server-Aufrufe (inklusive `onRefresh`) sitzen
- * bei `IssueComments.tsx`, hier kommen sie nur als Callback herein.
+ * A comment together with its replies, recursively. The kebab menu, edit
+ * mode, and the embedded reply composer are local state of this one
+ * instance — the actual server calls (including `onRefresh`) live in
+ * `IssueComments.tsx`, here they only arrive as callbacks.
  */
 export function CommentThread({
   comment,
@@ -164,10 +163,10 @@ export function CommentThread({
   const [isReplying, setIsReplying] = useState(false);
   const [replyBody, setReplyBody] = useState<PMDoc>(emptyDoc);
   const [isSending, setIsSending] = useState(false);
-  // Antworten sind standardmäßig eingeklappt — sie werden erst beim Aufklappen
-  // gerendert, damit ein langer Thread nicht komplett auf einmal lädt. Liegt
-  // der per Link angesprungene Kommentar in diesem Ast, klappt er trotzdem
-  // gleich auf (siehe `highlightAncestorIds`).
+  // Replies are collapsed by default — they're only rendered once expanded,
+  // so a long thread doesn't load all at once. If the comment jumped to via
+  // a link is within this branch, it still expands right away (see
+  // `highlightAncestorIds`).
   const [repliesCollapsed, setRepliesCollapsed] = useState(
     () => !highlightAncestorIds.has(comment.id),
   );
@@ -177,10 +176,10 @@ export function CommentThread({
   const canEdit = isOwn || canUpdateAnyComment;
   const canDelete = isOwn || canDeleteAnyComment;
 
-  // Jenseits von MAX_INDENT_DEPTH werden nicht nur die direkten Antworten,
-  // sondern der komplette Nachfahren-Baum als eine flache Geschwister-Liste
-  // gerendert (s. Kommentar bei MAX_INDENT_DEPTH) — die Kinder rendern dann
-  // selbst nichts mehr (`skipOwnReplies`).
+  // Beyond MAX_INDENT_DEPTH, not just the direct replies but the entire
+  // descendant tree is rendered as a flat sibling list (see the comment at
+  // MAX_INDENT_DEPTH) — the children then render nothing themselves anymore
+  // (`skipOwnReplies`).
   const flattensChildren = !skipOwnReplies && depth + 1 > MAX_INDENT_DEPTH;
   const flatEntries = flattensChildren
     ? collectDescendants(comment.id, childrenByParent)
@@ -193,12 +192,11 @@ export function CommentThread({
 
   const reactions: ReactionSummary[] = comment.reactions;
 
-  // Ab MAX_INDENT_DEPTH rückt dieser Kommentar visuell nicht mehr weiter ein
-  // — statt des fehlenden Einzugs zeigt „Antwort auf …" explizit den
-  // tatsächlichen Elternkommentar, weil dort mehrere ehemals verschachtelte
-  // Äste als Geschwister nebeneinander landen und der bloße Listenkontext
-  // (nur der Verzweigungsstrich aus `.replies`) nicht mehr verrät, wer auf
-  // wen antwortet.
+  // Beyond MAX_INDENT_DEPTH this comment no longer indents further visually
+  // — instead of the missing indentation, "Reply to …" explicitly shows the
+  // actual parent comment, because several formerly nested branches end up
+  // as siblings there and the mere list context (just the branch line from
+  // `.replies`) no longer reveals who's replying to whom.
   const isFlattened = depth > MAX_INDENT_DEPTH;
   const parentComment =
     isFlattened && comment.parentId
@@ -389,9 +387,9 @@ export function CommentThread({
         {visibleReplies.length > 0 && !repliesCollapsed && (
           <ol className={styles.replies}>
             {visibleReplies.map((reply, index) => {
-              // Zwei ehemals getrennte Äste landen hier als Geschwister
-              // nebeneinander — eine Trennlinie markiert, wo einer endet und
-              // der nächste (neue Antwortzweig) beginnt.
+              // Two formerly separate branches end up as siblings here — a
+              // divider marks where one ends and the next (new reply
+              // branch) begins.
               const isNewBranch =
                 !!flatEntries &&
                 index > 0 &&

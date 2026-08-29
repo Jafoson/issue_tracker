@@ -44,17 +44,18 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  // Stellt das Locale für Server Components bereit.
+  // Provides the locale for Server Components.
   setRequestLocale(locale);
 
-  // Das Design gehört der Person, und `<html>` gibt es nur hier — deshalb wird
-  // es an dieser Stelle aufgelöst und nicht weiter unten. Es kostet nichts, wo
-  // niemand angemeldet ist: `getMyPreferences` liest erst die Session und gibt
-  // ohne sie die Vorgaben zurück, ohne die Datenbank zu fragen. Die
-  // Anmeldeseite bleibt damit dunkel, wie sie es vorher auch war.
+  // The theme belongs to the person, and `<html>` only exists here — so it's
+  // resolved at this point rather than further down. It costs nothing where
+  // nobody is signed in: `getMyPreferences` reads the session first and, without
+  // one, returns the defaults without hitting the database. The login page
+  // therefore stays dark, as it always did.
   //
-  // Serverseitig gesetzt statt per Skript im Browser: das Attribut steht so
-  // schon im ersten Byte des Dokuments. „System" löst CSS auf (styles/colors.scss).
+  // Set server-side instead of via a browser script: the attribute is already
+  // present in the document's first byte this way. "System" is resolved by CSS
+  // (styles/colors.scss).
   const { theme } = await getMyPreferences();
 
   return (
@@ -64,10 +65,10 @@ export default async function LocaleLayout({
       className={`${hankenGrotesk.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        {/* Messages/Locale werden automatisch aus der Server-Konfiguration übernommen. */}
+        {/* Messages/locale are picked up automatically from the server configuration. */}
         <NextIntlClientProvider>
-          {/* Das Dock liegt innerhalb des Modal-Providers: sein Panel muss
-              wissen, ob ein Modal darüber steht, um Escape abzugeben. */}
+          {/* The dock sits inside the modal provider: its panel needs to
+              know whether a modal is stacked above it so it can yield Escape. */}
           <ModalProvider>
             <DockProvider>{children}</DockProvider>
           </ModalProvider>

@@ -43,21 +43,22 @@ export interface NavEntry {
   icon: string;
   labelKey: NavLabelKey;
   /**
-   * Recht(e), ohne die der Eintrag nicht erscheint. Ohne Angabe steht er allen
-   * offen, die den Bereich überhaupt betreten dürfen. Mehrere Rechte sind ein
-   * ODER — der Eintrag erscheint, sobald eines davon greift (z. B. "Einstellungen":
-   * sichtbar für wer auch immer dort etwas ändern kann, egal was).
+   * Permission(s) without which the entry doesn't appear. If omitted, it's
+   * open to everyone allowed to enter the area at all. Multiple permissions
+   * are an OR — the entry appears as soon as one of them applies (e.g.
+   * "Settings": visible to whoever can change anything there, no matter
+   * what).
    *
-   * Geprüft wird das über `navEntryAllowed()`. Die Sichtbarkeit ist trotzdem
-   * kein Schutz — nur Höflichkeit, kein Eintrag, der beim Anklicken auf eine
-   * 403-Seite führt. Die eigentliche Prüfung sitzt in der Abfrage dahinter
-   * (`features/admin/queries.ts`, `features/workspaces/queries.ts`, …), bei
-   * jedem Aufruf neu.
+   * This is checked via `navEntryAllowed()`. Visibility is still not a
+   * safeguard — just courtesy, so no entry leads to a 403 page on click.
+   * The actual check lives in the query behind it
+   * (`features/admin/queries.ts`, `features/workspaces/queries.ts`, …),
+   * freshly on every call.
    */
   permission?: Permission | Permission[];
 }
 
-/** Darf ein Nav-Eintrag angeboten werden? Kein Recht verlangt = immer ja. */
+/** May a nav entry be offered? No permission required = always yes. */
 export function navEntryAllowed(
   has: (permission: Permission) => boolean,
   entry: Pick<NavEntry, "permission">,

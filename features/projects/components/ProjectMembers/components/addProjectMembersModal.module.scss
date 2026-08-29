@@ -8,8 +8,8 @@
   gap: 12px;
 }
 
-/* Feste Höhe: der Dialog soll beim Tippen im Suchfeld nicht springen, während
-   die Trefferliste schrumpft. */
+/* Fixed height: the dialog shouldn't jump around while typing in the search
+   field as the results list shrinks. */
 .list {
   display: flex;
   flex-direction: column;
@@ -34,7 +34,7 @@
     background: var(--surface-container-high);
   }
 
-  /* Ausgewählt heißt: bleibt hervorgehoben, auch ohne Zeiger darüber. */
+  /* Selected means: stays highlighted, even without the pointer over it. */
   &[aria-pressed="true"] {
     background: var(--surface-container-high);
   }
@@ -112,9 +112,9 @@
   color: var(--outline);
 }
 
-/* Eine Zeile pro E-Mail — dieselbe zweistufige Modal-UX (Formular →
-   Bestätigung) wie beim Einzel-Invite in `InviteMemberModal`, nur mit
-   mehreren Ergebnissen statt einem. */
+/* One row per email — the same two-step modal UX (form → confirmation) as
+   the single invite in `InviteMemberModal`, just with multiple results
+   instead of one. */
 .resultList {
   display: flex;
   flex-direction: column;

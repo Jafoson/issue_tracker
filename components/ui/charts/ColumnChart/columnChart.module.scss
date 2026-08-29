@@ -1,11 +1,11 @@
-/* Säulendiagramm aus HTML. Siehe `ColumnChart.tsx`, warum nicht aus SVG. */
+/* Column chart built from HTML. See `ColumnChart.tsx` for why not SVG. */
 
 .wrap {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  /* Die Karte gibt die Höhe vor; das Diagramm füllt, was übrig bleibt. So
-     bleiben mehrere Karten in einer Reihe gleich hoch. */
+  /* The card dictates the height; the chart fills whatever's left. This
+     keeps multiple cards in a row the same height. */
   flex: 1;
   min-height: 0;
 }
@@ -17,7 +17,7 @@
   min-height: 0;
 }
 
-/* Zwei Marken, oben und unten — mehr braucht die Größenordnung nicht. */
+/* Two marks, top and bottom — the order of magnitude doesn't need more. */
 .yAxis {
   display: flex;
   flex-direction: column;
@@ -30,10 +30,10 @@
   text-align: right;
 }
 
-/* Zeichenfläche und Achsenbeschriftung teilen sich eine Spalte neben der
-   Werteachse. Dadurch stehen die Marken unter ihren Säulen, ganz gleich wie
-   breit die Zahlen links werden — eine feste Einrückung stimmte nur, solange der
-   größte Wert zweistellig bleibt. */
+/* The plot area and axis labels share one column next to the value axis.
+   This keeps the marks under their columns no matter how wide the numbers
+   on the left get — a fixed indent would only work as long as the largest
+   value stays two digits. */
 .plotCol {
   display: flex;
   flex-direction: column;
@@ -42,9 +42,9 @@
   min-width: 0;
 }
 
-/* Die Zeichenfläche bekommt eine Mindesthöhe, und die Achsenbeschriftung kommt
-   darunter noch dazu. Eine Karte mit fester Gesamthöhe schnitte sonst genau die
-   Achse ab, für die sie da ist. */
+/* The plot area gets a minimum height, and the axis labels come on top of
+   that below it. A card with a fixed total height would otherwise cut off
+   exactly the axis it's there for. */
 .plot {
   position: relative;
   flex: 1;
@@ -52,8 +52,8 @@
   min-height: 150px;
 }
 
-/* Vier durchgezogene Haarlinien, eine Stufe neben der Fläche. Gestrichelt läse
-   sich als Schwelle oder Prognose — es ist aber nur ein Raster. */
+/* Four solid hairlines, one step off from the surface. Dashed would read as
+   a threshold or forecast — but it's just a grid. */
 .grid {
   position: absolute;
   inset: 0;
@@ -68,8 +68,8 @@
     opacity: 0.55;
   }
 
-  /* Die Grundlinie trägt mehr Gewicht als das Raster darüber: sie ist der
-     Nullpunkt, von dem alle Säulen ausgehen. */
+  /* The baseline carries more weight than the grid above it: it's the zero
+     point all columns start from. */
   span:last-child {
     opacity: 1;
   }
@@ -83,8 +83,8 @@
   gap: 2px;
 }
 
-/* Der Zielbereich ist die ganze Spalte, nicht die Säule: ein Tag mit einer
-   Aufgabe hat sonst drei Pixel zum Treffen. */
+/* The hit target is the whole column, not the bar: a day with one task
+   would otherwise have three pixels to hit. */
 .slot {
   position: relative;
   display: flex;
@@ -102,8 +102,7 @@
 
   &[data-active],
   &:focus-visible {
-    /* Die berührte Spalte hebt sich ab, damit sichtbar ist, worauf sich der
-       Tooltip bezieht. */
+    /* The touched column stands out, so it's visible what the tooltip refers to. */
     background: color-mix(in oklab, var(--on-surface) 7%, transparent);
   }
 
@@ -112,20 +111,21 @@
   }
 }
 
-/* Höchstens 24px dick — der Rest der Spur bleibt Luft. */
+/* At most 24px thick — the rest of the track stays empty. */
 .bar {
   display: flex;
   flex-direction: column-reverse;
   justify-content: flex-start;
-  /* Die Abschnitte rechnen in Prozent, die Lücken dazwischen in Pixeln — beides
-     zusammen ergibt bei einer vollen Säule ein paar Pixel mehr als die Fläche.
-     `min-height: 0` lässt Flexbox das ausgleichen, statt oben überzulaufen. */
+  /* The segments are computed in percent, the gaps between them in pixels
+     — together, on a full column, that adds up to a few pixels more than
+     the available space. `min-height: 0` lets flexbox absorb that instead
+     of overflowing at the top. */
   min-height: 0;
   width: 100%;
   max-width: 24px;
   height: 100%;
-  /* Die 2px-Lücke zwischen gestapelten Abschnitten. Eine echte Lücke, kein
-     Rahmen: ein Rahmen wäre Tinte, die keine Daten trägt. */
+  /* The 2px gap between stacked segments. A real gap, not a border: a
+     border would be ink that carries no data. */
   gap: 2px;
 }
 
@@ -134,15 +134,15 @@
   min-height: 2px;
   border-radius: 0;
 
-  /* Oben gerundet, unten eckig: das Ende der Säule ist rund, die Grundlinie
-     nicht. Bei einem Stapel gilt das nur für den obersten Abschnitt. */
+  /* Rounded on top, square at the bottom: the end of the column is round,
+     the baseline isn't. In a stack, this only applies to the topmost segment. */
   &:last-child {
     border-radius: 4px 4px 0 0;
   }
 }
 
-/* Ein leerer Topf: eine Andeutung auf der Grundlinie. Ohne sie sähe ein Tag
-   ohne Aufgaben aus wie ein Tag, den es nicht gab. */
+/* An empty bucket: a hint at the baseline. Without it, a day with no tasks
+   would look like a day that didn't exist. */
 .zero {
   position: absolute;
   bottom: 0;
@@ -154,8 +154,8 @@
 }
 
 /* ── Tooltip ────────────────────────────────────────────────────────────────
-   Der Wert führt, die Reihe folgt: der Leser hat die Reihe schon im Blick und
-   sucht die Zahl. */
+   The value leads, the series follows: the reader already has the series in
+   view and is looking for the number. */
 .tip {
   position: absolute;
   bottom: 100%;
@@ -173,11 +173,11 @@
   pointer-events: none;
 }
 
-/* Rechte Spalten klappen den Kasten nach links, damit er nicht über die Kante
-   der Karte hinausläuft. */
-/* Links vom Anker, sobald die Spalte in der rechten Hälfte liegt — sonst hinge
-   der Kasten über der Kante. Ohne zusätzlichen Versatz: der schöbe ihn an den
-   Rändern genau dorthin, wo er nicht hin soll. */
+/* Right-side columns flip the box to the left so it doesn't run past the
+   card's edge. */
+/* Left of the anchor as soon as the column is in the right half — otherwise
+   the box would hang past the edge. No extra offset: that would push it at
+   the margins exactly where it shouldn't go. */
 .tip[data-side="start"] {
   transform: translateX(-100%);
 }
@@ -194,8 +194,8 @@
   gap: 7px;
 }
 
-/* Ein kurzer Strich in der Farbe der Reihe — bei dieser Dichte ist ein
-   gefülltes Kästchen zu viel Tinte für eine Beschriftung. */
+/* A short dash in the series' color — at this density, a filled square
+   would be too much ink for a label. */
 .tipKey {
   align-self: center;
   flex: none;
@@ -216,9 +216,9 @@
   color: var(--on-surface-variant);
 }
 
-/* ── Achse unten ────────────────────────────────────────────────────────────
-   Dieselbe Aufteilung wie die Spuren darüber — gleiche Breite, gleicher Abstand
-   —, damit jede Beschriftung unter ihrer Säule steht. */
+/* ── Axis below ────────────────────────────────────────────────────────────
+   Same layout as the slots above — same width, same spacing — so every
+   label lines up under its column. */
 .xAxis {
   display: flex;
   gap: 2px;
@@ -234,9 +234,9 @@
   overflow: visible;
 }
 
-/* ── Tabellenansicht ────────────────────────────────────────────────────────
-   Derselbe Datensatz ohne Farbe — der Weg an jede Zahl, der ohne Zeiger
-   auskommt. */
+/* ── Table view ────────────────────────────────────────────────────────────
+   The same data set without color — the way to get at every number that
+   works without a pointer. */
 .table {
   width: 100%;
   border-collapse: collapse;

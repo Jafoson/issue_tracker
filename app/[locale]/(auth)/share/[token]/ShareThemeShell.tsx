@@ -10,17 +10,16 @@ import { Link } from "@/i18n/navigation";
 import styles from "./shareThemeShell.module.scss";
 
 /**
- * Kopfzeile + Design für die öffentliche Issue-Seite — hell als Vorgabe, mit
- * einem Umschalter, unabhängig von der Vorliebe eines eingeloggten Kontos
- * (die gibt es hier nicht, `data-theme` sitzt sonst am `<html>` und kommt aus
- * `getMyPreferences()`). Ein `data-theme` hier am Wrapper wirkt genauso —
- * dieselben Tokens aus `styles/colors.scss`, nur lokal auf diesen Ast begrenzt
- * statt für die ganze Seite.
+ * Header + theme for the public issue page — light by default, with a
+ * toggle, independent of a signed-in account's preference (there isn't one
+ * here; `data-theme` normally lives on `<html>` and comes from
+ * `getMyPreferences()`). A `data-theme` here on the wrapper works the same
+ * way — the same tokens from `styles/colors.scss`, just scoped locally to
+ * this subtree instead of the whole page.
  *
- * `.page` ist selbst eine Flex-Spalte über die volle Höhe, damit Fuß und
- * "Mitdiskutieren"-Kasten (Teil von `children`) am unteren Rand bleiben, auch
- * wenn ein kurzes Issue die Seite nicht füllt — kein Aufschwimmen in der
- * Mitte.
+ * `.page` is itself a full-height flex column, so the footer and the "join
+ * the discussion" box (part of `children`) stay at the bottom even when a
+ * short issue doesn't fill the page — no floating up in the middle.
  */
 export function ShareThemeShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations();

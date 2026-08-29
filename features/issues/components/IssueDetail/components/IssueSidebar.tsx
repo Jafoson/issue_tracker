@@ -14,35 +14,36 @@ interface IssueSidebarProps {
   issue: IssueDetail;
   data: IssueComposerData;
   /**
-   * Ausgangsbreite in px. Die Vollseite gibt eine größere vor als der Dialog —
-   * dort ist der Platz da, und die Werte stehen sonst enger als nötig.
+   * Starting width in px. The full page prescribes a larger one than the
+   * dialog — there's room for it there, and otherwise the values would sit
+   * more cramped than necessary.
    */
   defaultWidth?: number;
   onPatch: (patch: IssuePatch) => void;
 }
 
 /**
- * Grenzen der Attributspalte. Darunter passen die Werte neben ihre
- * Beschriftung nicht mehr, darüber nimmt sie dem Text zu viel weg. Zusätzlich
- * deckelt `.sidebar` sie in CSS auf die halbe Breite — auf einem schmalen
- * Dialog wären selbst 520px zu viel.
+ * Bounds of the attributes sidebar. Below this, values no longer fit next
+ * to their label; above it, it takes too much room from the text.
+ * Additionally, `.sidebar` caps it in CSS at half the width — on a narrow
+ * dialog, even 520px would be too much.
  */
 const MIN_W = 220;
 const MAX_W = 520;
-/** Ausgangsbreite im Dialog. Entspricht `--detail-sidebar-w` in `.detail`. */
+/** Starting width in the dialog. Corresponds to `--detail-sidebar-w` in `.detail`. */
 const DEFAULT_W = 300;
-/** Ausgangsbreite auf der Vollseite. Entspricht `--detail-sidebar-w` in `.page`. */
+/** Starting width on the full page. Corresponds to `--detail-sidebar-w` in `.page`. */
 export const PAGE_SIDEBAR_W = 380;
 
 /**
- * Die Attributspalte der zweispaltigen Ansicht — dieselben drei Blöcke, die im
- * Seitenpanel untereinander in der Spalte stehen, hier nur neben dem Inhalt
- * und in ihrer schmalen Form (`layout="aside"`).
+ * The attributes sidebar of the two-column view — the same three blocks
+ * that appear stacked in the main column of the side panel, here just next
+ * to the content and in their narrow form (`layout="aside"`).
  *
- * Oben, was man ändert (Typ, Status, Priorität, Zuständigkeit, Labels), unten,
- * was feststeht. Wie breit sie dabei ist, entscheidet der Griff an ihrer
- * linken Kante. Die gezogene Breite gilt für die geöffnete Ansicht und fängt
- * beim nächsten Öffnen wieder bei der Ausgangsbreite an.
+ * At the top, what you change (type, status, priority, assignee, labels);
+ * at the bottom, what's fixed. How wide it is is decided by the handle on
+ * its left edge. The dragged width applies for the current open view and
+ * resets to the starting width the next time it's opened.
  */
 export function IssueSidebar({
   issue,
@@ -55,9 +56,9 @@ export function IssueSidebar({
 
   return (
     <>
-      {/* Ein eigenes Element zwischen den Spalten statt eines Rands an der
-          Spalte selbst: nur so reicht die Trefferfläche über die volle Höhe
-          und scrollt nicht mit dem Inhalt weg. */}
+      {/* A separate element between the columns instead of a border on the
+          column itself: only this way does the hit area span the full
+          height and doesn't scroll away with the content. */}
       <Resizer
         className={styles.sidebarResizer}
         width={width}
@@ -70,8 +71,8 @@ export function IssueSidebar({
 
       <aside
         className={styles.sidebar}
-        // Gezogener Wert — er kann nur hier stehen. Die Ausgangsbreite kommt
-        // weiterhin aus der Stylesheet-Datei.
+        // Dragged value — it can only live here. The starting width still
+        // comes from the stylesheet file.
         style={{ "--detail-sidebar-w": `${width}px` } as React.CSSProperties}
       >
         <IssueProperties

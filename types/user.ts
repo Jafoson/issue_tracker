@@ -2,18 +2,18 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
-  // Passkey-Konten kommen ohne Adresse aus (`prisma/schema.prisma`s
-  // `User.email`) — überall, wo sie angezeigt wird, muss der leere Fall
-  // sichtbar behandelt werden statt sie ungeprüft zu interpolieren.
+  // Passkey accounts get by without an address (`prisma/schema.prisma`'s
+  // `User.email`) — anywhere it's displayed, the empty case must be handled
+  // visibly instead of interpolated unchecked.
   email: string | null;
-  // Nicht überall gefüllt: `getMembers` liefert ihn, die Projektansicht nicht.
-  // `lib/filter-slugs.ts` baut daraus die lesbaren Filter-Slugs.
+  // Not populated everywhere: `getMembers` supplies it, the project view
+  // doesn't. `lib/filter-slugs.ts` builds the readable filter slugs from it.
   handle?: string;
-  // Role-Key innerhalb des Workspace (owner | admin | manager | project_lead |
-  // member | viewer | guest oder eine benutzerdefinierte Rolle).
+  // Role key within the workspace (owner | admin | manager | project_lead |
+  // member | viewer | guest, or a custom role).
   role?: string;
-  // Rang dieser Rolle. Kommt aus der Datenbank, damit auch selbst angelegte
-  // Rollen in der Hierarchie richtig einsortiert werden.
+  // Rank of this role. Comes from the database so custom roles are also
+  // sorted correctly in the hierarchy.
   roleRank?: number;
   color: string;
   image?: string;
@@ -21,7 +21,7 @@ export interface User {
 }
 
 export interface Role {
-  /** Der stabile Role-Key innerhalb seiner Ebene — das ist der Wert in der UI. */
+  /** The stable role key within its level — that's the value used in the UI. */
   id: string;
   name: string;
   desc: string;

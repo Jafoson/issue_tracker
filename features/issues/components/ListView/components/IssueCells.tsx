@@ -22,14 +22,14 @@ import type {
 } from "@/types";
 import styles from "../listView.module.scss";
 
-/** Mehr Labels passen nicht in eine Zeile, ohne den Titel zu verdrängen. */
+/** More labels wouldn't fit in one row without crowding out the title. */
 const MAX_LABELS = 2;
 
-// ── Bedienbare Zellen: ändern das Issue direkt aus der Liste heraus ───────────
+// ── Interactive cells: change the issue directly from the list ─────────────
 //
-// Ohne `issue.access.canEdit` (spiegelt `issue.update.any`/`.own` in
-// `updateIssue`) bleibt der Picker-Knopf weg — derselbe Grund wie in der
-// Detailansicht (`IssueProperties.tsx`): der Server lehnte den Patch ohnehin ab.
+// Without `issue.access.canEdit` (mirrors `issue.update.any`/`.own` in
+// `updateIssue`), the picker button is left out — the same reason as in the
+// detail view (`IssueProperties.tsx`): the server would reject the patch anyway.
 
 export function PriorityCell({
   issue,
@@ -137,11 +137,11 @@ export function StatusCell({
   );
 }
 
-/* Die Zuweisung liegt als eigene Komponente daneben — Liste und Board zeigen
-   denselben Avatar und ändern ihn auf demselben Weg:
+/* The assignee lives as a separate component next to this one — the list
+   and board show the same avatar and change it the same way:
    features/issues/components/AssigneePicker. */
 
-// ── Anzeigende Zellen ────────────────────────────────────────────────────────
+// ── Display-only cells ──────────────────────────────────────────────────────
 
 export function TypeCell({
   issue,
@@ -166,9 +166,9 @@ export function TypeCell({
 }
 
 /**
- * Zu welchem Projekt die Zeile gehört — nur in projektübergreifenden Ansichten.
- * Im Board und in der Liste eines Projekts wäre die Spalte in jeder Zeile
- * dieselbe Auskunft.
+ * Which project the row belongs to — only in cross-project views. On the
+ * board and in a single project's list, this column would show the same
+ * information in every row.
  */
 export function ProjectCell({
   issue,
@@ -214,9 +214,9 @@ export function LabelsCell({
 }
 
 /**
- * Kurzdatum statt "vor 3 Tagen": in einer Spalte gelesen zählt der Zeitpunkt,
- * nicht der Abstand — und alle Zeilen bleiben gleich breit. Der volle
- * Zeitstempel hängt im Tooltip.
+ * Short date instead of "3 days ago": read down a column, the point in
+ * time matters, not the distance — and every row stays the same width. The
+ * full timestamp is in the tooltip.
  */
 export function UpdatedCell({ issue }: { issue: Issue }) {
   const format = useFormatter();

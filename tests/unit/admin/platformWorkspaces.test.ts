@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// Sperren und Löschen eines Mandanten.
+// Suspending and deleting a tenant.
 //
-// Die eine Regel, die diese Datei vor allem festhält: **gelöscht wird nur, was
-// schon gesperrt ist.** Sie steht im Server und nicht nur im Dialog — eine
-// Bestätigung im Browser ist eine Bitte, keine Bedingung.
+// The one rule this file mainly pins down: **only what's already suspended
+// gets deleted.** It lives in the server, not just in the dialog — a
+// confirmation in the browser is a request, not a condition.
 
 const mockWorkspaceFindUnique = mock();
 const mockWorkspaceUpdate = mock();
@@ -47,7 +47,7 @@ function allow(...keys: string[]) {
   mockGetAccess.mockResolvedValue({ has: (key: string) => keys.includes(key) });
 }
 
-/** Der Mandant, auf den sich die Fälle beziehen. */
+/** The tenant that the test cases refer to. */
 function workspace(opts: { suspended?: boolean } = {}) {
   mockWorkspaceFindUnique.mockResolvedValue({
     name: "Nimbus",
@@ -132,8 +132,8 @@ describe("Löschen", () => {
   });
 
   it("weigert sich, solange der Mandant läuft", async () => {
-    // Die eigentliche Sicherung: erst sperren, dann löschen. Zwischen beiden
-    // Schritten liegt eine bewusste zweite Handlung.
+    // The actual safeguard: suspend first, then delete. A deliberate second
+    // action lies between the two steps.
     allow("workspace.delete");
     workspace({ suspended: false });
 
@@ -157,8 +157,8 @@ describe("Löschen", () => {
   });
 
   it("löscht die Aufgaben vor dem Workspace", async () => {
-    // `Issue.projectId` steht auf `Restrict` — andersherum ließe sich das
-    // Projekt gar nicht löschen.
+    // `Issue.projectId` is set to `Restrict` — the other way round, the
+    // project couldn't be deleted at all.
     allow("workspace.delete");
     workspace({ suspended: true });
 
@@ -183,8 +183,8 @@ describe("Löschen", () => {
       action: "workspace.deleted",
       targetLabel: "Nimbus",
     });
-    // Die Zahlen werden vor dem Löschen gelesen — danach gäbe es nichts mehr zu
-    // zählen, und der Eintrag wäre eine leere Behauptung.
+    // The numbers are read before deletion — afterward there'd be nothing
+    // left to count, and the entry would be an empty claim.
     expect(entry.meta).toEqual({
       members: 7,
       projects: 3,

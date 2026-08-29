@@ -1,12 +1,13 @@
 /**
- * ProseMirror-Dokumente, wie sie in der Datenbank liegen.
+ * ProseMirror documents, as they're stored in the database.
  *
- * Bewusst eine eigene, schmale Beschreibung statt der Typen aus `@tiptap/pm`:
- * die Anzeige (`RichText`) läuft serverseitig und soll ProseMirror nicht einmal
- * als Typ-Import kennen. Nur der Editor zieht das Paket.
+ * Deliberately its own narrow description instead of the types from
+ * `@tiptap/pm`: the display (`RichText`) runs server-side and shouldn't
+ * even know ProseMirror as a type import. Only the editor pulls in that
+ * package.
  */
 
-/** Auszeichnung an einem Textknoten — fett, kursiv, Link, … */
+/** A mark on a text node — bold, italic, link, … */
 export interface PMMark {
   type: string;
   attrs?: Record<string, unknown> | null;
@@ -17,44 +18,44 @@ export interface PMNode {
   attrs?: Record<string, unknown> | null;
   content?: PMNode[];
   marks?: PMMark[];
-  /** Nur an Knoten vom Typ `text`. */
+  /** Only on nodes of type `text`. */
   text?: string;
 }
 
-/** Wurzelknoten. `content` fehlt bei einem frisch geleerten Dokument. */
+/** Root node. `content` is missing on a freshly cleared document. */
 export interface PMDoc {
   type: "doc";
   content?: PMNode[];
 }
 
 /**
- * Die Knotentypen, die Editor und Anzeige gemeinsam kennen. Wer hier etwas
- * ergänzt, muss beide Seiten anfassen: die Extension im Editor und den
- * Zweig in `RichText`.
+ * The node types that the editor and the display share knowledge of.
+ * Adding one here means touching both sides: the extension in the editor
+ * and the branch in `RichText`.
  */
 export type ChipNodeType = "mention" | "issueLink" | "dateChip" | "emoji";
 
-/** Attribute der Chips — die Anzeige liest sie, ohne den Editor zu laden. */
+/** Attributes of the chips — the display reads them without loading the editor. */
 export interface MentionAttrs {
   id: string;
   label: string;
 }
 
 export interface IssueLinkAttrs {
-  /** Menschenlesbarer Schlüssel, z.B. `ORB-42`. */
+  /** Human-readable key, e.g. `ORB-42`. */
   identifier: string;
-  /** Interne Issue-ID; kann fehlen, wenn das Issue gelöscht wurde. */
+  /** Internal issue id; can be missing if the issue was deleted. */
   id: string | null;
 }
 
 export interface DateChipAttrs {
-  /** ISO-Datum ohne Zeit, z.B. `2026-08-14`. */
+  /** ISO date without time, e.g. `2026-08-14`. */
   date: string;
 }
 
 export interface EmojiAttrs {
-  /** Kurzname ohne Doppelpunkte, z.B. `smile`. */
+  /** Short name without colons, e.g. `smile`. */
   name: string;
-  /** Das Zeichen selbst — mitgespeichert, damit die Anzeige keine Tabelle braucht. */
+  /** The character itself — stored alongside so the display needs no lookup table. */
   emoji: string;
 }

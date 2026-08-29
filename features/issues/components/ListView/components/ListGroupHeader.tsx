@@ -13,7 +13,7 @@ import styles from "../listView.module.scss";
 interface ListGroupHeaderProps {
   status: Status;
   count: number;
-  /** Ohne Projekt gibt es kein „+“ — siehe `ListView`. */
+  /** Without a project there is no "+" — see `ListView`. */
   projectId?: string;
   composer: IssueComposerData;
   collapsed: boolean;
@@ -21,8 +21,8 @@ interface ListGroupHeaderProps {
 }
 
 /**
- * Kopf einer Statusgruppe — klappt ihre Zeilen ein und legt auf Wunsch ein
- * Issue direkt in diesem Status an. Gleiche Geste wie im Spaltenkopf des Boards.
+ * Header of a status group — collapses its rows and, on request, creates an
+ * issue directly in this status. Same gesture as the column header on the board.
  */
 export function ListGroupHeader({
   status,
@@ -35,9 +35,9 @@ export function ListGroupHeader({
   const t = useTranslations();
   const { openModal } = useModal();
 
-  // Wie im Spaltenkopf des Boards: ohne `issue.create` in diesem Projekt fehlt
-  // das Plus. Entschieden hat das der Server (`creatableProjectIds`). Ohne
-  // Projekt stellt sich die Frage nicht.
+  // Same as the board's column header: without `issue.create` in this project
+  // the plus is missing. The server has already decided this
+  // (`creatableProjectIds`). Without a project the question doesn't arise.
   const canCreate =
     projectId !== undefined && composer.creatableProjectIds.includes(projectId);
 

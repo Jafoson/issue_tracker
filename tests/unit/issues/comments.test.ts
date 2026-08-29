@@ -36,11 +36,11 @@ mock.module("@/lib/permissions", () => ({
   PermissionError: MockPermissionError,
 }));
 
-// Nicht der echte `notify()` — der bräuchte `db.userPreferences`, das der
-// `@/lib/db`-Mock oben nicht kennt. Getestet wird hier nur, *wer* für eine
-// Antwort benachrichtigt wird (`commentReply` an den Elternautor statt der
-// generischen `comment`-Zeile), nicht der Versand selbst — dafür gibt es
-// `tests/unit/notifications/notify.test.ts`, in einem eigenen Prozess.
+// Not the real `notify()` — that would need `db.userPreferences`, which the
+// `@/lib/db` mock above doesn't know about. This only tests *who* gets
+// notified for a reply (`commentReply` to the parent author instead of the
+// generic `comment` row), not the sending itself — that's covered by
+// `tests/unit/notifications/notify.test.ts`, in its own process.
 const mockNotify = mock();
 mock.module("@/lib/notify", () => ({ notify: mockNotify }));
 
@@ -54,9 +54,9 @@ import {
 import { Prisma } from "@/lib/generated/prisma/client";
 import { emptyDoc } from "@/lib/richtext/doc";
 
-/** Der Stand eines Issues, wie `addComment` ihn für Empfänger/Kontext liest.
- *  Reporter = Actor und kein Assignee, damit kein `notify()`-Aufruf entsteht
- *  — dessen eigenes Verhalten hat seine eigene Testdatei. */
+/** The state of an issue, as `addComment` reads it for recipients/context.
+ *  Reporter = actor and no assignee, so no `notify()` call is triggered
+ *  — its own behavior has its own test file. */
 function issueRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     projectId: "p1",
@@ -132,8 +132,8 @@ describe("addComment() — Antworten", () => {
   });
 
   it("benachrichtigt den Elternautor mit `commentReply`, nicht mit `comment` — auch wenn er zufällig Bearbeiter ist", async () => {
-    // Bearbeiter = Elternautor: ohne die Ausschluss-Logik in `addComment`
-    // bekäme diese Person beide Benachrichtigungen für dieselbe Antwort.
+    // Assignee = parent author: without the exclusion logic in `addComment`,
+    // this person would get both notifications for the same reply.
     mockIssueFindUnique.mockResolvedValue(
       issueRow({ assigneeId: "u-parent-author" }),
     );
@@ -151,8 +151,8 @@ describe("addComment() — Antworten", () => {
         actorId: ACTOR,
       }),
     );
-    // Genau ein Aufruf: die generische "comment"-Benachrichtigung an den
-    // Bearbeiter entfällt, weil er hier derselbe wie der Elternautor ist.
+    // Exactly one call: the generic "comment" notification to the assignee
+    // is skipped, because here they're the same person as the parent author.
     expect(mockNotify).toHaveBeenCalledTimes(1);
   });
 

@@ -15,46 +15,46 @@ export interface SettingsNavItem {
 }
 
 interface Props {
-  /** Wessen Einstellungen — Name des Workspace oder des Projekts. */
+  /** Whose settings — name of the workspace or the project. */
   subject: string;
-  /** Farbpunkt vor dem Namen. Ohne ihn steht der Name allein. */
+  /** Color dot before the name. Without it, the name stands alone. */
   color?: string;
-  /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
+  /** Uploaded image instead of the color dot, e.g. a workspace avatar. */
   image?: string;
   /**
-   * Macht den Kopf zum Wechsler: Geschwister, zu deren gleichem Bereich man von
-   * hier springen kann. Bei weniger als zwei Einträgen bleibt der Name stehen —
-   * ein Auslöser ohne Ziel wäre ein Versprechen, das die Liste nicht hält.
+   * Turns the header into a switcher: siblings whose equivalent section you
+   * can jump to from here. With fewer than two entries, the name stays put
+   * — a trigger with no destination would be a promise the list doesn't keep.
    */
   siblings?: SettingsNavSubject[];
-  /** Überschrift über der Wechselliste, z. B. „Projekt". */
+  /** Heading above the switch list, e.g. "Project". */
   siblingsLabel?: string;
-  /** Überschrift der Leiste, z. B. „Einstellungen". */
+  /** Heading of the nav, e.g. "Settings". */
   title: string;
   /**
-   * Bereits gefiltert: das Layout entfernt, wofür das Recht fehlt. Diese
-   * Komponente prüft nichts — sie zeichnet, was sie bekommt.
+   * Already filtered: the layout removes whatever permission is missing
+   * for. This component checks nothing — it renders whatever it receives.
    */
   items: SettingsNavItem[];
 }
 
 /**
- * Die zweite Navigationsebene der Einstellungen — für den Workspace, für ein
- * Projekt und für das eigene Konto.
+ * The second navigation level of the settings — for the workspace, for a
+ * project, and for one's own account.
  *
- * Zwischen diesen dreien wechselt man eine Ebene höher, in der Kopfzeile
- * darüber (`components/ui/layout/SettingsHeader`) — der Umschalter tauscht auch
- * diese Leiste aus und kann deshalb nicht in ihr stehen.
+ * Switching between these three happens one level up, in the header above
+ * (`components/ui/layout/SettingsHeader`) — the switcher there also swaps
+ * out this nav, so it can't live inside it.
  *
- * Sie sitzt neben der Seitenleiste, nicht in ihr: Allgemein, Mitglieder, Rollen
- * und Labels gehören zusammen und würden die Liste daneben sonst um eine
- * Handvoll Zeilen je Eintrag aufblähen.
+ * It sits next to the sidebar, not inside it: General, Members, Roles, and
+ * Labels belong together and would otherwise bloat the sidebar list by a
+ * handful of rows per entry.
  *
- * Die Zeilen sind dieselben wie in der Seitenleiste (`NavLink`) — zwei Ebenen
- * derselben Navigation sollen sich nicht unterschiedlich anfühlen, und die
- * Markierung folgt damit auch derselben Regel (`isNavActive`, ohne Muster also
- * der ganze Pfad und nicht sein Anfang). Dadurch bleibt diese Komponente eine
- * Server Component: den Pfad liest die Zeile selbst.
+ * The rows are the same as in the sidebar (`NavLink`) — two levels of the
+ * same navigation shouldn't feel different, and the active marking
+ * therefore follows the same rule too (`isNavActive`, so without a pattern
+ * it's the whole path, not just its prefix). That keeps this component a
+ * Server Component: the row reads the path itself.
  */
 export function SettingsNav({
   subject,
@@ -65,8 +65,9 @@ export function SettingsNav({
   title,
   items,
 }: Props) {
-  // Der Kopf wird nur zum Wechsler, wenn es etwas zu wechseln gibt: das eigene
-  // Konto hat keine Geschwister, und ein einzelnes Projekt ist keine Auswahl.
+  // The header only becomes a switcher when there's something to switch
+  // between: one's own account has no siblings, and a single project isn't
+  // a choice.
   const switchable =
     siblingsLabel && color && siblings && siblings.length > 1 ? siblings : null;
 

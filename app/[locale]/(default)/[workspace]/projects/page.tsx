@@ -6,12 +6,12 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Projekte des Workspace zum Nachschlagen — eine Liste, ein Klick hinein.
+ * The workspace's projects for lookup — a list, one click into each.
  *
- * Nicht dieselbe Ansicht wie unter `…/settings/projects`: dort wird verwaltet
- * (anlegen, ändern, löschen, getrennt nach Sichtbarkeit), hier gesucht. Anders
- * als bei den Mitgliedern, wo beide Wege dieselbe Tabelle zeigen, fallen die
- * zwei Fragen bei Projekten auseinander.
+ * Not the same view as under `…/settings/projects`: that one is for
+ * management (create, edit, delete, split by visibility), this one is for
+ * browsing. Unlike with members, where both paths show the same table, the
+ * two concerns diverge for projects.
  */
 export default async function ProjectsPage({
   params,

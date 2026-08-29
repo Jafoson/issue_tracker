@@ -7,12 +7,12 @@ import styles from "../issueDetail.module.scss";
 
 interface IssueTitleProps {
   title: string;
-  /** `!issue.access.canEdit` — ohne `issue.update.any`/`.own` nur Text, kein Feld. */
+  /** `!issue.access.canEdit` — without `issue.update.any`/`.own`, plain text, no field. */
   readOnly?: boolean;
   onPatch: (patch: IssuePatch) => void;
 }
 
-/** Der Titel — direkt im Fluss bearbeitbar, nicht über ein eigenes Formular. */
+/** The title — editable directly inline, not through a separate form. */
 export function IssueTitle({ title, readOnly, onPatch }: IssueTitleProps) {
   const t = useTranslations();
 

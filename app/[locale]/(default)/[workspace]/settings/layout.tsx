@@ -27,13 +27,14 @@ import styles from "./settings.module.scss";
 export const dynamic = "force-dynamic";
 
 /**
- * Rahmen der Workspace-Einstellungen: links die Bereiche, rechts der offene.
+ * Frame of the workspace settings: sections on the left, the open one on the
+ * right.
  *
- * Aufgebaut wie der Rahmen der Projekteinstellungen und aus denselben Gründen.
- * Das Layout hält nur die Navigation zusammen. Jede Unterseite lädt ihre Daten
- * selbst und prüft dabei erneut — ein Layout schützt keine Server Action, und
- * eine ausgeblendete Zeile in der Leiste ist keine Zugriffskontrolle. Was hier
- * fehlt, ist nur nicht angeboten; verweigert wird es in der Seite.
+ * Structured like the frame of the project settings and for the same
+ * reasons. This layout only holds the navigation together. Every subpage
+ * loads its own data and checks access again — a layout doesn't protect a
+ * Server Action, and a hidden row in the sidebar isn't access control.
+ * What's missing here is simply not offered; it's denied on the page itself.
  */
 export default async function WorkspaceSettingsLayout({
   children,
@@ -49,20 +50,20 @@ export default async function WorkspaceSettingsLayout({
     getTranslations(),
     getCurrentWorkspace(),
     getAccess({ workspaceId: workspace }),
-    // Nur für den Umschalter: von hier führt kein Projekt-Kontext weiter, also
-    // öffnet „Projekt" das erste sichtbare (die Liste ist nach Namen sortiert).
-    // Sieht man keines oder keines mit eigener Hürde, fällt das Segment weg
+    // Only for the switcher: from here no project context carries forward, so
+    // "Project" opens the first visible one (the list is sorted by name). If
+    // there is none, or none with its own gate passed, the segment drops out
     // (`visibleSettingsScope`).
     getWorkspaceProjects(),
-    // Für den Wechsler im Kopf der Leiste — dieselbe Liste, die auch der
-    // Wechsler der Seitenleiste zeigt.
+    // For the switcher in the header of the sidebar — the same list also
+    // shown by the sidebar's own switcher.
     getMyWorkspaces(),
   ]);
   if (!current) notFound();
 
-  // Der Kopf wechselt den Workspace und bleibt dabei in den Einstellungen. Wer
-  // dort kein Zutrittsrecht hat, sieht die Seite nicht — geprüft wird das in
-  // `getWorkspaceSettingsView` je Unterseite, nicht an dieser Zeile.
+  // The header switches the workspace while staying within settings. Anyone
+  // without an access right there won't see the page — that's checked in
+  // `getWorkspaceSettingsView` per subpage, not at this line.
   const siblings: SettingsNavSubject[] = myWorkspaces.map((ws) => ({
     id: ws.id,
     name: ws.name,
@@ -94,9 +95,9 @@ export default async function WorkspaceSettingsLayout({
     },
   );
 
-  // Rollen und Mitglieder sind die einzigen Bereiche mit eigener Hürde
-  // (`role.manage` bzw. `member.view`) — die übrigen bleiben auch ohne
-  // Schreibrecht sichtbar, sie zeigen dann, was gilt, nur unveränderlich.
+  // Roles and members are the only sections with their own gate (`role.manage`
+  // and `member.view` respectively) — the rest stay visible even without
+  // write access; they then show what's in effect, just read-only.
   const items: SettingsNavItem[] = WORKSPACE_SETTINGS_NAV.filter((entry) =>
     navEntryAllowed(access.has, entry),
   ).map((entry) => ({
@@ -107,8 +108,8 @@ export default async function WorkspaceSettingsLayout({
 
   return (
     <div className={styles.shell}>
-      {/* Nur "Persönlich" übrig heißt: nichts zum Umschalten — dann bliebe die
-          Leiste ein einzelnes, aktives Segment ohne echte Wahl. */}
+      {/* Only "Personal" remaining means: nothing to switch between — the bar
+          would otherwise be a single active segment without a real choice. */}
       {scope.length > 1 && (
         <SettingsHeader
           items={scope}

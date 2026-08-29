@@ -1,6 +1,6 @@
-/* Dieselbe Bühne wie `AuthCard` und wie `(auth)/invite/[token]` — ein
-   ungültiger oder eingelöster Link soll nicht wie eine andere Anwendung
-   aussehen als die Anmeldung, zu der er schickt. */
+/* Same stage as `AuthCard` and `(auth)/invite/[token]` — an invalid or
+   already-redeemed link shouldn't look like a different app from the sign-in
+   page it sends you to. */
 .page {
   min-height: 100dvh;
   display: flex;

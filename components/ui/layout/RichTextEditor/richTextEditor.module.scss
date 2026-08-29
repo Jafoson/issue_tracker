@@ -1,25 +1,25 @@
-/* Das Schreibfeld.
+/* The writing field.
 
-   Wie der Text darin aussieht, steht nicht hier, sondern in
-   `RichText/richText.module.scss` — dieselbe Klasse liegt über der
-   ProseMirror-Fläche. So kann Geschriebenes und Gelesenes gar nicht
-   auseinanderlaufen. Hier steht nur die Hülle: Rahmen, Abstände, Cursor. */
+   What the text inside looks like isn't defined here but in
+   `RichText/richText.module.scss` — the same class sits over the
+   ProseMirror surface. That way, what's written and what's read can never
+   drift apart. This file only holds the shell: border, spacing, cursor. */
 
 .editor {
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-lg);
   background: var(--surface-container-low);
-  /* Bewusst **kein** `overflow: hidden`: das machte den Kasten zu einem
-     Scroll-Container, und eine `sticky`-Werkzeugleiste darin könnte sich nur
-     an ihm festhalten — nicht am scrollenden Modal-Körper darüber. Die Rundung
-     ihrer oberen Ecken trägt die Leiste deshalb selbst. */
-  /* Platz für den Ziehgriff, damit er nicht in die untere Rundung läuft und
-     dort angeschnitten wird. */
+  /* Deliberately **no** `overflow: hidden`: that would turn the box into a
+     scroll container, and a `sticky` toolbar inside it could only anchor to
+     that container — not to the scrolling modal body above it. The toolbar
+     therefore rounds its own top corners itself. */
+  /* Room for the resize handle, so it doesn't run into the bottom rounding
+     and get clipped there. */
   padding-bottom: 5px;
   transition: border-color .14s ease, box-shadow .14s ease;
 
-  /* Beim Schreiben hebt sich das Feld ab — ein weicher Ring statt eines
-     harten Rahmenwechsels, damit der Sprung nicht ins Auge springt. */
+  /* The field stands out while writing — a soft ring instead of a hard
+     border swap, so the change doesn't jump out at the eye. */
   &:focus-within {
     border-color: var(--tertiary);  }
 }
@@ -32,24 +32,25 @@
 }
 
 .content {
-  /* In der Höhe ziehbar — so war es beim abgelösten `textarea` auch.
-     `resize` verlangt ein `overflow` ungleich `visible`; das liefert die
-     Bildlaufleiste schon. Die Höhe kommt anfangs von `.surface` darin, ab dem
-     ersten Ziehen vom Browser. */
+  /* Resizable in height — the replaced `textarea` worked the same way.
+     `resize` requires an `overflow` other than `visible`; the scrollbar
+     already provides that. The height initially comes from `.surface`
+     inside it, and from the browser once dragging starts. */
   resize: vertical;
   min-height: 96px;
-  /* Deutlich unter der Höhe eines Modals (rund 88vh): bei 85vh füllte der
-     Editor es fast allein, der Modal-Körper musste scrollen und nahm Titelfeld
-     und Werkzeugleiste mit aus dem Bild. Wer mehr Platz will, zieht am Griff. */
+  /* Well below the height of a modal (roughly 88vh): at 85vh the editor
+     would fill it almost entirely by itself, the modal body would have to
+     scroll and take the title field and toolbar out of view along with it.
+     Anyone wanting more space drags the handle. */
   max-height: 55vh;
   overflow-y: auto;
-  /* Am Ende des Texts nicht gleich das Modal darunter weiterschieben — das
-     war das Sprunghafte beim Scrollen. */
+  /* Don't immediately push the modal below along at the end of the text —
+     that was the jarring part while scrolling. */
   overscroll-behavior: contain;
 }
 
-/* Der Griff des Browsers ist auf dunklem Grund kaum zu sehen — ein Andeuten
-   der Kante genügt, damit man ihn findet. */
+/* The browser's own resize handle is barely visible on a dark background —
+   hinting at the edge is enough for it to be found. */
 .content::-webkit-resizer {
   background: linear-gradient(
     -45deg,
@@ -59,21 +60,21 @@
   );
 }
 
-/* Liegt auf dem `contenteditable` selbst (siehe `editorProps.attributes`). */
+/* Sits on the `contenteditable` itself (see `editorProps.attributes`). */
 .surface {
   padding: 12px 14px;
   outline: none;
   min-height: 96px;
 
-  /* ProseMirror setzt das beim Ziehen einer Auswahl über ganze Knoten. */
+  /* ProseMirror sets this while dragging a selection over whole nodes. */
   :global(.ProseMirror-selectednode) {
     outline: 2px solid var(--tertiary);
     border-radius: var(--radius-sm);
   }
 
-  /* Platzhalter: nur im ersten, leeren Absatz. Kommt von der
-     Placeholder-Extension, die `data-placeholder` setzt. Er trägt seit dem
-     Umbau auch den Hinweis auf das `/`-Menü. */
+  /* Placeholder: only in the first, empty paragraph. Comes from the
+     Placeholder extension, which sets `data-placeholder`. Since the
+     rebuild, it also carries the hint about the `/` menu. */
   p:global(.is-editor-empty):first-child::before {
     content: attr(data-placeholder);
     float: left;
@@ -82,8 +83,9 @@
     color: var(--outline);
   }
 
-  /* Checklisten sind hier anklickbar — anders als in der Anzeige. Aufbau laut
-     TaskItem: li > label > input[checkbox] + span, daneben div mit dem Text. */
+  /* Checklists are clickable here — unlike in the display path. Structure
+     per TaskItem: li > label > input[checkbox] + span, with a div holding
+     the text beside it. */
   ul[data-type="taskList"] {
     padding-left: 0;
     list-style: none;
@@ -110,7 +112,7 @@
     }
   }
 
-  /* Tabellen: im Editor mit sichtbarem Raster und Ziehgriffen. */
+  /* Tables: shown with a visible grid and resize handles in the editor. */
   table {
     width: 100%;
     margin: .7em 0;
@@ -133,7 +135,7 @@
       text-align: left;
     }
 
-    /* Die markierte Zelle beim Ziehen über mehrere. */
+    /* The highlighted cell while dragging across multiple ones. */
     :global(.selectedCell)::after {
       content: "";
       position: absolute;
@@ -143,7 +145,7 @@
     }
   }
 
-  /* Der Griff zum Verbreitern einer Spalte. */
+  /* The handle for widening a column. */
   :global(.column-resize-handle) {
     position: absolute;
     top: 0;
@@ -154,22 +156,22 @@
     pointer-events: none;
   }
 
-  /* Cursor-Markierung beim Ziehen von Blöcken. */
+  /* Cursor indicator while dragging blocks. */
   :global(.ProseMirror-gapcursor)::after {
     border-top-color: var(--on-surface);
   }
 }
 
-/* ─── Schwebende Einblendungen (Kalender, Adresszeile) ─────────────────────── */
+/* ─── Floating popovers (calendar, address bar) ─────────────────────────── */
 
-/* Hängen am `body`, müssen also selbst über dem Modal liegen — dieselbe Ebene
-   wie die Vorschlagsliste, aus demselben Grund. */
+/* Attached to `body`, so they must sit above the modal themselves — the
+   same layer as the suggestion list, for the same reason. */
 .floatingLayer {
   position: fixed;
   z-index: var(--z-popover);
 }
 
-/* Fängt den Klick daneben ab. Unsichtbar und ohne eigene Fläche im Layout. */
+/* Catches a click outside. Invisible and with no surface of its own in the layout. */
 .floatingBackdrop {
   position: fixed;
   inset: 0;
@@ -178,8 +180,8 @@
   cursor: default;
 }
 
-/* Die Auswahl im Anhang-Dialog — URL oder Datei-Upload. Fläche wie
-   `LinkForm`s `.form`, aus demselben Grund. */
+/* The picker in the attachment dialog — URL or file upload. Surface matches
+   `LinkForm`'s `.form`, for the same reason. */
 .attachmentChooser {
   display: flex;
   flex-direction: column;

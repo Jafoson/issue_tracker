@@ -11,14 +11,14 @@ import { useBoardDnd } from "./useBoardDnd";
 interface BoardProps {
   issues: IssueDetail[];
   /**
-   * Das Projekt, in dem eine neue Aufgabe entsteht. Ohne eines — etwa bei den
-   * eigenen Aufgaben, die quer durch alle Projekte gehen — zeigen die Spalten
-   * dieselben Karten, nur ohne „Neue Aufgabe“: dafür müsste erst feststehen,
-   * wohin sie gehörte.
+   * The project a new task is created in. Without one — for instance for
+   * "my issues", which spans all projects — the columns show the same
+   * cards, just without "New task": that would first require knowing which
+   * project it belonged to.
    */
   projectId?: string;
   statuses: Status[];
-  /** Speist den Composer der Spalten — die Karten-Lookups leiten sich daraus ab. */
+  /** Feeds the columns' composer — the card lookups are derived from it. */
   composer: IssueComposerData;
 }
 
@@ -34,7 +34,7 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
   const issueOpen = useIssueOpen(composer.workspaceId);
 
   const board = useBoardDnd(issues);
-  // Shift + Rad schiebt die Spalten waagerecht, egal worüber der Zeiger steht.
+  // Shift + wheel scrolls the columns horizontally, no matter where the pointer is.
   const scrollRef = useShiftScroll();
 
   const identifier = (issue: IssueDetail) =>
@@ -51,8 +51,8 @@ export function Board({ issues, projectId, statuses, composer }: BoardProps) {
             status={status}
             issues={board.getColumnIssues(status.id)}
             projectId={projectId}
-            // Ohne eigenes Projekt kommen die Karten aus verschiedenen — dann
-            // sagt jede, aus welchem.
+            // Without a fixed project the cards come from various ones — so
+            // each one states which.
             showProject={projectId === undefined}
             lookups={lookups}
             composer={composer}

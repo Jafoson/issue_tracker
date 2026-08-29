@@ -1,27 +1,27 @@
-// ─── RBAC: System-Rollen ──────────────────────────────────────────────────────
+// ─── RBAC: system roles ────────────────────────────────────────────────────────
 //
-// Die Default-Rollen existieren **je genau einmal** in der Datenbank — ohne
-// Bindung an einen Workspace oder ein Projekt. Alle Mandanten zeigen auf
-// dieselben Zeilen. Das hält die Datenbank frei von Kopien und macht eine
-// Änderung an einer Default-Rolle sofort überall wirksam.
+// The default roles exist **exactly once each** in the database — with no
+// binding to a workspace or a project. All tenants point at the same rows.
+// This keeps the database free of copies and makes a change to a default
+// role take effect everywhere at once.
 //
-// Der Preis, den das bewusst zahlt: eine System-Rolle ist nicht editierbar. Wer
-// „Member, aber ohne Labels" braucht, legt im eigenen Workspace eine neue Rolle
-// an (`role.manage`) — die hängt dann am Workspace bzw. am Projekt.
+// The deliberate cost: a system role isn't editable. Anyone who needs
+// "Member, but without labels" creates a new role in their own workspace
+// (`role.manage`) — that one then belongs to the workspace or the project.
 //
-// `scope` sagt, wo eine Rolle vergeben werden kann; `rank` bildet innerhalb
-// eines Scopes die Hierarchie ab und steuert die „höchstens die eigene Rolle
-// vergebbar"-Regel.
+// `scope` says where a role may be granted; `rank` models the hierarchy
+// within a scope and drives the "at most your own role can be assigned"
+// rule.
 //
-// Jeder Kontext löst genau eine Rolle auf: im Projekt die Projektrolle, im
-// Workspace die Workspace-Rolle, auf der Plattform die Plattform-Rolle. Eine
-// Workspace-Rolle trägt deshalb keine Issue- oder Kommentar-Rechte mehr — die
-// Registry lässt das im Scope WORKSPACE gar nicht zu. Wer in den Projekten
-// seines Workspace durchgreifen können muss, bekommt dafür `project.admin.all`.
-// Die Auswertung steht in `lib/permissions.ts`.
+// Each context resolves exactly one role: the project role in a project, the
+// workspace role in a workspace, the platform role on the platform. That's
+// why a workspace role no longer carries any issue or comment permissions —
+// the registry simply doesn't allow that in scope WORKSPACE. Whoever needs
+// to reach into their workspace's projects gets `project.admin.all` for
+// that. The evaluation lives in `lib/permissions.ts`.
 //
-// Eine Rolle listet nur, was sie erlaubt. Ein Gegenteil gibt es nicht: da jeder
-// Kontext genau eine Rolle auflöst, ist „nicht aufgeführt" bereits das Verbot.
+// A role only ever lists what it allows. There's no opposite: since each
+// context resolves exactly one role, "not listed" already is the denial.
 
 import { type Permission, permissionsFor, type RoleScope } from "./permissions";
 
@@ -33,12 +33,12 @@ export interface SystemRole {
   rank: number;
   allow: Permission[];
   /**
-   * Nur für Workspace-Rollen: die Projektrolle, mit der ein Träger dieser Rolle
-   * in ein Projekt des Workspace aufgenommen wird.
+   * Workspace roles only: the project role that a holder of this role is
+   * enrolled with when joining a project of the workspace.
    *
-   * Seit die Ebenen getrennt sind, lässt sich das nicht mehr aus den
-   * Workspace-Rechten ableiten — dort steht über Issues und Kommentare nichts
-   * mehr. Also wird es hier gesagt, statt es zu erraten
+   * Since the levels were separated, this can no longer be derived from the
+   * workspace permissions — those no longer say anything about issues or
+   * comments. So it's stated explicitly here instead of being guessed
    * (`lib/project-membership.ts`).
    */
   defaultProjectRoleKey?: string;
@@ -73,9 +73,10 @@ const CONTRIBUTE: Permission[] = [
 
 // ─── Scope PLATFORM ───────────────────────────────────────────────────────────
 //
-// Steht über allen Workspaces (SaaS-Betreiber). Zugriff auf Mandanteninhalte
-// hängt allein an `tenant.access` — `platform_admin` hat sie bewusst NICHT. Wer
-// fremde Issues sehen können soll, bekommt ausdrücklich `platform_support`.
+// Sits above all workspaces (SaaS operator). Access to tenant content hinges
+// solely on `tenant.access` — `platform_admin` deliberately does NOT have
+// it. Whoever needs to see other tenants' issues gets `platform_support`
+// explicitly instead.
 
 const PLATFORM_ROLES: SystemRole[] = [
   {
@@ -106,19 +107,21 @@ const PLATFORM_ROLES: SystemRole[] = [
 
 // ─── Scope WORKSPACE ──────────────────────────────────────────────────────────
 //
-// Diese Rollen tragen **nur** Workspace-Rechte: den Workspace selbst, seine
-// Konfiguration, Teams, workspaceweite Labels, Mitglieder und Rollen. Über die
-// Inhalte eines Projekts sagen sie nichts — dafür ist die Projektrolle da.
+// These roles carry **only** workspace permissions: the workspace itself,
+// its configuration, teams, workspace-wide labels, members, and roles. They
+// say nothing about a project's content — that's what the project role is
+// for.
 //
-// Die Ausnahme sind die beiden Generalschlüssel. `project.admin.all` gibt volle
-// Rechte in jedem Projekt, `project.view.all` nur Lesezugriff. Sie sind der Weg,
-// die Leitung eines Workspace in ihren Projekten handlungsfähig zu halten, ohne
-// die Trennung der Ebenen aufzuweichen — und sie sind unabhängig davon, ob
-// jemand im Projekt eingetragen ist.
+// The exception is the two master keys. `project.admin.all` grants full
+// permissions in every project, `project.view.all` only read access. They're
+// the way to keep a workspace's leadership capable of acting in its
+// projects without softening the separation of levels — and they're
+// independent of whether someone is enrolled in the project.
 //
-// `defaultProjectRoleKey` sagt, mit welcher Projektrolle ein Träger dieser Rolle
-// in ein Projekt aufgenommen wird. Für die Generalschlüssel-Träger ist das nur
-// noch Kosmetik in der Mitgliederliste; ihre Rechte hängen nicht daran.
+// `defaultProjectRoleKey` says which project role a holder of this role is
+// enrolled with when joining a project. For holders of a master key, this is
+// now just cosmetic in the member list; their permissions don't depend on
+// it.
 
 const WORKSPACE_ROLES: SystemRole[] = [
   {
@@ -206,14 +209,15 @@ const WORKSPACE_ROLES: SystemRole[] = [
 
 // ─── Scope PROJECT ────────────────────────────────────────────────────────────
 //
-// Diese Rollen sind im Projekt die ganze Wahrheit: was hier nicht steht, gilt
-// dort nicht. Eine neu eingeführte Projekt-Permission ist damit automatisch
-// gesperrt, ohne dass jemand eine Verbotsliste pflegen muss.
+// These roles are the whole truth within the project: whatever isn't listed
+// here doesn't apply there. A newly introduced project permission is thus
+// automatically blocked, without anyone having to maintain a deny list.
 //
-// Wirkungslos sind sie allein gegenüber den Generalschlüsseln des Workspace:
-// wer `project.admin.all` trägt, wird von `blocked` nicht ausgesperrt. Das ist
-// Absicht — sonst könnte ein Project Admin die Leitung des Workspace aus deren
-// eigenem Projekt aussperren, und niemand käme mehr an die Mitgliederverwaltung.
+// They're powerless only against the workspace's master keys: whoever
+// carries `project.admin.all` isn't shut out by `blocked`. That's
+// deliberate — otherwise a project admin could lock the workspace's
+// leadership out of their own project, and no one could reach member
+// management anymore.
 
 const PROJECT_ROLES: SystemRole[] = [
   {
@@ -258,22 +262,22 @@ const PROJECT_ROLES: SystemRole[] = [
   },
 ];
 
-/** Alle System-Rollen aller Scopes — genau diese Zeilen liegen in der Datenbank. */
+/** All system roles across all scopes — exactly these rows live in the database. */
 export const SYSTEM_ROLES: SystemRole[] = [
   ...PLATFORM_ROLES,
   ...WORKSPACE_ROLES,
   ...PROJECT_ROLES,
 ];
 
-/** Die System-Rollen eines Scopes. */
+/** The system roles of a scope. */
 export function systemRolesIn(scope: RoleScope): SystemRole[] {
   return SYSTEM_ROLES.filter((r) => r.scope === scope);
 }
 
 /**
- * Die Projektrolle, mit der eine System-Workspace-Rolle in ein Projekt
- * aufgenommen wird — oder null für eine selbst angelegte Rolle, die hier
- * naturgemäß nicht steht.
+ * The project role that a system workspace role is enrolled with when
+ * joining a project — or null for a custom role, which naturally isn't
+ * listed here.
  */
 export function defaultProjectRoleKeyOf(
   workspaceRoleKey: string,
@@ -284,42 +288,42 @@ export function defaultProjectRoleKeyOf(
   return role?.defaultProjectRoleKey ?? null;
 }
 
-/** Rolle, die jedes neue Konto bekommt. */
+/** Role that every new account gets. */
 export const DEFAULT_PLATFORM_ROLE_KEY = "platform_member";
-/** Verwaltet die Plattform — Stammdaten und Sperren jedes Workspace, kein Inhaltszugriff. */
+/** Manages the platform — core data and suspension of every workspace, no content access. */
 export const PLATFORM_ADMIN_ROLE_KEY = "platform_admin";
-/** Trägt `tenant.access` — Support-Durchgriff in jeden Workspace. */
+/** Carries `tenant.access` — support reach-through into every workspace. */
 export const PLATFORM_SUPPORT_ROLE_KEY = "platform_support";
-/** Rolle, die der Ersteller eines Workspace bekommt. */
+/** Role that the creator of a workspace gets. */
 export const OWNER_ROLE_KEY = "owner";
-/** Workspace-Rolle für frisch Eingeladene, solange nichts anderes gewählt wird. */
+/** Workspace role for freshly invited members, unless something else is chosen. */
 export const DEFAULT_WORKSPACE_ROLE_KEY = "member";
-/** Lesezugriff auf den Workspace, ohne Mitarbeit. */
+/** Read access to the workspace, without contributing. */
 export const WORKSPACE_VIEWER_ROLE_KEY = "viewer";
-/** Von außen zum Workspace hinzugekommen. */
+/** Joined the workspace from outside. */
 export const WORKSPACE_GUEST_ROLE_KEY = "guest";
-/** Vorauswahl beim Aufnehmen in ein Projekt. */
+/** Default choice when joining a project. */
 export const DEFAULT_PROJECT_ROLE_KEY = "contributor";
-/** Projektrolle für Gäste ohne Workspace-Mitgliedschaft. */
+/** Project role for guests without workspace membership. */
 export const PROJECT_GUEST_ROLE_KEY = "project_guest";
-/** Volle Kontrolle über ein Projekt. */
+/** Full control over a project. */
 export const PROJECT_ADMIN_ROLE_KEY = "project_admin";
-/** Lesen und kommentieren, sonst nichts. */
+/** Read and comment, nothing else. */
 export const PROJECT_VIEWER_ROLE_KEY = "project_viewer";
-/** Ausdrücklicher Ausschluss aus einem Projekt. */
+/** Explicit exclusion from a project. */
 export const PROJECT_BLOCKED_ROLE_KEY = "blocked";
 
 /**
- * Farbe des Rollen-Punktes in der Oberfläche.
+ * Color of the role dot in the UI.
  *
- * Leitet sich vom Rang ab statt aus einer Tabelle je Schlüssel: so bekommen
- * auch selbst angelegte Rollen eine Farbe, die zu ihrer Machtfülle passt, ohne
- * dass jemand sie pflegen müsste.
+ * Derived from the rank instead of from a table per key: this way even
+ * custom roles get a color matching their level of power, without anyone
+ * having to maintain it.
  */
 export function roleColor(rank: number): string {
-  if (rank >= 5) return "var(--purple)"; // Owner, Admin — volle Verwaltung
+  if (rank >= 5) return "var(--purple)"; // Owner, Admin — full administration
   if (rank >= 3) return "var(--blue)"; // Manager, Project Lead
-  if (rank === 2) return "var(--green)"; // der Normalfall
-  if (rank <= 0) return "var(--amber)"; // Guest, Blocked — von außen oder gesperrt
+  if (rank === 2) return "var(--green)"; // the common case
+  if (rank <= 0) return "var(--amber)"; // Guest, Blocked — from outside or locked out
   return "var(--outline)";
 }

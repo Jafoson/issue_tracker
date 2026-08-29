@@ -28,32 +28,31 @@ export async function generateMetadata({
 }
 
 /**
- * Ein öffentlich geteiltes Issue — nur lesend, ohne Login.
+ * A publicly shared issue — read-only, no login.
  *
- * Der Token im Pfad ist die Berechtigung — die Seite liegt deshalb in der
- * Route-Group `(auth)` und ist ohne Session erreichbar (`proxy.ts`).
+ * The token in the path is the authorization — that's why this page lives in
+ * the `(auth)` route group and is reachable without a session (`proxy.ts`).
  *
- * Unbekannt, deaktiviert und abgelaufen sehen gleich aus (kein Orakel für
- * gültige Tokens, wie bei `/invite` und `/join` — `getIssueByShareToken`
- * behandelt alle drei als „nicht gefunden"). Bewusst keine
- * Kommentar-Eingabe, kein Link zurück in die eingeloggte App — die Seite darf
- * strukturell keine Bearbeitungs-UI anbieten können, dafür sorgt schon die
- * minimale Projektion in `getIssueByShareToken`.
+ * Unknown, disabled, and expired all look the same (no oracle for valid
+ * tokens, same as `/invite` and `/join` — `getIssueByShareToken` treats all
+ * three as "not found"). Deliberately no comment input, no link back into
+ * the signed-in app — the page must be structurally incapable of offering
+ * any editing UI, which the minimal projection in `getIssueByShareToken`
+ * already ensures.
  *
- * Wer den Link mit einer Session öffnet, die für dieses Issue ohnehin schon
- * `project.view` hat, bekommt die Momentaufnahme gar nicht erst zu sehen —
- * `getIssueByRef` (dieselbe Abfrage wie die eingeloggte Detailseite, inkl.
- * ihrer eigenen Rechteprüfung) entscheidet das an Ort und Stelle, ganz ohne
- * Session hier selbst auszuwerten. Mit Bearbeitungsrecht landet die Person
- * dort folglich auch direkt in der bearbeitbaren Ansicht.
+ * Anyone opening the link with a session that already has `project.view` for
+ * this issue never even sees the snapshot — `getIssueByRef` (the same query
+ * as the signed-in detail page, including its own permission check) decides
+ * that on the spot, without evaluating the session here at all. With edit
+ * rights, the person consequently lands directly in the editable view there.
  *
- * Status/Priorität/Typ/Labels stehen nur einmal, in der Attributspalte
- * (`Label`-Atom, dieselbe Chip-Optik wie überall sonst im Produkt) — nicht
- * zusätzlich noch einmal unter dem Titel.
+ * Status/priority/type/labels appear only once, in the attribute column
+ * (`Label` atom, the same chip look as everywhere else in the product) — not
+ * repeated again under the title.
  *
- * Eigene, helle Optik statt des app-weiten Themes (`ShareThemeShell`) — wer
- * hier landet, ist meist noch nicht eingeloggt und kennt die dunkle
- * Standardoberfläche gar nicht.
+ * Its own light look instead of the app-wide theme (`ShareThemeShell`) —
+ * whoever lands here is usually not signed in yet and doesn't even know the
+ * dark default UI.
  */
 export default async function SharedIssuePage({
   params,

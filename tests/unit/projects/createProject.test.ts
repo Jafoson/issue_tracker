@@ -6,8 +6,8 @@ const mockProjectFindUnique = mock();
 const mockProjectCreate = mock();
 const mockTransaction = mock();
 
-// Projekt anlegen und die Mitglieder aufnehmen gehören zusammen und laufen
-// deshalb in einer Transaktion. Der Tx-Client ist derselbe Mock-Satz.
+// Creating the project and enrolling the members belong together and
+// therefore run in one transaction. The tx client is the same mock set.
 const mockTx = {
   project: { create: mockProjectCreate },
   workspaceMember: { findMany: mock() },
@@ -70,7 +70,7 @@ function reset() {
   mockHasPermission.mockResolvedValue(true); // allowed by default
   mockFindUnique.mockResolvedValue(null); // no conflicts by default
   mockCreate.mockResolvedValue({});
-  // Ein Owner und ein Mitglied — daraus werden Project Admin und Contributor.
+  // One owner and one member — these become Project Admin and Contributor.
   mockTx.workspaceMember.findMany.mockResolvedValue([
     {
       userId: "u1",
@@ -217,8 +217,8 @@ describe("createProject() — Mitglieder", () => {
     await createProject({ workspaceId: WS, name: "Orbit", color: "#fff" });
 
     const projectId = mockCreate.mock.calls[0]?.[0]?.data?.id;
-    // Die Rolle leitet sich aus der Workspace-Rolle ab, damit im Projekt
-    // niemand plötzlich mehr oder weniger darf als vorher.
+    // The role is derived from the workspace role, so that nobody suddenly
+    // ends up with more or less access in the project than before.
     expect(mockTx.projectMember.createMany).toHaveBeenCalledWith({
       data: [
         { projectId, userId: "u1", roleId: "sys:PROJECT:project_admin" },

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 
-// Edge-sichere Auth.js-Instanz (nur authConfig, kein Prisma-Adapter/bcrypt).
-// Getrennt von auth.ts, damit der Middleware-Layer (proxy.ts) keine Node-only
-// Abhängigkeiten in das Edge-Bundle zieht.
+// Edge-safe Auth.js instance (only authConfig, no Prisma adapter/bcrypt).
+// Separate from auth.ts so the middleware layer (proxy.ts) doesn't pull any
+// Node-only dependencies into the edge bundle.
 export const { auth } = NextAuth(authConfig);

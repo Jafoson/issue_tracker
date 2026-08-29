@@ -1,13 +1,13 @@
 import type { PMDoc, PMNode } from "./types";
 
-/** Attribute des `attachment`-Knotens, wie ihn Editor und Anzeige lesen. */
+/** Attributes of the `attachment` node, as read by the editor and the display. */
 export interface AttachmentAttrs {
   id: string | null;
   url: string | null;
   name: string;
   mimeType: string | null;
   size: number | null;
-  /** Breite in Pixeln, vom Ziehgriff im Editor gesetzt. `null` ⇒ Standardbreite. */
+  /** Width in pixels, set by the drag handle in the editor. `null` ⇒ default width. */
   width: number | null;
 }
 
@@ -16,10 +16,11 @@ export const ATTACHMENT_IMAGE_MAX_WIDTH = 720;
 export const ATTACHMENT_IMAGE_DEFAULT_WIDTH = 320;
 
 /**
- * Erzwingt eine Breite innerhalb des ziehbaren Bereichs — dieselbe Spanne für
- * den Ziehgriff im Editor (`AttachmentView`) und die Anzeige (`RichText`), so
- * dass ein gespeicherter Wert nie in beiden verschieden groß erscheint. Fehlt
- * die Breite (kein Attribut oder kein gültiger Zahlenwert), gilt der Standard.
+ * Forces a width within the draggable range — the same range for the drag
+ * handle in the editor (`AttachmentView`) and the display (`RichText`), so
+ * a stored value never appears a different size between the two. If the
+ * width is missing (no attribute, or not a valid number), the default
+ * applies.
  */
 export function clampAttachmentWidth(width: unknown): number {
   const n =
@@ -32,7 +33,7 @@ export function clampAttachmentWidth(width: unknown): number {
   );
 }
 
-/** Was eine aufgelöste `Attachment`-Zeile für die Wiedergabe im Dokument beisteuert. */
+/** What a resolved `Attachment` row contributes for rendering in the document. */
 export interface ResolvedAttachmentRef {
   url: string;
   name: string;
@@ -41,21 +42,20 @@ export interface ResolvedAttachmentRef {
 }
 
 /**
- * MIME-Type für das Ziehen einer vorhandenen Anhang-Kachel aus der
- * Anhänge-Sektion (`IssueAttachments.tsx`) in den Editor — dort landet sie
- * als ganz normaler `attachment`-Knoten, ohne erneuten Upload, einfach per
- * Verweis auf dieselbe `Attachment`-Zeile. Ein eigener MIME-Type statt
- * `text/plain`/`text/html`, damit `RichTextEditor.tsx`s `handleDrop` einen
- * externen Datei-Drop (echte Datei vom Betriebssystem) von diesem internen
- * Referenz-Drop unterscheiden kann. Hier definiert statt in einer der beiden
- * UI-Schichten, weil sowohl die Anhänge-Sektion (Quelle, in `features/`) als
- * auch der Editor (Ziel, in `components/ui`) ihn brauchen, ohne dass eine der
- * beiden von der anderen abhängen soll.
+ * MIME type for dragging an existing attachment tile out of the attachments
+ * section (`IssueAttachments.tsx`) into the editor — there it lands as a
+ * perfectly normal `attachment` node, without a re-upload, simply by
+ * referencing the same `Attachment` row. A dedicated MIME type instead of
+ * `text/plain`/`text/html`, so `RichTextEditor.tsx`'s `handleDrop` can tell
+ * an external file drop (a real file from the OS) apart from this internal
+ * reference drop. Defined here rather than in either UI layer, because both
+ * the attachments section (source, in `features/`) and the editor (target,
+ * in `components/ui`) need it, without either one depending on the other.
  */
 export const ATTACHMENT_DRAG_MIME = "application/x-issue-tracker-attachment";
 
-/** Nutzlast hinter `ATTACHMENT_DRAG_MIME` — dieselben Felder wie ein frisch
- *  hochgeladener Anhang (`UploadedAttachment` in `RichTextEditor.tsx`). */
+/** Payload behind `ATTACHMENT_DRAG_MIME` — the same fields as a freshly
+ *  uploaded attachment (`UploadedAttachment` in `RichTextEditor.tsx`). */
 export interface AttachmentDragPayload {
   id: string;
   url: string;
@@ -64,8 +64,8 @@ export interface AttachmentDragPayload {
   size: number | null;
 }
 
-/** Menschenlesbare Dateigröße — `RichText`, `AttachmentView` und die
- *  Anhänge-Sektion zeigen alle dasselbe Format, deshalb eine Stelle dafür. */
+/** Human-readable file size — `RichText`, `AttachmentView`, and the
+ *  attachments section all show the same format, hence one place for it. */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];
@@ -78,10 +78,10 @@ export function formatBytes(bytes: number): string {
   return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`;
 }
 
-/** Symbol für einen Anhang ohne echte Miniatur (Kachel-Fallback,
- *  Vorschau-Dialog) — `RichText`, `AttachmentView`, die Anhänge-Sektion und
- *  der Vorschau-Dialog sollen alle denselben Blick auf einen MIME-Typ haben,
- *  deshalb eine Stelle dafür wie bei `formatBytes`. */
+/** Icon for an attachment with no real thumbnail (tile fallback, preview
+ *  dialog) — `RichText`, `AttachmentView`, the attachments section, and the
+ *  preview dialog should all agree on one view of a MIME type, hence one
+ *  place for it, same as `formatBytes`. */
 export function iconForMimeType(mimeType: string | null): string {
   if (mimeType === "application/pdf") return "lucide:file-text";
   if (mimeType?.startsWith("image/")) return "lucide:image";
@@ -107,11 +107,11 @@ function mapAttachmentNodes(
 }
 
 /**
- * Lesepfad: reichert jeden `attachment`-Knoten um die aufgelöste URL, den
- * Namen, MIME-Typ und die Größe an — `byId` kommt aus den frisch geladenen
- * `Attachment`-Zeilen des Issues. Fehlt die Id in `byId` (gelöschter Anhang),
- * bleibt der Knoten ohne `url` stehen; Anzeige und Editor zeigen dafür einen
- * „Anhang entfernt"-Platzhalter statt eines toten Bildes.
+ * Read path: enriches every `attachment` node with the resolved URL, name,
+ * MIME type, and size — `byId` comes from the issue's freshly loaded
+ * `Attachment` rows. If the id is missing from `byId` (a deleted
+ * attachment), the node is left without a `url`; the display and editor
+ * then show a "attachment removed" placeholder instead of a dead image.
  */
 export function withResolvedAttachments(
   doc: PMDoc,
@@ -128,10 +128,9 @@ export function withResolvedAttachments(
         name: resolved?.name ?? "",
         mimeType: resolved?.mimeType ?? null,
         size: resolved?.size ?? null,
-        // Anders als die übrigen Attribute keine Ableitung aus der
-        // `Attachment`-Zeile, sondern eine Einstellung des Dokuments selbst
-        // — bleibt deshalb aus dem ursprünglichen Knoten erhalten statt aus
-        // `byId` zu kommen.
+        // Unlike the other attributes, not derived from the `Attachment`
+        // row but a setting of the document itself — therefore preserved
+        // from the original node instead of coming from `byId`.
         width: typeof attrs?.width === "number" ? attrs.width : null,
       };
     }),
@@ -139,17 +138,16 @@ export function withResolvedAttachments(
 }
 
 /**
- * Schreibpfad: wirft an jedem `attachment`-Knoten die zur Anzeige
- * aufgelösten Attribute wieder ab, bevor `description` in die Datenbank
- * geschrieben wird — verteidigt gegen einen Client, der sie versehentlich mit
- * zurückschickt. Eine presignte URL läuft nach einer Stunde ab; sie zu
- * speichern wäre ohnehin sinnlos (wie bei Avataren, siehe `lib/storage`).
+ * Write path: strips the display-resolved attributes back off every
+ * `attachment` node before `description` is written to the database —
+ * guards against a client that accidentally sends them back. A presigned
+ * URL expires after an hour; storing it would be pointless anyway (same as
+ * avatars, see `lib/storage`).
  *
- * `width` bleibt davon ausgenommen: anders als `url`/`name`/`mimeType`/`size`
- * ist es keine Ableitung aus der `Attachment`-Zeile, sondern eine echte
- * Einstellung des Dokuments (vom Ziehgriff im Editor gesetzt) — geht sie
- * verloren, springt das Bild beim nächsten Laden auf die Standardbreite
- * zurück.
+ * `width` is exempt from this: unlike `url`/`name`/`mimeType`/`size`, it's
+ * not derived from the `Attachment` row but a genuine setting of the
+ * document (set by the drag handle in the editor) — if it's lost, the
+ * image snaps back to the default width on the next load.
  */
 export function stripAttachmentAttrs(doc: PMDoc): PMDoc {
   return {

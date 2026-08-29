@@ -10,20 +10,20 @@ import {
 import { useLayoutEffect, useRef, useState } from "react";
 
 /**
- * Positioniert eine frei schwebende Einblendung (Adresszeile, Anhang-Dialog)
- * an einem Bezugspunkt — dem angeklickten Werkzeugleisten-Knopf oder, ohne
- * Klick, einem virtuellen Element am Cursor — und weicht bei Platzmangel am
- * Fensterrand aus, statt darüber hinauszulaufen.
+ * Positions a free-floating popover (address bar, attachment dialog) against
+ * a reference point — the clicked toolbar button, or, without a click, a
+ * virtual element at the cursor — and steers around a lack of space at the
+ * window edge instead of running past it.
  *
- * Dasselbe Prinzip wie `props.mount` aus `@tiptap/suggestion` fürs `/`-Menü
- * (auch das läuft über Floating UI), nur für Einblendungen außerhalb des
- * Suggestion-Plugins, die keine Textposition im Dokument haben.
+ * Same principle as `props.mount` from `@tiptap/suggestion` for the `/`
+ * menu (that also runs through Floating UI), just for popovers outside the
+ * suggestion plugin that have no text position in the document.
  */
 export function useFloatingPosition(
   reference: ReferenceElement | null,
-  // Löst eine Neuberechnung aus, auch wenn `reference` dasselbe Objekt
-  // bleibt — z. B. wenn der Anhang-Dialog von der Auswahl auf das
-  // URL-Formular wechselt: andere Größe, aber derselbe Bezugspunkt.
+  // Triggers a recomputation even when `reference` stays the same object —
+  // e.g. when the attachment dialog switches from the picker to the URL
+  // form: different size, but the same reference point.
   recomputeKey?: unknown,
 ) {
   const floatingRef = useRef<HTMLDivElement>(null);
@@ -33,11 +33,11 @@ export function useFloatingPosition(
     visibility: "visible" | "hidden";
   }>({ left: 0, top: 0, visibility: "hidden" });
 
-  // Ohne die Sichtbarkeit erst nach der Messung freizugeben, blitzt die
-  // Einblendung kurz oben links auf, bevor sie an ihren Platz springt.
+  // Without releasing visibility only after measuring, the popover briefly
+  // flashes in the top-left corner before jumping to its actual place.
   useLayoutEffect(() => {
-    // Erzwingt die Neuberechnung unten, auch wenn `reference` dasselbe
-    // Objekt bleibt (siehe Kommentar am Parameter).
+    // Forces the recomputation below even when `reference` stays the same
+    // object (see the comment on the parameter).
     void recomputeKey;
     const floating = floatingRef.current;
     if (!reference || !floating) {
@@ -48,9 +48,9 @@ export function useFloatingPosition(
     }
     let cancelled = false;
     computePosition(reference, floating, {
-      // `fixed`, nicht das Standard-`absolute` — `.floatingLayer` hängt selbst
-      // per `position: fixed` am Body, damit ein scrollender Editor sie nicht
-      // mitschneidet.
+      // `fixed`, not the default `absolute` — `.floatingLayer` itself is
+      // attached to the body via `position: fixed`, so a scrolling editor
+      // doesn't drag it along.
       strategy: "fixed",
       placement: "bottom-start",
       middleware: [offset(6), flip(), shift({ padding: 8 })],

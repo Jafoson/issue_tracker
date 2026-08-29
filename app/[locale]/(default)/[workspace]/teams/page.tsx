@@ -7,10 +7,10 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Teams des Workspace, einen Klick von der Seitenleiste entfernt.
+ * The workspace's teams, one click away from the sidebar.
  *
- * Dieselbe Komponente wie unter `…/settings/teams` — geteilt wird sie, nicht
- * die Route, damit jede Adresse den Rahmen mitbringt, in den sie gehört.
+ * The same component as under `…/settings/teams` — it's the component that's
+ * shared, not the route, so each URL still brings the frame it belongs in.
  */
 export default async function TeamsPage({
   params,

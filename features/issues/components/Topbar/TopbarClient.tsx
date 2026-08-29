@@ -52,10 +52,10 @@ export function TopbarClient({
 
   if (!showFilters || !area) return null;
 
-  // Im Projekt sagt der Titel, welche Ansicht man sieht — das Projekt selbst
-  // steht schon in der Seitenleiste und im Reiter. Bei den eigenen Aufgaben
-  // sagt er, wessen Aufgaben es sind: das ist hier die eigentliche Auskunft,
-  // und die Ansicht steht als Umschalter daneben.
+  // Inside a project, the title says which view you're looking at — the
+  // project itself already appears in the sidebar and the tab. For "my
+  // issues" it says whose issues these are: that's the actual information
+  // here, with the view shown as a switcher next to it.
   const title =
     area === "my"
       ? t("nav.myIssues")

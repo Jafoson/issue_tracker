@@ -11,8 +11,8 @@ mock.module("react", () => ({
   cache: (fn: unknown) => fn,
 }));
 
-// Projekt-Labels hängen an der Sichtbarkeit des Projekts — hier steht die
-// Standardlage „p-1 ist sichtbar".
+// Project labels depend on the project's visibility — this sets up the
+// default state "p-1 is visible".
 const mockVisibleProjectIds = mock(async () => new Set(["p-1"]));
 
 mock.module("@/lib/permissions", () => ({
@@ -38,12 +38,12 @@ describe("getLabels()", () => {
     expect(mockLabelFindMany).toHaveBeenCalledWith({
       where: {
         workspaceId: "ws-1",
-        // Workspace-Labels immer, Projekt-Labels nur aus sichtbaren Projekten.
+        // Workspace labels always, project labels only from visible projects.
         OR: [{ projectId: null }, { projectId: { in: ["p-1"] } }],
       },
       orderBy: { name: "asc" },
-      // Wo ein Label ausgeblendet ist, kommt mit — die Auswahl am Issue kennt
-      // nur diese eine Liste.
+      // Where a label is hidden comes along too — the picker on the issue
+      // only knows this one list.
       include: { hiddenIn: { select: { projectId: true } } },
     });
   });
@@ -89,8 +89,8 @@ describe("getLabels()", () => {
         slug: "bug",
         color: "#ef4444",
         projectId: null,
-        // Ein Workspace-Label, das p-2 für sich ausgeblendet hat: überall sonst
-        // steht es weiter zur Auswahl.
+        // A workspace label that p-2 has hidden for itself: everywhere else
+        // it remains available for selection.
         hiddenIn: ["p-2"],
       },
       {

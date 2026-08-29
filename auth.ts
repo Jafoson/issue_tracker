@@ -20,27 +20,27 @@ import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 import { provisionNewUser } from "@/lib/user-provisioning";
 import { splitName } from "@/lib/utils/string";
 
-// PrismaAdapter mit createUser-Override: OAuth-/Mail-User liefern nur
-// name/email/image, aber `handle` und `color` sind NOT NULL. Der volle Name
-// kommt als ein Feld vom Provider (oder fehlt beim Mail-Login ganz) und wird
-// für unser firstName/lastName-Schema aufgesplittet.
+// PrismaAdapter with a createUser override: OAuth/mail users only supply
+// name/email/image, but `handle` and `color` are NOT NULL. The full name
+// arrives as a single field from the provider (or is missing entirely for
+// mail login) and gets split for our firstName/lastName schema.
 //
-// Zugleich der einzige Ort, an dem ein wirklich neues Konto entsteht (Passkey-
-// Erstanmeldung, OAuth, Magic Link) — `provisionNewUser()` hängt hier den
-// Domain-Auto-Join dran, den früher nur `register()` kannte.
-// Alphabet ohne O/0/I/1 — sieht man einem angezeigten Code sonst nicht an,
-// welcher der beiden gemeint ist. 8 Zeichen aus 32 möglichen sind zum
-// Abtippen kurz genug und trotzdem nicht in vertretbarer Zeit erratbar.
+// Also the only place where a genuinely new account is created (first
+// passkey sign-in, OAuth, magic link) — `provisionNewUser()` hooks the
+// domain auto-join in here, which only `register()` used to know about.
+// Alphabet without O/0/I/1 — otherwise a displayed code doesn't tell you
+// which of the two is meant. 8 characters out of 32 possible are short
+// enough to type and still not guessable in any reasonable time.
 const MAGIC_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const MAGIC_CODE_LENGTH = 8;
 
 /**
- * Ersetzt next-auths eigenen 32-Byte-Zufallstoken für den Mail-Provider durch
- * einen kurzen, eintippbaren Code — er landet unverändert sowohl im Link
- * (`?token=`) als auch, separat angezeigt, in der Mail selbst
- * (`sendVerificationRequest` unten). Beides prüft dieselbe next-auth-Route
- * gegen denselben gehashten Wert in `VerificationToken` — der Code ist kein
- * zweiter Mechanismus, nur ein zweiter Weg, denselben Token einzugeben.
+ * Replaces next-auth's own 32-byte random token for the mail provider with a
+ * short, typeable code — it ends up unchanged both in the link (`?token=`)
+ * and, shown separately, in the email itself (`sendVerificationRequest`
+ * below). Both check the same next-auth route against the same hashed value
+ * in `VerificationToken` — the code isn't a second mechanism, just a second
+ * way to enter the same token.
  */
 function generateMagicCode(): string {
   let code = "";
@@ -50,17 +50,17 @@ function generateMagicCode(): string {
   return code;
 }
 
-// Next-auths WebAuthn-Provider verlangt für eine Registrierung zwingend eine
-// `email` in der Anfrage (`@auth/core`s `webAuthnOptions` bricht sonst mit
-// „Invalid request" ab — ein WebAuthn-Credential braucht laut Spezifikation
-// immer einen `userName`, den der Passkey-Manager anzeigt). Die
-// Registrierung (`registerWithPasskey` in `LoginForm.tsx`) fragt aber nie
-// eine Adresse ab, schickt deshalb eine clientseitig erzeugte, garantiert
-// einmalige Adresse unter dieser reservierten Domain (RFC 2606 — `.invalid`
-// wird nie an echte Domains vergeben, kollidiert also nie mit einer
-// tatsächlichen Adresse). Sie dient nur der WebAuthn-Ceremony als technischer
-// Platzhalter und wird hier direkt wieder verworfen — im Konto landet `null`,
-// nicht die Platzhalteradresse.
+// next-auth's WebAuthn provider requires an `email` in the request for a
+// registration (`@auth/core`'s `webAuthnOptions` otherwise bails out with
+// "Invalid request" — per spec, a WebAuthn credential always needs a
+// `userName` that the passkey manager displays). Our own registration flow
+// (`registerWithPasskey` in `LoginForm.tsx`) never asks for an address
+// though, so it sends a client-generated, guaranteed-unique address under
+// this reserved domain instead (RFC 2606 — `.invalid` is never assigned to
+// real domains, so it never collides with an actual address). It only
+// serves as a technical placeholder for the WebAuthn ceremony and is
+// discarded again right here — the account ends up with `null`, not the
+// placeholder address.
 const NO_EMAIL_SENTINEL_DOMAIN = "@no-email.invalid";
 
 function createAdapter(): Adapter {
@@ -71,10 +71,10 @@ function createAdapter(): Adapter {
       const isSentinelEmail = data.email?.endsWith(NO_EMAIL_SENTINEL_DOMAIN);
       const email = isSentinelEmail ? null : (data.email ?? null);
 
-      // Ein echter Name kommt nur von OAuth/OIDC-Providern mit — Passkey und
-      // Magic Link liefern nie eines. Kein aus der E-Mail geratener Ersatz:
-      // Name ist ein optionales Feld im Onboarding-Formular und bleibt leer,
-      // bis die Person selbst etwas einträgt.
+      // A real name only ever comes from OAuth/OIDC providers — passkey and
+      // magic link never supply one. No fallback guessed from the email
+      // address: name is an optional field in the onboarding form and stays
+      // empty until the person enters something themselves.
       const { firstName, lastName } = data.name
         ? splitName(data.name)
         : { firstName: "", lastName: "" };
@@ -88,7 +88,7 @@ function createAdapter(): Adapter {
           image: data.image,
           handle,
           color: pickUserColor(),
-          // Jedes neue Konto startet ohne Plattform-Rechte.
+          // Every new account starts without platform permissions.
           platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
         },
       });
@@ -100,37 +100,37 @@ function createAdapter(): Adapter {
   };
 }
 
-// `unstable_update` schreibt das JWT neu, ohne dass sich jemand neu anmelden
-// muss — gebraucht von den eigenen Einstellungen, wenn Name oder Farbe sich
-// ändern (siehe den `update`-Zweig im jwt-Callback in `auth.config.ts`). Der
-// Name ist der von Auth.js; instabil ist daran die Bezeichnung, nicht die
-// Wirkung.
+// `unstable_update` rewrites the JWT without requiring anyone to sign in
+// again — used by the account settings page when name or color changes (see
+// the `update` branch in the jwt callback in `auth.config.ts`). The name is
+// Auth.js's own; "unstable" describes the label, not the behavior.
 export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
-  // Passkeys sind in dieser Auth.js-Version hinter einem Experimental-Flag —
-  // ohne ihn weist jeder WebAuthn-Aufruf (auch nur die Provider-Auflistung)
-  // einen `ExperimentalFeatureNotEnabled`-Fehler zurück.
+  // Passkeys sit behind an experimental flag in this Auth.js version —
+  // without it, every WebAuthn call (even just listing the provider) returns
+  // an `ExperimentalFeatureNotEnabled` error.
   experimental: { enableWebAuthn: true },
   callbacks: {
     ...authConfig.callbacks,
     /**
-     * Jeder Login läuft hier durch — Passkey wie OAuth, es gibt keinen
-     * eigenen `authorize`-Zweig mehr, der stillgelegte Konten woanders
-     * abfangen würde.
+     * Every login runs through here — passkey as well as OAuth, there's no
+     * separate `authorize` branch anymore that would catch deactivated
+     * accounts somewhere else.
      */
     async signIn({ user, account }) {
-      // Eine Einladung legt ein Schatten-Konto mit fester E-Mail an
-      // (`inviteOneWorkspaceMember`/`inviteOneProjectMember`) — ohne eigenes
-      // Passwort, ohne Passkey, ohne verbundenen Anbieter. next-auth verweigert
-      // OAuth/OIDC dafür standardmäßig mit `OAuthAccountNotLinked`, sobald die
-      // Adresse schon einem Konto gehört ("we don't trust user-provided email
-      // addresses" — @auth/core). Für ein wirklich unberührtes Schatten-Konto
-      // gilt dieses Misstrauen nicht: niemand hat sich je erfolgreich
-      // angemeldet (kein Magic-Link-Klick, sonst stünde `emailVerified`; kein
-      // Passkey; kein verbundener Anbieter) — es gibt also nichts zu kapern.
-      // `getUserByAccount()` in `handleLoginOrRegister` (nach diesem Callback)
-      // findet die hier selbst angelegte Zeile dann als bereits verknüpft und
-      // meldet ganz normal an, statt den Fehler zu werfen.
+      // An invitation creates a shadow account with a fixed email address
+      // (`inviteOneWorkspaceMember`/`inviteOneProjectMember`) — without its
+      // own password, without a passkey, without a connected provider.
+      // next-auth refuses OAuth/OIDC for that by default with
+      // `OAuthAccountNotLinked` as soon as the address already belongs to an
+      // account ("we don't trust user-provided email addresses" —
+      // @auth/core). That distrust doesn't apply to a genuinely untouched
+      // shadow account: nobody has ever successfully signed in (no magic-link
+      // click, otherwise `emailVerified` would be set; no passkey; no
+      // connected provider) — so there's nothing to hijack.
+      // `getUserByAccount()` in `handleLoginOrRegister` (which runs after
+      // this callback) then finds the row we just linked here as already
+      // connected and signs in normally instead of throwing the error.
       if (
         !user.id &&
         user.email &&
@@ -201,12 +201,12 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   adapter: createAdapter(),
   providers: [
     ...authConfig.providers,
-    // Passkeys — der einzige Weg herein, den diese App selbst betreibt (kein
-    // Passwort mehr), sofern `AUTH_PASSKEY_LOGIN_ENABLED` nicht explizit auf
-    // "false" steht. `relayingParty.id` ist nur der Hostname (kein
-    // Schema/Port) — Browser binden einen Passkey an genau diesen Wert,
-    // `origin` bleibt die volle Basis-URL. `enableConditionalUI` erlaubt
-    // Autofill über das E-Mail-Feld der Login-Seite.
+    // Passkeys — the only way in this app runs itself (no more password),
+    // unless `AUTH_PASSKEY_LOGIN_ENABLED` is explicitly set to "false".
+    // `relayingParty.id` is just the hostname (no scheme/port) — browsers
+    // bind a passkey to exactly that value, `origin` stays the full base
+    // URL. `enableConditionalUI` allows autofill via the login page's email
+    // field.
     ...(passkeyLoginEnabled
       ? [
           WebAuthn({
@@ -216,24 +216,24 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
               origin: appBaseUrl(),
             },
             enableConditionalUI: true,
-            // Ohne eigenes `getUserInfo` würde next-auth für jede noch
-            // unbekannte E-Mail ein `exists: false` zurückgeben und damit ein
-            // ganz neues Konto per Passkey erlauben (`LoginForm`s
-            // "Passkey registrieren", die einzige Stelle, die ohne Sitzung
-            // eine `email` mitschickt — siehe `NO_EMAIL_SENTINEL_DOMAIN`
-            // oben). Ist die Registrierung abgeschaltet, bleibt nur der
-            // Login-Zweig übrig: `null` lässt next-auth (`inferWebAuthnOptions`
-            // in `@auth/core`) auf reine Authentifizierung ohne vorgegebene
-            // Credentials zurückfallen, die für dieses Sentinel-Konto immer
-            // fehlschlägt — `registerWithPasskey` fängt das ab
+            // Without a custom `getUserInfo`, next-auth would return
+            // `exists: false` for any unknown email and thereby allow a
+            // brand-new account via passkey (`LoginForm`'s "Register with
+            // passkey", the only place that sends an `email` without a
+            // session — see `NO_EMAIL_SENTINEL_DOMAIN` above). If
+            // registration is turned off, only the login branch remains:
+            // returning `null` makes next-auth (`inferWebAuthnOptions` in
+            // `@auth/core`) fall back to plain authentication without
+            // pre-defined credentials, which always fails for this sentinel
+            // account — `registerWithPasskey` catches that
             // (`login.passkeyFailed`).
             //
-            // Bereits angemeldete Personen, die sich in den eigenen
-            // Sicherheitseinstellungen einen weiteren Passkey anlegen
-            // (`AccountSecurity#addPasskey`), laufen nie hier durch — bei
-            // bestehender Sitzung liest next-auth den Benutzer direkt aus der
-            // Sitzung, ohne `getUserInfo` aufzurufen. Das ist Absicht: dieser
-            // Schalter betrifft nur ganz neue Konten, keine Kontoverwaltung.
+            // Already signed-in people adding another passkey in their own
+            // security settings (`AccountSecurity#addPasskey`) never go
+            // through here — with an existing session, next-auth reads the
+            // user straight from the session, without calling `getUserInfo`.
+            // That's intentional: this switch only affects brand-new
+            // accounts, not account management.
             ...(!passkeyRegistrationEnabled
               ? {
                   async getUserInfo(_options, request) {
@@ -254,24 +254,24 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
           }),
         ]
       : []),
-    // Magic Link — nur aktiv, wenn SMTP konfiguriert ist (siehe
-    // `isMailConfigured()`); ohne SMTP bleibt der Provider ganz weg, statt
-    // eine Mail vorzutäuschen, die nie ankommt. `server` ist ein Dummy-Wert,
-    // nur um next-auths internen Truthy-Check zu erfüllen — `sendVerification
-    // Request` ruft stattdessen direkt `sendMail()` (`lib/mail/send.ts`) auf,
-    // die eigene SMTP-Transport-Logik von next-auth kommt nie zum Einsatz.
+    // Magic link — only active when SMTP is configured (see
+    // `isMailConfigured()`); without SMTP the provider is left out entirely
+    // instead of faking an email that never arrives. `server` is a dummy
+    // value, only to satisfy next-auth's internal truthy check —
+    // `sendVerificationRequest` calls `sendMail()` (`lib/mail/send.ts`)
+    // directly instead, next-auth's own SMTP transport logic is never used.
     //
-    // Der praktische Grund, warum dieser Provider auch bei Einladungen und
-    // migrierten Konten ohne Passkey funktioniert, wo WebAuthn/OAuth an
-    // `AccountNotLinked` scheitern: `handleLoginOrRegister` behandelt eine
-    // bestehende Adresse beim Mail-Provider als Normalfall (Login als dieses
-    // Konto), nicht als Kollision — der Klick auf den Link *ist* der Beweis,
-    // dass die Adresse der Person gehört.
+    // The practical reason this provider also works for invitations and
+    // migrated accounts without a passkey, where WebAuthn/OAuth fail with
+    // `AccountNotLinked`: `handleLoginOrRegister` treats an existing address
+    // on the mail provider as the normal case (sign in as that account), not
+    // as a collision — clicking the link *is* the proof that the address
+    // belongs to the person.
     //
-    // `generateVerificationToken` ersetzt next-auths langen Zufallstoken
-    // durch `generateMagicCode()` — dadurch trägt auch der Link nur noch den
-    // kurzen Code als `token`, und `maxAge` sinkt auf 15 Minuten statt einer
-    // Stunde: weniger Entropie im Token verlangt ein engeres Zeitfenster.
+    // `generateVerificationToken` replaces next-auth's long random token with
+    // `generateMagicCode()` — so the link also only carries the short code as
+    // `token`, and `maxAge` drops to 15 minutes instead of an hour: less
+    // entropy in the token calls for a narrower time window.
     ...(isMailConfigured()
       ? [
           Nodemailer({

@@ -15,49 +15,50 @@ import type { PMDoc } from "@/lib/richtext/types";
 import { fullName } from "@/lib/utils/string";
 
 /**
- * Die fachliche Hülle um `EditableRichText`.
+ * The domain-aware wrapper around `EditableRichText`.
  *
- * `components/ui` darf nichts über Workspaces, Mitglieder oder Issue-Schlüssel
- * wissen — hier wird beides zusammengeführt: aus den Workspace-Daten werden die
- * Listen für `@` und `#`, samt Avatar und Status-Icon.
+ * `components/ui` must know nothing about workspaces, members, or issue
+ * keys — this is where both are brought together: the workspace data is
+ * turned into the suggestion lists for `@` and `#`, complete with avatar
+ * and status icon.
  *
- * Beschreibung und Kommentare benutzen dieselbe Komponente, damit sie sich
- * gleich verhalten und nicht auseinanderlaufen.
+ * The description and comments use this same component, so they behave
+ * identically and don't drift apart.
  */
 
 interface IssueRichTextProps {
   value: PMDoc | unknown;
   onCommit: (value: PMDoc) => void;
-  /** Siehe `EditableRichText` — live statt erst beim Verlassen. */
+  /** See `EditableRichText` — live instead of only on blur. */
   onChange?: (value: PMDoc) => void;
   data: IssueEditorData;
   label: string;
   placeholder?: string;
   saveLabel?: string;
   cancelLabel?: string;
-  /** Siehe `EditableRichText` — aus, wo ein Dialog eigene Knöpfe trägt. */
+  /** See `EditableRichText` — off where a dialog carries its own buttons. */
   actions?: boolean;
-  /** Siehe `EditableRichText` — nur Anzeige, kein Klick öffnet den Editor. */
+  /** See `EditableRichText` — display only, no click opens the editor. */
   readOnly?: boolean;
-  /** Siehe `RichTextEditor` — Anhang hochladen/entfernen. Fehlt ⇒ kein
-   *  Werkzeugleisten-Knopf, kein Abfangen von Dateien beim Ablegen/Einfügen. */
+  /** See `RichTextEditor` — upload/remove an attachment. Missing ⇒ no
+   *  toolbar button, no intercepting files on drop/paste. */
   onUploadAttachment?: (
     file: File,
   ) => Promise<UploadedAttachment | { error: string }>;
   onRemoveAttachment?: (id: string) => Promise<void>;
-  /** Siehe `RichTextEditor` — Bild-URL als Anhang registrieren. */
+  /** See `RichTextEditor` — register an image URL as an attachment. */
   onAddLinkAttachment?: (input: {
     url: string;
     name?: string;
     mimeType?: string | null;
   }) => Promise<UploadedAttachment | { error: string }>;
   className?: string;
-  /** Siehe `EditableRichText` — steuert den Bearbeitungszustand von außen. */
+  /** See `EditableRichText` — controls the editing state from outside. */
   editing?: boolean;
   onEditingChange?: (editing: boolean) => void;
 }
 
-/** Baut die Vorschlagslisten einmal pro Datenstand. */
+/** Builds the suggestion lists once per data snapshot. */
 export function useEditorSources(data: IssueEditorData): {
   members: MentionSource[];
   issues: IssueSource[];

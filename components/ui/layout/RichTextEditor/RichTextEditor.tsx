@@ -52,27 +52,27 @@ import styles from "./richTextEditor.module.scss";
 import { useFloatingPosition } from "./useFloatingPosition";
 
 /**
- * Der Editor. Läuft nur im Browser — geladen wird er von `EditableRichText`
- * per `next/dynamic`, damit das Tiptap-Bündel erst kommt, wenn jemand
- * tatsächlich schreibt.
+ * The editor. Only runs in the browser — loaded by `EditableRichText` via
+ * `next/dynamic`, so the Tiptap bundle only arrives once someone is
+ * actually writing.
  *
- * Die fachlichen Daten für `@` und `#` reicht der Aufrufer herein. Diese
- * Komponente liegt in `components/ui` und kennt deshalb weder Workspace noch
- * Prisma.
+ * The domain data for `@` and `#` is passed in by the caller. This
+ * component lives in `components/ui` and therefore knows neither workspace
+ * nor Prisma.
  */
 
 /**
- * Die Übersetzungsfunktion des `editor`-Namensraums. Eigener Typ, weil
- * `slashItems` sie als Parameter bekommt und `Translator` aus `@/i18n/types`
- * den Wurzel-Namensraum meint.
+ * The translation function for the `editor` namespace. Its own type,
+ * because `slashItems` receives it as a parameter and `Translator` from
+ * `@/i18n/types` refers to the root namespace.
  */
 export type EditorTranslator = ReturnType<typeof useTranslations<"editor">>;
 
 /**
- * Ein virtuelles Bezugselement am Cursor — für Floating UI ununterscheidbar
- * von einem echten DOM-Knoten wie einem Werkzeugleisten-Knopf. Trägt eine
- * Einblendung (Adresszeile, Anhang-Dialog) an die Schreibposition, wenn kein
- * Knopf sie ausgelöst hat (Tastenkürzel, `/`-Menü).
+ * A virtual reference element at the cursor — indistinguishable to Floating
+ * UI from a real DOM node like a toolbar button. Anchors a popover (address
+ * bar, attachment dialog) to the writing position when no button triggered
+ * it (keyboard shortcut, `/` menu).
  */
 function cursorReference(view: Editor["view"]): ReferenceElement {
   const { top, bottom, left } = view.coordsAtPos(view.state.selection.from);
@@ -81,24 +81,24 @@ function cursorReference(view: Editor["view"]): ReferenceElement {
   };
 }
 
-/** Ein Mitglied, wie es der `@`-Trigger braucht. */
+/** A member, in the shape the `@` trigger needs. */
 export interface MentionSource {
   id: string;
   name: string;
-  /** Bild für die Vorschlagsliste, als fertiges Element. */
+  /** Image for the suggestion list, as a ready-made element. */
   avatar?: React.ReactNode;
 }
 
-/** Ein Issue, wie es der `#`-Trigger braucht. */
+/** An issue, in the shape the `#` trigger needs. */
 export interface IssueSource {
   id: string;
-  /** Lesbarer Schlüssel, z.B. `ORB-42`. */
+  /** Readable key, e.g. `ORB-42`. */
   identifier: string;
   title: string;
   icon?: React.ReactNode;
 }
 
-/** Was ein erfolgreicher Anhang-Upload an Attributen für den Knoten liefert. */
+/** The attributes a successful attachment upload delivers for the node. */
 export interface UploadedAttachment {
   id: string;
   url: string;
@@ -110,7 +110,7 @@ export interface UploadedAttachment {
 export interface RichTextEditorProps {
   value: PMDoc | unknown;
   onChange: (doc: PMDoc) => void;
-  /** Läuft bei ⌘/Strg + Enter. */
+  /** Runs on ⌘/Ctrl+Enter. */
   onSubmit?: () => void;
   label: string;
   placeholder?: string;
@@ -118,22 +118,22 @@ export interface RichTextEditorProps {
   members?: MentionSource[];
   issues?: IssueSource[];
   /**
-   * Lädt eine Datei hoch (Werkzeugleiste, Drag&Drop, Einfügen aus der
-   * Zwischenablage) und liefert die aufgelösten Attribute für den Knoten.
-   * Fehlt sie, ist das Feature für diese Editor-Instanz aus (Kommentare,
-   * Create-Issue-Composer) — kein Werkzeugleisten-Knopf, kein Abfangen von
-   * Dateien beim Ablegen/Einfügen.
+   * Uploads a file (toolbar, drag & drop, paste from clipboard) and returns
+   * the resolved attributes for the node. If missing, the feature is off
+   * for this editor instance (comments, the create-issue composer) — no
+   * toolbar button, no intercepting files on drop/paste.
    */
   onUploadAttachment?: (
     file: File,
   ) => Promise<UploadedAttachment | { error: string }>;
-  /** Löscht einen Anhang serverseitig — an den `attachment`-Knoten gereicht. */
+  /** Deletes an attachment server-side — passed to the `attachment` node. */
   onRemoveAttachment?: (id: string) => Promise<void>;
   /**
-   * Registriert eine externe Adresse als Anhang (kein Upload — der Anhang
-   * *ist* der Link), damit sie wie ein hochgeladener Anhang im Text erscheint
-   * und im Anhänge-Bereich auftaucht. Fehlt sie, bietet der Bild-Dialog nur
-   * den Datei-Upload (oder, fehlt auch der, das alte URL-Prompt).
+   * Registers an external address as an attachment (no upload — the
+   * attachment *is* the link), so it appears in the text like an uploaded
+   * attachment and shows up in the attachments section. If missing, the
+   * image dialog only offers file upload (or, if that's also missing, the
+   * old URL prompt).
    */
   onAddLinkAttachment?: (input: {
     url: string;
@@ -141,10 +141,10 @@ export interface RichTextEditorProps {
     mimeType?: string | null;
   }) => Promise<UploadedAttachment | { error: string }>;
   /**
-   * Läuft unmittelbar bevor ein nativer Datei-Dialog aufgeht (Anhang- oder
-   * Bild-Upload). Der Aufrufer (`EditableRichText`) hält damit das Bearbeiten
-   * offen, obwohl der Dialog dem Fenster kurz den Fokus nimmt — sonst bräche
-   * `onBlur` die Bearbeitung mitten im Hochladen ab.
+   * Runs right before a native file dialog opens (attachment or image
+   * upload). This lets the caller (`EditableRichText`) keep editing open
+   * even though the dialog briefly takes focus away from the window —
+   * otherwise `onBlur` would abort editing in the middle of the upload.
    */
   onFilePickerOpen?: () => void;
   className?: string;
@@ -166,7 +166,7 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const t = useTranslations("editor");
-  // Wo das Kalenderblatt steht, solange es offen ist. `null` heißt: zu.
+  // Where the date picker popover sits while it's open. `null` means: closed.
   const [calendar, setCalendar] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -174,9 +174,9 @@ export function RichTextEditor({
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
 
-  /** Setzt den Knoten an der Cursor-Position — ein Inline-Atom wie ein Chip,
-   *  keine eigene Zeile: so passen mehrere kleine Bilder nebeneinander in
-   *  eine Zeile, statt dass jedes einen eigenen Absatz erzwingt. */
+  /** Inserts the node at the cursor position — an inline atom like a chip,
+   *  no line of its own: that way several small images fit side by side on
+   *  one line instead of each forcing its own paragraph. */
   const insertAttachmentNode = useCallback((attrs: UploadedAttachment) => {
     editorRef.current
       ?.chain()
@@ -185,7 +185,7 @@ export function RichTextEditor({
       .run();
   }, []);
 
-  /** Lädt hoch und fügt bei Erfolg den Knoten ein. */
+  /** Uploads and inserts the node on success. */
   const pickAttachment = useCallback(
     async (file: File) => {
       if (!onUploadAttachment) return;
@@ -200,10 +200,11 @@ export function RichTextEditor({
     [onUploadAttachment, insertAttachmentNode],
   );
 
-  /** Registriert eine URL als Anhang und fügt bei Erfolg den Knoten ein. Der
-   *  MIME-Type wird nur geraten, falls die Endung auf ein Bild schließen
-   *  lässt (`guessImageMimeType`) — bei allem anderen bleibt er `null` und
-   *  der Anhang landet als generische Datei-Karte statt als Bildvorschau. */
+  /** Registers a URL as an attachment and inserts the node on success. The
+   *  MIME type is only guessed if the extension suggests an image
+   *  (`guessImageMimeType`) — for anything else it stays `null` and the
+   *  attachment shows up as a generic file card instead of an image
+   *  preview. */
   const pickAttachmentUrl = useCallback(
     async (url: string, name: string) => {
       if (!onAddLinkAttachment) return;
@@ -223,12 +224,12 @@ export function RichTextEditor({
   );
 
   /**
-   * Hängt das Blatt an die Stelle, an der der Cursor gerade steht.
+   * Anchors the date picker popover at the cursor's current position.
    *
-   * Stabil gehalten, weil die Extensions davon abhängen: eine bei jedem Render
-   * neue Funktion würde `useMemo` unten entwerten, den Editor neu aufbauen und
-   * den Cursor springen lassen. Ref und Setter sind selbst stabil, die leere
-   * Liste stimmt also.
+   * Kept stable because the extensions depend on it: a function that's new
+   * on every render would invalidate the `useMemo` below, rebuild the
+   * editor, and make the cursor jump. The ref and setter are themselves
+   * stable, so the empty dependency list is correct.
    */
   const openCalendar = useCallback(() => {
     const view = editorRef.current?.view;
@@ -237,7 +238,7 @@ export function RichTextEditor({
     setCalendar({ x: at.left, y: at.bottom + 6 });
   }, []);
 
-  /** Woran die Adresszeile hängt und womit sie startet. `null` heißt: zu. */
+  /** What the address bar is anchored to and what it starts with. `null` means: closed. */
   const [linkAt, setLinkAt] = useState<{
     reference: ReferenceElement;
     initial: string;
@@ -245,9 +246,10 @@ export function RichTextEditor({
   } | null>(null);
 
   /**
-   * Öffnet die Adresszeile — am angeklickten Knopf, oder ohne einen (Tasten-
-   * kürzel, `/`-Menü) am Cursor. Steht der Cursor schon in einem Link, ist
-   * dessen Adresse vorbelegt — dann wird sie geändert statt neu gesetzt.
+   * Opens the address bar — at the clicked button, or, without one
+   * (keyboard shortcut, `/` menu), at the cursor. If the cursor already sits
+   * in a link, its address is pre-filled — then it's changed rather than set
+   * anew.
    */
   const openLink = useCallback((anchor?: HTMLElement) => {
     const editor = editorRef.current;
@@ -257,32 +259,33 @@ export function RichTextEditor({
     setLinkAt({
       reference: anchor ?? cursorReference(view),
       initial: typeof current === "string" ? current : "",
-      // Ohne Markierung entsteht ein Chip — der braucht einen Namen.
+      // Without a selection, a chip is created — that needs a name.
       withName: view.state.selection.empty,
     });
   }, []);
 
-  /** Woran der Anhang-Dialog hängt, und ob er die Auswahl oder schon die
-   *  Adresszeile zeigt. `null` heißt: zu. */
+  /** What the attachment dialog is anchored to, and whether it shows the
+   *  picker or already the address bar. `null` means: closed. */
   const [attachmentPicker, setAttachmentPicker] = useState<{
     reference: ReferenceElement;
     mode: "choose" | "url";
   } | null>(null);
 
-  /** Welche Option der Auswahl gerade markiert ist — Pfeiltasten wandern hier
-   *  wie im `/`-Menü, nur ohne dessen `SuggestionMenu`: der Anhang-Dialog
-   *  hängt nicht am Suggestion-Plugin, sondern ist eine eigene, freischwebende
-   *  Einblendung, deren Tastatur direkt über `handleKeyDown` unten läuft. */
+  /** Which option of the picker is currently highlighted — arrow keys
+   *  navigate here just like in the `/` menu, only without its
+   *  `SuggestionMenu`: the attachment dialog isn't attached to the
+   *  suggestion plugin but is its own free-floating popover, whose keyboard
+   *  handling runs directly through `handleKeyDown` below. */
   const [attachmentChoiceIndex, setAttachmentChoiceIndex] = useState(0);
 
   /**
-   * Öffnet den Anhang-Dialog — am angeklickten Knopf, oder ohne einen
-   * (Tastenkürzel, `/`-Menü) am Cursor — mit Auswahl zwischen URL und Upload,
-   * wenn beides zur Verfügung steht, sonst direkt mit dem, was da ist. Bietet
-   * die Editor-Instanz keins von beidem (Kommentare, Create-Issue-Composer),
-   * bleibt es beim alten, schlichten URL-Prompt (setzt einen rohen
-   * `image`-Knoten statt eines Anhangs — ohne Upload gibt es nichts, das
-   * getrackt werden könnte).
+   * Opens the attachment dialog — at the clicked button, or, without one
+   * (keyboard shortcut, `/` menu), at the cursor — offering a choice
+   * between URL and upload when both are available, or directly with
+   * whichever one is. If the editor instance offers neither (comments, the
+   * create-issue composer), it falls back to the old, plain URL prompt
+   * (sets a raw `image` node instead of an attachment — without an upload
+   * there's nothing that could be tracked).
    */
   const openAttachmentPicker = useCallback(
     (anchor?: HTMLElement) => {
@@ -307,8 +310,8 @@ export function RichTextEditor({
     [onUploadAttachment, onAddLinkAttachment, onFilePickerOpen],
   );
 
-  /** Die beiden Einträge der Auswahl — eine Liste, damit Tastatur (Pfeile,
-   *  Enter) und Maus (Klick, Hover) denselben Weg zum Ausführen nehmen. */
+  /** The two picker entries — a list, so keyboard (arrows, Enter) and mouse
+   *  (click, hover) take the same path to execution. */
   const attachmentChooserOptions = useMemo(
     () => [
       {
@@ -333,13 +336,13 @@ export function RichTextEditor({
   );
 
   /**
-   * Zwei Wege, je nachdem, ob etwas markiert ist:
+   * Two paths, depending on whether something is selected:
    *
-   * - **Text markiert** → er bekommt die Link-Auszeichnung. Der markierte Text
-   *   *ist* der Name; ein Chip würde ihn ersetzen und wäre das Gegenteil des
-   *   Erwarteten.
-   * - **Nichts markiert** → ein Chip mit Namen und Website-Icon. Eine nackte
-   *   Adresse mitten im Satz liest sich schlecht.
+   * - **Text selected** → it gets the link mark. The selected text *is* the
+   *   name; a chip would replace it and would be the opposite of what's
+   *   expected.
+   * - **Nothing selected** → a chip with a name and website icon. A bare
+   *   address in the middle of a sentence reads poorly.
    */
   const applyLink = (href: string, name: string) => {
     setLinkAt(null);
@@ -352,7 +355,7 @@ export function RichTextEditor({
         .focus()
         .insertContent([
           { type: "linkChip", attrs: { href, label: name } },
-          // Ohne das Leerzeichen klebt das nächste Wort am Chip.
+          // Without the space, the next word would stick to the chip.
           { type: "text", text: " " },
         ])
         .run();
@@ -367,10 +370,10 @@ export function RichTextEditor({
   };
 
   /**
-   * Schließt eine Einblendung und gibt den Cursor zurück.
+   * Closes a popover and returns focus to the cursor.
    *
-   * Ohne das bliebe der Editor zwar offen, aber ohne Fokus: die Adresszeile hat
-   * ihn genommen und beim Schließen an niemanden weitergereicht.
+   * Without this, the editor would stay open but without focus: the
+   * address bar had taken it and, on closing, handed it to no one.
    */
   const dismiss = (close: () => void) => () => {
     close();
@@ -384,22 +387,22 @@ export function RichTextEditor({
       .focus()
       .insertContent([
         { type: "dateChip", attrs: { date: iso } },
-        // Ohne das Leerzeichen klebt das nächste Wort am Chip.
+        // Without the space, the next word would stick to the chip.
         { type: "text", text: " " },
       ])
       .run();
   };
 
-  // Die Extensions hängen an den Vorschlagsdaten. Sie werden einmal pro
-  // Datenstand gebaut — `useEditor` baut den Editor sonst bei jedem Tastendruck
-  // neu auf und der Cursor springt.
+  // The extensions depend on the suggestion data. They're built once per
+  // data snapshot — otherwise `useEditor` would rebuild the editor on every
+  // keystroke and the cursor would jump.
   const extensions = useMemo(() => {
     const mention = MentionChip.configure({
       suggestion: createSuggestion<SuggestionItem>({
         name: "mentionSuggestion",
         char: "@",
-        // Namen bestehen oft aus zwei Wörtern — ohne das bräche die Suche
-        // nach dem ersten Leerzeichen ab.
+        // Names often consist of two words — without this, the search
+        // would break off at the first space.
         allowSpaces: true,
         emptyLabel: () => t("noMembers"),
         items: (query) => {
@@ -408,9 +411,9 @@ export function RichTextEditor({
             members
               .filter((m) => !q || m.name.toLowerCase().includes(q))
               .slice(0, 8)
-              // Kein `hint`: den zeigt die Liste rechts an, und ein Hex-Code
-              // neben jedem Namen wäre Unsinn. Die Farbe holt `onSelect` sich
-              // beim Einfügen aus `members`.
+              // No `hint`: the list shows that on the right, and a hex code
+              // next to every name would be nonsense. `onSelect` fetches the
+              // color from `members` on insertion.
               .map((m) => ({ id: m.id, label: m.name, icon: m.avatar }))
           );
         },
@@ -423,7 +426,7 @@ export function RichTextEditor({
                 type: "mention",
                 attrs: { id: item.id, label: item.label },
               },
-              // Ohne das Leerzeichen klebt das nächste Wort am Chip.
+              // Without the space, the next word would stick to the chip.
               { type: "text", text: " " },
             ])
             .run();
@@ -475,8 +478,8 @@ export function RichTextEditor({
         char: ":",
         emptyLabel: () => t("noEmoji"),
         items: (query) =>
-          // Erst ab zwei Zeichen — sonst geht die Liste bei jedem Doppelpunkt
-          // in einem Verhältnis wie `10:30` auf.
+          // Only from two characters on — otherwise the list would pop open
+          // on every colon in a ratio like `10:30`.
           query.length < 2
             ? []
             : searchEmoji(query).map((e) => ({
@@ -500,9 +503,9 @@ export function RichTextEditor({
       }),
     });
 
-    // `//` ist der Auslöser für Datumsangaben. Er kollidiert nicht mit dem
-    // `/`-Menü: sobald der zweite Schrägstrich steht, scheitert dort die
-    // Präfix-Prüfung von `@tiptap/suggestion` und die Liste schließt sich.
+    // `//` is the trigger for dates. It doesn't collide with the `/` menu:
+    // as soon as the second slash appears, `@tiptap/suggestion`'s prefix
+    // check there fails and the list closes.
     const date = DateChip.configure({
       suggestion: createSuggestion<SuggestionItem>({
         name: "dateSuggestion",
@@ -511,7 +514,7 @@ export function RichTextEditor({
         items: (query) => {
           const q = query.trim().toLowerCase();
 
-          // Etwas Getipptes wie `//1.2.2002` gewinnt und steht allein da.
+          // Something typed like `//1.2.2002` wins and stands alone.
           const typed = parseDateInput(query);
           if (typed) {
             return [
@@ -524,8 +527,8 @@ export function RichTextEditor({
             ];
           }
 
-          // Genau zwei Kürzel: `//now` und `//tomorrow`. Alles Weitere wird
-          // getippt (`//1.2.2002`) oder im Blatt gewählt.
+          // Exactly two shortcuts: `//now` and `//tomorrow`. Everything else
+          // is typed (`//1.2.2002`) or picked from the calendar popover.
           const presets: { id: string; label: string; key: string }[] = [
             { id: isoDate(), label: t("today"), key: "now" },
             { id: isoDate(1), label: t("tomorrow"), key: "tomorrow" },
@@ -533,8 +536,9 @@ export function RichTextEditor({
 
           return [
             ...presets
-              // Auch die übersetzte Beschriftung trifft — wer `//heu` tippt,
-              // findet „heute", ohne dass es ein zweites Kürzel dafür gäbe.
+              // The translated label matches too — someone typing `//heu`
+              // finds "heute" (today), without there being a second
+              // shortcut for it.
               .filter(
                 (p) =>
                   !q ||
@@ -588,22 +592,23 @@ export function RichTextEditor({
 
     return [
       StarterKit.configure({
-        // Eigene Erweiterungen — die Voreinstellungen des Kits würden sie sonst
-        // doppelt registrieren.
+        // Custom extensions — the kit's defaults would otherwise register
+        // them twice.
         link: false,
         codeBlock: false,
       }),
-      // Der Codeblock bekommt eine React-Ansicht: Sprachwahl und Kopierknopf
-      // brauchen ein Menü, das `renderHTML` nicht liefern kann. Die
-      // Hervorhebung selbst läuft über ProseMirror-Dekorationen — deshalb die
-      // Lowlight-Variante statt des schlichten `CodeBlock`.
+      // The code block gets a React view: the language selector and copy
+      // button need a menu, which `renderHTML` can't provide. Highlighting
+      // itself runs via ProseMirror decorations — hence the lowlight
+      // variant instead of the plain `CodeBlock`.
       CodeBlockLowlight.extend({
         addNodeView() {
           return ReactNodeViewRenderer(CodeBlockView);
         },
       }).configure({ lowlight }),
-      // Tiptaps `Link` baut den Anker selbst — der Titel muss deshalb hier
-      // hinein, damit auch beim Schreiben zu sehen ist, wohin ein Wort führt.
+      // Tiptap's `Link` builds the anchor itself — the title therefore has
+      // to go in here, so it's visible even while writing where a word
+      // leads to.
       Link.extend({
         renderHTML({ HTMLAttributes }) {
           const href = HTMLAttributes.href;
@@ -622,9 +627,9 @@ export function RichTextEditor({
       TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: true } }),
       Panel,
-      // Der Hinweis auf das `/`-Menü steht im Platzhalter, nicht in der
-      // Werkzeugleiste: dort sah man ihn immer, gebraucht wird er aber genau
-      // dann, wenn das Feld noch leer ist.
+      // The hint about the `/` menu lives in the placeholder, not in the
+      // toolbar: there it would always be visible, but it's only needed
+      // precisely when the field is still empty.
       Placeholder.configure({
         placeholder: placeholder
           ? t("placeholderWithHint", { placeholder, hint: t("slashHint") })
@@ -650,13 +655,14 @@ export function RichTextEditor({
 
   const editor = useEditor({
     extensions,
-    // `PMDoc` beschreibt Attribute als `unknown`, Tiptap als `any` — inhaltlich
-    // dasselbe Dokument, nur strenger typisiert. Die Umdeutung bleibt auf diese
-    // eine Stelle beschränkt.
+    // `PMDoc` describes attributes as `unknown`, Tiptap as `any` — the same
+    // document in substance, just typed more strictly. The reinterpretation
+    // stays confined to this one spot.
     content: toDoc(value) as JSONContent,
     autofocus: autoFocus ? "end" : false,
-    // Next rendert Client-Komponenten auch auf dem Server vor; ProseMirror darf
-    // dabei nicht sofort loslaufen, sonst weicht der erste Client-Baum ab.
+    // Next pre-renders client components on the server too; ProseMirror must
+    // not start running immediately there, or the first client tree would
+    // diverge.
     immediatelyRender: false,
     editorProps: {
       attributes: {
@@ -668,10 +674,11 @@ export function RichTextEditor({
       handleKeyDown: (_view, event) => {
         const mod = event.metaKey || event.ctrlKey;
 
-        // Die Auswahl im Anhang-Dialog ist keine `SuggestionMenu`-Instanz
-        // (die hängt am Suggestion-Plugin, dieser Dialog nicht) — die
-        // Tastatur läuft deshalb hier statt über deren `onKeyDown`. Gleiche
-        // Bedienung wie im `/`-Menü: ↑ ↓ wandern, ↵/Tab wählt, Esc schließt.
+        // The picker in the attachment dialog isn't a `SuggestionMenu`
+        // instance (that's attached to the suggestion plugin, this dialog
+        // isn't) — keyboard handling therefore runs here instead of via its
+        // `onKeyDown`. Same controls as in the `/` menu: ↑ ↓ navigate,
+        // ↵/Tab selects, Esc closes.
         if (attachmentPicker?.mode === "choose") {
           if (event.key === "Escape") {
             event.preventDefault();
@@ -707,10 +714,9 @@ export function RichTextEditor({
           return true;
         }
 
-        // ⌘/Strg + K öffnet die Adresszeile — die verbreitete Belegung für
-        // „Link". `stopPropagation`, damit die Tastenfolge nicht zusätzlich
-        // bei einem übergeordneten Handler landet, solange hier geschrieben
-        // wird.
+        // ⌘/Ctrl+K opens the address bar — the common shortcut for "Link".
+        // `stopPropagation` so the key combo doesn't additionally land on a
+        // parent handler while writing is happening here.
         if ((event.key === "k" || event.key === "K") && mod) {
           event.preventDefault();
           event.stopPropagation();
@@ -720,30 +726,29 @@ export function RichTextEditor({
 
         return false;
       },
-      // Dateien aus Drag&Drop bzw. der Zwischenablage (z. B. ein eingefügter
-      // Screenshot) laufen über denselben Upload-Pfad wie der
-      // Werkzeugleisten-Knopf. Ohne `onUploadAttachment` bleibt das
-      // Standardverhalten (Bild einfügen als Base64, Datei im Tab öffnen).
+      // Files from drag & drop or the clipboard (e.g. a pasted screenshot)
+      // go through the same upload path as the toolbar button. Without
+      // `onUploadAttachment`, the default behavior applies (insert image as
+      // base64, open file in a tab).
       //
-      // `moved` ist `true`, wenn ProseMirror den Drop bereits als internes
-      // Verschieben eines vorhandenen Knotens erkannt hat (Ziehen eines
-      // Bildes an eine andere Stelle im selben Dokument). Chrome/Safari legen
-      // dabei trotzdem eine synthetische `File` in `dataTransfer.files` ab,
-      // weil im gezogenen DOM ein `<img>` steckt — ohne diese Abfrage würde
-      // das Bild also erneut hochgeladen und als *zweiter*, neuer
-      // `attachment`-Knoten (ohne die gespeicherte `width`, daher in
-      // Standardgröße) eingefügt, während der ursprüngliche Knoten liegen
-      // bleibt: aus dem Verschieben wird eine Kopie. Der eigentliche interne
-      // Umzug läuft weiter über ProseMirrors eigene Behandlung, wenn hier
-      // `false` zurückkommt.
+      // `moved` is `true` when ProseMirror has already recognized the drop
+      // as an internal move of an existing node (dragging an image to a
+      // different spot in the same document). Chrome/Safari still place a
+      // synthetic `File` in `dataTransfer.files` in that case, because the
+      // dragged DOM contains an `<img>` — without this check the image
+      // would therefore be uploaded again and inserted as a *second*, new
+      // `attachment` node (without the saved `width`, hence at default
+      // size), while the original node stays put: the move turns into a
+      // copy. The actual internal move continues to go through
+      // ProseMirror's own handling when `false` is returned here.
       handleDrop: (view, event, _slice, moved) => {
         if (moved) return false;
 
-        // Aus der Anhänge-Sektion gezogen (`IssueAttachments.tsx`s
-        // `onDragStart`, per `ATTACHMENT_DRAG_MIME`) — kein Upload, nur ein
-        // Verweis auf dieselbe `Attachment`-Zeile, eingefügt genau an der
-        // Position, über der losgelassen wurde (nicht am aktuellen Cursor,
-        // der könnte ganz woanders stehen).
+        // Dragged from the attachments section (`IssueAttachments.tsx`'s
+        // `onDragStart`, via `ATTACHMENT_DRAG_MIME`) — no upload, just a
+        // reference to the same `Attachment` row, inserted exactly at the
+        // position it was dropped over (not at the current cursor, which
+        // could be sitting somewhere else entirely).
         const dragged = event.dataTransfer?.getData(ATTACHMENT_DRAG_MIME);
         if (dragged && onUploadAttachment) {
           let attrs: AttachmentDragPayload;
@@ -782,8 +787,8 @@ export function RichTextEditor({
         return true;
       },
     },
-    // `toPlainDoc` ist Pflicht, nicht Vorsicht: ProseMirrors Attribute haben
-    // keinen Prototyp und überleben den Weg zu einer Server Function nicht.
+    // `toPlainDoc` is mandatory, not just caution: ProseMirror's attributes
+    // have no prototype and don't survive the trip to a Server Function.
     onUpdate: ({ editor }) => onChange(toPlainDoc(editor.getJSON() as PMDoc)),
   });
 
@@ -819,13 +824,14 @@ export function RichTextEditor({
           {attachmentError}
         </p>
       )}
-      {/* Der Ziehgriff ist kein fokussierbares Element: Ziehen nimmt dem Text
-          den Fokus und gibt ihn an niemanden weiter. Danach zurückgeben, sonst
-          steht der Cursor nach dem Vergrößern nicht mehr im Text.
+      {/* The resize handle isn't a focusable element: dragging takes focus
+          away from the text and doesn't hand it to anyone else. It must be
+          returned afterward, or the cursor no longer sits in the text after
+          resizing.
 
-          Die Abfrage auf `isFocused` ist wichtig — beim Markieren mit der Maus
-          ist der Editor bereits fokussiert, und ein `focus()` würde die
-          gerade gezogene Auswahl wieder einklappen. */}
+          The `isFocused` check matters — while selecting with the mouse the
+          editor is already focused, and a `focus()` call would collapse the
+          selection currently being dragged. */}
       <EditorContent
         editor={editor}
         className={styles.content}
@@ -836,12 +842,13 @@ export function RichTextEditor({
         }}
       />
 
-      {/* Am `body` statt im Editor: der scrollt, und ein Blatt darin würde
-          mitgeschnitten. Die Koordinaten stammen vom Cursor. */}
+      {/* On `body` instead of inside the editor: that one scrolls, and a
+          popover inside it would get clipped along. The coordinates come
+          from the cursor. */}
       {calendar &&
         createPortal(
           <>
-            {/* Ein Klick daneben schließt — ohne den Fokus aus dem Text zu ziehen. */}
+            {/* A click outside closes it — without pulling focus out of the text. */}
             <button
               type="button"
               className={styles.floatingBackdrop}
@@ -931,9 +938,10 @@ export function RichTextEditor({
                           ? ` ${styles.active}`
                           : ""
                       }`}
-                      // Der Fokus muss im Editor bleiben, sonst greift die
-                      // Pfeiltasten-/Enter-Behandlung in `handleKeyDown` nicht
-                      // mehr, weil der Editor sie nur bei eigenem Fokus sieht.
+                      // Focus must stay in the editor, otherwise the
+                      // arrow-key/Enter handling in `handleKeyDown` stops
+                      // applying, because the editor only sees it while it
+                      // has focus itself.
                       onMouseDown={(e) => e.preventDefault()}
                       onMouseEnter={() => setAttachmentChoiceIndex(index)}
                       onClick={() => option.onSelect()}
@@ -968,40 +976,40 @@ export function RichTextEditor({
 }
 
 /**
- * Die Einträge des `/`-Menüs.
+ * The entries of the `/` menu.
  *
- * Reihenfolge nach dem, was in einem Issue tatsächlich getippt wird — nicht
- * nach der Ordnung der Auszeichnungssprache:
+ * Ordered by what's actually typed in an issue — not by markup language
+ * convention:
  *
- * - **Listen zuerst.** Aufzählungen gliedern fast jede Beschreibung, und
- *   Checklisten tragen Akzeptanzkriterien und Teilaufgaben. Das ist der
- *   häufigste Griff überhaupt.
- * - **Dann Überschriften.** „Schritte zur Reproduktion", „Erwartet",
- *   „Tatsächlich" — Gliederung kommt gleich danach. Innerhalb der Gruppe
- *   bleibt es bei 1, 2, 3: eine umsortierte Zahlenfolge liest sich wie ein
- *   Fehler, auch wenn Ebene 2 öfter gebraucht wird.
- * - **Blöcke, Codeblock voran.** Logs und Stapelspuren sind in einem
- *   Fehlerbericht Alltag; Zitat, Panels, Tabelle und Trennlinie folgen.
- * Wo es eine Markdown-Eingaberegel gibt, steht sie als Hinweis rechts —
- * abgelesen aus den Erweiterungen, nicht geraten. Wer sie kennt, tippt
- * schneller als er das Menü öffnen kann; wer sie nicht kennt, lernt sie hier.
+ * - **Lists first.** Bullet points structure almost every description, and
+ *   checklists carry acceptance criteria and subtasks. That's the single
+ *   most common reach overall.
+ * - **Then headings.** "Steps to reproduce", "Expected", "Actual" —
+ *   structure comes right after. Within the group it stays at 1, 2, 3: a
+ *   reordered number sequence reads like a mistake, even though level 2 is
+ *   used more often.
+ * - **Blocks, code block first.** Logs and stack traces are everyday
+ *   material in a bug report; quote, panels, table, and divider follow.
+ * Where there's a markdown input rule, it's shown as a hint on the right —
+ * read off from the extensions, not guessed. Someone who knows it types
+ * faster than they could open the menu; someone who doesn't learns it here.
  *
- * - **Einfügen zuletzt.** Erwähnung und Issue haben mit `@` und `#` eigene
- *   Auslöser — hier stehen sie nur, damit man sie findet. Die drei
- *   Datumsangaben ganz ans Ende: sie belegen sonst drei Zeilen im Sichtfeld
- *   für etwas, das selten gebraucht wird.
+ * - **Insert last.** Mention and issue have their own triggers with `@` and
+ *   `#` — they're listed here only so they can be found. The three date
+ *   entries go all the way to the end: otherwise they'd take up three lines
+ *   in view for something rarely needed.
  */
 function slashItems(
   t: EditorTranslator,
   openLink: () => void,
   openAttachmentPicker: () => void,
 ): SlashCommandItem[] {
-  /** Erst den `/…`-Text wegnehmen, dann den Befehl ausführen. */
+  /** First remove the `/…` text, then run the command. */
   const at = (editor: Editor, range: { from: number; to: number }) =>
     editor.chain().focus().deleteRange(range);
 
   return [
-    // ── Listen ───────────────────────────────────────────────────────────────
+    // ── Lists ────────────────────────────────────────────────────────────────
     {
       id: "bulletList",
       label: t("bulletList"),
@@ -1075,7 +1083,7 @@ function slashItems(
         at(editor, range).setNode("heading", { level: 3 }).run(),
     },
 
-    // ── Blöcke ───────────────────────────────────────────────────────────────
+    // ── Blocks ───────────────────────────────────────────────────────────────
     {
       id: "codeBlock",
       label: t("codeBlock"),
@@ -1147,7 +1155,7 @@ function slashItems(
       run: ({ editor, range }) => at(editor, range).setHorizontalRule().run(),
     },
 
-    // ── Einfügen ─────────────────────────────────────────────────────────────
+    // ── Insert ───────────────────────────────────────────────────────────────
     {
       id: "link",
       label: t("link"),
@@ -1162,8 +1170,8 @@ function slashItems(
       ],
       group: t("groupInsert"),
       icon: <Icon icon="lucide:link" width={16} />,
-      // Erst den `/…`-Text wegnehmen, dann die Adresszeile öffnen — sie hängt
-      // sich an die Stelle, an der der Cursor danach steht.
+      // First remove the `/…` text, then open the address bar — it anchors
+      // itself to wherever the cursor ends up afterward.
       run: ({ editor, range }) => {
         at(editor, range).run();
         openLink();
@@ -1206,7 +1214,7 @@ function slashItems(
       ],
       group: t("groupInsert"),
       icon: <Icon icon="lucide:at-sign" width={16} />,
-      // Den Trigger einfach schreiben — daraufhin geht dessen eigene Liste auf.
+      // Simply type the trigger — its own list pops open in response.
       run: ({ editor, range }) => at(editor, range).insertContent("@").run(),
     },
     {
@@ -1232,7 +1240,7 @@ function slashItems(
       keywords: ["date", "datum", "kalender", "calendar", "termin", "frist"],
       group: t("groupInsert"),
       icon: <Icon icon="lucide:calendar" width={16} />,
-      // Wie bei Erwähnung und Issue: den Auslöser schreiben und übergeben.
+      // Same as mention and issue: type the trigger and hand off to it.
       run: ({ editor, range }) => at(editor, range).insertContent("//").run(),
     },
   ];

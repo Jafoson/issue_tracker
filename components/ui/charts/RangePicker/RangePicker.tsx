@@ -6,23 +6,22 @@ import styles from "./rangePicker.module.scss";
 interface Props {
   value: RangeKey;
   onChange: (range: RangeKey) => void;
-  /** Barrierefreier Name der Gruppe, z. B. „Zeitraum". */
+  /** Accessible name of the group, e.g. "Time range". */
   label: string;
-  /** Beschriftung je Zeitraum — die Übersetzung kommt von außen herein. */
+  /** Label per range — the translation comes in from outside. */
   labelFor: (range: RangeKey) => string;
 }
 
 /**
- * Der Zeitraum eines Dashboards: vier Knöpfe, ein Wert.
+ * The time range of a dashboard: four buttons, one value.
  *
- * Ein `fieldset`, weil es genau das ist — mehrere Knöpfe, die zusammen einen
- * Wert setzen. Die Beschriftung kommt per `aria-label` statt als sichtbare
- * Legende: die Knöpfe sagen selbst, worum es geht.
+ * A `fieldset` because that's exactly what it is — several buttons that
+ * together set one value. The label comes via `aria-label` instead of a
+ * visible legend: the buttons themselves say what it's about.
  *
- * Bewusst kein `SegmentedControl`: das ist ein Umschalter zwischen Ansichten
- * und trägt den Akzent der Anwendung. Der Zeitraum ist eine Einstellung *über*
- * dem Inhalt, keine Ansicht davon — er tritt zurück und markiert nur, was
- * gerade gilt.
+ * Deliberately not a `SegmentedControl`: that's a toggle between views and
+ * carries the app's accent color. The time range is a setting *above* the
+ * content, not a view of it — it recedes and only marks what currently applies.
  */
 export function RangePicker({ value, onChange, label, labelFor }: Props) {
   return (

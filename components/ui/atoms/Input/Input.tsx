@@ -8,22 +8,22 @@ type InputVariant = "text" | "password" | "search" | "date";
 type InputSize = "sm" | "md";
 
 /**
- * Wie das Feld aussieht — unabhängig davon, *was* es aufnimmt (`variant`).
+ * How the field looks — independent of *what* it captures (`variant`).
  *
- * `boxed` ist der Regelfall: gerahmt, feste Höhe, ein erkennbares Formularfeld.
+ * `boxed` is the default: bordered, fixed height, a recognizable form field.
  *
- * `title` steht am Kopf eines Anlege-Dialogs und sieht aus wie die Überschrift
- * des entstehenden Datensatzes, nicht wie ein Feld: ohne Rahmen, in der Größe
- * der Überschrift, mit einer Fläche erst beim Überfahren. Dieselbe Fläche wie
- * bei Titel und Beschreibung der Detailansicht, damit beide Wege gleich wirken.
+ * `title` sits at the top of a creation dialog and looks like the heading of
+ * the record being created, not like a field: no border, sized like a
+ * heading, with a background that only appears on hover. Same surface as
+ * the title and description in the detail view, so both paths feel the same.
  */
 type InputAppearance = "boxed" | "title";
 
 interface InputProps
   extends Omit<
     React.InputHTMLAttributes<HTMLInputElement>,
-    // `prefix` gibt es am `<input>` schon — als RDFa-Attribut, das hier
-    // niemand meint. Der Vorsatz unten übernimmt den Namen.
+    // `prefix` already exists on `<input>` — as an RDFa attribute that
+    // nobody here means. The prefix below takes over the name.
     "type" | "size" | "prefix"
   > {
   variant?: InputVariant;
@@ -35,14 +35,14 @@ interface InputProps
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   /**
-   * Ein fester Vorsatz, der zum Wert gehört, aber nicht zur Eingabe — das `@`
-   * eines Benutzernamens, das `/` eines Pfades.
+   * A fixed prefix that belongs to the value but isn't part of the input —
+   * the `@` of a username, the `/` of a path.
    *
-   * Anders als `iconLeft`: ein Symbol steht *neben* dem Wert und braucht
-   * Abstand, ein Vorsatz steht unmittelbar *davor* und bildet mit dem Getippten
-   * ein Wort. Deshalb liegt er nicht als absolut gesetzte Marke im Feld,
-   * sondern als erstes Kind im Rahmen — der Rahmen wandert dafür vom `<input>`
-   * auf dessen Hülle.
+   * Unlike `iconLeft`: an icon sits *next to* the value and needs spacing, a
+   * prefix sits directly *in front of* it and forms one word with what's
+   * typed. That's why it isn't positioned as an absolutely placed marker
+   * inside the field, but as the first child within the border — the border
+   * moves from the `<input>` to its wrapper for this.
    */
   prefix?: React.ReactNode;
   ref?: React.Ref<HTMLInputElement>;
@@ -64,8 +64,8 @@ export function Input({
   ...rest
 }: InputProps) {
   const [showPw, setShowPw] = useState(false);
-  // Nur für den Vorsatz: sein `htmlFor` braucht ein Ziel, auch wenn das Feld
-  // ohne sichtbare Beschriftung auskommt.
+  // Only for the prefix: its `htmlFor` needs a target even when the field
+  // has no visible label.
   const fallbackId = useId();
 
   const inputId =
@@ -80,9 +80,9 @@ export function Input({
   const hasLeft = !!leftNode;
   const hasRight = variant === "password" || !!iconRight;
 
-  // Mit Vorsatz trägt die Hülle den Rahmen und das `<input>` sitzt nackt darin.
-  // Nur so stehen Vorsatz und Wert in derselben Zeile, ohne die Lücke, die eine
-  // absolut gesetzte Marke hinterlässt.
+  // With a prefix, the wrapper carries the border and the `<input>` sits
+  // bare inside it. Only this way do prefix and value end up on the same
+  // line, without the gap an absolutely positioned marker would leave.
   const framed = !!prefix && appearance === "boxed";
 
   const inputType =
@@ -112,11 +112,11 @@ export function Input({
           .join(" ")}
       >
         {hasLeft && <span className={styles.iconLeft}>{leftNode}</span>}
-        {/* Als `<label>` und nicht als `<span>`: der Vorsatz sieht aus wie ein
-            Teil des Feldes, also muss ein Klick darauf auch dorthin führen —
-            das kann das Element von sich aus, ohne Handler. `aria-hidden`,
-            weil er die Beschriftung nicht ist: `@` ist Schmuck am Wert, und
-            vorgelesen würde er den Namen des Feldes verfälschen. */}
+        {/* As a `<label>` rather than a `<span>`: the prefix looks like part
+            of the field, so a click on it must also focus the input — the
+            element does that on its own, no handler needed. `aria-hidden`
+            because it isn't the label: `@` is decoration on the value, and
+            reading it aloud would misrepresent the field's name. */}
         {framed && (
           <label aria-hidden="true" className={styles.prefix} htmlFor={inputId}>
             {prefix}

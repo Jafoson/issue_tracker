@@ -25,7 +25,7 @@ const PRIORITY_ICONS: Record<number, string> = {
   4: "lucide:triangle-alert",
 };
 
-/** Neutraler Ton, wenn der Aufrufer keine Workspace-Farbe kennt. */
+/** Neutral tone when the caller doesn't know a workspace color. */
 const FALLBACK_STATUS_COLOR = "#8a9099";
 
 // ---- Status icon: tinted with the workspace's colour for that status ----
@@ -36,7 +36,7 @@ export function StatusIcon({
 }: {
   status: string;
   size?: number;
-  /** Farbe des Status aus den Workspace-Daten. */
+  /** Color of the status from the workspace data. */
   color?: string;
 }) {
   return (
@@ -92,9 +92,10 @@ export function LabelIcon({
 
 // ---- Label dots: stand-in for a multi-label selection ----
 /**
- * Up to three label colours side by side. Bewusst ohne Überlappung: der Ring,
- * der überlappende Punkte trennen müsste, hätte die Hintergrundfarbe des
- * Trägers — und die wechselt, sobald ein Chip in den Selected-Zustand geht.
+ * Up to three label colours side by side. Deliberately without overlap: the
+ * ring that would need to separate overlapping dots would have to take the
+ * background color of its container — and that changes as soon as a chip
+ * enters the selected state.
  */
 export function LabelDots({
   labels,
@@ -120,7 +121,7 @@ export function TypeIcon({
 }: {
   type: string;
   size?: number;
-  /** Farbe des Issue-Typs aus den Workspace-Daten. */
+  /** Color of the issue type from the workspace data. */
   color?: string;
 }) {
   const common = {

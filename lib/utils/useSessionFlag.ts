@@ -3,18 +3,18 @@
 import { useCallback, useState } from "react";
 
 /**
- * Ein Ja/Nein, das die Sitzung überdauert, aber nicht länger.
+ * A yes/no that outlives the session, but no longer.
  *
- * Gedacht für Ansichtsentscheidungen, die man einmal trifft und dann eine Weile
- * behalten will — etwa ob die Issue-Detailansicht als Seitenpanel oder als
- * großer Dialog aufgeht. Solche Entscheidungen überleben zu Recht den Wechsel
- * zwischen Liste und Board (die Komponente dahinter wird dabei neu montiert),
- * aber nicht den nächsten Besuch: dort fängt man wieder mit dem Normalfall an.
- * Deshalb `sessionStorage` und nicht `localStorage`.
+ * Meant for view decisions made once and then kept around for a while —
+ * say, whether the issue detail view opens as a side panel or as a large
+ * dialog. Such decisions rightly survive switching between list and board
+ * (the component behind them gets remounted in the process), but not the
+ * next visit: there you start over with the normal case. That's why
+ * `sessionStorage` and not `localStorage`.
  *
- * Gelesen wird beim ersten Render, nicht in einem Effekt — sonst stünde für
- * einen Frame der falsche Wert. Das geht hier gefahrlos, weil nur Client-Bäume
- * den Hook verwenden; serverseitig fällt er auf `fallback` zurück.
+ * Read on the first render, not in an effect — otherwise the wrong value
+ * would show for one frame. That's safe here because only client trees use
+ * this hook; on the server it falls back to `fallback`.
  */
 export function useSessionFlag(key: string, fallback = false) {
   const [value, setValue] = useState(() => {
@@ -23,8 +23,8 @@ export function useSessionFlag(key: string, fallback = false) {
       const stored = window.sessionStorage.getItem(key);
       return stored === null ? fallback : stored === "true";
     } catch {
-      // Speicher gesperrt (privater Modus, strenge Einstellungen) — dann eben
-      // ohne Gedächtnis. Ein Ansichtsdetail ist keinen Absturz wert.
+      // Storage blocked (private mode, strict settings) — fine, no memory
+      // then. A view detail isn't worth crashing over.
       return fallback;
     }
   });
@@ -35,7 +35,7 @@ export function useSessionFlag(key: string, fallback = false) {
       try {
         window.sessionStorage.setItem(key, String(next));
       } catch {
-        // Siehe oben: der Zustand gilt dann nur für diese Montierung.
+        // See above: the state then only applies to this mount.
       }
     },
     [key],

@@ -6,14 +6,14 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* Volle Breite wie die anderen Bereiche der Plattformverwaltung. Was hier
-     steht, füllt sie auch: Kacheln und Diagramme wachsen mit, statt in der
-     Mitte zu kleben. Der einzige reine Fließtext — der Hinweiskasten — bringt
-     seine eigene Zeilenlänge mit (`.noticeBody`) und läuft nicht mit auf. */
+  /* Full width, like the other areas of platform administration. What's in
+     here fills it too: tiles and charts grow with it instead of sticking to
+     the center. The one piece of plain running text — the notice box —
+     brings its own line length (`.noticeBody`) and doesn't stretch along. */
 }
 
-/* ── Bedienelemente ─────────────────────────────────────────────────────────
-   Eine Reihe, oben, für alles darunter. */
+/* ── Controls ─────────────────────────────────────────────────────────────
+   A single row, at the top, for everything below it. */
 .controls {
   display: flex;
   align-items: center;
@@ -22,7 +22,7 @@
   gap: 10px;
 }
 
-/* ── Hinweis ──────────────────────────────────────────────────────────────── */
+/* ── Notice ───────────────────────────────────────────────────────────────── */
 
 .notice {
   position: relative;
@@ -69,9 +69,9 @@
   right: 9px;
 }
 
-/* ── Inhalt ─────────────────────────────────────────────────────────────────
-   Beim Wechsel des Zeitraums bleibt das alte Bild stehen und tritt zurück:
-   kein Skelett, kein Sprung, keine Leere. */
+/* ── Content ──────────────────────────────────────────────────────────────
+   When the period changes, the old view stays in place and recedes: no
+   skeleton, no jump, no emptiness. */
 .content {
   display: flex;
   flex-direction: column;
@@ -83,9 +83,9 @@
   opacity: 0.55;
 }
 
-/* ── Kennzahlen ─────────────────────────────────────────────────────────────
-   Vier Kacheln: was im Zeitraum entstanden ist, wie es sich zum Zeitraum davor
-   verhält, und wovon es ein Teil ist. */
+/* ── Key figures ──────────────────────────────────────────────────────────
+   Four tiles: what was created in the period, how it compares to the period
+   before, and what it's a part of. */
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -122,8 +122,8 @@ a.kpi:hover {
   color: var(--outline);
 }
 
-/* Proportionale Ziffern, keine tabellarischen: die Zahl steht groß und für
-   sich, und gleich breite Ziffern ließen sie bei dieser Größe lose wirken. */
+/* Proportional digits, not tabular: the number stands large and on its own,
+   and equal-width digits would make it look loose at this size. */
 .kpiValue {
   font-size: var(--text-2xl);
   font-weight: 650;
@@ -139,8 +139,8 @@ a.kpi:hover {
   font-size: var(--text-xs);
 }
 
-/* Die Veränderung trägt Richtung *und* Zeichen — bei Rot-Grün-Schwäche bliebe
-   von der Farbe allein nichts übrig. */
+/* The change carries direction *and* sign — for red-green color blindness,
+   color alone would convey nothing. */
 .delta {
   display: inline-flex;
   align-items: center;
@@ -161,17 +161,16 @@ a.kpi:hover {
   color: var(--outline);
 }
 
-/* ── Diagramme ──────────────────────────────────────────────────────────────
+/* ── Charts ───────────────────────────────────────────────────────────────
 
-   Der Verlauf über die volle Breite, darunter eine Reihe mit dreien.
+   The trend over the full width, below it a row of three.
 
-   Zwei getrennte Behälter statt eines Rasters mit einer Karte über `1 / -1`:
-   ein Element, das alle Spuren überspannt, hält jede davon besetzt — und
-   `auto-fit` faltet nur *leere* Spuren weg. Auf einem breiten Bildschirm
-   entstünden so fünf Spuren, in denen drei Karten stünden, und rechts bliebe
-   eine Lücke, die aussähe wie ein Fehler. Ohne das überspannende Element
-   entscheidet die Reihe ihre Spaltenzahl selbst und teilt die Breite unter
-   ihren dreien auf. */
+   Two separate containers instead of one grid with a card spanning `1 / -1`:
+   an element spanning all tracks keeps every one of them occupied — and
+   `auto-fit` only collapses *empty* tracks. On a wide screen that would
+   produce five tracks holding three cards, leaving a gap on the right that
+   looks like a bug. Without the spanning element, the row decides its own
+   column count and splits the width among its three cards. */
 .charts {
   display: flex;
   flex-direction: column;
@@ -185,7 +184,7 @@ a.kpi:hover {
   align-items: stretch;
 }
 
-/* ── Braucht Aufmerksamkeit ─────────────────────────────────────────────── */
+/* ── Needs attention ──────────────────────────────────────────────────────── */
 
 .group {
   display: flex;
@@ -256,8 +255,9 @@ a.card:hover {
   color: var(--outline);
 }
 
-/* Eine Zahl, die möglichst bei null stünde, und es gerade nicht tut. Nur
-   Zeichen und Kante färben sich: leuchteten alle drei Karten, sähe man keine. */
+/* A number that would ideally sit at zero, and right now doesn't. Only the
+   icon and the border take on color: if all three cards glowed, you'd see
+   none of them. */
 .card[data-warn] {
   border-color: color-mix(in oklab, var(--amber) 45%, var(--outline-variant));
 

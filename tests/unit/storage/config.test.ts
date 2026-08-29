@@ -30,7 +30,7 @@ describe("storageConfig()", () => {
   it("ist null, solange Keys oder Bucket fehlen", () => {
     process.env.S3_ENDPOINT = "http://localhost:9000";
     process.env.S3_ACCESS_KEY_ID = "id";
-    // Secret und Bucket fehlen noch.
+    // Secret and bucket are still missing.
     expect(storageConfig()).toBeNull();
   });
 

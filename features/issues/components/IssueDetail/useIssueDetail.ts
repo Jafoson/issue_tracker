@@ -12,44 +12,44 @@ import type { PMDoc } from "@/lib/richtext/types";
 import type { IssueDetail } from "@/types";
 
 interface UseIssueDetailOptions {
-  /** Interne Id oder Referenz der Form „PREFIX-123“. */
+  /** Internal id or reference of the form "PREFIX-123". */
   issueRef: string;
   data: IssueEditorData;
   /**
-   * Vorgeladenes Issue. Die Vollseite hat es vom Server, das Panel kennt beim
-   * Öffnen nur die Referenz aus der URL und lädt selbst nach.
+   * Preloaded issue. The full page gets it from the server, the panel only
+   * knows the reference from the URL when opening and fetches it itself.
    */
   initialIssue?: IssueDetail;
-  /** Läuft, nachdem das Issue gelöscht wurde — Panel schließen, Seite verlassen. */
+  /** Runs after the issue has been deleted — close the panel, leave the page. */
   onDeleted: () => void;
 }
 
 export interface IssueDetailState {
-  /** `null`, solange geladen wird — oder wenn es die Referenz nicht gibt. */
+  /** `null` while loading — or if the reference doesn't exist. */
   issue: IssueDetail | null;
-  /** Geladen und nichts gefunden. Unterscheidet den Leer- vom Ladezustand. */
+  /** Loaded and found nothing. Distinguishes the empty state from the loading state. */
   isMissing: boolean;
   patch: (patch: IssuePatch) => void;
   comment: (body: PMDoc) => Promise<void>;
   remove: () => void;
   /**
-   * Holt das Issue erneut — für Änderungen, die am Hook vorbei geschrieben
-   * wurden (z. B. Anhänge: eigene Server Actions, kein `patch()`). Das Panel
-   * hängt an keinem Server-Render, ein bloßes `router.refresh()` allein
-   * berührt `fetched` unten nicht.
+   * Refetches the issue — for changes written past the hook (e.g.
+   * attachments: their own server actions, no `patch()`). The panel isn't
+   * tied to any server render, so a plain `router.refresh()` alone doesn't
+   * touch `fetched` below.
    */
   refresh: () => Promise<void>;
 }
 
 /**
- * Lädt das Issue zur Referenz und schreibt Änderungen zurück — die gemeinsame
- * Grundlage von Seitenpanel (`IssueDetail`) und Vollseite (`IssueDetailPage`).
- * Beide zeigen dasselbe Issue und ändern es auf dieselbe Weise; nur die Hülle
- * darum unterscheidet sich, und die gehört nicht hierher.
+ * Loads the issue for the given reference and writes changes back — the
+ * shared foundation of the side panel (`IssueDetail`) and the full page
+ * (`IssueDetailPage`). Both show the same issue and change it the same
+ * way; only the shell around it differs, and that doesn't belong here.
  *
- * Nach jeder Änderung wird zweimal aufgefrischt: das Issue selbst über die API
- * (das Panel hängt an keinem Server-Render) und die Route über `router.refresh`,
- * damit Liste oder Board darunter denselben Stand zeigen.
+ * After every change, two things are refreshed: the issue itself via the
+ * API (the panel isn't tied to any server render) and the route via
+ * `router.refresh`, so the list or board underneath shows the same state.
  */
 export function useIssueDetail({
   issueRef,

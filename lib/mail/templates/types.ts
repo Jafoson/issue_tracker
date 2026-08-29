@@ -1,4 +1,4 @@
-/** Der Inhalt einer Mail, ohne den Empfänger — den kennt nur der Aufrufer. */
+/** The content of an email, without the recipient — only the caller knows that. */
 export interface MailContent {
   subject: string;
   html: string;

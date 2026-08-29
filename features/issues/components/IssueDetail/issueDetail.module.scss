@@ -1,61 +1,66 @@
-/* Detailansicht eines Issues. Fläche, Rahmen und Kopfzeile kommen vom Modal —
-   hier liegt der Aufbau, und der hängt an der Breite:
+/* Detail view of an issue. Background, border, and header come from the
+   modal — the layout lives here, and it depends on the width:
 
-   `.body`  — das schmale Seitenpanel. Alles untereinander in einer Spalte:
-              Titel, Attributleiste, Beschreibung, Labels, Herkunft, Kommentare.
-   `.split` — der ausgeklappte Dialog und die eingebettete Vollseite. Inhalt
-              links, Attribute in einer eigenen Spalte rechts. */
+   `.body`  — the narrow side panel. Everything stacked in one column:
+              title, attribute bar, description, labels, origin, comments.
+   `.split` — the expanded dialog and the embedded full page. Content on
+              the left, attributes in their own column on the right. */
 
 .detail {
-  /* Angedockt steht das Panel neben der Seite, nicht über ihr — ein Schatten
-     nach links würde einen Abstand behaupten, den es nicht gibt. Die Kante
-     trägt eine Linie, das genügt. Die beiden Zustände darunter, die doch über
-     der Seite liegen, holen sich ihren Schatten zurück. */
+  /* Docked, the panel sits next to the page, not above it — a shadow to
+     the left would imply a gap that doesn't exist. The edge carries a
+     line, that's enough. The two states below, which do sit above the
+     page, reclaim their shadow. */
   --modal-shadow: none;
   --detail-pad-x: 28px;
-  /* Ausgangsbreite der Attributspalte. Ziehen überschreibt sie inline —
-     `DEFAULT_W` in `components/IssueSidebar.tsx` hält denselben Wert. */
+  /* Starting width of the attributes sidebar. Dragging overrides it
+     inline — `DEFAULT_W` in `components/IssueSidebar.tsx` holds the same
+     value. */
   --detail-sidebar-w: 300px;
-  /* Deckel für die Textbreite in der einspaltigen Ansicht. Das Panel ist bis
-     880px breit — ohne Deckel liefen Beschreibung und Kommentare über die ganze
-     Strecke, und das Auge verlöre beim Zeilenwechsel den Anschluss. */
+  /* Cap on the text width in the single-column view. The panel is up to
+     880px wide — without a cap, the description and comments would run
+     the full width, and the eye would lose track when wrapping to the
+     next line. */
   --detail-content-w: 780px;
 }
 
-/* Ausgeklappt: großer Dialog statt Seitenpanel.
+/* Expanded: a large dialog instead of a side panel.
 
-   Die Breite steht hier und nicht in den Modal-Optionen: `.modal` bezieht sie
-   aus `--modal-w`, die Option `width` bemisst nur die Hülle darum und bliebe
-   wirkungslos. Vorher lieh sich dieser Zustand die Klasse der Vollseite und
-   erbte damit deren Deckel von 1080px. */
+   The width lives here rather than in the modal options: `.modal` reads it
+   from `--modal-w`, the `width` option only measures the wrapper around it
+   and would have no effect. This state used to borrow the full page's
+   class and thereby inherited its 1080px cap. */
 .expanded {
   --modal-w: min(1440px, 70vw);
   --modal-shadow: var(--shadow-pop);
-  /* Ohne Versatz von oben (`centered`) — je 32px Luft an beiden Kanten. Der
-     absolute Deckel hält den Dialog auf sehr hohen Bildschirmen überblickbar. */
+  /* No offset from the top (`centered`) — 32px of breathing room on both
+     edges. The absolute cap keeps the dialog manageable on very tall
+     screens. */
   --modal-max-h: min(920px, calc(100dvh - 64px));
 }
 
-/* ---------- Vollseite ---------- */
+/* ---------- Full page ---------- */
 
-/* Kein Modal, sondern die Seite selbst: sie füllt den Inhaltsbereich der
-   App-Hülle bis an die Kanten, statt als Karte darin zu schweben. Rahmen und
-   Schatten gäben vor, etwas läge über der Seite — hier liegt nichts über ihr.
+/* Not a modal, but the page itself: it fills the app shell's content area
+   right to the edges, instead of floating in it as a card. A border and
+   shadow would suggest something sits above the page — here nothing sits
+   above it.
 
-   Die Variablen wiederholen `.detail`, weil die beiden Hüllen einander nicht
-   enthalten: das Panel trägt `.detail`, die Seite `.page`, und die Blöcke
-   darunter lesen dieselben Werte. */
+   The variables repeat `.detail`, because the two wrappers don't contain
+   each other: the panel carries `.detail`, the page `.page`, and the
+   blocks below read the same values either way. */
 .page {
   --detail-pad-x: 32px;
   --detail-sidebar-w: 380px;
-  /* Weiter als im Panel (780px): hier steht nicht nur Fließtext in der Spalte.
-     Codeblöcke, Tabellen und Hinweisfelder bringen ihre eigene Breite mit und
-     würden darunter scrollen oder umbrechen, obwohl daneben Platz frei ist.
+  /* Wider than in the panel (780px): here the column doesn't just hold
+     running text. Code blocks, tables, and callouts bring their own width
+     and would scroll or wrap below it even though space is free next to
+     them.
 
-     So hoch angesetzt, dass die Spalte auf üblichen Schirmen ganz ausgefüllt
-     wird und nur das Polster (`--detail-pad-x`) stehen bleibt. Der Deckel
-     greift erst darüber — irgendwo endet die Zeile, der das Auge beim Umbruch
-     noch folgt. */
+     Set high enough that the column fills up completely on typical
+     screens, leaving only the padding (`--detail-pad-x`). The cap only
+     kicks in above that — somewhere the line has to end for the eye to
+     still follow along when it wraps. */
   --detail-content-w: 1400px;
 
   display: flex;
@@ -64,9 +69,9 @@
   min-height: 0;
 }
 
-/* Steht fix über den scrollenden Spalten — wie die Topbar über Liste und
-   Board. Die Kanten oben und unten sind dieselben, damit die Seite sich an
-   derselben Stelle einreiht wie ihre Nachbarn. */
+/* Sits fixed above the scrolling columns — like the topbar above the list
+   and board. The top and bottom edges match, so the page lines up in the
+   same place as its neighbors. */
 .pageHeader {
   display: flex;
   flex: none;
@@ -78,8 +83,8 @@
   border-bottom: 1px solid var(--outline-variant);
 }
 
-/* Der Zurück-Pfeil. Ein Link, kein Knopf: er führt an einen Ort, und den soll
-   man auch in einem neuen Tab öffnen können. */
+/* The back arrow. A link, not a button: it leads to a place, and it should
+   be possible to open that in a new tab too. */
 .back {
   display: inline-flex;
   flex: none;
@@ -97,7 +102,7 @@
   }
 }
 
-/* ---------- Pfad ---------- */
+/* ---------- Breadcrumb path ---------- */
 
 .crumbs {
   display: flex;
@@ -123,8 +128,8 @@
   }
 }
 
-/* Projektnamen können lang sein — der Pfad soll deshalb nicht die Aktionen
-   rechts verdrängen. */
+/* Project names can be long — the breadcrumb path shouldn't crowd out the
+   actions on the right. */
 .crumbText {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -136,7 +141,7 @@
   color: var(--outline-variant);
 }
 
-/* Die letzte Stufe ist kein Link — sie ist die Seite, auf der man steht. */
+/* The last step isn't a link — it's the page you're already on. */
 .crumbCurrent {
   flex: none;
   padding: 0 3px;
@@ -154,9 +159,9 @@
   padding-left: 8px;
 }
 
-/* Auf der Seite gibt es keine Modalbreite, die den Text kurz hielte: das
-   Polster wächst mit, bis der Inhalt bei `--detail-content-w` stehen bleibt
-   und mittig sitzt — dieselbe Rechnung wie im Panel (`.body`). */
+/* On the page there's no modal width to keep the text short: the padding
+   grows along with it, until the content settles at `--detail-content-w`
+   and sits centered — the same calculation as in the panel (`.body`). */
 .page .main {
   gap: 26px;
   padding:
@@ -165,22 +170,23 @@
     64px;
 }
 
-/* Hier trägt der Titel die Hierarchie der ganzen Seite — anders als im
-   Dialog, wo die Kopfzeile darüber schon einen Titel mitbringt. */
+/* Here the title carries the hierarchy of the whole page — unlike in the
+   dialog, where the header above it already provides a title. */
 .page .main .title {
   font-size: var(--text-2xl);
 }
 
-/* Die breitere Spalte bekommt auch mehr Polster — sonst wächst nur der leere
-   Rand hinter den Werten, statt dass der Block Luft bekommt. */
+/* The wider column also gets more padding — otherwise only the empty
+   margin behind the values would grow, instead of the block gaining
+   breathing room. */
 .page .sidebar {
   padding: 22px 22px 32px;
 }
 
-/* Der Griff an der linken Panelkante. Absolut statt im Fluss: das Panel ist
-   eine Spalte aus Kopfzeile und Inhalt, und über beide zusammen reicht nur,
-   was aus dem Fluss heraus ist. Die Kopfzeile bringt eine eigene Fläche mit,
-   deshalb muss er darüber liegen. */
+/* The handle on the panel's left edge. Absolute instead of in flow: the
+   panel is a column made of a header and content, and only something
+   taken out of flow can span both together. The header brings its own
+   surface, so this has to sit above it. */
 .panelResizer {
   position: absolute;
   inset-block: 0;
@@ -188,7 +194,7 @@
   z-index: 2;
 }
 
-/* ---------- Kopfzeile ---------- */
+/* ---------- Header ---------- */
 
 .ref {
   font-family: var(--font-mono);
@@ -197,10 +203,10 @@
   color: var(--outline);
 }
 
-/* Der Weg auf die Vollseite. Ein `<a>`, damit Cmd-Klick einen neuen Tab
-   öffnet — aussehen soll er trotzdem wie seine Nachbarn, also Maße eines
-   Ghost-Buttons in `sm` und dieselbe Überlagerung beim Überfahren statt einer
-   eigenen Hover-Farbe. */
+/* The link to the full page. An `<a>`, so Cmd-click opens a new tab — it
+   should still look like its neighbors though, so it uses the dimensions
+   of a ghost button in `sm` and the same hover overlay instead of its own
+   hover color. */
 .headerLink {
   position: relative;
   display: inline-flex;
@@ -227,11 +233,11 @@
   &:active::after { opacity: var(--opacity-active); }
 }
 
-/* ---------- Einspaltig: Seitenpanel ---------- */
+/* ---------- Single column: side panel ---------- */
 
-/* Der einzige Scroll-Container der Ansicht. Das seitliche Polster wächst mit
-   der Breite mit, bis der Inhalt bei `--detail-content-w` stehen bleibt und
-   mittig sitzt — ohne zusätzliche Hülle im Markup. */
+/* The view's only scroll container. The side padding grows with the width,
+   until the content settles at `--detail-content-w` and sits centered —
+   without an extra wrapper in the markup. */
 .body {
   display: flex;
   flex: 1 1 auto;
@@ -245,7 +251,7 @@
   overflow-y: auto;
 }
 
-/* ---------- Zweispaltig: Dialog und Vollseite ---------- */
+/* ---------- Two columns: dialog and full page ---------- */
 
 .split {
   display: flex;
@@ -263,16 +269,17 @@
   overflow-y: auto;
 }
 
-/* In beiden Spalten gilt: die Blöcke geben ihre Höhe vom Inhalt vor. Ohne das
-   drückte der Scroll-Container sie zusammen, statt scrollen zu lassen. */
+/* In both columns: the blocks derive their height from their content.
+   Without this, the scroll container would squeeze them instead of
+   letting them scroll. */
 .body > *,
 .main > * {
   flex: none;
 }
 
-/* Die Breite ist ziehbar (`IssueSidebar` schreibt sie als Inline-Variable).
-   Der Deckel bei der halben Aufteilung ist die letzte Instanz: er greift, wo
-   der Dialog schmaler ist als die 460px, die der Griff zulässt. */
+/* The width is draggable (`IssueSidebar` writes it as an inline variable).
+   The cap at half the split is the last line of defense: it kicks in
+   where the dialog is narrower than the 460px the handle allows for. */
 .sidebar {
   flex: none;
   width: var(--detail-sidebar-w);
@@ -282,9 +289,9 @@
   overflow-y: auto;
 }
 
-/* Der Griff dazwischen (`ui/layout/Resizer`) liegt auf der Trennlinie statt
-   daneben — die negativen Ränder ziehen ihn über sie, damit er Trefferfläche
-   hat, ohne eine Lücke aufzureißen. */
+/* The handle between them (`ui/layout/Resizer`) sits on the divider rather
+   than next to it — the negative margins pull it over the line, giving it
+   a hit area without opening a visible gap. */
 .sidebarResizer {
   position: relative;
   z-index: 1;
@@ -297,9 +304,9 @@
   background: var(--outline-variant);
 }
 
-/* Titel und Beschreibung sind Eingabefelder (`EditableText`). Der negative
-   Rand zieht ihr Innenpolster wieder heraus, damit der Text trotz Hover-Fläche
-   auf derselben Kante steht wie alles darunter. */
+/* Title and description are input fields (`EditableText`). The negative
+   margin pulls their inner padding back out, so the text lines up on the
+   same edge as everything below it despite the hover area. */
 .title {
   margin: 0 -8px;
   font-size: var(--text-2xl);
@@ -308,19 +315,19 @@
   color: var(--on-surface);
 }
 
-/* Neben der Attributspalte trägt der Titel die Hierarchie nicht allein —
-   dort darf er kleiner sein. */
+/* Next to the attributes sidebar, the title doesn't carry the hierarchy
+   alone — it can be smaller there. */
 .split .title {
   font-size: var(--text-xl);
 }
 
-/* ---------- Abschnitte ---------- */
+/* ---------- Sections ---------- */
 
 .section {
   min-width: 0;
 }
 
-/* Beschreibung, Labels, Details und Kommentare kündigen sich gleich an. */
+/* Description, labels, details, and comments all announce themselves the same way. */
 .sectionHead {
   display: flex;
   align-items: center;
@@ -336,11 +343,12 @@
   color: var(--on-surface);
 }
 
-/* ---------- Attributleiste ---------- */
+/* ---------- Attribute bar ---------- */
 
-/* Typ, Status, Priorität und Zuständigkeit nebeneinander statt untereinander:
-   so bleibt der Block flach und die Beschreibung beginnt gleich darunter.
-   `auto-fit` stapelt sie erst, wenn die Spalte zu schmal für vier wird. */
+/* Type, status, priority, and assignee side by side rather than stacked:
+   this keeps the block flat and lets the description begin right below
+   it. `auto-fit` only stacks them once the column gets too narrow for
+   four. */
 .properties {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -358,8 +366,8 @@
   min-width: 0;
 }
 
-/* Kleiner und in Versalien — die Beschriftung soll den Wert darunter nicht um
-   Aufmerksamkeit bitten, sondern ihn nur benennen. */
+/* Smaller and in uppercase — the label shouldn't compete with the value
+   below it for attention, just name it. */
 .fieldLabel {
   padding: 0 6px;
   font-size: var(--text-xs);
@@ -369,10 +377,10 @@
   color: var(--outline);
 }
 
-/* ---------- Werte ---------- */
+/* ---------- Values ---------- */
 
-/* Anzeigender Wert und Picker-Trigger sitzen auf derselben Grundlinie — der
-   Trigger gibt sich erst beim Überfahren als Schaltfläche zu erkennen. */
+/* A display value and a picker trigger sit on the same baseline — the
+   trigger only reveals itself as a button on hover. */
 .value,
 .valueBtn {
   display: flex;
@@ -388,8 +396,9 @@
   text-align: left;
 }
 
-/* Namen können länger sein als die Spalte breit ist — im Flex-Container greift
-   `text-overflow` nur auf einem echten Element, deshalb der eigene Span. */
+/* Names can be longer than the column is wide — in a flex container,
+   `text-overflow` only takes effect on an actual element, hence the
+   dedicated span. */
 .valueText {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -400,15 +409,15 @@
   color: var(--on-surface-variant);
 }
 
-/* Eine Stufe über der Leiste, nicht über der Ansicht — sonst wäre der
-   Überfahr-Zustand innerhalb des Kastens unsichtbar. */
+/* One step lighter than the bar, not the view's background — otherwise the
+   hover state inside the box would be invisible. */
 .valueBtn {
   transition: background .12s;
 
   &:hover { background: var(--surface-container-highest); }
 }
 
-/* ---------- Beschreibung ---------- */
+/* ---------- Description ---------- */
 
 .description {
   margin: 0 -8px;
@@ -426,8 +435,8 @@
   gap: 6px;
 }
 
-/* In der Attributspalte sitzt die Reihe unter ihrer Kopfzeile und rückt auf
-   die Kante der Werte daneben ein. */
+/* In the attributes sidebar, the row sits below its header and aligns to
+   the edge of the values next to it. */
 .labels {
   padding: 4px 0;
 }
@@ -452,7 +461,7 @@
   color: var(--outline);
 }
 
-/* Das Plus in der Kopfzeile — es hält sich zurück, bis man in die Nähe kommt. */
+/* The plus in the header — it stays subdued until you get close. */
 .iconBtn {
   display: inline-flex;
   align-items: center;
@@ -470,8 +479,9 @@
   }
 }
 
-/* Schließt die Chip-Reihe ab. Gestrichelt und ungefüllt, damit er als Angebot
-   lesbar bleibt und nicht als gesetztes Label. Maße wie `Label` in `sm`. */
+/* Closes out the chip row. Dashed and unfilled, so it reads as an
+   invitation to add rather than a set label. Dimensions match `Label` in
+   `sm`. */
 .addLabel {
   display: inline-flex;
   align-items: center;
@@ -492,11 +502,11 @@
   }
 }
 
-/* ---------- Anhänge ---------- */
+/* ---------- Attachments ---------- */
 
-/* Die Box um beides: Kachel-Übersicht und Drag&Drop-Ziel zugleich — ein Fallen
-   gelassener Anhang landet in genau der Fläche, die ihn ohnehin schon zeigen
-   würde. */
+/* The box around both: tile grid and drag-and-drop target at once — a
+   dropped attachment lands in exactly the area that would already be
+   showing it. */
 .attachmentBox {
   padding: 10px;
   border-radius: var(--radius);
@@ -510,8 +520,9 @@
   }
 }
 
-/* Eine Zeile, horizontal scrollbar statt umbrechend — bei vielen Anhängen
-   bliebe sonst kaum noch Platz für die Beschreibung darunter. */
+/* One row, horizontally scrollable instead of wrapping — with many
+   attachments there would otherwise be barely any room left for the
+   description below. */
 .attachmentGrid {
   display: flex;
   flex-wrap: nowrap;
@@ -520,9 +531,9 @@
   padding-bottom: 2px;
 }
 
-/* Rahmen und Rundung liegen jetzt auf der Kachel selbst, nicht mehr verteilt
-   auf Vorschau (oben) und Beschriftung (unten) — sonst fehlte der Vorschau
-   am Rand die Kontur, die die Beschriftung darunter noch hatte. */
+/* Border and rounding now live on the tile itself, no longer split between
+   the preview (top) and caption (bottom) — otherwise the preview's edge
+   would lack the outline that the caption below it still had. */
 .attachmentTile {
   position: relative;
   display: flex;
@@ -548,8 +559,8 @@
   img { width: 100%; height: 100%; object-fit: cover; }
 }
 
-/* Wie `.linkIcon` in `richText.module.scss` — Ersatzzeichen darunter,
-   Favicon der Seite darüber, falls sie eines liefert. */
+/* Like `.linkIcon` in `richText.module.scss` — a fallback icon underneath,
+   the site's favicon on top of it if it provides one. */
 .attachmentTileFavicon {
   width: 22px;
   height: 22px;
@@ -601,10 +612,10 @@
 
 .attachmentTile:hover .attachmentTileRemove { opacity: 1; }
 
-/* Dieselbe Höhe wie `.attachmentTile` — beide Kachelarten sollen bündig in
-   einer Reihe stehen. `sticky` statt einer festen Position im Fluss: der
-   Knopf bleibt links sichtbar, auch wenn die Reihe zur Seite gescrollt ist —
-   sonst müsste man erst zurückscrollen, um weitere Anhänge hinzuzufügen. */
+/* Same height as `.attachmentTile` — both tile types should line up flush
+   in one row. `sticky` instead of a fixed position in flow: the button
+   stays visible on the left even when the row has scrolled sideways —
+   otherwise you'd have to scroll back first just to add more attachments. */
 .attachmentTileAdd {
   position: sticky;
   left: 0;
@@ -630,8 +641,8 @@
   &:disabled { opacity: .5; pointer-events: none; }
 }
 
-/* Die leere Box selbst ist die Aufforderung — keine separate Fehlanzeige
-   daneben. */
+/* The empty box itself is the call to action — no separate empty-state
+   message next to it. */
 .attachmentEmptyAction {
   display: flex;
   flex-direction: column;
@@ -662,10 +673,10 @@
   color: var(--error);
 }
 
-/* Die Auswahl hinter dem Hinzufügen-Knopf — Datei oder Link. Dieselbe Optik
-   wie der Bild-Dialog im Editor (`richTextEditor.module.scss`s
-   `.imageChooser`/`.imageChooserOption`), hier ohne eigenen Rahmen: der
-   `Popover` liefert Fläche und Schatten schon mit. */
+/* The choice behind the add button — file or link. Same look as the image
+   dialog in the editor (`richTextEditor.module.scss`'s
+   `.imageChooser`/`.imageChooserOption`), here without its own border: the
+   `Popover` already supplies the surface and shadow. */
 .attachmentChooser {
   display: flex;
   flex-direction: column;
@@ -688,8 +699,8 @@
 
 /* ---------- Details ---------- */
 
-/* Zwei Paare nebeneinander, solange die Spalte es hergibt — vier einzelne
-   Zeilen wären für vier kurze Werte zu viel Höhe. */
+/* Two pairs side by side as long as the column allows it — four separate
+   rows would be too much height for four short values. */
 .metaGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -714,10 +725,10 @@
   min-width: 0;
 }
 
-/* ---------- Kommentare ---------- */
+/* ---------- Comments ---------- */
 
-/* Der einzige Abschnitt mit Trennlinie: hier endet das Issue und beginnt, was
-   andere dazu gesagt haben. */
+/* The only section with a divider: this is where the issue ends and what
+   others have said about it begins. */
 .comments {
   padding-top: 24px;
   border-top: 1px solid var(--outline-variant);
@@ -755,25 +766,25 @@
   border-radius: var(--radius-sm);
   transition: background 1.6s ease-out;
 
-  /* Kurzes Aufleuchten nach einem Sprung über „Link kopieren" — die lange
-     Übergangsdauer läuft rückwärts: sofort sichtbar, dann langsam verblassend. */
+  /* Brief highlight after jumping via "copy link" — the long transition
+     duration runs backwards: immediately visible, then slowly fading out. */
   &[data-flash] {
     background: color-mix(in oklab, var(--tertiary) 14%, transparent);
     transition: background 1.6s ease-out;
   }
 }
 
-/* Verschachtelte Antworten — dieselbe Liste wie `.commentList`, nur ohne
-   deren oberen Abstand (der kommt schon vom Elternkommentar). Die Einrücktiefe
-   wächst rein durch die DOM-Verschachtelung (jede Ebene bringt ihr eigenes
-   `padding-left` mit) — keine JS-Multiplikation nötig. Ab `MAX_INDENT_DEPTH`
-   rendert `CommentThread.tsx` den kompletten Nachfahren-Baum als eine einzige
-   flache `<ol>` (kein weiteres verschachteltes `<ol>` je Ebene) — das ist der
-   einzige zusätzliche Einrück-Schritt, egal wie tief der Baum dahinter
-   eigentlich war. Jede Antwort bekommt trotzdem ihren eigenen kurzen
-   Verzweigungsstrich von der Linie zum Avatar (`::before`) — sichtbar „ein
-   Ast, der abzweigt" statt einer gesichtslosen Liste. Wer auf wen antwortet,
-   zeigt zusätzlich `.nestedReplyLink` in `CommentThread.tsx`. */
+/* Nested replies — the same list as `.commentList`, just without its top
+   margin (that already comes from the parent comment). Indentation depth
+   grows purely through DOM nesting (each level brings its own
+   `padding-left`) — no JS multiplication needed. Beyond
+   `MAX_INDENT_DEPTH`, `CommentThread.tsx` renders the entire descendant
+   tree as a single flat `<ol>` (no further nested `<ol>` per level) —
+   that's the one additional indent step, no matter how deep the tree
+   behind it actually was. Every reply still gets its own short branch line
+   from the line to the avatar (`::before`) — visibly "a branch splitting
+   off" rather than a faceless list. Who's replying to whom is additionally
+   shown by `.nestedReplyLink` in `CommentThread.tsx`. */
 .replies {
   position: relative;
   display: flex;
@@ -784,10 +795,11 @@
   list-style: none;
   border-left: 2px solid var(--outline-variant);
 
-  /* 14px trifft die Mitte des 28px-Avatars (`.comment` mit
-     `align-items: flex-start`) — unabhängig von der Höhe des jeweiligen
-     Kommentartexts, die sich sonst kaum austarieren ließe. `.branchDivider`
-     ist selbst kein Kommentar und bekommt deshalb keinen eigenen Abzweig. */
+  /* 14px hits the middle of the 28px avatar (`.comment` with
+     `align-items: flex-start`) — independent of the height of the
+     respective comment text, which would otherwise be nearly impossible to
+     balance. `.branchDivider` isn't a comment itself and therefore gets no
+     branch line of its own. */
   > li:not(.branchDivider) {
     position: relative;
 
@@ -803,11 +815,11 @@
   }
 }
 
-/* Trennt innerhalb einer geflatteten Antworten-Liste (jenseits von
-   MAX_INDENT_DEPTH, siehe `CommentThread.tsx`) zwei ehemals getrennte Äste,
-   die jetzt als Geschwister nebeneinander stehen — ohne sie wirkt die Liste
-   wie eine einzige lineare Kette, obwohl an dieser Stelle ein neuer
-   Antwortzweig beginnt. */
+/* Separates, within a flattened reply list (beyond MAX_INDENT_DEPTH, see
+   `CommentThread.tsx`), two formerly separate branches that now sit as
+   siblings next to each other — without it, the list would look like a
+   single linear chain, even though a new reply branch begins at this
+   point. */
 .branchDivider {
   height: 1px;
   background: var(--outline-variant);
@@ -863,11 +875,12 @@
   &:hover { background: var(--surface-container-high); color: var(--on-surface); }
 }
 
-/* ---------- Auf einen Kommentar antworten ---------- */
+/* ---------- Replying to a comment ---------- */
 
-/* Bewusst ohne eigenen Avatar/Flex-Row wie bei `.composerBox` unten — sonst
-   säße das Eingabefeld selbst einen weiteren Schritt eingerückt (Avatar +
-   Gap) rechts vom Text des Kommentars, auf den gerade geantwortet wird. */
+/* Deliberately without its own avatar/flex row like `.composerBox` below —
+   otherwise the input field itself would sit indented one more step
+   (avatar + gap) to the right of the text of the comment it's replying
+   to. */
 .reply {
   margin-top: 10px;
 }
@@ -890,9 +903,9 @@
   color: var(--on-surface);
 }
 
-/* Ersetzt jenseits von MAX_INDENT_DEPTH den fehlenden Einzug — verweist auf
-   den tatsächlichen Elternkommentar, weil im flachen Geschwister-Block sonst
-   nicht mehr erkennbar ist, wer auf wen antwortet. */
+/* Replaces the missing indentation beyond MAX_INDENT_DEPTH — points to the
+   actual parent comment, because in the flat sibling block it would
+   otherwise no longer be clear who's replying to whom. */
 .nestedReplyLink {
   display: flex;
   align-items: center;
@@ -921,7 +934,7 @@
   overflow-wrap: anywhere;
 }
 
-/* ---------- Kommentar schreiben ---------- */
+/* ---------- Writing a comment ---------- */
 
 .composer {
   display: flex;
@@ -935,8 +948,8 @@
   min-width: 0;
 }
 
-/* Steht, solange der Editor nachlädt. Gleiche Hülle wie er, damit beim
-   Eintreffen nichts springt. */
+/* Shown while the editor is still loading. Same shape as the editor
+   itself, so nothing jumps once it arrives. */
 .composerLoading {
   min-height: 140px;
   background: var(--surface-container-low);
@@ -952,7 +965,7 @@
   margin-top: 8px;
 }
 
-/* ---------- Lade- und Leerzustand ---------- */
+/* ---------- Loading and empty state ---------- */
 
 .missing {
   display: flex;
@@ -975,7 +988,7 @@
   width: 60%;
 }
 
-/* Steht für die Attributleiste — sie ist das Erste, was nach dem Titel kommt. */
+/* Stands in for the attribute bar — it's the first thing after the title. */
 .shimmerBox {
   height: 62px;
   border-radius: var(--radius-lg);
@@ -993,8 +1006,8 @@
   .shimmer { animation: none; }
 }
 
-/* Auf schmalen Geräten zählt jede Kante — das Polster schrumpft, die
-   Attributleiste stapelt sich von selbst (`auto-fit`). */
+/* On narrow devices every bit of edge counts — the padding shrinks, the
+   attribute bar stacks on its own (`auto-fit`). */
 @media (max-width: 720px) {
   .detail,
   .page {
@@ -1011,14 +1024,14 @@
     padding: 20px var(--detail-pad-x) 32px;
   }
 
-  /* Der Pfad tritt hinter die Aktionen zurück: die Kennung bleibt, der
-     Projektname weicht, wenn der Platz knapp wird. */
+  /* The breadcrumb path steps back behind the actions: the identifier
+     stays, the project name gives way when space gets tight. */
   .crumbText {
     max-width: 22vw;
   }
 
-  /* Für zwei Spalten steht hier kein Platz — die Attribute rutschen unter den
-     Inhalt, und gescrollt wird dann als Ganzes. */
+  /* There's no room for two columns here — the attributes slide below the
+     content, and scrolling then happens as a whole. */
   .split {
     flex-direction: column;
     overflow-y: auto;
@@ -1040,8 +1053,8 @@
     border-top: 1px solid var(--outline-variant);
   }
 
-  /* Untereinander gibt es keine Breite zu ziehen — und ein Panel, das ohnehin
-     den ganzen Bildschirm einnimmt, auch nicht. */
+  /* Stacked, there's no width to drag — and neither is there for a panel
+     that already takes up the whole screen. */
   .sidebarResizer,
   .panelResizer {
     display: none;

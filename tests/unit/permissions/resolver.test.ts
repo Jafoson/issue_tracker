@@ -31,8 +31,8 @@ mock.module("@/lib/db", () => ({
 const mockGetSession = mock(async () => ({ userId: "u1" }));
 mock.module("@/lib/session", () => ({ getSession: mockGetSession }));
 
-// `cache()` dedupliziert pro Request. Im Test wollen wir jeden Aufruf sehen,
-// sonst würden Fälle innerhalb einer Datei einander die Antworten überschreiben.
+// `cache()` deduplicates per request. In the test we want to see every call,
+// otherwise cases within one file would overwrite each other's answers.
 mock.module("react", () => ({
   cache: <T>(fn: T) => fn,
 }));
@@ -45,7 +45,7 @@ import {
   canEnterWorkspace,
 } from "@/lib/permissions";
 
-// ── Helfer ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function role(key: string, rank: number, permissions: string[]) {
   return {
@@ -55,10 +55,10 @@ function role(key: string, rank: number, permissions: string[]) {
   };
 }
 
-/** Liest sich an der Aufrufstelle besser als ein nacktes Array. */
+/** Reads better at the call site than a bare array. */
 const allow = (...keys: string[]): string[] => keys;
 
-/** Standardaufbau: kein globales Recht, ein offener Workspace, ein öffentliches Projekt. */
+/** Default setup: no global permission, an open workspace, a public project. */
 function setup(
   opts: {
     platform?: ReturnType<typeof role> | null;
@@ -89,8 +89,8 @@ function setup(
   mockProjectMemberFindUnique.mockResolvedValue(
     opts.project ? { role: opts.project } : null,
   );
-  // `canEnterWorkspace` fragt danach: steht die Person in irgendeinem Projekt
-  // des Workspace? Standardlage ist „nur, wenn sie eine Projektrolle hat".
+  // `canEnterWorkspace` asks this: is the person in any project
+  // of the workspace? The default assumption is "only if they have a project role".
   mockProjectMemberFindFirst.mockResolvedValue(
     opts.project ? { projectId: "p1" } : null,
   );
@@ -110,9 +110,9 @@ describe("Im Projekt entscheidet die Projektrolle", () => {
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
-    // Aus der Projektrolle.
+    // From the project role.
     expect(access.has("project.view")).toBe(true);
-    // Die Workspace-Rolle gibt es, im Projekt zählt sie dafür aber nicht.
+    // The workspace role exists, but it doesn't count in the project.
     expect(access.has("issue.create")).toBe(false);
   });
 
@@ -123,16 +123,16 @@ describe("Im Projekt entscheidet die Projektrolle", () => {
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
-    // Der Projekt-Kontext beantwortet nur Projektfragen. Wer wissen will, ob
-    // jemand ein Projekt anlegen darf, fragt den Workspace-Kontext.
+    // The project context only answers project questions. Anyone who wants to
+    // know whether someone may create a project asks the workspace context.
     expect(access.has("audit.view")).toBe(false);
     expect(access.has("project.create")).toBe(false);
     expect(access.has("project.view")).toBe(true);
   });
 
   it("übergeht einen Eintrag, den die Projektrolle gar nicht tragen darf", async () => {
-    // Der Scope-Filter in `collect()`: eine Zeile aus einer früheren Fassung
-    // oder von Hand gesetzt wird wirkungslos, statt Rechte zu verschenken.
+    // The scope filter in `collect()`: a row from an earlier version or set by
+    // hand becomes ineffective instead of handing out permissions.
     setup({
       project: role(
         "project_admin",
@@ -148,8 +148,8 @@ describe("Im Projekt entscheidet die Projektrolle", () => {
   });
 
   it("gibt ohne Projektrolle keine Projektrechte", async () => {
-    // `ProjectMember` ist die Liste, wer im Projekt ist — kein Eintrag, kein
-    // Zugriff, auch bei einem öffentlichen Projekt.
+    // `ProjectMember` is the list of who is in the project — no entry, no
+    // access, even for a public project.
     setup({
       workspace: role("member", 2, allow("project.view", "issue.create")),
     });
@@ -186,14 +186,14 @@ describe("Im Projekt entscheidet die Projektrolle", () => {
   });
 });
 
-// Es gibt kein Verbot mehr — eine Rolle listet, was sie erlaubt, und der Rest
-// gilt nicht. Weil im Kontext ohnehin nur eine Rolle zählt, wäre ein DENY von
-// „steht nicht in der Liste" nicht zu unterscheiden gewesen.
+// There is no longer a deny — a role lists what it allows, and everything else
+// doesn't apply. Since only one role counts in a given context anyway, a DENY
+// would have been indistinguishable from "not in the list".
 describe("Die Liste der Rolle ist abschließend", () => {
   it("stuft in diesem einen Projekt herab", async () => {
-    // Genau der Fall aus der Praxis: jemand mit Gewicht im Workspace ist in
-    // diesem Projekt nur Leser. Es braucht dafür kein Verbot — was in der
-    // Projektrolle nicht steht, gilt hier eben nicht.
+    // Exactly the real-world case: someone with weight in the workspace is
+    // only a reader in this project. That needs no deny — whatever isn't in
+    // the project role simply doesn't apply here.
     setup({
       workspace: role("project_lead", 3, allow("project.create")),
       project: role("project_viewer", 2, allow("project.view")),
@@ -205,8 +205,8 @@ describe("Die Liste der Rolle ist abschließend", () => {
   });
 
   it("nimmt eine Permission nicht an, nur weil sie irgendwo steht", async () => {
-    // Der Gegenprobe wegen: dieselbe Person, dasselbe Projekt, aber diesmal
-    // führt die Projektrolle das Recht — dann gilt es auch.
+    // As a control check: same person, same project, but this time the
+    // project role carries the permission — so it applies.
     setup({
       workspace: role("project_lead", 3, allow("project.create")),
       project: role(
@@ -221,9 +221,9 @@ describe("Die Liste der Rolle ist abschließend", () => {
   });
 });
 
-// Die Zusage, um die es beim Zuschnitt der Ebenen am Ende geht: die Leitung
-// eines Workspace bleibt in jedem seiner Projekte handlungsfähig, egal was in
-// `ProjectMember` steht.
+// The guarantee that the layering of scopes ultimately exists for: the
+// leadership of a workspace remains able to act in every one of its projects,
+// no matter what `ProjectMember` says.
 describe("Generalschlüssel project.admin.all", () => {
   it("gibt alle Projektrechte ohne jeden Projekteintrag", async () => {
     setup({ workspace: role("admin", 5, allow("project.admin.all")) });
@@ -236,8 +236,8 @@ describe("Generalschlüssel project.admin.all", () => {
   });
 
   it("lässt sich von `blocked` nicht aussperren", async () => {
-    // Sonst könnte ein Project Admin den Owner aus dessen eigenem Projekt
-    // werfen — und niemand käme mehr an die Mitgliederverwaltung.
+    // Otherwise a project admin could throw the owner out of their own
+    // project — and no one could reach member management anymore.
     setup({
       workspace: role("owner", 6, allow("project.admin.all")),
       project: role("blocked", 0, []),
@@ -246,13 +246,13 @@ describe("Generalschlüssel project.admin.all", () => {
     const access = await accessFor("u1", { projectId: "p1" });
     expect(access.has("project.view")).toBe(true);
     expect(access.has("member.invite")).toBe(true);
-    // Und die Rangfolge bleibt nach oben offen, sonst ließe sich die
-    // Herabstufung nicht zurücknehmen.
+    // And the rank ceiling stays open-ended upward, otherwise the demotion
+    // couldn't be undone.
     expect(assignmentCeiling(access, "PROJECT")).toBe(Number.POSITIVE_INFINITY);
   });
 
   it("hilft in einem gesperrten Workspace nicht", async () => {
-    // Eine Sperre des Betreibers steht über dem Generalschlüssel des Mandanten.
+    // An operator-level suspension outranks the tenant's master key.
     setup({
       workspace: role("owner", 6, allow("project.admin.all")),
       suspended: true,
@@ -295,8 +295,8 @@ describe("Generalschlüssel project.view.all", () => {
 
 describe("Plattform-Scope und tenant.access", () => {
   it("gibt einer Plattform-Rolle ohne tenant.access keinen Mandanten-Zugriff", async () => {
-    // Die Registry lässt Mandanten-Permissions im Scope PLATFORM gar nicht zu —
-    // es gibt also keinen Weg, sich das über eine Plattform-Rolle zu erschleichen.
+    // The registry doesn't even allow tenant permissions in the PLATFORM
+    // scope — so there's no way to sneak this in via a platform role.
     setup({ platform: role("platform_admin", 2, allow("platform.access")) });
 
     const access = await accessFor("u1", { projectId: "p1" });
@@ -305,8 +305,9 @@ describe("Plattform-Scope und tenant.access", () => {
   });
 
   it("hält Plattform-Rechte aus dem Mandanten-Kontext heraus", async () => {
-    // Auch nach unten gilt die Trennung: im Workspace zählt die Workspace-Rolle.
-    // Plattform-Rechte fragt man im Plattform-Kontext ab — dort stehen sie.
+    // The separation applies downward too: in the workspace, the workspace
+    // role counts. Platform permissions are queried in the platform context
+    // — that's where they live.
     setup({ platform: role("platform_admin", 2, allow("platform.access")) });
 
     expect(
@@ -329,8 +330,8 @@ describe("Plattform-Scope und tenant.access", () => {
   });
 
   it("öffnet mit tenant.access alles im Mandanten", async () => {
-    // Der Generalschlüssel: `tenant.access` kann nur in einer Plattform-Rolle
-    // stehen und gilt dann für den ganzen Mandanten.
+    // The master key: `tenant.access` can only appear in a platform role, and
+    // then applies to the entire tenant.
     setup({
       platform: role(
         "platform_support",
@@ -349,7 +350,7 @@ describe("Plattform-Scope und tenant.access", () => {
 
     const access = await accessFor("u1", { workspaceId: "ws1" });
     expect(access.has("member.invite")).toBe(true);
-    // Aber nichts, was es im Workspace gar nicht gibt.
+    // But nothing that doesn't exist in the workspace at all.
     expect(access.has("user.manage")).toBe(false);
   });
 });
@@ -363,15 +364,15 @@ describe("Gesperrter Workspace und offene Einladung", () => {
 
     const access = await accessFor("u1", { projectId: "p1" });
     expect(access.has("project.view")).toBe(false);
-    // `workspace.delete` ist auch im Scope PLATFORM vergebbar — hier kam es
-    // aber aus der Workspace-Rolle und muss deshalb ebenfalls verschwinden.
+    // `workspace.delete` can also be granted in the PLATFORM scope — but here
+    // it came from the workspace role, and so it must disappear too.
     expect(access.has("workspace.delete")).toBe(false);
   });
 
   it("lässt Plattform-Rechte von einer Sperre unberührt", async () => {
-    // Die Sperre trifft den Mandanten, nicht die Plattform-Rolle. Sie steht in
-    // ihrem eigenen Kontext und ist dort weiter da — sonst könnte niemand den
-    // Workspace wieder entsperren.
+    // The suspension hits the tenant, not the platform role. It lives in its
+    // own context and remains there — otherwise no one could unsuspend the
+    // workspace again.
     setup({
       platform: role("platform_admin", 2, allow("workspace.suspend")),
       workspace: role("owner", 6, allow("workspace.update")),
@@ -417,8 +418,8 @@ describe("Mitgliedschaft entscheidet", () => {
 
     const access = await accessFor("u1", { projectId: "p1" });
     expect(access.has("project.view")).toBe(false);
-    // Im Workspace-Kontext ist das Recht unverändert da — nur beantwortet es
-    // eine andere Frage als die nach diesem Projekt.
+    // In the workspace context the permission is still there unchanged — it
+    // just answers a different question than the one about this project.
     expect(
       (await accessFor("u1", { workspaceId: "ws1" })).has("audit.view"),
     ).toBe(true);
@@ -442,8 +443,8 @@ describe("Mitgliedschaft entscheidet", () => {
   });
 
   it("lässt die Leitung des Workspace nicht herabstufen", async () => {
-    // Ein Project Admin könnte sonst den Owner aus dessen eigenem Projekt
-    // aussperren — und niemand käme mehr an die Mitgliederverwaltung.
+    // Otherwise a project admin could lock the owner out of their own
+    // project — and no one could reach member management anymore.
     setup({
       workspace: role(
         "owner",
@@ -454,11 +455,11 @@ describe("Mitgliedschaft entscheidet", () => {
     });
 
     const access = await accessFor("u1", { projectId: "p1" });
-    // Die Projektrolle führt `member.invite` nicht — der Generalschlüssel
-    // entscheidet trotzdem, weil er vor ihr geprüft wird.
+    // The project role doesn't carry `member.invite` — the master key
+    // decides anyway, because it's checked before the role.
     expect(access.has("member.invite")).toBe(true);
-    // Und die Rangfolge bleibt nach oben offen, sonst ließe sich die
-    // Herabstufung nicht zurücknehmen.
+    // And the rank ceiling stays open-ended upward, otherwise the demotion
+    // couldn't be undone.
     expect(assignmentCeiling(access, "PROJECT")).toBe(Number.POSITIVE_INFINITY);
   });
 });
@@ -484,8 +485,8 @@ describe("assignmentCeiling", () => {
   });
 
   it("ist nach oben offen, wo der Handelnde keine Rolle trägt", async () => {
-    // Ein Workspace-Admin ohne eigene Projektrolle leitet seine Befugnis aus
-    // der Ebene darüber ab und darf jede Projektrolle vergeben.
+    // A workspace admin without their own project role derives their
+    // authority from the level above and may assign any project role.
     setup({ workspace: role("admin", 5, allow("member.invite")) });
     const access = await accessFor("u1", { projectId: "p1" });
     expect(assignmentCeiling(access, "PROJECT")).toBe(Number.POSITIVE_INFINITY);
@@ -493,8 +494,8 @@ describe("assignmentCeiling", () => {
   });
 });
 
-// Zutritt ist keine Permission — er entscheidet, ob die Workspace-Hülle
-// überhaupt rendert. Drei Wege hinein, und eine offene Einladung ist keiner.
+// Entry is not a permission — it decides whether the workspace shell renders
+// at all. There are three ways in, and a pending invitation is not one of them.
 describe("canEnterWorkspace", () => {
   it("lässt Mitglieder hinein", async () => {
     setup({ workspace: role("member", 2, allow("project.view")) });
@@ -508,7 +509,7 @@ describe("canEnterWorkspace", () => {
 
   it("lässt einen Projekt-Gast ohne Workspace-Mitgliedschaft hinein", async () => {
     setup();
-    // Kein `WorkspaceMember`, aber eine Zeile in einem Projekt des Workspace.
+    // No `WorkspaceMember`, but a row in a project of the workspace.
     mockProjectMemberFindFirst.mockResolvedValue({ projectId: "p1" });
     expect(await canEnterWorkspace("u1", "ws1")).toBe(true);
   });
@@ -618,11 +619,11 @@ describe("accessibleProjectIds", () => {
   });
 });
 
-// ── Stillgelegte Konten ───────────────────────────────────────────────────────
+// ── Deactivated accounts ────────────────────────────────────────────────────
 //
-// Die Sperre steht vor jeder Rollenauflösung. Die Fälle hier prüfen genau das:
-// nicht, dass ein stillgelegtes Konto weniger bekommt, sondern dass es *nichts*
-// bekommt — auch dann, wenn seine Rollen für sich genommen alles erlaubten.
+// The suspension happens before any role resolution. The cases here check
+// exactly that: not that a deactivated account gets less, but that it gets
+// *nothing* — even when its roles, taken by themselves, would allow everything.
 
 describe("Ein stillgelegtes Konto bekommt nirgends Rechte", () => {
   it("nicht auf der Plattform, auch mit voller Plattform-Rolle", async () => {
@@ -667,7 +668,7 @@ describe("Ein stillgelegtes Konto bekommt nirgends Rechte", () => {
   });
 
   it("hebt auch den Support-Generalschlüssel auf", async () => {
-    // `tenant.access` steht sonst vor allen Regeln. Die Stilllegung steht davor.
+    // `tenant.access` otherwise outranks every rule. Deactivation outranks it.
     setup({
       deactivated: true,
       platform: role("platform_support", 1, allow("tenant.access")),

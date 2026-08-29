@@ -7,16 +7,16 @@ export interface BarRow {
   id: string;
   label: string;
   value: number;
-  /** Eine Zeile Kleingedrucktes unter der Beschriftung. */
+  /** One line of fine print below the label. */
   meta?: string;
-  /** Punkt vor der Beschriftung — die Farbe des Objekts, nicht der Reihe. */
+  /** Dot before the label — the color of the object, not of the row. */
   dot?: string;
   /**
-   * Fertiges Element ganz vorn — Avatar, Zeichen, Farbfleck.
+   * A finished element right at the front — avatar, icon, color patch.
    *
-   * Für Zeilen, deren Gegenstand ein Gesicht hat: ein Punkt in der Farbe einer
-   * Person sagt weniger als die Person selbst. Steht anstelle von `dot`, nicht
-   * daneben — beide zusammen wären zwei Kennzeichen für dieselbe Sache.
+   * For rows whose subject has a face: a dot in a person's color says less
+   * than the person themselves. Stands in place of `dot`, not alongside it —
+   * both together would be two markers for the same thing.
    */
   leading?: ReactNode;
 }
@@ -24,23 +24,23 @@ export interface BarRow {
 interface Props {
   rows: BarRow[];
   label: string;
-  /** Überschrift der Wertespalte in der Tabellenansicht. */
+  /** Heading of the value column in the table view. */
   valueLabel: string;
   asTable?: boolean;
 }
 
 /**
- * Waagerechte Balken mit dem Wert am Ende — für einen Vergleich der Größe
- * zwischen wenigen benannten Dingen.
+ * Horizontal bars with the value at the end — for comparing size across a
+ * few named things.
  *
- * **Eine Reihe, eine Farbe.** Die Balken nach ihrem Wert einzufärben wäre
- * doppelt gemoppelt: die Länge sagt die Größe schon, und die Farbe wäre danach
- * für nichts anderes mehr frei. Der Punkt vor dem Namen trägt deshalb die Farbe
- * des Workspace — die kennt der Leser wieder — und der Balken selbst bleibt
- * durchgehend im ersten Steckplatz.
+ * **One row, one color.** Coloring the bars by their value would be
+ * redundant: the length already conveys size, and the color would then be
+ * free for nothing else. The dot before the name therefore carries the
+ * workspace's color — which the reader recognizes — and the bar itself
+ * stays consistently in the first slot.
  *
- * Der Wert steht als Zahl am Ende jedes Balkens. Das ist hier kein Beiwerk,
- * sondern der Grund, warum die Liste ohne Achse auskommt.
+ * The value appears as a number at the end of each bar. That's not
+ * decoration here — it's the reason the list gets away without an axis.
  */
 export function BarList({ rows, label, valueLabel, asTable = false }: Props) {
   const max = Math.max(1, ...rows.map((row) => row.value));

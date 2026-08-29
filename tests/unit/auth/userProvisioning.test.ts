@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// `@/lib/project-membership` bleibt bewusst ungemockt: `projectMembership.test.ts`
-// und `projectMembers.test.ts` laufen im selben Prozess (siehe CLAUDE.md) und
-// verlassen sich auf die echte `enrollInWorkspaceProjects` — ein Mock hier
-// würde für den Rest des Prozesses gewinnen und beide falsch testen lassen.
+// `@/lib/project-membership` is deliberately left unmocked: `projectMembership.test.ts`
+// and `projectMembers.test.ts` run in the same process (see CLAUDE.md) and
+// rely on the real `enrollInWorkspaceProjects` — a mock here would win for
+// the rest of the process and make both test the wrong thing.
 const mockWorkspaceDomainFindUnique = mock();
 const mockWorkspaceMemberCreate = mock();
 const mockWorkspaceMemberFindUnique = mock();
@@ -18,7 +18,7 @@ const tx = {
   },
   project: { findMany: mockProjectFindMany },
   projectMember: { createMany: mockProjectMemberCreateMany },
-  // biome-ignore lint/suspicious/noExplicitAny: Test-Double für Prisma.TransactionClient
+  // biome-ignore lint/suspicious/noExplicitAny: test double for Prisma.TransactionClient
 } as any;
 
 import { provisionNewUser } from "@/lib/user-provisioning";
@@ -35,9 +35,9 @@ describe("provisionNewUser()", () => {
       m.mockReset();
     }
     mockWorkspaceMemberCreate.mockResolvedValue({});
-    // `enrollInWorkspaceProjects` läuft echt, findet hier aber nichts zum
-    // Eintragen — die Mitgliedschaft selbst ist schon über
-    // `workspaceMember.create` oben bewiesen.
+    // `enrollInWorkspaceProjects` runs for real, but finds nothing to enroll
+    // here — the membership itself is already proven above via
+    // `workspaceMember.create`.
     mockWorkspaceMemberFindUnique.mockResolvedValue(null);
     mockProjectFindMany.mockResolvedValue([]);
   });
@@ -56,8 +56,8 @@ describe("provisionNewUser()", () => {
       userId: "u-new",
       pending: false,
     });
-    // Beweist, dass `enrollInWorkspaceProjects` (echt, nicht gemockt) für
-    // genau diesen Workspace lief.
+    // Proves that `enrollInWorkspaceProjects` (real, not mocked) ran for
+    // exactly this workspace.
     expect(mockProjectFindMany).toHaveBeenCalledWith({
       where: { workspaceId: "acme", visibility: "public" },
       select: { id: true },

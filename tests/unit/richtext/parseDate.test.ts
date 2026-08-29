@@ -2,8 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { isoDate, parseDateInput, toIso } from "@/lib/richtext/date";
 
 /**
- * Was im `/`-Menü als Datum durchgehen soll. Der Schrägstrich als Trenner ist
- * bewusst nicht dabei: er öffnet das Menü und schnitte die Eingabe ab.
+ * What should count as a date in the `/` menu. The slash as a separator is
+ * deliberately not among the formats tested here: it opens the menu and
+ * would cut off the input.
  */
 
 const jahr = new Date().getFullYear();
@@ -17,7 +18,7 @@ describe("parseDateInput", () => {
 
   test("ergänzt zweistellige Jahreszahlen", () => {
     expect(parseDateInput("1.2.02")).toBe("2002-02-01");
-    // Ab 69 rückwärts — die Grenze aus POSIX.
+    // From 69 backward — the cutoff from POSIX.
     expect(parseDateInput("1.2.98")).toBe("1998-02-01");
     expect(parseDateInput("1.2.68")).toBe("2068-02-01");
     expect(parseDateInput("1.2.69")).toBe("1969-02-01");
@@ -34,7 +35,7 @@ describe("parseDateInput", () => {
   });
 
   test("nimmt auch Bindestriche mit Tag zuerst", () => {
-    // Vier Stellen vorn heißt ISO, sonst Tag zuerst.
+    // Four digits at the start means ISO, otherwise day first.
     expect(parseDateInput("1-2-2002")).toBe("2002-02-01");
   });
 

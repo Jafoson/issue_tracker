@@ -16,48 +16,49 @@ import styles from "./loginForm.module.scss";
 interface LoginFormProps {
   callbackUrl?: string;
   oauthProviders?: string[];
-  /** Anzeigename des OIDC-Providers (`AUTH_OIDC_NAME`) — server-only,
-   *  deshalb als fertiger Wert von der Seite gereicht. */
+  /** Display name of the OIDC provider (`AUTH_OIDC_NAME`) — server-only,
+   *  therefore passed down as a finished value from the page. */
   oidcLabel?: string;
-  /** Ob `next-auth/providers/nodemailer` aktiv ist (`isMailConfigured()`,
-   *  server-only — deshalb als fertiger Wert von der Seite gereicht). Ohne
-   *  SMTP bleibt der ganze Magic-Link-Abschnitt weg — Passkey-Login und
-   *  -Registrierung brauchen kein SMTP und stehen unabhängig davon oben. */
+  /** Whether `next-auth/providers/nodemailer` is active (`isMailConfigured()`,
+   *  server-only — therefore passed down as a finished value from the
+   *  page). Without SMTP, the entire magic-link section is omitted —
+   *  passkey login and registration don't need SMTP and appear above,
+   *  independent of it. */
   mailConfigured: boolean;
-  /** `AUTH_PASSKEY_LOGIN_ENABLED` (`auth.config.ts`). Aus — dann fehlt der
-   *  ganze Passkey-Block, nicht nur einzelne Knöpfe darin. */
+  /** `AUTH_PASSKEY_LOGIN_ENABLED` (`auth.config.ts`). Off — then the whole
+   *  passkey block is missing, not just individual buttons in it. */
   passkeyLoginEnabled: boolean;
-  /** `AUTH_PASSKEY_REGISTRATION_ENABLED` — nur relevant, wenn
-   *  `passkeyLoginEnabled` an ist. Aus: der Login-Knopf bleibt (bestehende
-   *  Konten kommen weiter per Passkey herein), der Registrieren-Knopf fällt
-   *  weg, weil `auth.ts`s `getUserInfo`-Override ihn ohnehin ablehnen würde. */
+  /** `AUTH_PASSKEY_REGISTRATION_ENABLED` — only relevant when
+   *  `passkeyLoginEnabled` is on. Off: the login button stays (existing
+   *  accounts still get in via passkey), the register button is dropped,
+   *  because `auth.ts`'s `getUserInfo` override would reject it anyway. */
   passkeyRegistrationEnabled: boolean;
-  /** Aus `?error=` nach einem fehlgeschlagenen Code-Versuch (`auth.config.ts`s
-   *  `pages.error`) — die Seite landet dabei neu, jeder Client-State ist weg. */
+  /** From `?error=` after a failed code attempt (`auth.config.ts`'s
+   *  `pages.error`) — the page reloads fresh in the process, any client
+   *  state is gone. */
   initialError?: string;
 }
 
 /**
- * Anmelden — und, für ein neues Konto, zugleich registrieren.
+ * Sign in — and, for a new account, register at the same time.
  *
- * Drei Blöcke von oben nach unten, jeder nur sichtbar, wenn er auch
- * funktioniert:
+ * Three blocks from top to bottom, each visible only if it actually works:
  *
- * 1. Passkey — nur ohne `AUTH_PASSKEY_LOGIN_ENABLED=false`, sonst fehlt der
- *    Block ganz. Zwei Knöpfe: anmelden (`PasskeyLoginButton`, rein
- *    discoverable, der Browser zeigt die auf diesem Gerät hinterlegten
- *    Passkeys selbst an) oder registrieren (`registerWithPasskey`, legt ein
- *    komplett neues Konto an, siehe dort für die technische Notwendigkeit
- *    einer intern erzeugten Adresse — fehlt zusätzlich bei
- *    `AUTH_PASSKEY_REGISTRATION_ENABLED=false`, dort auch serverseitig
- *    durchgesetzt, siehe `auth.ts`).
- * 2. Magic Link — nur mit SMTP, sonst bleibt der ganze Block weg.
- * 3. Single Sign-On — nur mit konfigurierten Anbietern, über `AuthCard`s
- *    eingebauten OAuth-/OIDC-Abschnitt.
+ * 1. Passkey — only without `AUTH_PASSKEY_LOGIN_ENABLED=false`, otherwise the
+ *    block is missing entirely. Two buttons: sign in (`PasskeyLoginButton`,
+ *    purely discoverable, the browser shows the passkeys registered on this
+ *    device itself) or register (`registerWithPasskey`, creates a
+ *    completely new account, see there for the technical necessity of an
+ *    internally generated address — additionally missing when
+ *    `AUTH_PASSKEY_REGISTRATION_ENABLED=false`, also enforced server-side
+ *    there, see `auth.ts`).
+ * 2. Magic link — only with SMTP, otherwise the whole block is omitted.
+ * 3. Single sign-on — only with configured providers, via `AuthCard`'s
+ *    built-in OAuth/OIDC section.
  *
- * Sind alle drei aus, zeigt die Karte einen Hinweis statt leer dazustehen —
- * ein Fehlkonfigurations-Fall (kein Passkey, kein SMTP, kein OAuth), den es
- * vor diesem Schalter nicht geben konnte.
+ * If all three are off, the card shows a notice instead of standing there
+ * empty — a misconfiguration case (no passkey, no SMTP, no OAuth) that
+ * couldn't exist before this toggle.
  */
 export function LoginForm({
   callbackUrl,
@@ -75,9 +76,9 @@ export function LoginForm({
   const [isMagicPending, startMagicTransition] = useTransition();
   const [isPasskeyPending, startPasskeyTransition] = useTransition();
 
-  // Die Code-Eingabe passiert auf einer eigenen Seite (`/login/verify`), nicht
-  // mehr inline unter diesem Button — der Wechsel dorthin behält die
-  // eingegebene E-Mail bei, ohne sie hier zusätzlich im Client-State zu halten.
+  // Code entry happens on its own page (`/login/verify`), no longer inline
+  // below this button — navigating there carries the entered email along,
+  // without keeping it here additionally in client state.
   const sendMagic = () => {
     setError("");
     startMagicTransition(async () => {
@@ -94,13 +95,13 @@ export function LoginForm({
     });
   };
 
-  // `@auth/core`s WebAuthn-Ablauf verlangt für eine Registrierung intern
-  // immer eine `email` — ein WebAuthn-Credential braucht laut Spezifikation
-  // einen `userName`, den der Passkey-Manager anzeigt. Diese Adresse wird nie
-  // angezeigt oder abgefragt, nur einmalig hier erzeugt und dient rein der
-  // Ceremony; `createAdapter().createUser` (`auth.ts`s
-  // `NO_EMAIL_SENTINEL_DOMAIN`) verwirft sie sofort wieder und legt das Konto
-  // mit `email: null` an.
+  // `@auth/core`'s WebAuthn flow internally always requires an `email` for
+  // registration — per spec, a WebAuthn credential needs a `userName` that
+  // the passkey manager displays. This address is never shown or asked for,
+  // just generated once here and serves purely for the ceremony;
+  // `createAdapter().createUser` (`auth.ts`'s `NO_EMAIL_SENTINEL_DOMAIN`)
+  // discards it again immediately and creates the account with
+  // `email: null`.
   const registerWithPasskey = () => {
     setError("");
     startPasskeyTransition(async () => {

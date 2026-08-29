@@ -20,11 +20,11 @@ export type RequestAvatarUploadResult =
   | { error: string };
 
 /**
- * Prüft Mime-Type/Größe und stellt eine presigned PUT-URL aus. RBAC
- * (eigene Session vs. `workspace.update`) bleibt bewusst außerhalb dieser
- * Datei — sie kennt nur den Storage, nicht die Berechtigungsmodelle der
- * aufrufenden Features (analog zu `lib/mail`, das auch nichts von
- * Workspace-Rollen weiß).
+ * Checks MIME type/size and issues a presigned PUT URL. RBAC (own session
+ * vs. `workspace.update`) is deliberately kept outside this file — it only
+ * knows about storage, not about the permission models of the calling
+ * features (analogous to `lib/mail`, which also knows nothing about
+ * workspace roles).
  */
 export async function requestAvatarUpload(input: {
   kind: AvatarKind;
@@ -51,9 +51,9 @@ export async function requestAvatarUpload(input: {
 }
 
 /**
- * Bestätigt einen Upload nach dem direkten PUT gegen S3: prüft, dass der
- * Key wirklich diesem Owner gehört (gegen manipulierte Keys aus dem
- * Client) und dass das Objekt tatsächlich existiert und die Größe einhält.
+ * Confirms an upload after the direct PUT against S3: checks that the key
+ * really belongs to this owner (against tampered keys from the client) and
+ * that the object actually exists and stays within the size limit.
  */
 export async function finalizeAvatarUpload(
   kind: AvatarKind,

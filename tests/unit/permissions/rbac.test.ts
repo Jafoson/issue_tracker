@@ -16,10 +16,10 @@ import {
   toRoleScope,
 } from "@/lib/rbac";
 
-// Die Registry ist reine Datendefinition. Diese Tests halten sie in sich
-// stimmig: ein Key nennt nur Objekt und Aktion, jede Rolle trägt nur
-// Permissions, die in ihrem Scope überhaupt vergeben werden dürfen, und die
-// Ränge bleiben je Scope eindeutig.
+// The registry is pure data definition. These tests keep it internally
+// consistent: a key names only object and action, every role carries only
+// permissions that may actually be granted in its scope, and ranks stay
+// unique per scope.
 
 function role(key: string): SystemRole {
   const found = SYSTEM_ROLES.find((r) => r.key === key);
@@ -36,8 +36,8 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
   });
 
   it("nennt keine Ebene im Key — nur Objekt und Aktion", () => {
-    // Genau das war der Grund für den Umbau: `workspace.label.create` und
-    // `project.label.create` sind derselbe Vorgang in verschiedenen Scopes.
+    // This was exactly the reason for the redesign: `workspace.label.create`
+    // and `project.label.create` are the same operation in different scopes.
     for (const key of ALL_PERMISSIONS) {
       expect(key.startsWith("workspace.label")).toBe(false);
       expect(key.startsWith("project.label")).toBe(false);
@@ -58,8 +58,8 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
   });
 
   it("lässt dieselbe Permission in Workspace und Projekt gelten", () => {
-    // Für Objekte, die es auf beiden Ebenen wirklich gibt: der Scope der Rolle
-    // entscheidet, welches der beiden gemeint ist.
+    // For objects that genuinely exist at both levels: the role's scope
+    // decides which of the two is meant.
     for (const key of [
       "label.create",
       "member.invite",
@@ -71,8 +71,9 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
   });
 
   it("hält rein projektbezogene Permissions aus dem Workspace heraus", () => {
-    // Sonst könnte eine Workspace-Rolle an der Projektrolle vorbei in jedes
-    // Projekt hineinregieren — genau das soll die Trennung verhindern.
+    // Otherwise a workspace role could reach past the project role and govern
+    // into every project — that's exactly what the separation is meant to
+    // prevent.
     for (const key of [
       "issue.create",
       "issue.update.any",
@@ -87,7 +88,7 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
   });
 
   it("hält die Generalschlüssel des Workspace aus den Projektrollen heraus", () => {
-    // Ein Projekt kann sich nicht selbst die Schlüssel zu allen anderen geben.
+    // A project cannot grant itself the keys to all the others.
     for (const key of [
       "project.view.all",
       "project.admin.all",
@@ -124,8 +125,8 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
     }
   });
 
-  // `audit.view` gilt inzwischen in allen drei Scopes — derselbe Key, drei
-  // Ausschnitte desselben Protokolls (siehe `lib/rbac/permissions.ts`).
+  // `audit.view` now applies in all three scopes — the same key, three
+  // slices of the same log (see `lib/rbac/permissions.ts`).
   it("gibt `audit.view` in Plattform, Workspace und Projekt", () => {
     expect(isPermissionAllowedIn("audit.view", "PLATFORM")).toBe(true);
     expect(isPermissionAllowedIn("audit.view", "WORKSPACE")).toBe(true);
@@ -133,7 +134,7 @@ describe("Permission-Registry (lib/rbac/permissions.ts)", () => {
   });
 
   it("gibt `role.manage` in allen drei Scopes", () => {
-    // Eine Permission, drei Bedeutungen — abhängig davon, wo sie hängt.
+    // One permission, three meanings — depending on where it's attached.
     for (const scope of ROLE_SCOPES) {
       expect(isPermissionAllowedIn("role.manage", scope)).toBe(true);
     }
@@ -152,7 +153,7 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
   it("existieren je genau einmal — keine Kopien je Mandant", () => {
     const ids = SYSTEM_ROLES.map((r) => systemRoleId(r.scope, r.key));
     expect(new Set(ids).size).toBe(ids.length);
-    // Die Id trägt keinen Workspace und kein Projekt.
+    // The id carries no workspace and no project.
     for (const id of ids) expect(id.startsWith("sys:")).toBe(true);
   });
 
@@ -211,7 +212,7 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
     it("gibt platform_admin bewusst KEINEN Mandanten-Zugriff", () => {
       const admin = role("platform_admin");
       expect(admin.allow).not.toContain("tenant.access");
-      // …aber alles andere des Scopes.
+      // …but everything else in the scope.
       expect(admin.allow.length).toBe(permissionsFor("PLATFORM").length - 1);
     });
 
@@ -252,16 +253,17 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
         .filter((r) => r.allow.includes("project.admin.all"))
         .map((r) => r.key);
       expect(opensAll).toEqual(["owner", "admin", "project_lead"]);
-      // Wer durchgreifen darf, sieht auch alles — sonst wäre der Durchgriff auf
-      // Projekte beschränkt, die er ohnehin schon findet.
+      // Whoever may reach through also sees everything — otherwise reaching
+      // through would be limited to projects they could already find anyway.
       for (const key of opensAll) {
         expect(role(key).allow).toContain("project.view.all");
       }
     });
 
     it("trägt in keiner Rolle Projektrechte", () => {
-      // Was im Projekt gilt, steht in der Projektrolle. Eine Workspace-Rolle,
-      // die Issue-Rechte trüge, wäre wirkungslos und damit irreführend.
+      // Whatever applies in the project belongs in the project role. A
+      // workspace role that carried issue permissions would be ineffective
+      // and therefore misleading.
       for (const r of systemRolesIn("WORKSPACE")) {
         for (const key of r.allow) {
           expect(isPermissionAllowedIn(key, "WORKSPACE")).toBe(true);
@@ -270,8 +272,9 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
     });
 
     it("nennt für jede Rolle die Projektrolle bei der Aufnahme", () => {
-      // Ohne diese Angabe müsste die Aufnahme aus Workspace-Rechten erraten,
-      // was jemand im Projekt darf — die stehen dort aber nicht mehr.
+      // Without this field, enrollment would have to guess from workspace
+      // permissions what someone may do in the project — but those no longer
+      // live there.
       const projectKeys = systemRolesIn("PROJECT").map((r) => r.key);
       for (const r of systemRolesIn("WORKSPACE")) {
         expect(r.defaultProjectRoleKey).toBeDefined();
@@ -290,10 +293,10 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
     ];
 
     it("beschränkt die einschränkenden Rollen allein über ihre Liste", () => {
-      // Eine Rolle nennt nur, was sie erlaubt. Da im Projekt allein die
-      // Projektrolle zählt, ist „nicht aufgeführt" bereits das Verbot — und
-      // eine neu eingeführte Projekt-Permission damit automatisch gesperrt,
-      // ohne dass jemand eine Verbotsliste pflegt.
+      // A role only names what it allows. Since only the project role counts
+      // in the project, "not listed" is already the denial — and a newly
+      // introduced project permission is therefore automatically locked out,
+      // without anyone maintaining a deny list.
       for (const key of ["project_viewer", "project_guest"]) {
         expect([...role(key).allow].sort()).toEqual(
           [...READ_AND_COMMENT].sort(),
@@ -302,11 +305,11 @@ describe("System-Rollen (lib/rbac/roles.ts)", () => {
     });
 
     it("sperrt mit `blocked` jeden Projektzugriff", () => {
-      // Die leere Liste ist der ganze Ausschluss. Was `blocked` von „gar keine
-      // Zeile in ProjectMember" unterscheidet, steht nicht hier, sondern in der
-      // Aufnahme: `enrollWorkspaceMembers` schreibt mit `skipDuplicates` und
-      // lässt eine bestehende Zeile in Ruhe. Wer entfernt wurde, kommt beim
-      // Umschalten auf öffentlich zurück; wer blockiert ist, bleibt draußen.
+      // The empty list is the whole exclusion. What distinguishes `blocked`
+      // from "no row in ProjectMember at all" isn't here, but in enrollment:
+      // `enrollWorkspaceMembers` writes with `skipDuplicates` and leaves an
+      // existing row alone. Whoever was removed comes back when switching to
+      // public; whoever is blocked stays out.
       expect(role("blocked").allow).toEqual([]);
     });
 

@@ -3,15 +3,15 @@
 import { useFormatter, useTranslations } from "next-intl";
 
 /**
- * Lokalisierte, relative Zeitangabe für Karten- und Listenansichten.
+ * Localized, relative time display for card and list views.
  *
- * Bewusst kompakt gehalten ("3d ago" / "vor 3 T."), damit die Angabe in engen
- * Spalten nicht umbricht. Die Abkürzungen sind numerusinvariant, deshalb reicht
- * einfache Interpolation statt ICU-Plural. Alles ab fünf Wochen wird als
- * absolutes Datum in der aktiven Locale formatiert.
+ * Deliberately kept compact ("3d ago" / "vor 3 T."), so the value doesn't
+ * wrap in narrow columns. The abbreviations are plural-invariant, so simple
+ * interpolation is enough instead of ICU plurals. Anything past five weeks
+ * is formatted as an absolute date in the active locale.
  *
- * Gibt eine Formatierfunktion zurück, damit eine Komponente mehrere Zeitstempel
- * mit nur einem Hook-Aufruf rendern kann.
+ * Returns a formatting function, so a component can render several
+ * timestamps with a single hook call.
  */
 export function useTimeAgo() {
   const t = useTranslations("time");

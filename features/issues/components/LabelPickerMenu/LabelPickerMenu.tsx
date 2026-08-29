@@ -42,10 +42,10 @@ export function LabelPickerMenu({
   } | null>(null);
   const [, startCreate] = useTransition();
 
-  // Ein Label gehört entweder diesem Projekt oder dem ganzen Workspace — und im
-  // zweiten Fall kann das Projekt es für sich ausgeblendet haben (`hiddenIn`).
-  // An Aufgaben, die es schon tragen, bleibt es trotzdem stehen; hier geht es
-  // nur darum, was noch vergeben werden kann.
+  // A label belongs either to this project or to the whole workspace — and
+  // in the second case, the project may have hidden it for itself
+  // (`hiddenIn`). It still stays on tasks that already carry it; this is
+  // only about what can still be assigned.
   const visible = allLabels.filter(
     (l) =>
       (!l.projectId || l.projectId === projectId) &&

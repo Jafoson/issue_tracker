@@ -4,19 +4,19 @@ import styles from "../modal.module.scss";
 
 interface ModalHeaderProps {
   title: React.ReactNode;
-  /** Slot links vom Titel — Icon, Projekt-Badge, Avatar … */
+  /** Slot to the left of the title — icon, project badge, avatar … */
   leading?: React.ReactNode;
-  /** Zusätzliche Aktionen rechts, vor dem Schließen-Button. */
+  /** Extra actions on the right, before the close button. */
   actions?: React.ReactNode;
-  /** Ohne Handler wird kein Schließen-Button gerendert. */
+  /** No close button is rendered without a handler. */
   onClose?: () => void;
-  /** Barrierefreies Label des Schließen-Buttons — bitte lokalisiert übergeben. */
+  /** Accessible label for the close button — please pass this localized. */
   closeLabel?: string;
-  /** Trennlinie nach unten. Default: true. */
+  /** Divider below. Default: true. */
   divider?: boolean;
 }
 
-/** Kopfzeile eines Modals: Leading-Slot, Titel und Schließen-Button. */
+/** Modal header: leading slot, title, and close button. */
 export function ModalHeader({
   title,
   leading,

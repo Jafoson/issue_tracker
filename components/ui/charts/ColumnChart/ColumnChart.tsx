@@ -6,16 +6,16 @@ import styles from "./columnChart.module.scss";
 export interface ChartSeries {
   key: string;
   label: string;
-  /** CSS-Farbe der Reihe — aus `--chart-1..3`, in fester Reihenfolge vergeben. */
+  /** CSS color of the series — from `--chart-1..3`, assigned in a fixed order. */
   color: string;
 }
 
 export interface ChartPoint {
-  /** Eindeutig je Spalte, zugleich React-Key. */
+  /** Unique per column, also the React key. */
   key: string;
-  /** Volle Beschriftung — im Tooltip und in der Tabelle. */
+  /** Full label — used in the tooltip and in the table. */
   label: string;
-  /** Kurzform für die Achse. Ohne sie steht dort `label`. */
+  /** Short form for the axis. Without it, `label` is shown there. */
   short?: string;
   values: Record<string, number>;
 }
@@ -23,42 +23,42 @@ export interface ChartPoint {
 interface Props {
   series: ChartSeries[];
   points: ChartPoint[];
-  /** Name des Diagramms für Screenreader und für die Tabellenansicht. */
+  /** Name of the chart for screen readers and for the table view. */
   label: string;
-  /** Statt der Säulen dieselben Zahlen als Tabelle. */
+  /** Show the same numbers as a table instead of the columns. */
   asTable?: boolean;
-  /** Beschriftung der Wertespalte in der Tabellenansicht. */
+  /** Label of the value column in the table view. */
   valueLabel?: string;
 }
 
 /**
- * Säulen über einer Zeitachse — eine Reihe oder mehrere gestapelt.
+ * Columns over a time axis — one series or several stacked.
  *
- * **Gebaut aus HTML, nicht aus SVG.** Ein SVG mit `viewBox` skaliert seine
- * Schrift mit der Breite mit: dieselbe Achsenbeschriftung wäre auf einem breiten
- * Bildschirm größer als der Fließtext daneben. Die Säulen sind deshalb Kästen mit
- * Prozenthöhen — die Schrift bleibt Schrift, jede Säule ist ein echtes Element
- * mit eigenem Fokus, und die Tastaturbedienung fällt nicht als Nachbau an.
+ * **Built from HTML, not SVG.** An SVG with `viewBox` scales its text along
+ * with the width: the same axis label would be larger than the surrounding
+ * running text on a wide screen. The columns are therefore boxes with
+ * percentage heights — text stays text, every column is a real element with
+ * its own focus, and keyboard support doesn't have to be reimplemented.
  *
- * Der Umriss der Marken folgt festen Regeln: höchstens 24px dick, oben 4px
- * gerundet und unten auf der Grundlinie eckig, zwischen gestapelten Abschnitten
- * eine 2px-Lücke in der Flächenfarbe statt eines Rahmens. Das Raster ist eine
- * durchgezogene Haarlinie eine Stufe neben der Fläche — gestrichelt läse es sich
- * als Schwelle, die es nicht gibt.
+ * The marks' outline follows fixed rules: at most 24px thick, rounded 4px on
+ * top and square at the baseline on the bottom, a 2px gap in the surface
+ * color between stacked segments instead of a border. The grid is a solid
+ * hairline one step off from the surface — dashed would read as a threshold
+ * that doesn't exist.
  *
- * ── Bedienung ──
+ * ── Interaction ──
  *
- * Der Zielbereich ist die ganze Spalte, nicht die gemalte Säule: an einem Tag
- * mit einer Aufgabe wäre die Marke sonst drei Pixel hoch. Ein Tooltip zeigt
- * **alle** Reihen dieser Spalte, nicht nur die berührte — wer auf einen Tag
- * zeigt, will den Tag wissen.
+ * The hit target is the whole column, not the drawn bar: on a day with one
+ * task, the mark would otherwise be three pixels tall. A tooltip shows
+ * **all** series for that column, not just the one touched — whoever points
+ * at a day wants to know about the day.
  *
- * Die Tastatur wandert mit den Pfeiltasten durch die Spalten und hält dabei nur
- * einen Tab-Halt (`tabIndex`), statt dreißig in die Reihenfolge des Dokuments zu
- * legen. Fokus zeigt denselben Tooltip wie der Zeiger.
+ * The keyboard moves through the columns with the arrow keys and holds only
+ * one tab stop (`tabIndex`), instead of putting thirty into document order.
+ * Focus shows the same tooltip as the pointer.
  *
- * Der Tooltip ist trotzdem nie der einzige Weg an eine Zahl: `asTable` zeigt
- * dieselben Werte als Tabelle, und die Achse trägt die Größenordnung.
+ * The tooltip is still never the only way to get at a number: `asTable`
+ * shows the same values as a table, and the axis carries the order of magnitude.
  */
 export function ColumnChart({
   series,
@@ -75,8 +75,8 @@ export function ColumnChart({
   const total = (point: ChartPoint) =>
     series.reduce((sum, s) => sum + (point.values[s.key] ?? 0), 0);
 
-  // Der Maßstab richtet sich nach der größten Säule, mindestens aber 1 — sonst
-  // teilte eine leere Achse durch null.
+  // The scale follows the tallest column, but at least 1 — otherwise an
+  // empty axis would divide by zero.
   const max = Math.max(1, ...points.map(total));
 
   if (asTable) {
@@ -128,13 +128,13 @@ export function ColumnChart({
 
   const shown = active === null ? null : points[active];
 
-  // Nicht jede Säule bekommt eine Beschriftung — bei dreißig Tagen stünden sie
-  // übereinander. Es bleiben höchstens acht, gleichmäßig verteilt.
+  // Not every column gets a label — at thirty days they'd overlap. At most
+  // eight remain, evenly distributed.
   //
-  // Die letzte ist immer dabei („bis wann" fragt man an einer Zeitachse
-  // zuerst), und genau deshalb muss die reguläre Marke davor weichen, wenn sie
-  // ihr zu nahe kommt: bei dreißig Tagen fielen sonst Index 28 und 29
-  // nebeneinander und überschrieben sich.
+  // The last one is always included ("up to when" is the first thing you
+  // ask of a time axis), and that's exactly why the regular mark before it
+  // must yield if it gets too close: at thirty days, index 28 and 29 would
+  // otherwise land next to each other and overwrite one another.
   const every = Math.ceil(points.length / 8);
   const last = points.length - 1;
 
@@ -148,9 +148,9 @@ export function ColumnChart({
   return (
     <div className={styles.wrap}>
       <div className={styles.plotRow}>
-        {/* Die Achse trägt nur zwei Marken: den größten Wert und die Null. Mehr
-            Zahlen an der Seite erklären nichts, was die Säulen nicht schon
-            zeigen — der genaue Wert steht im Tooltip und in der Tabelle. */}
+        {/* The axis carries only two marks: the highest value and zero. More
+            numbers on the side wouldn't explain anything the columns don't
+            already show — the exact value is in the tooltip and the table. */}
         <div className={styles.yAxis} aria-hidden="true">
           <span>{max}</span>
           <span>0</span>
@@ -165,9 +165,9 @@ export function ColumnChart({
               <span />
             </div>
 
-            {/* Ohne eigene Rolle: die Karte um das Diagramm trägt schon eine
-              Überschrift (`ChartCard`), und jede Säule sagt ihre Zahlen selbst.
-              Eine zweite Gruppierung darüber wiederholte nur den Titel. */}
+            {/* No role of its own: the card around the chart already carries
+              a heading (`ChartCard`), and every column states its own
+              numbers. A second grouping on top would just repeat the title. */}
             <div
               className={styles.slots}
               onPointerLeave={() => setActive(null)}
@@ -214,8 +214,8 @@ export function ColumnChart({
                         );
                       })}
                     </span>
-                    {/* Ein leerer Topf bekommt eine Grundlinie statt gar nichts —
-                      sonst sähe „null Aufgaben" aus wie „kein Tag". */}
+                    {/* An empty bucket gets a baseline mark instead of nothing at
+                      all — otherwise "zero tasks" would look like "no day". */}
                     {sum === 0 && <span className={styles.zero} />}
                   </button>
                 );
@@ -227,8 +227,8 @@ export function ColumnChart({
                 id={`${id}-tip`}
                 role="tooltip"
                 className={styles.tip}
-                // Links vom Zeiger, sobald die Spalte in der rechten Hälfte liegt:
-                // sonst hinge der Kasten über der Kante der Karte.
+                // To the left of the pointer as soon as the column is in the
+                // right half: otherwise the box would hang past the card's edge.
                 data-side={(active ?? 0) > last / 2 ? "start" : "end"}
                 style={{
                   left: `${(((active ?? 0) + 0.5) / points.length) * 100}%`,

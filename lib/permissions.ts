@@ -14,60 +14,59 @@ import { getSession } from "@/lib/session";
 
 export type { Permission } from "@/lib/rbac";
 
-// ─── Berechtigungsprüfung über drei Scopes ────────────────────────────────────
+// ─── Permission checks across three scopes ────────────────────────────────────
 //
-// Ein Benutzer hat je Scope höchstens eine Rolle: eine auf der Plattform, eine
-// im Workspace (`WorkspaceMember`), eine je Projekt (`ProjectMember`).
+// A user has at most one role per scope: one on the platform, one in the
+// workspace (`WorkspaceMember`), one per project (`ProjectMember`).
 //
-// **Jeder Kontext löst genau eine dieser Rollen auf.** Es wird nichts vereinigt:
+// **Each context resolves exactly one of these roles.** Nothing is merged:
 //
-//     Plattform-Kontext:  Plattform-Rolle
-//     Workspace-Kontext:  Workspace-Rolle
-//     Projekt-Kontext:    Projektrolle
+//     Platform context:  platform role
+//     Workspace context:  workspace role
+//     Project context:    project role
 //
-// Im Projekt gelten also nur Projektrechte, im Workspace nur Workspace-Rechte.
-// Was die Ebene darüber erlaubt, spielt für die Ebene darunter keine Rolle —
-// keine Zeile in `ProjectMember` heißt keine Projektrechte, auch für einen
-// Workspace-Owner. Ein Verbot gibt es nicht und braucht es nicht: eine Rolle
-// listet, was sie erlaubt, und „nicht aufgeführt" ist bereits das Verbot.
+// So only project permissions apply in a project, only workspace permissions
+// in a workspace. What the level above allows is irrelevant to the level
+// below — no row in `ProjectMember` means no project permissions, even for a
+// workspace owner. There is no "deny" and none is needed: a role lists what
+// it allows, and "not listed" already is the denial.
 //
-// Zwei Sicherungen halten das durch, auch wenn die Datenbank etwas anderes
-// erzählt: `collect()` nimmt aus einer Rolle nur die Keys, die sie laut Registry
-// tragen darf, und `permissionsFor(scope)` begrenzt jedes Ergebnis. Eine alte
-// oder von Hand gesetzte `RolePermission`-Zeile im falschen Scope ist damit
-// wirkungslos statt gefährlich.
+// Two safeguards enforce this even if the database claims otherwise:
+// `collect()` only takes the keys from a role that the registry actually
+// permits for it, and `permissionsFor(scope)` bounds every result. A stale or
+// hand-edited `RolePermission` row in the wrong scope is thus harmless rather
+// than dangerous.
 //
-// ── Die Generalschlüssel ──
+// ── The master keys ──
 //
-// Strikte Trennung allein würde die Leitung eines Workspace aus ihren eigenen
-// Projekten aussperren. Dafür gibt es drei Keys, und nur sie durchbrechen die
-// Trennung — nach unten, nie nach oben:
+// Strict separation alone would lock a workspace's leadership out of its own
+// projects. That's what these three keys are for, and they're the only thing
+// that crosses the boundary — downward, never upward:
 //
-//     tenant.access      (PLATFORM)   alles in jedem Workspace und Projekt
-//     project.admin.all  (WORKSPACE)  alles in jedem Projekt des Workspace
-//     project.view.all   (WORKSPACE)  lesend in jedes Projekt des Workspace
+//     tenant.access      (PLATFORM)   everything in every workspace and project
+//     project.admin.all  (WORKSPACE)  everything in every project of the workspace
+//     project.view.all   (WORKSPACE)  read access to every project of the workspace
 //
-// Sie werden geprüft, **bevor** die Rolle der unteren Ebene überhaupt geladen
-// wird. Genau darin liegt die Zusage: ein `blocked`-Eintrag auf einem Workspace-
-// Admin ist keine Herabstufung, sondern eine wirkungslose Zeile. Es gibt keinen
-// Datenzustand, der daran etwas ändert.
+// They're checked **before** the lower level's role is even loaded. That's
+// exactly the guarantee: a `blocked` entry on a workspace admin isn't a
+// demotion, just an inert row. No data state changes that.
 //
-// Ein Permission-Key nennt nur Objekt und Aktion. Dass `label.create` in einer
-// Workspace-Rolle den workspaceweiten Label meint und in einer Projektrolle den
-// des Projekts, ergibt sich allein daraus, an welcher Rolle er hängt.
+// A permission key only names the object and action. That `label.create` on a
+// workspace role means the workspace-wide label and on a project role means
+// the project's own label follows purely from which role it's attached to.
 
-// ─── Kontext ──────────────────────────────────────────────────────────────────
+// ─── Context ──────────────────────────────────────────────────────────────────
 
-/** Kontext einer Prüfung — genau ein Scope. */
+/** Context of a check — exactly one scope. */
 export type PermissionContext =
   | { scope: "platform" }
   | { workspaceId: string }
   | { projectId: string };
 
-/** Der Plattform-Kontext als Konstante, damit Call-Sites kein Literal bauen. */
+/** The platform context as a constant, so call sites don't need to build a literal. */
 export const PLATFORM = { scope: "platform" } as const;
 
-/** Welche Kontextform zu welchem Scope gehört. */
+/** Which context shape belongs to which scope. */
 interface ScopeContext {
   PLATFORM: { scope: "platform" };
   WORKSPACE: { workspaceId: string };
@@ -75,16 +74,16 @@ interface ScopeContext {
 }
 
 /**
- * Der Kontext, in dem eine Permission geprüft werden darf — abgeleitet aus den
- * `scopes` der Registry. Damit folgt der Typ der Datendefinition: trägt eine
- * Permission dort `["WORKSPACE", "PROJECT"]`, sind beide Kontexte erlaubt; steht
- * nur `["WORKSPACE"]`, ist `{ projectId }` ein Kompilierfehler statt einer
- * stillen `false`-Antwort.
+ * The context in which a permission may be checked — derived from the
+ * registry's `scopes`. This makes the type follow the data definition: if a
+ * permission carries `["WORKSPACE", "PROJECT"]`, both contexts are allowed;
+ * if only `["WORKSPACE"]` is listed, `{ projectId }` is a compile error
+ * instead of a silent `false` answer.
  */
 export type ContextFor<P extends Permission> =
   ScopeContext[(typeof PERMISSIONS)[P]["scopes"][number]];
 
-/** Wirft, wenn eine Prüfung fehlschlägt. Actions schlagen damit fehl-sicher fehl. */
+/** Thrown when a check fails. Actions thus fail closed. */
 export class PermissionError extends Error {
   constructor(public permission: string) {
     super(`Permission denied: ${permission}`);
@@ -92,9 +91,9 @@ export class PermissionError extends Error {
   }
 }
 
-// ─── Eingeloggter User ─────────────────────────────────────────────────────────
+// ─── Logged-in user ─────────────────────────────────────────────────────────
 
-/** User-Id der aktuellen Session, oder null. */
+/** User id of the current session, or null. */
 export async function currentUserId(): Promise<string | null> {
   return (await getSession())?.userId ?? null;
 }
@@ -105,13 +104,13 @@ async function requireUserId(): Promise<string> {
   return userId;
 }
 
-// ─── Cached DB-Lookups (pro Request dedupliziert) ─────────────────────────────
+// ─── Cached DB lookups (deduplicated per request) ─────────────────────────────
 
-// `satisfies` statt nur `as const`: eine Auswahl, die in einer Variablen steht,
-// prüft TypeScript beim Einsetzen nicht mehr auf überflüssige Felder — nur
-// direkt geschriebene Objektliterale bekommen diese Prüfung. Ohne die Zusicherung
-// hier überlebt ein Feld, das es im Schema nicht mehr gibt, jeden Typecheck und
-// fällt erst zur Laufzeit auf.
+// `satisfies` instead of just `as const`: a selection stored in a variable no
+// longer gets TypeScript's excess-property check on assignment — only object
+// literals written directly get that check. Without this assertion, a field
+// that no longer exists in the schema would survive every type check and
+// only fail at runtime.
 const roleSelect = {
   key: true,
   rank: true,
@@ -122,13 +121,13 @@ type GrantRow = { permissionKey: string };
 type RoleWithGrants = { key: string; rank: number; permissions: GrantRow[] };
 
 /**
- * Plattform-Rolle und Zustand des Kontos in einer Abfrage.
+ * Platform role and account state in one query.
  *
- * Beides zusammen, weil beides auf jedem Pfad gebraucht wird und aus derselben
- * Zeile kommt: die Rolle für die Rechte, `deactivated` als Schranke davor. Ein
- * stillgelegtes Konto bekommt gar nichts — nicht auf der Plattform, in keinem
- * Workspace, in keinem Projekt. Die Sperre steht deshalb vor jeder
- * Rollenauflösung und nicht neben ihr.
+ * Both together, because both are needed on every path and come from the
+ * same row: the role for the permissions, `deactivated` as the gate in front
+ * of it. A deactivated account gets nothing — not on the platform, not in any
+ * workspace, not in any project. That's why the lock comes before any role
+ * resolution rather than alongside it.
  */
 const loadPlatformState = cache(
   async (
@@ -164,9 +163,9 @@ const loadWorkspaceMeta = cache(async (workspaceId: string) => {
   });
 });
 
-// `visibility` steht hier bewusst nicht: über den Zugriff entscheidet allein die
-// Projektrolle. Die Sichtbarkeit legt nur fest, wer beim Anlegen eines Projekts
-// automatisch eingetragen wird (lib/project-membership.ts).
+// `visibility` is deliberately absent here: access is decided solely by the
+// project role. Visibility only determines who gets auto-enrolled when a
+// project is created (lib/project-membership.ts).
 const loadProjectMeta = cache(async (projectId: string) => {
   return db.project.findUnique({
     where: { id: projectId },
@@ -175,11 +174,12 @@ const loadProjectMeta = cache(async (projectId: string) => {
 });
 
 /**
- * Die **eigene** Projektrolle, oder null.
+ * The user's **own** project role, or null.
  *
- * In `ProjectMember` steht jeder, der im Projekt ist. Eine Zeile ohne `roleId`
- * hält nur diese Zugehörigkeit fest — die Rechte kommen dann allein aus dem
- * Workspace, und für die Auswertung ist sie so gut wie keine Zeile.
+ * `ProjectMember` holds everyone who's in the project. A row without a
+ * `roleId` records only that membership — the permissions then come solely
+ * from the workspace, and for evaluation purposes it's effectively no row at
+ * all.
  */
 const loadProjectRole = cache(
   async (projectId: string, userId: string): Promise<RoleWithGrants | null> => {
@@ -191,7 +191,7 @@ const loadProjectRole = cache(
   },
 );
 
-/** Steht die Person in mindestens einem Projekt dieses Workspace? */
+/** Is this person in at least one project of this workspace? */
 const inAnyProject = cache(
   async (userId: string, workspaceId: string): Promise<boolean> => {
     const row = await db.projectMember.findFirst({
@@ -202,15 +202,15 @@ const inAnyProject = cache(
   },
 );
 
-// ─── Ergebnis ─────────────────────────────────────────────────────────────────
+// ─── Result ─────────────────────────────────────────────────────────────────
 
-/** Welche Rechte gelten, und aus welchen Rollen sie kommen. */
+/** Which permissions apply, and which roles they come from. */
 export interface Access {
-  /** Gilt diese Permission im aufgelösten Kontext? */
+  /** Does this permission hold in the resolved context? */
   has(permission: Permission): boolean;
-  /** Rang der wirksamen Rolle eines Scopes, oder -1. Kommt aus der DB. */
+  /** Rank of the effective role of a scope, or -1. Comes from the DB. */
   rank(scope: RoleScope): number;
-  /** Key der wirksamen Rolle eines Scopes, oder null. */
+  /** Key of the effective role of a scope, or null. */
   roleKey(scope: RoleScope): string | null;
   workspaceId: string | null;
   projectId: string | null;
@@ -237,13 +237,13 @@ function makeAccess(
 }
 
 /**
- * Die Rechte einer Rolle, sofern sie in diesem Scope überhaupt gelten können.
+ * The permissions of a role, as far as they can even apply in this scope.
  *
- * Der Scope-Filter ist die eigentliche Trennung der Ebenen: was eine Rolle
- * dieses Scopes laut Registry nicht tragen darf, wird übergangen. Eine Zeile in
- * `RolePermission`, die aus einer früheren Fassung stammt oder von Hand gesetzt
- * wurde, wird dadurch wirkungslos — sie muss nicht erst aufgeräumt werden, damit
- * die Trennung stimmt.
+ * The scope filter is what actually separates the levels: whatever a role of
+ * this scope isn't allowed to carry per the registry is skipped. A row in
+ * `RolePermission` left over from an earlier version, or set by hand,
+ * therefore becomes inert — it doesn't need to be cleaned up first for the
+ * separation to hold.
  */
 function collect(
   role: RoleWithGrants | null | undefined,
@@ -264,46 +264,47 @@ function grants(role: RoleWithGrants | null, permission: Permission): boolean {
   return role?.permissions.some((g) => g.permissionKey === permission) ?? false;
 }
 
-// ─── Auflösung ────────────────────────────────────────────────────────────────
+// ─── Resolution ────────────────────────────────────────────────────────────────
 
 const EMPTY: Access = makeAccess(new Set(), {}, null, null);
 
-/** Was die Workspace-Ebene hergibt — die Unterlage beider Mandanten-Kontexte. */
+/** What the workspace level yields — the foundation for both tenant contexts. */
 interface Base {
-  /** Nur WORKSPACE-Keys, nur aus der Workspace-Rolle. */
+  /** WORKSPACE keys only, from the workspace role only. */
   granted: Set<Permission>;
   roles: Partial<Record<RoleScope, ScopeRole>>;
-  /** `tenant.access`: Support-Generalschlüssel, hebt alle Regeln auf. */
+  /** `tenant.access`: support master key, overrides all rules. */
   master: boolean;
-  /** Workspace gesperrt oder Einladung offen — aus dem Mandanten kommt nichts. */
+  /** Workspace suspended or invitation still pending — the tenant yields nothing. */
   closed: boolean;
 }
 
 /**
- * Die Workspace-Ebene einsammeln.
+ * Collect the workspace level.
  *
- * Beide Mandanten-Kontexte brauchen das: der Workspace-Kontext als Ergebnis, der
- * Projekt-Kontext für die Generalschlüssel und die Sperrgründe. Die
- * Plattform-Rolle wird dabei **nicht** eingesammelt — sie wirkt im Mandanten nur
- * über `tenant.access`. Ihr Key und Rang stehen trotzdem im Ergebnis, damit die
- * Oberfläche sie anzeigen kann.
+ * Both tenant contexts need this: the workspace context as its result, the
+ * project context for the master keys and the lockout reasons. The platform
+ * role is deliberately **not** collected here — within a tenant it only acts
+ * through `tenant.access`. Its key and rank still appear in the result so the
+ * UI can display them.
  */
 async function loadBase(userId: string, workspaceId: string): Promise<Base> {
   let granted = new Set<Permission>();
   const roles: Partial<Record<RoleScope, ScopeRole>> = {};
 
-  // ── Support-Zugriff ─────────────────────────────────────────────────────────
+  // ── Support access ─────────────────────────────────────────────────────────
   //
-  // `tenant.access` ist der Generalschlüssel in fremde Workspaces. Er kann nur
-  // in einer Plattform-Rolle stehen — Mandanten-Permissions sind laut Registry
-  // in diesem Scope nicht vergebbar, es gibt also keinen feineren Weg. Wer ihn
-  // hat, bekommt im Mandanten alles und ist von den Regeln unten ausgenommen:
-  // gerade wenn ein Workspace gesperrt oder ein Projekt privat ist, muss der
-  // Support hineinsehen können. `platform_admin` hat ihn bewusst NICHT.
+  // `tenant.access` is the master key into foreign workspaces. It can only
+  // live on a platform role — tenant permissions aren't assignable in this
+  // scope per the registry, so there's no finer-grained path. Whoever holds
+  // it gets everything in the tenant and is exempt from the rules below:
+  // support needs to be able to see in precisely when a workspace is
+  // suspended or a project is private. `platform_admin` deliberately does
+  // NOT have it.
   const platform = await loadPlatformState(userId);
 
-  // Stillgelegt: nichts, und zwar vor allem anderen. Auch der Generalschlüssel
-  // unten kommt für ein solches Konto nicht mehr zum Zug.
+  // Deactivated: nothing, and before anything else. Even the master key
+  // below no longer applies for such an account.
   if (platform.deactivated)
     return { granted, roles, master: false, closed: true };
 
@@ -314,10 +315,10 @@ async function loadBase(userId: string, workspaceId: string): Promise<Base> {
   if (grants(platformRole, "tenant.access"))
     return { granted, roles, master: true, closed: false };
 
-  // ── Gesperrt, oder noch nicht angenommen ────────────────────────────────────
+  // ── Suspended, or not yet accepted ────────────────────────────────────────
   //
-  // Die Prüfung steht VOR dem Einsammeln der Workspace-Rolle. Wer hier gar
-  // nichts einsammelt, kann auch nichts Falsches behalten.
+  // This check happens BEFORE the workspace role is collected. Collecting
+  // nothing here means there's nothing wrong to hold on to either.
   const [workspace, membership] = await Promise.all([
     loadWorkspaceMeta(workspaceId),
     loadWorkspaceRole(workspaceId, userId),
@@ -335,7 +336,7 @@ async function loadBase(userId: string, workspaceId: string): Promise<Base> {
   return { granted, roles, master: false, closed: false };
 }
 
-/** Trägt die Workspace-Rolle diesen Generalschlüssel? */
+/** Does the workspace role carry this master key? */
 function opens(
   base: Base,
   key: "project.admin.all" | "project.view.all",
@@ -349,7 +350,7 @@ async function resolve(
 ): Promise<Access> {
   if (!userId) return EMPTY;
 
-  // ── Kontext PLATFORM ────────────────────────────────────────────────────────
+  // ── Context PLATFORM ────────────────────────────────────────────────────────
   if ("scope" in ctx) {
     const platform = await loadPlatformState(userId);
     if (platform.deactivated) return EMPTY;
@@ -361,7 +362,7 @@ async function resolve(
     return makeAccess(collect(platform.role, "PLATFORM"), roles, null, null);
   }
 
-  // ── Kontext WORKSPACE ───────────────────────────────────────────────────────
+  // ── Context WORKSPACE ───────────────────────────────────────────────────────
   if (!("projectId" in ctx)) {
     const base = await loadBase(userId, ctx.workspaceId);
     const granted = base.master
@@ -370,54 +371,54 @@ async function resolve(
     return makeAccess(granted, base.roles, ctx.workspaceId, null);
   }
 
-  // ── Kontext PROJECT ─────────────────────────────────────────────────────────
+  // ── Context PROJECT ─────────────────────────────────────────────────────────
   //
-  // Vier Regeln, in dieser Reihenfolge. Die ersten drei entscheiden ohne die
-  // Projektrolle — deshalb kann keine Projektrolle sie aushebeln.
+  // Four rules, in this order. The first three decide without consulting the
+  // project role — so no project role can override them.
   const project = await loadProjectMeta(ctx.projectId);
   if (!project) return EMPTY;
 
   const base = await loadBase(userId, project.workspaceId);
   const where = [project.workspaceId, ctx.projectId] as const;
 
-  // 1. Support sieht in jedes Projekt jedes Mandanten.
+  // 1. Support sees into every project of every tenant.
   if (base.master)
     return makeAccess(new Set(permissionsFor("PROJECT")), base.roles, ...where);
 
-  // 2. Gesperrter Workspace oder offene Einladung: nichts.
+  // 2. Suspended workspace or pending invitation: nothing.
   if (base.closed) return makeAccess(new Set(), base.roles, ...where);
 
-  // 3. Der Generalschlüssel des Workspace. Die Projektrolle wird gar nicht erst
-  //    geladen — und `roles.PROJECT` bleibt leer, damit `assignmentCeiling` nach
-  //    oben offen ist. Sonst könnte ein Owner, den jemand auf `blocked` gesetzt
-  //    hat, diese Herabstufung nicht mehr zurücknehmen.
+  // 3. The workspace's master key. The project role is never even loaded —
+  //    and `roles.PROJECT` stays empty so `assignmentCeiling` remains
+  //    unbounded above. Otherwise an owner someone had set to `blocked`
+  //    could no longer undo that demotion.
   if (opens(base, "project.admin.all"))
     return makeAccess(new Set(permissionsFor("PROJECT")), base.roles, ...where);
 
-  // 4. Sonst entscheidet allein die Projektrolle. Keine Zeile in
-  //    `ProjectMember` heißt keine Projektrechte — auch bei einem öffentlichen
-  //    Projekt und auch für ein Workspace-Mitglied.
+  // 4. Otherwise the project role decides alone. No row in `ProjectMember`
+  //    means no project permissions — even for a public project and even for
+  //    a workspace member.
   const projectRole = await loadProjectRole(ctx.projectId, userId);
   if (projectRole)
     base.roles.PROJECT = { key: projectRole.key, rank: projectRole.rank };
 
   const granted = collect(projectRole, "PROJECT");
 
-  // Der schwächere Generalschlüssel: sehen ja, anfassen nein. Er steht nach der
-  // Projektrolle, wirkt aber wie die anderen an ihr vorbei — ein `blocked`
-  // verbirgt ein Projekt nicht vor dem, der laut Workspace-Rolle alle sehen darf.
+  // The weaker master key: see yes, touch no. It's applied after the project
+  // role but acts alongside it like the others — a `blocked` doesn't hide a
+  // project from someone the workspace role allows to see everything.
   if (opens(base, "project.view.all")) granted.add("project.view");
 
   return makeAccess(granted, base.roles, ...where);
 }
 
-// ─── Öffentliche API ───────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Alle Rechte eines Benutzers in einem Kontext auf einmal.
+ * All of a user's permissions in a context at once.
  *
- * Für Oberflächen, die viele Flags gleichzeitig brauchen, und für Schleifen —
- * eine Auflösung statt einer Abfrage je Permission.
+ * For UIs that need many flags simultaneously, and for loops — one
+ * resolution instead of one query per permission.
  */
 export async function accessFor(
   userId: string | null,
@@ -426,12 +427,12 @@ export async function accessFor(
   return resolve(userId, ctx);
 }
 
-/** Wie `accessFor`, aber für den eingeloggten Benutzer. */
+/** Like `accessFor`, but for the logged-in user. */
 export async function getAccess(ctx: PermissionContext): Promise<Access> {
   return resolve(await currentUserId(), ctx);
 }
 
-/** Hat `userId` die Permission im gegebenen Kontext? Wirft nicht. */
+/** Does `userId` have this permission in the given context? Does not throw. */
 export async function can<P extends Permission>(
   userId: string,
   permission: P,
@@ -441,7 +442,7 @@ export async function can<P extends Permission>(
   return access.has(permission);
 }
 
-/** Hat der eingeloggte Benutzer die Permission? Wirft nicht (false ohne Session). */
+/** Does the logged-in user have this permission? Does not throw (false with no session). */
 export async function hasPermission<P extends Permission>(
   permission: P,
   ctx: ContextFor<P>,
@@ -455,19 +456,19 @@ export interface PermissionCheck<P extends Permission = Permission> {
   permission: P;
   ctx: ContextFor<P>;
   /**
-   * Für `.own`-Permissions: Liste der Owner-Ids (z. B. [reporterId, assigneeId]).
-   * Der Check greift nur, wenn der aktuelle User in dieser Liste steht.
+   * For `.own` permissions: list of owner ids (e.g. [reporterId, assigneeId]).
+   * The check only applies if the current user is in this list.
    */
   ownerIds?: (string | null | undefined)[];
 }
 
 /**
- * Erfüllt, wenn mindestens einer der Checks zutrifft (für `.own`/`.any`-Paare).
- * Wirft `PermissionError`, sonst gibt es die User-Id zurück.
+ * Satisfied if at least one of the checks matches (for `.own`/`.any` pairs).
+ * Throws `PermissionError`, otherwise returns the user id.
  *
- * Der Mapped Type über das Tupel hält jeden Eintrag für sich geprüft:
- * TypeScript leitet die Permissions aus den `permission`-Feldern ab und
- * verlangt zu jeder den passenden Kontext.
+ * The mapped type over the tuple keeps each entry checked individually:
+ * TypeScript derives the permissions from the `permission` fields and
+ * requires the matching context for each.
  */
 export async function requirePermissionOr<T extends readonly Permission[]>(
   checks: { [K in keyof T]: PermissionCheck<T[K] & Permission> },
@@ -481,7 +482,7 @@ export async function requirePermissionOr<T extends readonly Permission[]>(
   throw new PermissionError(first?.permission ?? "unknown");
 }
 
-/** Verlangt eine einzelne Permission. Wirft `PermissionError`, sonst User-Id. */
+/** Requires a single permission. Throws `PermissionError`, otherwise returns the user id. */
 export async function requirePermission<P extends Permission>(
   permission: P,
   ctx: ContextFor<P>,
@@ -491,24 +492,24 @@ export async function requirePermission<P extends Permission>(
   throw new PermissionError(permission);
 }
 
-// ─── Zutritt zum Mandanten ────────────────────────────────────────────────────
+// ─── Tenant entry ────────────────────────────────────────────────────────────
 
 /**
- * Darf jemand den Workspace überhaupt betreten?
+ * Is someone allowed to enter the workspace at all?
  *
- * Es gibt dafür keinen Permission-Key: Zutritt hat, wer dazugehört. Drei Wege
- * führen hinein, und keiner davon ist eine Permission —
+ * There's no permission key for this: entry belongs to whoever belongs.
+ * Three paths lead in, and none of them is a permission —
  *
- *   1. `tenant.access` (Support-Generalschlüssel),
- *   2. eine angenommene Mitgliedschaft im Workspace,
- *   3. eine Projektmitgliedschaft, ohne im Workspace zu sein (Projekt-Gast).
+ *   1. `tenant.access` (support master key),
+ *   2. an accepted membership in the workspace,
+ *   3. a project membership without being in the workspace (project guest).
  *
- * Weg 3 ist der Grund, warum eine reine `WorkspaceMember`-Abfrage hier nicht
- * genügt: ein Gast ist ausdrücklich zu genau einem Projekt eingeladen und würde
- * sonst aus der Hülle ausgesperrt, in der dieses Projekt liegt.
+ * Path 3 is why a plain `WorkspaceMember` query isn't enough here: a guest is
+ * explicitly invited to exactly one project and would otherwise be locked
+ * out of the shell that project lives in.
  *
- * Eine offene Einladung zählt nicht: `loadBase` gibt einer solchen Zeile keine
- * Rechte, die Seiten wären also ohnehin leer.
+ * A pending invitation doesn't count: `loadBase` grants such a row no
+ * permissions, so the pages would be empty anyway.
  */
 export const canEnterWorkspace = cache(
   async (userId: string | null, workspaceId: string): Promise<boolean> => {
@@ -521,24 +522,24 @@ export const canEnterWorkspace = cache(
   },
 );
 
-/** Wie `canEnterWorkspace`, aber für den eingeloggten Benutzer. */
+/** Like `canEnterWorkspace`, but for the logged-in user. */
 export async function currentUserCanEnterWorkspace(
   workspaceId: string,
 ): Promise<boolean> {
   return canEnterWorkspace(await currentUserId(), workspaceId);
 }
 
-// ─── Rang-Hierarchie ──────────────────────────────────────────────────────────
+// ─── Rank hierarchy ──────────────────────────────────────────────────────────
 
 /**
- * Bis zu welchem Rang jemand Rollen eines Scopes vergeben darf.
+ * Up to which rank someone may assign roles of a scope.
  *
- * Grundregel bleibt „höchstens die eigene Rolle". Ränge sind aber nur innerhalb
- * eines Scopes vergleichbar — ein Workspace-Owner (Rang 6) und ein Project Admin
- * (Rang 4) stehen in keiner gemeinsamen Ordnung. Wer im betreffenden Scope gar
- * keine Rolle trägt, leitet seine Befugnis aus dem Scope darüber ab und ist
- * damit nach oben offen: ein Workspace-Admin ohne eigene Projektrolle darf jede
- * Projektrolle vergeben.
+ * The basic rule stays "at most one's own role". But ranks are only
+ * comparable within a single scope — a workspace owner (rank 6) and a
+ * project admin (rank 4) have no shared ordering. Whoever holds no role at
+ * all in the relevant scope derives their authority from the scope above and
+ * is thus unbounded above: a workspace admin without their own project role
+ * may assign any project role.
  */
 export function assignmentCeiling(access: Access, scope: RoleScope): number {
   return access.roleKey(scope) === null
@@ -546,16 +547,16 @@ export function assignmentCeiling(access: Access, scope: RoleScope): number {
     : access.rank(scope);
 }
 
-// ─── Bulk: sichtbare Projekte ─────────────────────────────────────────────────
+// ─── Bulk: visible projects ─────────────────────────────────────────────────
 
 /**
- * Die Projekte eines Workspace, die `userId` sehen darf.
+ * The projects of a workspace that `userId` is allowed to see.
  *
- * Die Sammelvariante zu `can(…, "project.view", { projectId })`: Listen und
- * Navigationen bekämen sonst eine Auflösung je Projekt. Die Generalschlüssel
- * gelten für alle Projekte gleich und werden einmal aufgelöst; sonst entscheidet
- * die Projektrolle je Projekt — dieselben vier Regeln wie in `resolve`, nur über
- * alle Projekte auf einmal.
+ * The bulk variant of `can(…, "project.view", { projectId })`: lists and
+ * navigation would otherwise need one resolution per project. The master
+ * keys apply equally to all projects and are resolved once; otherwise the
+ * project role decides per project — the same four rules as in `resolve`,
+ * just across all projects at once.
  */
 export const accessibleProjectIds = cache(async function accessibleProjectIds(
   userId: string | null,
@@ -573,8 +574,8 @@ export const accessibleProjectIds = cache(async function accessibleProjectIds(
     }),
   ]);
 
-  // Regeln 1 und 3: Support und die Leitung des Workspace sehen jedes Projekt,
-  // auch ohne Rolle darin.
+  // Rules 1 and 3: support and the workspace's leadership see every project,
+  // even without a role in it.
   if (
     base.master ||
     opens(base, "project.admin.all") ||
@@ -583,13 +584,13 @@ export const accessibleProjectIds = cache(async function accessibleProjectIds(
     for (const project of projects) visible.add(project.id);
     return visible;
   }
-  // Regel 2.
+  // Rule 2.
   if (base.closed) return visible;
 
   const ownRole = new Map(memberships.map((m) => [m.projectId, m.role]));
 
-  // Regel 4: keine Projektrolle heißt kein Zugriff — `ProjectMember` ist die
-  // Liste, wer im Projekt ist.
+  // Rule 4: no project role means no access — `ProjectMember` is the list of
+  // who's in the project.
   for (const project of projects) {
     const role = ownRole.get(project.id);
     if (!role) continue;
@@ -599,7 +600,7 @@ export const accessibleProjectIds = cache(async function accessibleProjectIds(
   return visible;
 });
 
-/** Wie `accessibleProjectIds`, aber für den eingeloggten Benutzer. */
+/** Like `accessibleProjectIds`, but for the logged-in user. */
 export async function visibleProjectIds(
   workspaceId: string,
 ): Promise<Set<string>> {

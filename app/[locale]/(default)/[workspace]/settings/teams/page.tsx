@@ -7,12 +7,12 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Teams des Workspace — hier im Rahmen der Einstellungen.
+ * The workspace's teams — here within the settings frame.
  *
- * Dieselbe Ansicht steht unter `/<workspace>/teams`, einen Klick von der
- * Seitenleiste entfernt. Beide Wege sind gewollt: wer im Workspace arbeitet,
- * sucht die Gruppen direkt, wer ihn einrichtet, sucht sie neben Rollen und
- * Labels.
+ * The same view is available under `/<workspace>/teams`, one click away from
+ * the sidebar. Both paths are intentional: anyone working in the workspace
+ * looks for the groups directly, anyone setting it up looks for them next to
+ * roles and labels.
  */
 export default async function WorkspaceSettingsTeamsPage({
   params,

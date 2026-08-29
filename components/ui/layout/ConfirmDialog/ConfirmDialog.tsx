@@ -10,33 +10,32 @@ import styles from "./confirmDialog.module.scss";
 
 export interface ConfirmOptions {
   title: string;
-  /** Was auf dem Spiel steht. Der Titel fragt, dieser Satz erklärt. */
+  /** What's at stake. The title asks, this sentence explains. */
   description?: string;
   confirmLabel: string;
   cancelLabel: string;
   /**
-   * Die Bestätigung führt zu einem Verlust (verwerfen, löschen) und wird rot
-   * gezeichnet. Default: false.
+   * The confirmation leads to a loss (discard, delete) and is rendered in
+   * red. Default: false.
    */
   danger?: boolean;
 }
 
 /**
- * Rückfrage als Dialog statt als `window.confirm`.
+ * Confirmation prompt as a dialog instead of `window.confirm`.
  *
- * Gebraucht überall dort, wo die Antwort abgewartet werden muss, ohne den
- * Browser anzuhalten: `confirm()` blockiert den Haupt-Thread und lässt sich
- * weder übersetzen noch gestalten — und in einigen Browsern unterdrücken
- * Nutzer den Dialog dauerhaft, womit die Rückfrage still zu einem „Abbrechen"
- * würde.
+ * Used everywhere the answer needs to be awaited without blocking the
+ * browser: `confirm()` blocks the main thread and can't be translated or
+ * styled — and some browsers let users permanently suppress the dialog,
+ * which would silently turn the prompt into a "Cancel".
  *
  * ```tsx
  * const confirm = useConfirm()
  * if (await confirm({ title, confirmLabel, cancelLabel })) …
  * ```
  *
- * Escape und Backdrop zählen als „Abbrechen": ein weggeklickter Dialog darf
- * nichts auslösen.
+ * Escape and backdrop both count as "Cancel": a dismissed dialog must not
+ * trigger anything.
  */
 export function useConfirm() {
   const { openModal } = useModal();
@@ -44,8 +43,8 @@ export function useConfirm() {
   return useCallback(
     (options: ConfirmOptions) =>
       new Promise<boolean>((resolve) => {
-        // Der Dialog kann auf zwei Wegen enden — geantwortet oder weggeklickt.
-        // Beide laufen hier zusammen, gültig ist der erste.
+        // The dialog can end in two ways — answered or dismissed.
+        // Both converge here, and the first one wins.
         let answered = false;
         const settle = (value: boolean) => {
           if (answered) return;
@@ -78,7 +77,7 @@ function ConfirmDialog({
   onAnswer: (value: boolean) => void;
 }) {
   return (
-    // Schmaler als ein Formular-Modal: hier stehen zwei Sätze und zwei Knöpfe.
+    // Narrower than a form modal: this only holds two sentences and two buttons.
     <Modal width={440}>
       <ModalHeader title={options.title} divider={false} />
 

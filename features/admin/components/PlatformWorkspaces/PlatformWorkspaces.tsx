@@ -26,7 +26,7 @@ interface Props {
   canSuspend: boolean;
   canDelete: boolean;
   nextCursor: string | null;
-  /** Lädt die nächste Seite ab einem Cursor (`loadMoreWorkspaces`,
+  /** Loads the next page from a cursor (`loadMoreWorkspaces`,
    * `features/admin/actions.ts`). */
   loadMore: (
     cursor: string,
@@ -34,29 +34,30 @@ interface Props {
 }
 
 /**
- * Die Mandanten der Plattform.
+ * The platform's tenants.
  *
- * ── Was hier steht ──
+ * ── What's here ──
  *
- * Name, Verantwortlicher, Größe, Alter, letzte Regung, Zustand. Das ist die
- * Hülle: genug, um einen Mandanten zu betreuen, abzurechnen und stillzulegen.
+ * Name, person responsible, size, age, last activity, state. That's the
+ * shell: enough to administer a tenant, bill it, and suspend it.
  *
- * ── Was hier fehlt, und warum ──
+ * ── What's missing, and why ──
  *
- * Es gibt keinen Weg hinein. Keine Zeile ist ein Link, kein Knopf heißt
- * „öffnen". Ein Plattform-Admin ist in einem fremden Workspace kein Mitglied,
- * und die Rechteauflösung gibt ihm dort auch nichts (`lib/permissions.ts`) — ein
- * Link führte also nur auf eine leere Seite und weckte den Eindruck, es gäbe
- * eine Tür. Die gibt es, aber woanders und schmaler: den Notfall-Zugriff je
- * Projekt, mit Begründung und Protokoll.
+ * There's no way in. No row is a link, no button says "open". A platform
+ * admin isn't a member of someone else's workspace, and the permission
+ * resolution doesn't grant them anything there either (`lib/permissions.ts`)
+ * — a link would just lead to an empty page and create the impression that
+ * a door exists. It does exist, but elsewhere and narrower: break-glass
+ * access per project, with a reason and an audit entry.
  *
- * ── Was man tun darf ──
+ * ── What you're allowed to do ──
  *
- * Sperren ist der Regelfall und umkehrbar: es nimmt allen im Mandanten den
- * Zugang und lässt die Daten stehen. Löschen ist die Ausnahme und endgültig —
- * deshalb steht der Knopf nur an einem bereits gesperrten Workspace zur
- * Verfügung. Wer löschen will, sperrt also zuerst; das ist die Nacht darüber,
- * die keine Bestätigungsabfrage ersetzt.
+ * Suspending is the normal case and reversible: it removes access for
+ * everyone in the tenant and leaves the data in place. Deleting is the
+ * exception and final — that's why the button is only available on a
+ * workspace that's already suspended. Anyone who wants to delete has to
+ * suspend first; that's the night in between that no confirmation dialog can
+ * replace.
  */
 export function PlatformWorkspaces({
   workspaces,
@@ -87,8 +88,9 @@ export function PlatformWorkspaces({
     });
 
   const toggleSuspended = async (row: PlatformWorkspace) => {
-    // Nur das Sperren fragt nach. Das Entsperren gibt etwas zurück, was vorher
-    // da war — dafür braucht es keine Rückfrage.
+    // Only suspending asks for confirmation. Unsuspending gives back
+    // something that was there before — that doesn't need a confirmation
+    // prompt.
     if (!row.suspended) {
       const ok = await confirm({
         title: t("platformWorkspaces.suspendTitle", { name: row.name }),
@@ -153,8 +155,8 @@ export function PlatformWorkspaces({
             {`${row.owner.firstName} ${row.owner.lastName}`.trim()}
           </span>
         ) : (
-          // Ohne Owner verwaltet den Mandanten niemand mehr — dieselbe Lage wie
-          // bei einem verwaisten Projekt, nur eine Ebene höher.
+          // Without an owner, nobody administers the tenant anymore — the
+          // same situation as an orphaned project, just one level up.
           <span className={styles.warn}>{t("platformWorkspaces.noOwner")}</span>
         ),
     },
@@ -175,7 +177,7 @@ export function PlatformWorkspaces({
       cell: (row) => <span className={styles.num}>{row.projects}</span>,
     },
     {
-      // Eine Zahl, kein Weg hinein.
+      // A number, not a way in.
       id: "issues",
       header: t("dashboard.issues"),
       width: "minmax(100px, max-content)",
@@ -233,8 +235,8 @@ export function PlatformWorkspaces({
               size="sm"
               className={styles.delete}
               icon={<Icon icon="lucide:trash-2" width={15} />}
-              // Gesperrt, solange der Mandant läuft. Der Titel sagt, warum —
-              // ein abgeblendeter Knopf ohne Begründung ist eine Sackgasse.
+              // Disabled while the tenant is active. The title explains
+              // why — a grayed-out button with no explanation is a dead end.
               disabled={isPending || !row.suspended}
               title={
                 row.suspended

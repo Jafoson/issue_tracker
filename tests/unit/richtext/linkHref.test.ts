@@ -3,12 +3,13 @@ import { toHref } from "@/components/ui/layout/RichTextEditor/components/LinkFor
 import { faviconOf, faviconStyle, hostOf } from "@/lib/richtext/link";
 
 /**
- * Was aus einer getippten Adresse wird, bevor sie im Dokument landet.
+ * What a typed address turns into before it lands in the document.
  *
- * Zwei Aufgaben: das fehlende Schema ergänzen — wer einen Link setzt, tippt
- * selten `https://` mit — und alles ablehnen, was im Browser gefährlich wäre.
- * Zusammen mit `safeUrl` in `RichText` ist das die zweite Reihe: hier kommt es
- * gar nicht erst ins Dokument, dort wird es beim Anzeigen noch einmal geprüft.
+ * Two jobs: fill in the missing scheme — someone setting a link rarely types
+ * `https://` along with it — and reject anything that would be dangerous in
+ * the browser. Together with `safeUrl` in `RichText`, this is the second line
+ * of defense: here it never makes it into the document in the first place,
+ * there it's checked again at display time.
  */
 
 describe("toHref", () => {
@@ -24,7 +25,7 @@ describe("toHref", () => {
 
   test("erkennt eine Mailadresse", () => {
     expect(toHref("anna@example.com")).toBe("mailto:anna@example.com");
-    // Mit Schema bleibt sie, wie sie ist.
+    // With a scheme already present, it stays as is.
     expect(toHref("mailto:anna@example.com")).toBe("mailto:anna@example.com");
   });
 
@@ -34,7 +35,7 @@ describe("toHref", () => {
   });
 
   test("lehnt gefährliche Schemata ab, statt sie zu ergänzen", () => {
-    // Der Kern: aus `javascript:` darf niemals `https://javascript:…` werden.
+    // The core rule: `javascript:` must never become `https://javascript:…`.
     expect(toHref("javascript:alert(1)")).toBeNull();
     expect(toHref("JavaScript:alert(1)")).toBeNull();
     expect(toHref("data:text/html;base64,PHN2Zz4=")).toBeNull();
@@ -59,8 +60,8 @@ describe("hostOf / faviconOf", () => {
   });
 
   test("leitet das Icon von der Seite selbst ab", () => {
-    // Bewusst kein fremder Dienst: der bekäme sonst jede verlinkte Adresse
-    // zu sehen.
+    // Deliberately no third-party service: it would otherwise get to see
+    // every linked address.
     expect(faviconOf("https://example.com/tief/drin?a=b")).toBe(
       "https://example.com/favicon.ico",
     );
@@ -79,8 +80,8 @@ describe("hostOf / faviconOf", () => {
   test("baut ein `style`-Attribut, das nichts einschleusen kann", () => {
     const style = faviconStyle("https://example.com");
     expect(style).toBe('--favicon: url("https://example.com/favicon.ico")');
-    // Anführungszeichen könnten aus dem Attribut ausbrechen — der URL-Parser
-    // lässt sie im Host nicht zu, kodiert werden sie trotzdem.
+    // Quotes could break out of the attribute — the URL parser doesn't allow
+    // them in the host, but they get encoded regardless.
     expect(faviconStyle('https://ex"ample.com')).not.toContain('"ample');
   });
 });

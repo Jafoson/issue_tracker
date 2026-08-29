@@ -14,9 +14,9 @@ type IssuePageParams = {
 };
 
 /**
- * Der Tab trägt Kennung und Titel — bei einer geteilten Adresse sieht man so
- * schon am Tab, worum es geht. `getIssueByRef` ist request-weit gecacht, die
- * Seite darunter holt dieselben Daten also nicht ein zweites Mal.
+ * The tab carries the identifier and title — with a shared URL, you can
+ * already tell from the tab what it's about. `getIssueByRef` is cached for
+ * the request, so the page below doesn't fetch the same data a second time.
  */
 export async function generateMetadata({
   params,
@@ -43,6 +43,6 @@ export default async function IssuePage({
   ]);
   if (!issue || !data) notFound();
 
-  // Locale-frei — die Seite navigiert über next-intl (auto-Präfix).
+  // Locale-free — this page navigates via next-intl (auto-prefixed).
   return <IssueDetailPage issue={issue} data={data} />;
 }

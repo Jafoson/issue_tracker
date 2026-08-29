@@ -4,27 +4,26 @@ import styles from "./chartCard.module.scss";
 
 interface Props {
   title: string;
-  /** Ein Satz darüber, was das Diagramm zeigt. */
+  /** A sentence above explaining what the chart shows. */
   hint?: string;
   /**
-   * Die Reihen — ab zwei erscheint die Legende.
+   * The series — the legend appears from two onward.
    *
-   * Bei einer Reihe entfällt sie: es gibt nur eine Farbe, und die Überschrift
-   * sagt schon, was gezählt wird. Ein Kästchen mit einem Eintrag wiederholte
-   * bloß den Titel.
+   * With a single series it's omitted: there's only one color, and the
+   * heading already says what's being counted. A swatch with one entry
+   * would just repeat the title.
    */
   series?: ChartSeries[];
-  /** Eine Zahl neben dem Titel — meist die Summe des Zeitraums. */
+  /** A number next to the title — usually the sum for the period. */
   total?: ReactNode;
   children: ReactNode;
 }
 
 /**
- * Der Rahmen um ein Diagramm: Überschrift, Erklärung, Legende.
+ * The frame around a chart: heading, explanation, legend.
  *
- * Die Legende steht oben und nicht unten — sie wird vor dem Diagramm gelesen,
- * nicht danach. Sie spiegelt die Marke, die sie erklärt: ein Kästchen für
- * Flächen und Säulen.
+ * The legend sits above rather than below — it's read before the chart, not
+ * after. It mirrors the mark it explains: a small square for areas and columns.
  */
 export function ChartCard({ title, hint, series, total, children }: Props) {
   return (

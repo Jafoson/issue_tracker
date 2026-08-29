@@ -1,24 +1,24 @@
 import type { PMDoc, PMNode } from "./types";
 
 /**
- * Ein leeres Dokument. ProseMirror verlangt mindestens einen Absatz — ein `doc`
- * ganz ohne Inhalt lässt sich zwar speichern, aber der Editor ersetzt es beim
- * Laden ohnehin sofort. Deshalb hier gleich die kanonische Form.
+ * An empty document. ProseMirror requires at least one paragraph — a `doc`
+ * with no content at all can technically be saved, but the editor replaces
+ * it immediately on load anyway. So this is already the canonical form.
  */
 export const EMPTY_DOC: PMDoc = {
   type: "doc",
   content: [{ type: "paragraph" }],
 };
 
-/** Frische Kopie — sonst teilen sich alle Aufrufer dasselbe Objekt. */
+/** A fresh copy — otherwise every caller would share the same object. */
 export function emptyDoc(): PMDoc {
   return { type: "doc", content: [{ type: "paragraph" }] };
 }
 
 /**
- * Erkennt Dokumente, die zwar Knoten enthalten, aber nichts anzuzeigen haben:
- * ein einzelner leerer Absatz sieht in der Datenbank nicht leer aus, für den
- * Leser ist er es aber. Entscheidet, ob der Platzhalter erscheint.
+ * Detects documents that contain nodes but have nothing to display: a
+ * single empty paragraph doesn't look empty in the database, but it is for
+ * the reader. Decides whether the placeholder appears.
  */
 export function isEmptyDoc(doc: PMDoc | null | undefined): boolean {
   if (!doc?.content?.length) return true;
@@ -26,17 +26,17 @@ export function isEmptyDoc(doc: PMDoc | null | undefined): boolean {
 }
 
 function isEmptyNode(node: PMNode): boolean {
-  // Atome tragen ihren Inhalt in den Attributen, nicht in `content` — ein
-  // einzelnes Bild oder ein Datums-Chip ist kein leeres Dokument.
+  // Atoms carry their content in their attributes, not in `content` — a
+  // single image or a date chip isn't an empty document.
   if (node.type !== "paragraph") return false;
   if (!node.content?.length) return true;
   return node.content.every((child) => child.type === "text" && !child.text);
 }
 
 /**
- * Prüft eingehendes JSON, bevor es gerendert oder gespeichert wird. Die Spalte
- * ist `Json` — Prisma gibt zurück, was drinsteht, und das muss nicht unbedingt
- * ein Dokument sein (alte Zeile, fehlgeschlagene Migration, manueller Eingriff).
+ * Checks incoming JSON before it's rendered or saved. The column is
+ * `Json` — Prisma returns whatever is in it, and that isn't necessarily a
+ * document (a stale row, a failed migration, a manual edit).
  */
 export function isPMDoc(value: unknown): value is PMDoc {
   if (typeof value !== "object" || value === null) return false;
@@ -46,33 +46,33 @@ export function isPMDoc(value: unknown): value is PMDoc {
 }
 
 /**
- * Der Weg von der Datenbank in die Anwendung: alles, was kein gültiges Dokument
- * ist, wird zum leeren Dokument. Lieber eine leere Beschreibung als eine Seite,
- * die am kaputten Datensatz eines einzelnen Issues zerbricht.
+ * The path from the database into the application: anything that isn't a
+ * valid document becomes the empty document. Better an empty description
+ * than a page that breaks on one issue's corrupted record.
  */
 export function toDoc(value: unknown): PMDoc {
   return isPMDoc(value) ? value : emptyDoc();
 }
 
 /**
- * Der Weg aus dem Editor heraus: macht aus dem Dokument ein gewöhnliches Objekt.
+ * The path out of the editor: turns the document into a plain object.
  *
- * ProseMirror legt die Attribute eines Knotens mit `Object.create(null)` an
- * (`computeAttrs` in prosemirror-model), und `Node.toJSON()` reicht genau dieses
- * Objekt weiter — ohne Prototyp. React weigert sich, so etwas an eine Server
- * Function zu übergeben: `isSimpleObject` verlangt `Object.prototype` in der
- * Kette, findet `null` und schiebt statt der Daten eine temporäre Referenz
- * hinüber. Auf dem Server bricht dann jeder Zugriff darauf ab —
- * „Cannot access label on the server."
+ * ProseMirror creates a node's attributes with `Object.create(null)`
+ * (`computeAttrs` in prosemirror-model), and `Node.toJSON()` passes that
+ * exact object along — with no prototype. React refuses to hand something
+ * like that to a Server Function: `isSimpleObject` requires
+ * `Object.prototype` somewhere in the chain, finds `null` instead, and
+ * forwards a temporary reference in place of the data. Every access to it
+ * then fails on the server — "Cannot access label on the server."
  *
- * Betroffen ist jeder Knoten mit Attributen: Erwähnung, Issue, Datum, Emoji,
- * Überschrift (`level`), Codeblock (`language`), Panel (`kind`),
- * Checklisten-Eintrag (`checked`), nummerierte Liste (`start`). Ohne diesen
- * Umlauf käme davon nichts heil in der Datenbank an.
+ * Every node with attributes is affected: mention, issue, date, emoji,
+ * heading (`level`), code block (`language`), panel (`kind`), checklist
+ * item (`checked`), ordered list (`start`). Without this round-trip, none
+ * of it would arrive intact in the database.
  *
- * Der Weg über JSON ist hier nicht faul, sondern genau richtig: das Dokument
- * *ist* JSON, und `JSON.parse` liefert garantiert Objekte mit gewöhnlichem
- * Prototyp.
+ * The detour through JSON isn't lazy here, it's exactly right: the document
+ * *is* JSON, and `JSON.parse` is guaranteed to produce objects with a
+ * normal prototype.
  */
 export function toPlainDoc(doc: PMDoc): PMDoc {
   return JSON.parse(JSON.stringify(doc));

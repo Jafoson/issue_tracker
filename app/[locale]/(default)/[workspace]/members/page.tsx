@@ -7,11 +7,11 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Mitglieder des Workspace, einen Klick von der Seitenleiste entfernt.
+ * The workspace's members, one click away from the sidebar.
  *
- * Dieselbe Komponente wie unter `…/settings/members` — wer im Workspace
- * arbeitet, schlägt hier nach, wen er ansprechen kann; wer ihn einrichtet,
- * findet dieselbe Liste in den Einstellungen neben Rollen und Teams.
+ * The same component as under `…/settings/members` — anyone working in the
+ * workspace looks here to see who they can reach out to; anyone setting it
+ * up finds the same list in settings next to roles and teams.
  */
 export default async function MembersPage({
   params,

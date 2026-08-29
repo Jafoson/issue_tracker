@@ -3,20 +3,20 @@ import styles from "./emptyState.module.scss";
 
 interface EmptyStateProps {
   /**
-   * Fertiges Icon-Element, z. B. `<Icon icon="lucide:users" width={32} />`.
-   * Bewusst kein Iconify-Name: so bleibt der Platzhalter frei von
-   * Client-Abhängigkeiten und auch aus Server Components nutzbar.
+   * A finished icon element, e.g. `<Icon icon="lucide:users" width={32} />`.
+   * Deliberately not an Iconify name: this keeps the placeholder free of
+   * client dependencies and usable from Server Components too.
    */
   icon?: ReactNode;
   title: ReactNode;
-  /** Sagt, wie sich der Zustand auflösen lässt — nicht nur, dass er leer ist. */
+  /** States how the empty state can be resolved — not just that it's empty. */
   description?: ReactNode;
-  /** Der erste sinnvolle Schritt, meist derselbe Button wie im Seitenkopf. */
+  /** The first sensible step, usually the same button as in the page header. */
   action?: ReactNode;
   className?: string;
 }
 
-/** Platzhalter für Listen und Tabellen ohne Inhalt. */
+/** Placeholder for lists and tables with no content. */
 export function EmptyState({
   icon,
   title,

@@ -7,21 +7,22 @@ import styles from "./rolesPage.module.scss";
 export interface RolesSection {
   id: string;
   label: string;
-  /** Der fertig server-gerenderte `RoleManager` dieses Topfes. */
+  /** The already server-rendered `RoleManager` for this pool. */
   node: React.ReactNode;
 }
 
 /**
- * Rahmen der Rollen-Seiten: genau ein Scroll-Bereich, und der gehört der Matrix.
+ * Frame of the roles pages: exactly one scroll area, and it belongs to the
+ * matrix.
  *
- * Ein Workspace hat zwei Rollentöpfe (seine eigenen und die seiner Projekte).
- * Untereinander gestellt bekäme jede Matrix die halbe Höhe und einen eigenen
- * Scrollbalken — nebeneinander gelegte Tabellen vertragen das nicht. Deshalb ein
- * Umschalter: eine Matrix zur Zeit, über die volle Höhe.
+ * A workspace has two role pools (its own and its projects'). Stacked
+ * vertically, each matrix would get half the height and its own scrollbar
+ * — side-by-side tables don't tolerate that. Hence a switcher: one matrix
+ * at a time, at full height.
  *
- * Beide Abschnitte bleiben dabei im Baum. Sie sind ohnehin schon geladen, und so
- * überlebt der Wechsel, was in der versteckten Matrix eingestellt war (Suche,
- * offene Rolle).
+ * Both sections stay in the tree throughout. They're already loaded
+ * anyway, and this way switching survives whatever was set in the hidden
+ * matrix (search, open role).
  */
 export function RolesPage({ sections }: { sections: RolesSection[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? "");

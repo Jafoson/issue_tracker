@@ -1,11 +1,11 @@
 import "server-only";
 
-// ─── S3-Konfiguration ─────────────────────────────────────────────────────
+// ─── S3 configuration ────────────────────────────────────────────────────
 //
-// Ausschließlich über die Umgebung gesteuert, analog zu `lib/mail/config.ts`.
-// Ohne `S3_ENDPOINT` (oder fehlende Keys/Bucket) bleibt Avatar-Upload aus;
-// die App läuft mit reinen Initialen-Avataren weiter, wie schon vor dieser
-// Datei.
+// Controlled exclusively through the environment, analogous to
+// `lib/mail/config.ts`. Without `S3_ENDPOINT` (or missing keys/bucket),
+// avatar upload stays off; the app keeps running with plain initials
+// avatars, same as before this file existed.
 
 export interface StorageConfig {
   endpoint: string;
@@ -13,18 +13,18 @@ export interface StorageConfig {
   accessKeyId: string;
   secretAccessKey: string;
   bucketAvatars: string;
-  /// `null` heißt: kein `S3_BUCKET_ISSUES` gesetzt — Issue-Anhänge bleiben
-  /// dann aus, unabhängig davon, ob Avatare konfiguriert sind. Anders als
-  /// `bucketAvatars` keine Voraussetzung dafür, dass `storageConfig()`
-  /// überhaupt etwas zurückgibt: ein reines Avatar-Setup soll unverändert
-  /// weiterlaufen, ohne den `issues`-Bucket zu kennen.
+  /// `null` means: no `S3_BUCKET_ISSUES` set — issue attachments then stay
+  /// off, regardless of whether avatars are configured. Unlike
+  /// `bucketAvatars`, not a precondition for `storageConfig()` to return
+  /// anything at all: a pure avatar setup should keep running unchanged,
+  /// without knowing about the `issues` bucket.
   bucketIssues: string | null;
 }
 
 /**
- * Liest die S3-Konfiguration aus der Umgebung — bei jedem Aufruf neu, nicht
- * gecacht: Tests setzen `process.env` gezielt für einen Fall und erwarten,
- * dass die nächste Prüfung das auch sieht (siehe `lib/mail/config.ts`).
+ * Reads the S3 configuration from the environment — freshly on every call,
+ * not cached: tests set `process.env` deliberately for one case and expect
+ * the next check to see it too (see `lib/mail/config.ts`).
  */
 export function storageConfig(): StorageConfig | null {
   const endpoint = process.env.S3_ENDPOINT;
@@ -49,7 +49,7 @@ export function isStorageConfigured(): boolean {
   return storageConfig() !== null;
 }
 
-/** Eigener Schalter für Issue-Anhänge — braucht zusätzlich `S3_BUCKET_ISSUES`. */
+/** Dedicated switch for issue attachments — additionally needs `S3_BUCKET_ISSUES`. */
 export function isAttachmentsConfigured(): boolean {
   const config = storageConfig();
   return config !== null && config.bucketIssues !== null;

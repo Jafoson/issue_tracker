@@ -30,21 +30,21 @@ interface Props extends ProjectLabelsView {
   projectId: string;
   projectName: string;
   workspaceId: string;
-  /** Lädt die nächste Seite der eigenen Labels (`loadMoreProjectLabels`,
-   * `features/projects/actions.ts`, an `projectId` gebunden). */
+  /** Loads the next page of the project's own labels (`loadMoreProjectLabels`,
+   * `features/projects/actions.ts`, bound to `projectId`). */
   loadMoreOwn: LoadMoreLabels;
-  /** Spiegelbild von `loadMoreOwn`, für die geerbten Workspace-Labels
+  /** Mirror image of `loadMoreOwn`, for the inherited workspace labels
    * (`loadMoreProjectInheritedLabels`). */
   loadMoreInherited: LoadMoreLabels;
 }
 
 /**
- * Die Labels eines Projekts, in zwei Listen.
+ * A project's labels, in two lists.
  *
- * Oben, was dem Projekt gehört und sich hier ändern lässt. Darunter, was der
- * Workspace vorgibt: dieselben Spalten, aber ohne Knöpfe. Beides zusammen
- * ergibt, was an einem Issue dieses Projekts auswählbar ist — die zweite Liste
- * wegzulassen hieße, die Hälfte davon zu verschweigen.
+ * On top, what belongs to the project and can be changed here. Below, what
+ * the workspace dictates: the same columns, but without buttons. Together
+ * they make up everything selectable on an issue in this project — leaving
+ * out the second list would mean hiding half of it.
  */
 export function ProjectLabels({
   projectId,
@@ -93,9 +93,9 @@ export function ProjectLabels({
     ));
 
   const remove = async (row: ProjectLabelRow) => {
-    // Ein Label zu löschen nimmt es auch von den Issues, an denen es hängt.
-    // Deshalb steht die Zahl in der Rückfrage: sie ist der Unterschied
-    // zwischen „aufräumen" und „eine Einteilung verlieren".
+    // Deleting a label also removes it from the issues it's attached to.
+    // That's why the count appears in the confirmation dialog: it's the
+    // difference between "cleaning up" and "losing an organization scheme".
     const ok = await confirm({
       title: t("projectLabels.deleteTitle", { name: row.name }),
       description: t("projectLabels.deleteDesc", { count: row.issueCount }),
@@ -116,9 +116,9 @@ export function ProjectLabels({
     });
   };
 
-  // Ausblenden ist folgenlos genug für einen Klick ohne Rückfrage: das Label
-  // bleibt dem Workspace, die Aufgaben behalten es, und derselbe Knopf holt es
-  // zurück. Deshalb hier keine Bestätigung wie beim Löschen.
+  // Hiding is low-stakes enough for a click without confirmation: the label
+  // stays with the workspace, tasks keep it, and the same button brings it
+  // back. That's why there's no confirmation dialog here like on delete.
   const toggleHidden = (row: ProjectLabelRow) =>
     startTransition(async () => {
       const result = await setLabelHidden(projectId, row.id, !row.hidden);
@@ -140,8 +140,8 @@ export function ProjectLabels({
     </Button>
   );
 
-  // Ein ausgeblendetes Label bleibt lesbar, tritt aber zurück — und sagt es
-  // dazu: die blasse Farbe allein wäre für sich genommen keine Auskunft.
+  // A hidden label stays readable but recedes — and says so explicitly: the
+  // faded color alone wouldn't be informative on its own.
   const labelCell = (row: ProjectLabelRow) =>
     row.hidden ? (
       <>
@@ -167,8 +167,8 @@ export function ProjectLabels({
       </span>
     );
 
-  // Eine Aktionsspalte entsteht nur, wenn es in ihr etwas zu tun gibt — eine
-  // leere Spalte wäre ein Versprechen, das die Zeilen nicht einlösen können.
+  // An actions column is only created when there's actually something to do
+  // in it — an empty column would be a promise the rows can't fulfill.
   const columns = (
     actions?: (row: ProjectLabelRow) => React.ReactNode,
   ): TableColumn<ProjectLabelRow>[] => [
@@ -228,9 +228,9 @@ export function ProjectLabels({
     </>
   );
 
-  // Das Auge zeigt den Zustand der Zeile: durchgestrichen heißt „ist
-  // ausgeblendet", offen heißt „wird angeboten". Was ein Klick daraus macht,
-  // steht im Tooltip — und was gilt, auch als Wort neben dem Label.
+  // The eye icon shows the row's state: crossed-out means "is hidden", open
+  // means "is offered". What a click does to it is in the tooltip — and
+  // what currently applies is also spelled out as a word next to the label.
   const inheritedActions = (row: ProjectLabelRow) => (
     <Button
       variant="ghost"
@@ -245,8 +245,8 @@ export function ProjectLabels({
     />
   );
 
-  // Zwei Tabellen, zwei Sortierungen: die eigenen Labels und die geerbten sind
-  // getrennte Listen und sollen sich auch getrennt ordnen lassen.
+  // Two tables, two sort states: the project's own labels and the inherited
+  // ones are separate lists and should be sortable separately too.
   const ownColumns = columns(canUpdate || canDelete ? ownActions : undefined);
   const inheritedColumns = columns(canUpdate ? inheritedActions : undefined);
   const ownSort = useTableSort(ownColumns);

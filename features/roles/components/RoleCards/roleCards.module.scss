@@ -1,6 +1,6 @@
-/* Eine Zeile, keine Kachelwand: die Karten wachsen nach rechts wie die Spalten
-   der Matrix darunter. Dadurch bleibt die Höhe des Blocks konstant, egal wie
-   viele Rollen es gibt — die Matrix bekommt immer denselben Platz. */
+/* One row, not a tile wall: the cards grow to the right like the columns of
+   the matrix below. This keeps the block's height constant no matter how
+   many roles there are — the matrix always gets the same amount of space. */
 .cards {
   display: grid;
   grid-auto-flow: column;
@@ -11,9 +11,9 @@
   scrollbar-width: thin;
 }
 
-/* Die Karte rahmt, der Knopf darin füllt sie aus: der Stift muss neben dem
-   Knopf stehen und nicht in ihm — ein Knopf im Knopf ist kein gültiges
-   Markup, und beim Bearbeiten würde sonst die Spalte mitschalten. */
+/* The card provides the frame, the button inside fills it: the pencil has
+   to sit next to the button, not inside it — a button inside a button isn't
+   valid markup, and editing would otherwise toggle the column too. */
 .card {
   position: relative;
   display: flex;
@@ -32,10 +32,9 @@
     background: var(--surface-container-low);
   }
 
-  /* Ausgeblendet bleibt lesbar, aber offensichtlich außer Betrieb: der
-     gestrichelte Rahmen bleibt scharf, blass wird nur der Inhalt. Beides
-     zugleich zu dämpfen ließe die Karte im Untergrund verschwinden, und sie
-     ist der einzige Weg zurück. */
+  /* Hidden stays readable but obviously out of service: the dashed border
+     stays crisp, only the content fades. Dimming both at once would let the
+     card vanish into the background, and it's the only way back. */
   &[data-hidden] {
     border-style: dashed;
 
@@ -61,7 +60,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  /* Die Ecke gehört dem Stift oder dem Schloss. */
+  /* The corner belongs to either the pencil or the lock. */
   padding-inline-end: 22px;
 }
 
@@ -86,10 +85,10 @@
   color: var(--outline);
 }
 
-/* Sichtbar statt erst beim Überfahren: seit die Karte die Spalte schaltet, ist
-   der Stift der einzige Weg in die Stammdaten — er muss zu finden sein, ohne
-   die Karte vorher zu suchen. Zurückhaltend gefärbt bleibt er trotzdem hinter
-   dem Rollennamen. */
+/* Visible instead of only on hover: since the card toggles the column, the
+   pencil is the only way into the core data — it has to be discoverable
+   without first hunting for the card. Kept in a restrained color, it still
+   stays behind the role name in visual priority. */
 .edit {
   color: var(--on-surface-variant);
   cursor: pointer;
@@ -105,7 +104,7 @@
   font-size: var(--text-xs);
   line-height: var(--leading-normal);
   color: var(--on-surface-variant);
-  /* Zwei Zeilen, damit alle Karten gleich hoch bleiben. */
+  /* Two lines, so all cards stay the same height. */
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

@@ -6,26 +6,27 @@ import { Button } from "@/components/ui/atoms/Button/Button";
 import styles from "./copyButton.module.scss";
 
 /**
- * Ein `Button`, der Text in die Zwischenablage legt und es kurz bestätigt.
+ * A `Button` that copies text to the clipboard and briefly confirms it.
  *
- * Aussehen und Maße kommen vom `Button`; diese Hülle trägt das Verhalten —
- * den Zugriff auf die Zwischenablage und die Bestätigung danach. Deshalb steht
- * sie hier und nicht unter `atoms/`: die sind unteilbar, das hier ist eine
- * Zusammensetzung.
+ * Appearance and size come from `Button`; this wrapper carries the
+ * behavior — clipboard access and the confirmation afterward. That's why it
+ * lives here and not under `atoms/`: those are indivisible, this is a
+ * composition.
  *
- * Bestätigt wird am Knopf selbst statt über eine Einblendung: die Meldung
- * gehört dorthin, wo geklickt wurde. (Ein Toast-Speicher liegt zwar in
- * `lib/ui-store.tsx`, ist aber in keinem Layout eingehängt und rendert nichts.)
+ * The confirmation shows on the button itself rather than via a toast: the
+ * message belongs where the click happened. (A toast store does exist in
+ * `lib/ui-store.tsx`, but it isn't mounted in any layout and renders
+ * nothing.)
  *
- * Eine eigene Komponente bleibt sie trotzdem, weil sie auch im Codeblock der
- * **Anzeige** steht — und die rendert serverseitig. So ist genau dieser Knopf
- * die einzige Stelle darin, die den Browser braucht.
+ * It stays its own component regardless, because it also appears in the code
+ * block of the **display** path — which renders server-side. So this button
+ * is the one and only spot in there that needs the browser.
  */
 
 interface CopyButtonProps {
   value: string;
   label: string;
-  /** Steht da, solange die Bestätigung sichtbar ist. */
+  /** Shown for as long as the confirmation is visible. */
   copiedLabel: string;
   className?: string;
 }
@@ -38,8 +39,8 @@ export function CopyButton({
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  // Die Bestätigung verschwindet von selbst. Der Timer hängt am Zustand, damit
-  // er beim Verlassen der Seite mit aufgeräumt wird.
+  // The confirmation disappears on its own. The timer is tied to state so
+  // it gets cleaned up when the page is left.
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), 1600);
@@ -51,9 +52,9 @@ export function CopyButton({
       await navigator.clipboard.writeText(value);
       setCopied(true);
     } catch {
-      // Ohne Berechtigung oder über eine unsichere Verbindung gibt es keine
-      // Zwischenablage. Dann passiert eben nichts — eine Fehlermeldung wäre
-      // hier lauter als die Sache wert ist.
+      // No clipboard without permission or over an insecure connection.
+      // Nothing happens then — an error message would make more noise than
+      // the situation is worth.
     }
   };
 
@@ -66,8 +67,8 @@ export function CopyButton({
       icon={<Icon icon={copied ? "lucide:check" : "lucide:copy"} width={14} />}
       aria-label={copied ? copiedLabel : label}
       title={copied ? copiedLabel : label}
-      // Der Text erscheint nur für den Moment der Bestätigung — sonst steht
-      // dauerhaft ein Wort da, wo ein Zeichen genügt.
+      // The text only appears for the moment of confirmation — otherwise a
+      // word would sit there permanently where an icon is enough.
       onMouseDown={(e) => e.preventDefault()}
       onClick={copy}
     >

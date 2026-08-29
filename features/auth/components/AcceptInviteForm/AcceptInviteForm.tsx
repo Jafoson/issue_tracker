@@ -16,23 +16,23 @@ interface Props {
 }
 
 /**
- * Der letzte Schritt einer Einladung: sich anmelden, egal auf welchem Weg.
+ * The last step of an invitation: sign in, no matter which way.
  *
- * Die E-Mail-Adresse steht fest — sie ist Teil der Einladung, das Feld zeigt
- * sie nur an. Zwei Wege führen zurück auf genau diese Seite (`callbackUrl`/
- * `redirectTo: /invite/{token}`), mit einer Session, die zum eingeladenen
- * Schatten-Konto passt: Magic Link (führt über den Code auf `/login/verify`,
- * wie beim normalen Login) und Single Sign-On — `auth.ts`s `signIn`-Callback
- * verknüpft den Anbieter dafür selbst mit dem Schatten-Konto, ohne die sonst
- * übliche `OAuthAccountNotLinked`-Sperre, weil ein unberührtes Schatten-Konto
- * nichts zu kapern gibt (siehe dort). Der zweite Aufruf dieser Seite ruft
- * `acceptInvitation()` auf (Pending-Flip, Projekt-Enrollment) und leitet in
- * den Workspace weiter.
+ * The email address is fixed — it's part of the invitation, the field only
+ * displays it. Two paths lead back to this exact page (`callbackUrl`/
+ * `redirectTo: /invite/{token}`), with a session matching the invited shadow
+ * account: magic link (goes through the code on `/login/verify`, like a
+ * normal login) and single sign-on — `auth.ts`'s `signIn` callback links the
+ * provider to the shadow account itself for this, without the usual
+ * `OAuthAccountNotLinked` block, because an untouched shadow account has
+ * nothing to hijack (see there). The second visit to this page calls
+ * `acceptInvitation()` (pending flip, project enrollment) and redirects into
+ * the workspace.
  *
- * Passkey fehlt bewusst: eine Registrierung dafür verlangt next-auth zufolge
- * entweder eine aktive Sitzung oder eine noch unbekannte Adresse — ein
- * Schatten-Konto ist beides nicht. Ein Passkey lässt sich erst danach, mit
- * einer Sitzung, unter Account → Sicherheit einrichten.
+ * Passkey is deliberately absent: registering one, per next-auth, requires
+ * either an active session or an address that's still unknown — a shadow
+ * account is neither. A passkey can only be set up afterward, with a
+ * session, under Account → Security.
  */
 export function AcceptInviteForm({
   token,

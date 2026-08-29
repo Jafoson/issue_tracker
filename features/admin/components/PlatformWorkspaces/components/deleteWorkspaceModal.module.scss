@@ -15,8 +15,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Was verloren geht, in Zahlen dieses Mandanten. Eine Warnung, die für jeden
-   Workspace gleich lautet, wird gelesen wie ein Cookie-Banner. */
+/* What's being lost, in this tenant's actual numbers. A warning that reads
+   the same for every workspace gets read like a cookie banner. */
 .losses {
   display: flex;
   flex-wrap: wrap;
@@ -43,9 +43,8 @@
   color: var(--on-surface);
 }
 
-/* Der Knopf trägt die Farbe des Verlusts, nicht die des Akzents — er ist die
-   einzige Stelle im Plattform-Bereich, an der Daten unwiederbringlich
-   verschwinden. */
+/* The button carries the color of loss, not the accent color — it's the
+   only place in the platform area where data disappears irretrievably. */
 .danger {
   background: var(--error-container);
   color: var(--on-error-container);

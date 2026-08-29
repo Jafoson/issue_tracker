@@ -17,14 +17,14 @@ export default async function LoginPage({
 }) {
   const { callbackUrl, error } = await searchParams;
 
-  // Bereits eingeloggt? Dann von der Login-Seite weg zur Zielseite.
-  // Ohne die Session-Prüfung entstünde eine Redirect-Schleife mit dem Proxy.
+  // Already signed in? Then away from the login page to the target page.
+  // Without the session check, a redirect loop with the proxy would result.
   const session = await getSession();
   if (session) redirect(callbackUrl ?? "/");
 
-  // `error` kommt von next-auths eigener Fehler-Weiterleitung
-  // (`auth.config.ts`s `pages.error`) — z. B. ein abgelaufener oder schon
-  // benutzter Magic-Link-Code, über den Code-Weg auf dieser Seite eingelöst.
+  // `error` comes from next-auth's own error redirect (`auth.config.ts`'s
+  // `pages.error`) — e.g. an expired or already-used magic-link code,
+  // redeemed via the code path on this page.
   let initialError: string | undefined;
   if (error) {
     const t = await getTranslations("login");

@@ -2,20 +2,20 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 
-/** Die natürlichen Breiten einer Reihe: die der Kinder und die des Zählers. */
+/** The natural widths of a row: the children's and the counter's. */
 interface Widths {
   items: number[];
   more: number;
 }
 
 /**
- * Wie viele Kinder der Reihe nebeneinander stehen können, wenn am Ende noch der
- * Zähler für den Rest Platz finden soll.
+ * How many children of the row can stand side by side, while still leaving
+ * room at the end for the counter for the rest.
  */
 function fitCount(row: HTMLElement, widths: Widths) {
   const gap = Number.parseFloat(getComputedStyle(row).columnGap) || 0;
-  // Ein halber Pixel Nachsicht: Breiten kommen gebrochen zurück, und an einer
-  // Rundung soll kein Label scheitern.
+  // Half a pixel of tolerance: widths come back fractional, and a label
+  // shouldn't fail to fit because of a rounding error.
   const room = row.getBoundingClientRect().width + 0.5;
   const upTo = (k: number) =>
     k > 0
@@ -24,8 +24,8 @@ function fitCount(row: HTMLElement, widths: Widths) {
 
   let n = widths.items.length;
   while (n > 0 && upTo(n) > room) n--;
-  // Bleibt etwas übrig, will auch der Zähler stehen — notfalls weicht ein
-  // weiteres Label für ihn.
+  // If something is left over, the counter needs room too — if necessary,
+  // one more label gives way for it.
   if (n < widths.items.length) {
     while (n > 0 && upTo(n) + gap + widths.more > room) n--;
   }
@@ -33,37 +33,40 @@ function fitCount(row: HTMLElement, widths: Widths) {
 }
 
 /**
- * Kürzt eine Reihe auf eine Zeile und sagt, wie viele Kinder davon übrig
- * bleiben — den Rest fasst der Aufrufer als "+n" zusammen.
+ * Truncates a row to a single line and reports how many children still fit —
+ * the caller sums up the rest as "+n".
  *
- * CSS kann die Reihe abschneiden (`overflow`), aber nicht zählen, was es
- * abgeschnitten hat: es gibt keinen Selektor für "ragt heraus". Also wird
- * gemessen — dieselbe Ausnahme wie in `useTextEnd`, und mit demselben Zuschnitt:
- * hier fällt nur eine Zahl an, gestaltet wird weiterhin im Stylesheet.
+ * CSS can clip a row (`overflow`), but it can't count what it clipped: there
+ * is no selector for "sticks out". So this measures instead — the same
+ * exception as in `useTextEnd`, and with the same scope: only a number comes
+ * out of it, styling still happens in the stylesheet.
  *
- * Gemessen wird genau einmal je Satz Labels, im Durchgang bevor gekürzt ist —
- * danach steht die Hälfte gar nicht mehr im DOM. Die Breiten bleiben deshalb
- * gemerkt: wird die Spalte schmaler, rechnet der Beobachter allein damit weiter,
- * ohne die Reihe erst wieder vollständig aufbauen zu müssen.
+ * Measurement happens exactly once per set of labels, in the pass before
+ * anything is truncated — after that, half of them aren't even in the DOM
+ * anymore. The widths are therefore cached: if the column gets narrower, the
+ * observer keeps recalculating from that cache alone, without having to
+ * rebuild the full row first.
  *
  * ```tsx
  * const { ref, fit } = useRowFit(labels.length, labels.map((l) => l.name).join())
  * const shown = fit === null ? labels : labels.slice(0, fit)
  * ```
  *
- * Solange `fit` `null` ist, läuft der Messdurchgang: dann gehören *alle* Kinder
- * in die Reihe und der Zähler als letztes, aus dem Fluss genommen. Dieser
- * Zustand ist zugleich der vor der Hydration und der ohne JavaScript — die Reihe
- * bricht deshalb auch ungekürzt nicht um, sondern wird beschnitten.
+ * As long as `fit` is `null`, the measuring pass is running: then *all*
+ * children belong in the row, plus the counter at the end, taken out of
+ * flow. This state is also the one before hydration and the one without
+ * JavaScript — so the row doesn't wrap even when untruncated, it just gets
+ * clipped.
  */
 export function useRowFit(
-  /** Anzahl der Kinder vor dem Zähler. */
+  /** Number of children before the counter. */
   count: number,
-  /** Ändert er sich, stimmen die gemerkten Breiten nicht mehr. */
+  /** If this changes, the cached widths no longer apply. */
   key: string,
 ) {
-  // Das Element als Zustand, nicht als Ref: nur so merkt der Effekt, dass eine
-  // neue Reihe gerendert wurde, und misst die statt der weggeworfenen.
+  // The element as state, not as a ref: only this way does the effect
+  // notice a new row was rendered, and measures that one instead of the
+  // discarded one.
   const [element, setElement] = useState<HTMLElement | null>(null);
   const [state, setState] = useState<{ key: string; fit: number | null }>({
     key,
@@ -71,9 +74,9 @@ export function useRowFit(
   });
   const widths = useRef<Widths | null>(null);
 
-  // Neue Labels heißt: erst wieder alles zeigen, dann messen. Das steht bewusst
-  // hier und nicht in einem Effekt — ein Effekt käme eine Runde zu spät und
-  // fände die schon gekürzte Reihe vor.
+  // New labels means: show everything again first, then measure. This is
+  // deliberately placed here and not in an effect — an effect would run one
+  // cycle too late and find the row already truncated.
   const fit = state.key === key ? state.fit : null;
 
   useLayoutEffect(() => {
@@ -81,7 +84,7 @@ export function useRowFit(
 
     const children = Array.from(element.children);
     const all = children.map((child) => child.getBoundingClientRect().width);
-    // Der Zähler steht hinter den Kindern und hängt außerhalb des Flusses.
+    // The counter sits after the children and is taken out of flow.
     widths.current = { items: all.slice(0, count), more: all[count] ?? 0 };
     setState({ key, fit: fitCount(element, widths.current) });
   }, [element, key, count]);
@@ -89,7 +92,7 @@ export function useRowFit(
   useLayoutEffect(() => {
     if (!element) return;
 
-    // Wird die Spalte schmaler, passen weniger Labels nebeneinander.
+    // If the column gets narrower, fewer labels fit side by side.
     const observer = new ResizeObserver(() => {
       if (widths.current) {
         setState({ key, fit: fitCount(element, widths.current) });

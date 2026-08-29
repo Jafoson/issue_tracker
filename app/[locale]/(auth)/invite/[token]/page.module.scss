@@ -1,5 +1,5 @@
-/* Dieselbe Bühne wie `AuthCard` — die abgelaufene Einladung soll nicht wie eine
-   andere Anwendung aussehen als die Anmeldung, zu der sie schickt. */
+/* Same stage as `AuthCard` — the expired invitation shouldn't look like a
+   different app from the sign-in page it sends you to. */
 .page {
   min-height: 100dvh;
   display: flex;

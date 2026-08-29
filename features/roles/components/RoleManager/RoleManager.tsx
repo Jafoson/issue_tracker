@@ -6,15 +6,15 @@ interface Props {
   target: RoleTarget;
   title: string;
   subtitle: string;
-  /** Auf Seiten mit Umschalter steht der Titel schon auf dem Reiter. */
+  /** On pages with a tab switcher, the title is already on the tab. */
   showTitle?: boolean;
 }
 
 /**
- * Server-Teil des Rollen-Editors: lädt den Topf und reicht ihn weiter.
+ * Server part of the role editor: loads the pool and passes it on.
  *
- * Dieselbe Komponente bedient alle drei Scopes — die drei Routen unterscheiden
- * sich nur im `target` und in ihren Texten.
+ * The same component serves all three scopes — the three routes differ
+ * only in their `target` and their texts.
  */
 export async function RoleManager({
   target,

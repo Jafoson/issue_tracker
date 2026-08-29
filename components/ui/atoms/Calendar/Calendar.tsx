@@ -6,29 +6,30 @@ import { toIso } from "@/lib/richtext/date";
 import styles from "./calendar.module.scss";
 
 /**
- * Ein Monatsblatt zum Auswählen eines Tages.
+ * A month sheet for picking a day.
  *
- * Bewusst klein gehalten: keine Bereiche, keine Uhrzeit, keine Sperrtage — ein
- * Datum im Fließtext braucht davon nichts. Wer mehr will, tippt es direkt.
+ * Deliberately kept small: no ranges, no time of day, no blocked-out days — a
+ * date in running text doesn't need any of that. Anyone who wants more can
+ * type it directly.
  *
- * Monats- und Wochentagsnamen kommen aus `Intl` und richten sich damit nach der
- * Umgebung; die Komponente läuft nur im Browser, eine Abweichung zum Server
- * kann es also nicht geben.
+ * Month and weekday names come from `Intl` and thus follow the environment;
+ * the component only runs in the browser, so there can be no mismatch with
+ * the server.
  */
 
-/** Montag zuerst — die hier übliche Woche. */
+/** Monday first — the week convention used here. */
 const FIRST_DAY = 1;
 
 interface CalendarProps {
-  /** Vorbelegung als ISO-Datum. */
+  /** Initial value as an ISO date. */
   value?: string;
   onPick: (iso: string) => void;
-  /** Beschriftungen der Schnellwahl; ohne sie entfällt die Zeile. */
+  /** Labels for the quick-pick row; the row is omitted without them. */
   todayLabel?: string;
   tomorrowLabel?: string;
 }
 
-/** Der Monat, auf dem das Blatt aufschlägt. */
+/** The month the sheet opens to. */
 function initialMonth(value: string | undefined): Date {
   const parsed = value ? new Date(`${value}T12:00:00`) : null;
   const base = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
@@ -36,12 +37,13 @@ function initialMonth(value: string | undefined): Date {
 }
 
 /**
- * Die Tage, die das Blatt zeigt: der Monat selbst, davor die Reste der ersten
- * Woche und dahinter die der letzten. So bleibt das Raster immer rechteckig.
+ * The days the sheet displays: the month itself, preceded by the tail end of
+ * the first week and followed by the start of the last. This keeps the grid
+ * always rectangular.
  */
 function weeksOf(month: Date): Date[][] {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
-  // Wie viele Tage der Vormonat in die erste Zeile hineinragt.
+  // How many days of the previous month spill into the first row.
   const lead = (first.getDay() - FIRST_DAY + 7) % 7;
 
   const start = new Date(first);
@@ -50,7 +52,7 @@ function weeksOf(month: Date): Date[][] {
   const weeks: Date[][] = [];
   const cursor = new Date(start);
 
-  // Sechs Zeilen: dann springt das Blatt beim Monatswechsel nicht in der Höhe.
+  // Six rows: this keeps the sheet's height from jumping when the month changes.
   for (let week = 0; week < 6; week++) {
     const days: Date[] = [];
     for (let day = 0; day < 7; day++) {
@@ -84,8 +86,8 @@ export function Calendar({
     year: "numeric",
   });
 
-  // Namen der Wochentage aus einer beliebigen Woche ableiten, damit sie in
-  // derselben Sprache stehen wie der Monat darüber.
+  // Derive weekday names from any given week so they're in the same
+  // language as the month name above.
   const weekdays = weeks[0].map((d) =>
     d.toLocaleDateString(undefined, { weekday: "short" }),
   );
@@ -120,9 +122,9 @@ export function Calendar({
         </button>
       </div>
 
-      {/* Kein `role="grid"`: dafür bräuchte es Zeilen- und Zellenrollen, und
-          das Raster ist ein flaches CSS-Grid. Statt vorgetäuschter Struktur
-          trägt jeder Tag sein vollständiges Datum als Beschriftung. */}
+      {/* No `role="grid"`: that would require row and cell roles, and the
+          grid here is a flat CSS grid. Instead of faking structure, every
+          day carries its full date as a label. */}
       <div className={styles.grid}>
         {weekdays.map((name) => (
           <span key={name} className={styles.weekday}>
@@ -137,11 +139,11 @@ export function Calendar({
               key={iso}
               type="button"
               className={styles.day}
-              // Tage der Nachbarmonate bleiben wählbar, treten aber zurück.
+              // Days from adjacent months stay selectable but recede visually.
               data-outside={day.getMonth() !== month.getMonth() || undefined}
               data-today={iso === today || undefined}
               data-selected={iso === value || undefined}
-              // Der Fokus muss im Editor bleiben, sonst bricht die Auswahl weg.
+              // Focus must stay in the editor, otherwise the selection breaks.
               aria-label={day.toLocaleDateString(undefined, {
                 weekday: "long",
                 day: "numeric",

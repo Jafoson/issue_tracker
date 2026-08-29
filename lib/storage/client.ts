@@ -2,18 +2,18 @@ import "server-only";
 import { AwsClient } from "aws4fetch";
 import { type StorageConfig, storageConfig } from "@/lib/storage/config";
 
-// Der Client hält keine Verbindung offen (signiert nur Requests, die per
-// `fetch` laufen), wird aber trotzdem wiederverwendet statt bei jedem Aufruf
-// neu aufgebaut — analog zu `lib/mail/transport.ts`. Ändert sich die
-// Konfiguration, wird ein neuer Client erzeugt.
+// The client doesn't hold a connection open (it only signs requests that
+// run over `fetch`), but is still reused instead of being rebuilt on every
+// call — analogous to `lib/mail/transport.ts`. If the configuration
+// changes, a new client is created.
 //
-// `aws4fetch` statt `@aws-sdk/client-s3`: Letzteres lässt sich unter
-// Turbopack-Dev in diesem Projekt nicht laden (`next dev` bricht mit
-// "Cannot find module '@aws-sdk/client-s3-<hash>'" — reproduziert auch in
-// einer isolierten Route ohne jeden Bezug zu Avataren, verschwindet mit
-// `next dev --webpack`). `aws4fetch` ist abhängigkeitsfrei, signiert über die
-// Standard-`fetch`-API und hat kein Paket-Layout, an dem Turbopacks
-// Externals-Auflösung scheitert.
+// `aws4fetch` instead of `@aws-sdk/client-s3`: the latter fails to load
+// under Turbopack dev in this project (`next dev` breaks with "Cannot find
+// module '@aws-sdk/client-s3-<hash>'" — reproduces even in an isolated
+// route with no relation to avatars, disappears with `next dev
+// --webpack`). `aws4fetch` is dependency-free, signs via the standard
+// `fetch` API, and has no package layout that Turbopack's externals
+// resolution trips over.
 let cached: { config: StorageConfig; client: AwsClient } | null = null;
 
 export function getClient(): AwsClient | null {

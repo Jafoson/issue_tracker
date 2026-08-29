@@ -1,6 +1,6 @@
-/* Die Adresse gehört zur Einladung und ist hier nichts zu Entscheidendes. Sie
-   sieht deshalb aus wie eine Angabe, nicht wie ein Feld — kein Rahmen, keine
-   Schreibmarke, aber dieselbe Zeilenhöhe wie die Felder darunter. */
+/* The address belongs to the invitation and isn't something to decide here.
+   It therefore looks like a piece of information, not a field — no border,
+   no cursor, but the same line height as the fields below it. */
 .email {
   display: flex;
   flex-direction: column;

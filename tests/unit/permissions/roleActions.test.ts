@@ -9,8 +9,8 @@ const mockRoleUpdate = mock();
 const mockRoleDelete = mock();
 const mockGrantUpsert = mock();
 const mockGrantDeleteMany = mock();
-// Die Stapel-Action schickt ihre Schreibvorgänge als Transaktion los. Der Mock
-// wartet sie einfach ab — geprüft wird hier, *was* geschrieben wird.
+// The batch action sends its writes off as a transaction. The mock just
+// awaits them — what's being checked here is *what* gets written.
 const mockTransaction = mock((ops: unknown[]) => Promise.all(ops));
 
 mock.module("@/lib/db", () => ({
@@ -60,11 +60,11 @@ import {
 } from "@/features/roles/actions";
 import type { RoleTarget } from "@/features/roles/types";
 
-// ── Helfer ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const WS_TARGET: RoleTarget = { scope: "WORKSPACE", workspaceId: "ws1" };
 
-/** Ein Handelnder mit den angegebenen Rechten und einem Rang je Ebene. */
+/** An actor with the given permissions and a rank per level. */
 function actor(permissions: string[], ranks: Record<string, number> = {}) {
   return {
     has: (p: string) => permissions.includes(p),
@@ -75,7 +75,7 @@ function actor(permissions: string[], ranks: Record<string, number> = {}) {
   };
 }
 
-/** Die Rolle, die `requireRoleManage` laden wird. */
+/** The role that `requireRoleManage` will load. */
 function existingRole(
   overrides: Partial<{
     id: string;
@@ -128,9 +128,9 @@ describe("Zugang zur Rollenverwaltung", () => {
   });
 
   it("misst role.manage im Kontext des Topfes", async () => {
-    // `role.manage` ist überall derselbe Key — welcher Topf gemeint ist, sagt
-    // allein der Kontext. Wer den Workspace verwalten darf, kommt damit nicht
-    // an die Plattform-Rollen heran.
+    // `role.manage` is the same key everywhere — which pot is meant is
+    // decided purely by context. Being allowed to manage the workspace does
+    // not get you access to the platform roles.
     mockAccessFor.mockImplementation(
       async (_id: string, ctx: Record<string, unknown>) =>
         "workspaceId" in ctx
@@ -194,7 +194,7 @@ describe("Geteilte und geschützte Rollen", () => {
   });
 
   it("lässt eine geteilte System-Rolle unangetastet", async () => {
-    // Sie ist für alle Mandanten dieselbe Zeile — eine Änderung träfe jeden.
+    // It's the same row for every tenant — a change would hit everyone.
     mockRoleFindUnique.mockResolvedValue(existingRole({ system: true }));
     expect(await updateRole("sys:WORKSPACE:member", { name: "Neu" })).toEqual(
       shared,
@@ -254,7 +254,8 @@ describe("Keine Rechte-Eskalation", () => {
   });
 
   it("erlaubt das Wegnehmen auch ohne die Permission selbst zu haben", async () => {
-    // Wegnehmen vergrößert niemandes Rechte — das ist kein Eskalationsweg.
+    // Taking away never increases anyone's permissions — that's not an
+    // escalation path.
     mockAccessFor.mockResolvedValue(actor(manage, { WORKSPACE: 5 }));
     const result = await setRoleGrant(
       "ws:ws1:custom",
@@ -290,7 +291,8 @@ describe("Scope-Grenze der Permissions", () => {
   });
 
   it("nimmt dieselbe Permission in beiden Mandanten-Scopes an", async () => {
-    // `label.create` gilt laut Registry im Workspace und im Projekt.
+    // According to the registry, `label.create` applies in both the
+    // workspace and the project.
     mockRoleFindUnique.mockResolvedValue(
       existingRole({ scope: "PROJECT", projectId: "p1" }),
     );
@@ -303,8 +305,9 @@ describe("Scope-Grenze der Permissions", () => {
   });
 
   it("weist eine Projekt-Permission in einer Workspace-Rolle ab", async () => {
-    // Was nur im Projekt gilt, gehört in eine Projektrolle. Eine Workspace-Rolle
-    // damit zu bestücken wäre wirkungslos — der Resolver übergeht solche Keys.
+    // Whatever applies only in the project belongs in a project role.
+    // Loading a workspace role with it would be ineffective — the resolver
+    // skips such keys.
     mockRoleFindUnique.mockResolvedValue(existingRole());
     mockAccessFor.mockResolvedValue(actor(["role.manage"], { WORKSPACE: 5 }));
     const result = await setRoleGrant("ws:ws1:custom", "issue.create", true);
@@ -314,10 +317,11 @@ describe("Scope-Grenze der Permissions", () => {
   });
 
   it("misst den Handelnden bei einer workspaceweiten Projektrolle am Generalschlüssel", async () => {
-    // Diese Rollen gelten in allen Projekten und werden deshalb im
-    // Workspace-Kontext verwaltet — dort stehen aber keine Projektrechte mehr.
-    // Gemessen wird der Handelnde an dem Schlüssel, der ihm alle Projekte
-    // öffnet; sonst könnte er auf einer solchen Rolle gar nichts erlauben.
+    // These roles apply across all projects and are therefore managed in the
+    // workspace context — but that context no longer carries project
+    // permissions. The actor is instead measured against the master key that
+    // opens all projects for them; otherwise they couldn't grant anything at
+    // all on such a role.
     mockRoleFindUnique.mockResolvedValue(
       existingRole({
         id: "wsp:ws1:triage",
@@ -336,8 +340,8 @@ describe("Scope-Grenze der Permissions", () => {
   });
 
   it("lässt ohne den Generalschlüssel keine Projektrechte vergeben", async () => {
-    // Ein Workspace-Manager verwaltet Rollen, greift aber nicht in die Projekte
-    // durch — er kann dort also auch keine Rechte verteilen.
+    // A workspace manager manages roles but does not reach through into the
+    // projects — so they cannot distribute permissions there either.
     mockRoleFindUnique.mockResolvedValue(
       existingRole({
         id: "wsp:ws1:triage",
@@ -358,7 +362,7 @@ describe("Scope-Grenze der Permissions", () => {
   it("weist einen unbekannten Permission-Key ab", async () => {
     mockRoleFindUnique.mockResolvedValue(existingRole());
     mockAccessFor.mockResolvedValue(actor(["role.manage"], { WORKSPACE: 5 }));
-    // Der alte, präfixbehaftete Name existiert nicht mehr.
+    // The old, prefixed name no longer exists.
     const result = await setRoleGrant(
       "ws:ws1:custom",
       "project.issue.create",
@@ -369,9 +373,9 @@ describe("Scope-Grenze der Permissions", () => {
 });
 
 describe("Stapel aus der Matrix", () => {
-  // Der Speichern-Knopf schickt alles auf einmal — die Action muss deshalb
-  // mehrere Rollen in einem Aufruf vertragen und darf keine halben Stapel
-  // hinterlassen.
+  // The save button sends everything at once — the action therefore has to
+  // handle multiple roles in one call and must not leave behind a half-written
+  // batch.
   beforeEach(() => {
     mockAccessFor.mockResolvedValue(
       actor(["role.manage", "team.create", "audit.view"], { WORKSPACE: 5 }),
@@ -391,7 +395,7 @@ describe("Stapel aus der Matrix", () => {
     expect(result).toEqual({ ok: true });
     expect(mockGrantUpsert).toHaveBeenCalledTimes(1);
     expect(mockGrantDeleteMany).toHaveBeenCalledTimes(1);
-    // Ein Zug, nicht zwei: sonst stünde nach einem Fehler die Hälfte in der DB.
+    // One move, not two: otherwise a failure would leave half of it in the DB.
     expect(mockTransaction).toHaveBeenCalledTimes(1);
   });
 
@@ -408,7 +412,7 @@ describe("Stapel aus der Matrix", () => {
   it("verwirft den ganzen Stapel, wenn eine Zelle unzulässig ist", async () => {
     const result = await setRoleGrants([
       { roleId: "ws:ws1:custom", permission: "team.create", granted: true },
-      // Die hat der Handelnde selbst nicht.
+      // The actor doesn't have that one themselves.
       {
         roleId: "ws:ws1:custom",
         permission: "workspace.delete",
@@ -506,7 +510,7 @@ describe("Anlegen", () => {
     expect(data.scope).toBe("WORKSPACE");
     expect(data.workspaceId).toBe("ws1");
     expect(data.projectId).toBeNull();
-    // Eigene Rollen sind nie geteilt und immer editierbar.
+    // Custom roles are never shared and always editable.
     expect(data.system).toBe(false);
     expect(data.editable).toBe(true);
   });

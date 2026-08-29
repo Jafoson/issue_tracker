@@ -9,12 +9,12 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface WelcomeEmailInput {
   to: string;
   firstName: string;
-  /** Wohin der Knopf führt — üblicherweise die Login-Seite. */
+  /** Where the button leads — usually the login page. */
   loginUrl: string;
 }
 
-/** Für `register()` — die direkte Registrierung mit Passwort, nicht die
- *  Einladung (die hat mit `invitationEmail` ihre eigene Vorlage). */
+/** For `register()` — direct registration with a password, not an
+ *  invitation (that has its own template with `invitationEmail`). */
 export function welcomeEmail(
   input: WelcomeEmailInput,
   override?: TemplateOverride,

@@ -3,15 +3,16 @@ import type { SuggestionItem } from "@/components/ui/layout/RichTextEditor/compo
 import { createSuggestion } from "@/components/ui/layout/RichTextEditor/extensions/suggestion";
 
 /**
- * Der Editor selbst lässt sich hier nicht bauen — ProseMirror braucht ein echtes
- * DOM. Die Bedingung, an der er zerbrochen ist, lässt sich aber ohne DOM prüfen:
+ * The editor itself can't be built here — ProseMirror needs a real DOM. But
+ * the condition that broke it can be checked without a DOM:
  *
- * `@tiptap/suggestion` legt seinen Plugin-Schlüssel modulweit **einmal** an. Wer
- * mehrere Trigger registriert, ohne eigene Schlüssel zu vergeben, bekommt vier
- * verschiedene Plugins unter demselben Schlüssel — und ProseMirror wirft beim
- * Erzeugen des Editors `RangeError: Adding different instances of a keyed plugin`.
+ * `@tiptap/suggestion` creates its plugin key **once**, module-wide. Anyone
+ * registering multiple triggers without assigning their own keys ends up
+ * with four different plugins under the same key — and ProseMirror throws
+ * `RangeError: Adding different instances of a keyed plugin` when creating
+ * the editor.
  *
- * Genau das ist passiert. Deshalb steht die Bedingung hier fest.
+ * That's exactly what happened. That's why this condition is pinned down here.
  */
 
 const make = (name: string) =>
@@ -23,12 +24,12 @@ const make = (name: string) =>
     emptyLabel: () => "",
   });
 
-/** Der Name, unter dem ProseMirror den Schlüssel führt. */
+/** The name under which ProseMirror keeps the key. */
 const keyName = (key: unknown) => (key as { key: string }).key;
 
 describe("createSuggestion", () => {
   test("vergibt überhaupt einen eigenen Plugin-Schlüssel", () => {
-    // Ohne diesen Schlüssel gälte der modulweite Standard aus @tiptap/suggestion.
+    // Without this key, the module-wide default from @tiptap/suggestion would apply.
     expect(make("mentionSuggestion").pluginKey).toBeDefined();
   });
 
@@ -41,7 +42,7 @@ describe("createSuggestion", () => {
   });
 
   test("hält alle vier Trigger des Editors auseinander", () => {
-    // Dieselben Namen wie in `RichTextEditor` — vier Plugins in einem Editor.
+    // The same names as in `RichTextEditor` — four plugins in one editor.
     const names = [
       "mentionSuggestion",
       "issueLinkSuggestion",

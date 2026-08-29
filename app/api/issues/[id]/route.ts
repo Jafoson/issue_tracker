@@ -4,13 +4,13 @@ import { currentUserId, hasPermission } from "@/lib/permissions";
 
 const REF = /^[A-Za-z0-9]+-\d+$/;
 
-// Diese Route liegt außerhalb des Middleware-Matchers (`proxy.ts` klammert
-// `/api` aus) — das Auth-Gate der App greift hier also nicht. Sie prüft
-// deshalb selbst, und zwar beides: eine Session muss da sein, und das Projekt
-// des Issues muss sichtbar sein.
+// This route lies outside the middleware matcher (`proxy.ts` excludes
+// `/api`) — so the app's auth gate doesn't apply here. It therefore checks
+// both things itself: a session must exist, and the issue's project must be
+// visible.
 //
-// Ein fehlendes Recht antwortet wie ein fehlendes Issue: 404, nicht 403. Sonst
-// verriete die Antwort, dass es das Issue gibt.
+// A missing permission responds the same as a missing issue: 404, not 403.
+// Otherwise the response would reveal that the issue exists.
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -23,9 +23,9 @@ export async function GET(
   const ws = new URL(req.url).searchParams.get("ws");
 
   // The path segment is either an internal issue id or a "PREFIX-123" ref.
-  // Beide Wege filtern schon in der Query auf `project.view`; die Prüfung
-  // darunter steht trotzdem, weil sie zu dieser Route gehört und nicht zu einer
-  // Implementierungseigenschaft der Query.
+  // Both paths already filter on `project.view` inside the query; the check
+  // below is still here because it belongs to this route, not to an
+  // implementation detail of the query.
   const issue =
     REF.test(id) && ws ? await getIssueByRef(ws, id) : await getIssueById(id);
 

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
-// Mockt Geschwister-Module (`config`, `presign`) — wie `avatars.test.ts`. Muss
-// deshalb isoliert von `config.test.ts` laufen (siehe package.json).
+// Mocks sibling modules (`config`, `presign`) — like `avatars.test.ts`. Must
+// therefore run isolated from `config.test.ts` (see package.json).
 
 const CONFIG = {
   endpoint: "http://localhost:9000",

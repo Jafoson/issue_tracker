@@ -6,8 +6,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** Betreff, Überschrift und Einleitungstext jeder Mail-Vorlage — siehe
- *  `CLAUDE.md` (Abschnitt E-Mail) für die Architektur. */
+/** Subject, heading, and intro text of each mail template — see `CLAUDE.md`
+ *  (Email section) for the architecture. */
 export default async function AdminMailTemplatesPage() {
   const [rows, defaultTestEmail] = await Promise.all([
     getMailTemplates(),

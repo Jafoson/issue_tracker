@@ -1,41 +1,41 @@
-// ─── RBAC: Rollen-Ids ─────────────────────────────────────────────────────────
+// ─── RBAC: role ids ─────────────────────────────────────────────────────────────
 //
-// Rollen-Ids werden deterministisch gebildet. Das macht die Provisionierung
-// idempotent (`createMany({ skipDuplicates })`) und erlaubt Lookups per
-// `findUnique({ where: { id } })`, ohne dass Prisma einen zusammengesetzten
-// Unique-Key über nullable Spalten kennen müsste.
+// Role ids are built deterministically. This makes provisioning idempotent
+// (`createMany({ skipDuplicates })`) and allows lookups via
+// `findUnique({ where: { id } })`, without Prisma needing to know a
+// composite unique key over nullable columns.
 //
-// Die Id ist ein getarnter zusammengesetzter Schlüssel — sie darf nirgends
-// geparst werden. Wer Scope oder Eigentümer braucht, liest die Spalten.
+// The id is a disguised composite key — it must never be parsed anywhere.
+// Whoever needs the scope or owner reads the columns instead.
 //
-//   sys:WORKSPACE:member       System-Rolle, existiert genau einmal
-//   pf:auditor                 eigene Plattform-Rolle
-//   ws:acme:reviewer           eigene Workspace-Rolle
-//   wsp:acme:triage            eigene Projektrolle, in allen Projekten von acme
-//   pr:p_7f3a:triage           eigene Projektrolle, nur in diesem Projekt
+//   sys:WORKSPACE:member       system role, exists exactly once
+//   pf:auditor                 custom platform role
+//   ws:acme:reviewer           custom workspace role
+//   wsp:acme:triage            custom project role, in all of acme's projects
+//   pr:p_7f3a:triage           custom project role, only in this project
 
 import type { RoleScope } from "./permissions";
 
-/** System-Rolle — ohne Bindung an Workspace oder Projekt. */
+/** System role — with no binding to a workspace or project. */
 export function systemRoleId(scope: RoleScope, key: string): string {
   return `sys:${scope}:${key}`;
 }
 
 /**
- * Eigene Rolle im Scope PLATFORM — gehört ebenfalls niemandem, ist aber keine
- * System-Rolle. Eigenes Präfix, damit `sys:` weiter genau das heißt, was es sagt:
- * eine geteilte Default-Rolle aus `lib/rbac/roles.ts`.
+ * Custom role in scope PLATFORM — also belongs to no one, but is not a
+ * system role. Its own prefix, so `sys:` keeps meaning exactly what it says:
+ * a shared default role from `lib/rbac/roles.ts`.
  */
 export function platformRoleId(key: string): string {
   return `pf:${key}`;
 }
 
-/** Eigene Rolle im Scope WORKSPACE, gehört diesem Workspace. */
+/** Custom role in scope WORKSPACE, belongs to this workspace. */
 export function workspaceRoleId(workspaceId: string, key: string): string {
   return `ws:${workspaceId}:${key}`;
 }
 
-/** Eigene Rolle im Scope PROJECT, gehört dem Workspace (gilt in allen Projekten). */
+/** Custom role in scope PROJECT, belongs to the workspace (applies in all projects). */
 export function workspaceProjectRoleId(
   workspaceId: string,
   key: string,
@@ -43,7 +43,7 @@ export function workspaceProjectRoleId(
   return `wsp:${workspaceId}:${key}`;
 }
 
-/** Eigene Rolle im Scope PROJECT, gehört genau einem Projekt. */
+/** Custom role in scope PROJECT, belongs to exactly one project. */
 export function projectRoleId(projectId: string, key: string): string {
   return `pr:${projectId}:${key}`;
 }

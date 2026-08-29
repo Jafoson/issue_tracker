@@ -26,17 +26,17 @@ import { slugify } from "@/lib/slug";
 
 type RoleResult = { ok: true } | { error: string };
 
-// Rollenverwaltung. Drei Regeln ziehen sich durch alle Aktionen:
+// Role management. Three rules run through every action:
 //
-//   1. System-Rollen sind unantastbar. Sie sind für alle Mandanten dieselbe
-//      Zeile — eine Änderung träfe jeden. Wer eine Abwandlung braucht, legt
-//      eine eigene Rolle an.
-//   2. Niemand fasst eine Rolle über dem eigenen Rang an und legt keine an,
-//      die darüber läge.
-//   3. Niemand gibt einer Rolle eine Permission, die er selbst nicht hat.
-//      Sonst wäre jede Rollenverwaltung ein Weg zur Selbstbeförderung.
-//      Wegnehmen darf dagegen jeder, der die Rolle verwaltet — das vergrößert
-//      niemandes Rechte.
+//   1. System roles are untouchable. They're the same row for every tenant —
+//      a change would hit everyone. Whoever needs a variant creates their
+//      own role.
+//   2. Nobody touches a role ranked above their own and nobody creates one
+//      above it.
+//   3. Nobody gives a role a permission they don't hold themselves.
+//      Otherwise any role management would be a path to self-promotion.
+//      Taking away, on the other hand, is allowed for anyone managing the
+//      role — that never expands anyone's rights.
 
 async function revalidate() {
   revalidatePath("/", "layout");
@@ -48,7 +48,7 @@ interface Guard {
   ceiling: number;
 }
 
-/** Prüft die Verwaltungsberechtigung des Topfes und ermittelt die Rangobergrenze. */
+/** Checks the pool's management permission and determines the rank ceiling. */
 async function requireTargetManage(
   target: RoleTarget,
 ): Promise<Guard | { error: string }> {
@@ -63,7 +63,7 @@ async function requireTargetManage(
   return { actorId, access, ceiling: assignmentCeiling(access, target.scope) };
 }
 
-/** Lädt eine Rolle mitsamt ihrem Topf und prüft die Berechtigung darauf. */
+/** Loads a role along with its pool and checks the permission for it. */
 async function requireRoleManage(roleId: string): Promise<
   | {
       guard: Guard;
@@ -107,7 +107,7 @@ async function requireRoleManage(roleId: string): Promise<
   return { guard, target, role };
 }
 
-// ─── Anlegen ──────────────────────────────────────────────────────────────────
+// ─── Create ─────────────────────────────────────────────────────────────────
 
 export async function createRole(
   target: RoleTarget,
@@ -146,7 +146,7 @@ export async function createRole(
   return { ok: true };
 }
 
-/** Hängt -2, -3, … an, bis der Key im Topf frei ist. */
+/** Appends -2, -3, … until the key is free within the pool. */
 async function uniqueKey(target: RoleTarget, base: string): Promise<string> {
   const where = rolesInTarget(target);
   let key = base;
@@ -159,7 +159,7 @@ async function uniqueKey(target: RoleTarget, base: string): Promise<string> {
   return key;
 }
 
-// ─── Ändern ───────────────────────────────────────────────────────────────────
+// ─── Update ─────────────────────────────────────────────────────────────────
 
 export async function updateRole(
   roleId: string,
@@ -191,14 +191,14 @@ export async function updateRole(
   return { ok: true };
 }
 
-// ─── Löschen ──────────────────────────────────────────────────────────────────
+// ─── Delete ─────────────────────────────────────────────────────────────────
 
 export async function deleteRole(roleId: string): Promise<RoleResult> {
   const found = await requireRoleManage(roleId);
   if ("error" in found) return found;
 
-  // Die Fremdschlüssel stehen auf RESTRICT — das hier ist die verständliche
-  // Fehlermeldung davor, nicht der eigentliche Schutz.
+  // The foreign keys are set to RESTRICT — this is the understandable error
+  // message in front of that, not the actual safeguard.
   const inUse = await db.role.findUnique({
     where: { id: roleId },
     select: {
@@ -226,9 +226,9 @@ export async function deleteRole(roleId: string): Promise<RoleResult> {
   return { ok: true };
 }
 
-// ─── Permissions setzen ───────────────────────────────────────────────────────
+// ─── Set permissions ────────────────────────────────────────────────────────
 
-/** Gibt einer Rolle eine Permission (`granted`) oder nimmt sie ihr wieder weg. */
+/** Gives a role a permission (`granted`) or takes it away again. */
 export async function setRoleGrant(
   roleId: string,
   permissionKey: string,
@@ -238,22 +238,21 @@ export async function setRoleGrant(
 }
 
 /**
- * Schreibt einen ganzen Stapel Einträge — was der Speichern-Knopf der Matrix
- * abschickt.
+ * Writes an entire batch of entries — what the matrix's save button submits.
  *
- * Alles oder nichts: erst wird jede einzelne Änderung geprüft, geschrieben wird
- * danach in einer Transaktion. Ein halb übernommener Stapel wäre bei
- * Berechtigungen die schlechteste aller Antworten — die Oberfläche zeigte einen
- * Fehler, und trotzdem hätte sich die Hälfte der Rechte verschoben.
+ * All or nothing: every single change is checked first, writing happens
+ * afterward in one transaction. A half-applied batch would be the worst
+ * possible outcome for permissions — the UI would show an error, and yet
+ * half the rights would already have shifted.
  */
 export async function setRoleGrants(
   changes: GrantChange[],
 ): Promise<RoleResult> {
   if (changes.length === 0) return { ok: true };
 
-  // Ein Stapel trifft ein paar Rollen und viele Zellen. Die Prüfung einer Rolle
-  // lädt sie und wiegt ihren Rang gegen den des Handelnden — das fällt deshalb
-  // je Rolle an, nicht je Änderung.
+  // A batch touches a handful of roles and many cells. Checking a role loads
+  // it and weighs its rank against the actor's — that cost is therefore
+  // paid once per role, not once per change.
   const checked = new Map<
     string,
     Awaited<ReturnType<typeof requireRoleManage>>
@@ -276,13 +275,13 @@ export async function setRoleGrants(
     const permission = toPermission(change.permission);
     if (!permission) return { error: "Unknown permission." };
 
-    // Nicht jede Permission ist in jedem Scope sinnvoll — `workspace.update`
-    // gehört nicht in eine Projektrolle.
+    // Not every permission makes sense in every scope — `workspace.update`
+    // doesn't belong on a project role.
     if (!isPermissionAllowedIn(permission, found.target.scope))
       return { error: "That permission does not apply in this scope." };
 
-    // Geben kann nur, wer es selbst darf. Wegnehmen darf jeder, der die Rolle
-    // verwaltet — das vergrößert niemandes Rechte.
+    // Only someone who holds the permission themselves can grant it. Anyone
+    // managing the role can take it away — that never expands anyone's rights.
     if (
       change.granted &&
       !canGrantIn(found.guard.access, found.target, permission)
@@ -292,8 +291,9 @@ export async function setRoleGrants(
     writes.push({ roleId: change.roleId, permission, granted: change.granted });
   }
 
-  // Die Abfragen entstehen erst hier: oben stünde nach einem Fehler ein halbes
-  // Dutzend fertiger Schreibvorgänge herum, die niemand mehr abschickt.
+  // The queries are only built here: doing it above would leave half a
+  // dozen finished write operations sitting around after an error, never
+  // to be submitted.
   await db.$transaction(
     writes.map(({ roleId, permission, granted }) =>
       granted

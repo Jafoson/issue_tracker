@@ -19,21 +19,21 @@ interface Props {
 }
 
 /**
- * Einen Mandanten endgültig löschen.
+ * Permanently delete a tenant.
  *
- * Der Dialog sagt zuerst, was verschwindet — mit den Zahlen dieses Workspace,
- * nicht als allgemeine Warnung. „Dabei gehen 3 Projekte, 24 Aufgaben und 7
- * Mitgliedschaften verloren" ist eine Auskunft; „diese Aktion kann nicht
- * rückgängig gemacht werden" ist eine Floskel, die jeder wegklickt.
+ * The dialog states first what disappears — with this workspace's actual
+ * numbers, not as a generic warning. "This will lose 3 projects, 24 issues,
+ * and 7 memberships" is information; "this action cannot be undone" is a
+ * stock phrase everyone clicks past.
  *
- * Danach der Name zum Abtippen. Nicht als Schikane: er stellt sicher, dass die
- * Zeile, auf der man gerade stand, auch die Zeile ist, die man meint — der
- * häufigste Weg zum falschen Löschen ist ein Klick in der falschen Reihe.
+ * After that, the name to retype. Not as an obstacle: it makes sure the row
+ * you happened to be on is also the row you meant — the most common way to
+ * delete the wrong thing is a click in the wrong row.
  *
- * Die eigentliche Sicherung liegt trotzdem woanders, nämlich davor: löschen geht
- * nur, was schon gesperrt ist, und das prüft der Server
- * (`features/admin/actions.ts`). Zwischen Sperren und Löschen liegt damit
- * mindestens eine bewusste zweite Handlung.
+ * The actual safeguard sits elsewhere anyway, upstream: only something
+ * already suspended can be deleted, and the server checks that
+ * (`features/admin/actions.ts`). Between suspending and deleting there is
+ * thus at least one deliberate second action.
  */
 export function DeleteWorkspaceModal({ workspace, close }: Props) {
   const t = useTranslations();

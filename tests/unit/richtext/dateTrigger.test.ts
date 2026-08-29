@@ -5,24 +5,24 @@ import StarterKit from "@tiptap/starter-kit";
 import { findSuggestionMatch } from "@tiptap/suggestion";
 
 /**
- * `/` öffnet das Befehlsmenü, `//` den Datums-Auslöser. Zwei Auslöser, von
- * denen der eine mit dem anderen beginnt — die Frage ist, ob sie sich in die
- * Quere kommen.
+ * `/` opens the command menu, `//` the date trigger. Two triggers, one of
+ * which begins with the other — the question is whether they get in each
+ * other's way.
  *
- * Geprüft am echten Matcher aus `@tiptap/suggestion` statt an einem Nachbau:
- * die Verträglichkeit hängt an dessen Präfix-Regel, und die soll uns auffallen,
- * wenn sie sich ändert.
+ * Tested against the real matcher from `@tiptap/suggestion` rather than a
+ * reimplementation: compatibility hinges on its prefix rule, and we want to
+ * notice if that rule changes.
  */
 
 const schema = getSchema([StarterKit] as never);
 
-/** Sucht am Ende des Texts nach einem Treffer für `char`. */
+/** Looks for a match for `char` at the end of the text. */
 function matchAtEnd(text: string, char: string) {
   const doc = PMNode.fromJSON(schema, {
     type: "doc",
     content: [{ type: "paragraph", content: [{ type: "text", text }] }],
   });
-  // Ende des Textknotens: ein Zeichen für den Absatz, dann der Text.
+  // End of the text node: one character for the paragraph, then the text.
   const $position = doc.resolve(1 + text.length);
 
   return findSuggestionMatch({
@@ -42,8 +42,9 @@ describe("Auslöser / und //", () => {
   });
 
   test("der zweite Schrägstrich schließt das Befehlsmenü", () => {
-    // Der Treffer davor ist ein `/`, und das steht nicht in `allowedPrefixes`.
-    // Genau daran hängt, dass nicht beide Listen gleichzeitig aufgehen.
+    // The character right before the match is a `/`, which isn't in
+    // `allowedPrefixes`. That's exactly what keeps both triggers from
+    // matching at the same time.
     expect(matchAtEnd("//", "/")).toBeNull();
     expect(matchAtEnd("//1.2.2002", "/")).toBeNull();
   });
@@ -61,7 +62,7 @@ describe("Auslöser / und //", () => {
 
   test("greift auch mitten im Satz — aber nur nach einem Leerzeichen", () => {
     expect(matchAtEnd("Fällig am //", "//")).not.toBeNull();
-    // Direkt an ein Wort geklebt ist es kein Auslöser, sondern Text.
+    // Stuck directly onto a word, it's not a trigger — just text.
     expect(matchAtEnd("http://", "//")).toBeNull();
   });
 

@@ -17,8 +17,9 @@ import {
   StatusIcon,
 } from "@/features/issues/components/IssueIcons/IssueIcons";
 import { Link } from "@/i18n/navigation";
-// `@/lib/audit/actions` und nicht `@/lib/audit`: diese Liste rendert im
-// Browser, und der Server-Teil daneben trägt `server-only` samt Prisma-Client.
+// `@/lib/audit/actions` and not `@/lib/audit`: this list renders in the
+// browser, and the server part next to it carries `server-only` along with
+// the Prisma client.
 import {
   type AuditAction,
   type AuditEntry,
@@ -37,38 +38,38 @@ interface Props {
   entries: AuditEntry[];
   title: string;
   description: string;
-  /** Um das Kürzel eines Issues zu verlinken (`TargetLabel`). Ohne sie — die
-   * Plattform-Übersicht spannt über alle Workspaces — bleibt es reiner Text. */
+  /** To link an issue's reference (`TargetLabel`). Without it — the
+   * platform overview spans all workspaces — it stays plain text. */
   workspaceSlug?: string;
-  /** Id des letzten anfangs geladenen Eintrags — `null`, wenn `entries` schon
-   * alles ist. Steuert, ob überhaupt nachgeladen wird. */
+  /** Id of the last entry loaded initially — `null` if `entries` is already
+   * everything. Controls whether more is loaded at all. */
   nextCursor: string | null;
-  /** Lädt die nächste Seite ab einem Cursor — eine an Workspace bzw. Projekt
-   * gebundene Server Function (`loadMoreWorkspaceActivity`/
+  /** Loads the next page from a cursor — a server function bound to either
+   * a workspace or a project (`loadMoreWorkspaceActivity`/
    * `loadMoreProjectActivity` in `features/audit/actions.ts`). */
   loadMore: (cursor: string) => Promise<ActivityPage>;
 }
 
 /**
- * Wie ein Vorgang in der Liste erscheint: sein Zeichen, seine Beschriftung, und
- * ob er auffallen soll.
+ * How an action appears in the list: its icon, its label, and whether it
+ * should stand out.
  *
- * Die Zeichen gruppieren, was zusammengehört — alles um den Zutritt trägt einen
- * Schlüssel, alles um Rechte ein Schild, alles Zerstörerische einen Papierkorb,
- * der Notfall-Zugriff sein eigenes Zeichen, und alles Alltägliche (Projekte,
- * Mitglieder, Issues, Labels — Projekt- und Workspace-Aktivität, nicht nur
- * Plattform-Verwaltung) ein neutrales Plus/Minus.
+ * The icons group what belongs together — everything around access carries a
+ * key, everything around permissions a shield, everything destructive a
+ * trash can, break-glass access its own icon, and everything everyday
+ * (projects, members, issues, labels — project and workspace activity, not
+ * just platform administration) a neutral plus/minus.
  *
- * `message` ist der Name in `messages/*.json` und **nicht** der Schlüssel des
- * Vorgangs. Der trägt Punkte, und next-intl liest einen Punkt als
- * Verschachtelung: `audit.action.auth.login` wäre ein Objekt `auth` mit einem
- * Feld `login` — und `auth.login.failed` verlangte, dass `login` gleichzeitig
- * Text und Objekt ist. Die Nachrichten heißen deshalb flach, und diese Tabelle
- * ist die Brücke zwischen beiden Welten.
+ * `message` is the name in `messages/*.json` and **not** the action's key.
+ * The key contains dots, and next-intl reads a dot as nesting:
+ * `audit.action.auth.login` would be an object `auth` with a field `login`
+ * — and `auth.login.failed` would then require `login` to be text and an
+ * object at the same time. The messages are therefore named flat, and this
+ * table is the bridge between the two worlds.
  *
- * `satisfies Record<AuditAction, …>` ist die eigentliche Absicherung: ein neuer
- * Vorgang in `lib/audit/actions.ts` bricht hier den Typecheck, bis er auch ein
- * Zeichen und eine Beschriftung hat.
+ * `satisfies Record<AuditAction, …>` is the actual safeguard: a new action in
+ * `lib/audit/actions.ts` breaks the type check here until it also has an
+ * icon and a label.
  */
 export const AUDIT_ACTION_META = {
   "auth.login": { icon: "lucide:log-in", message: "authLogin" },
@@ -184,7 +185,7 @@ export const AUDIT_ACTION_META = {
   { icon: string; message: string; loud?: boolean }
 >;
 
-/** Was ein unbekannter Vorgang bekommt — ein Punkt und sonst nichts. */
+/** What an unknown action gets — a dot and nothing else. */
 const UNKNOWN_ICON = "lucide:dot";
 
 function metaOf(action: string) {
@@ -198,10 +199,10 @@ function isLoud(action: string): boolean {
 }
 
 /**
- * Zeichen und Nachrichten-Schlüssel eines Vorgangs — für kompaktere Anzeigen
- * außerhalb der vollen Tabelle, etwa die Aktivitäts-Karte der Übersicht
- * (`ProjectProfileView`/`WorkspaceProfileView`). Die Übersetzung selbst bleibt
- * bei der aufrufenden Komponente: `t(\`audit.action.${message}\`)`.
+ * Icon and message key of an action — for more compact displays outside the
+ * full table, such as the overview's activity card
+ * (`ProjectProfileView`/`WorkspaceProfileView`). The translation itself stays
+ * with the calling component: `t(\`audit.action.${message}\`)`.
  */
 export function auditActionMeta(action: string) {
   const meta = metaOf(action);
@@ -209,23 +210,24 @@ export function auditActionMeta(action: string) {
 }
 
 /**
- * Zeigt ein Kürzel wie `MOB-1` als eigenes, schmales Label zum schnellen
- * Wiedererkennen des Tickets, und ein „Alt → Neu" nicht als gleichwertigen
- * Fließtext, sondern „Alt" gedämpft und „Neu" betont — die Zerlegung selbst
- * steht in `parseTargetLabel` (`lib/audit/actions.ts`), reine
- * Zeichenkettenarbeit ohne React.
+ * Shows a reference like `MOB-1` as its own narrow label for quickly
+ * recognizing the ticket, and an "old → new" not as equally weighted running
+ * text, but "old" dimmed and "new" emphasized — the parsing itself lives in
+ * `parseTargetLabel` (`lib/audit/actions.ts`), pure string handling with no
+ * React.
  *
- * Drei Vorgänge bekommen zusätzlich ihre eigene Optik statt reinem Text, mit
- * den Daten aus `meta` (`features/issues/actions.ts` schreibt sie in genau
- * dieser Form): Status und Priorität mit ihrem Symbol (`StatusIcon`/
- * `PriorityIcon` — dieselben wie auf Board und Liste), Status zusätzlich in
- * seiner Farbe statt der neutralen Textfarbe. Labels als Chips wie überall
- * sonst in der App (`Label`), nicht als Text mit vorangestelltem `+`/`−` —
- * hinzugekommene gefüllt, entfernte durchgestrichen. Fehlt `meta` (Zeilen von
- * vor dieser Änderung), bleibt es beim reinen Text.
+ * Three kinds of actions additionally get their own visual treatment instead
+ * of plain text, using the data from `meta` (`features/issues/actions.ts`
+ * writes it in exactly this shape): status and priority with their icon
+ * (`StatusIcon`/`PriorityIcon` — the same ones as on the board and list),
+ * status additionally in its own color instead of the neutral text color.
+ * Labels as chips like everywhere else in the app (`Label`), not as text
+ * with a leading `+`/`−` — added ones filled in, removed ones struck
+ * through. If `meta` is missing (rows from before this change), it falls
+ * back to plain text.
  */
-/** Vorgänge, bei denen das Ziel selbst das Projekt ist — `text` ist hier
- * bereits der Projektname, kein „Alt → Neu". Der ganze Text wird zum Link. */
+/** Actions where the target itself is the project — `text` here is already
+ * the project name, not an "old → new". The whole text becomes the link. */
 const PROJECT_IS_TARGET: ReadonlySet<string> = new Set([
   "project.created",
   "project.archived",
@@ -236,18 +238,18 @@ const PROJECT_IS_TARGET: ReadonlySet<string> = new Set([
   "project.breakglass",
 ]);
 
-/** Vorgänge, deren Ziel eine Person ist, die aber einem Projekt zugeordnet
- * bleibt — im Workspace-weiten Feed sonst nicht erkennbar, zu welchem
- * Projekt „Zum Projekt hinzugefügt" gehört. Bekommen einen eigenen Chip. */
+/** Actions whose target is a person, but who remains associated with a
+ * project — otherwise unrecognizable in the workspace-wide feed which
+ * project "Added to project" belongs to. These get their own chip. */
 const PROJECT_IS_CONTEXT: ReadonlySet<string> = new Set([
   "project.member.added",
   "project.member.removed",
   "project.member.role.changed",
 ]);
 
-/** Vorgänge, bei denen das Ziel selbst der Workspace ist — wie
- * `PROJECT_IS_TARGET`, nur ohne Link: eine Plattform-Admin ist in fremden
- * Workspaces kein Mitglied (siehe `PlatformWorkspaces`). */
+/** Actions where the target itself is the workspace — like
+ * `PROJECT_IS_TARGET`, just without a link: a platform admin isn't a member
+ * of someone else's workspace (see `PlatformWorkspaces`). */
 const WORKSPACE_IS_TARGET: ReadonlySet<string> = new Set([
   "workspace.suspended",
   "workspace.unsuspended",
@@ -265,16 +267,16 @@ interface TargetLabelProps {
   text: string;
   action: string;
   meta?: unknown;
-  /** Farbe der/des in `text` genannten Person, für einen Avatar neben „Neu" —
-   * z. B. wer eine Aufgabe jetzt zugewiesen bekommen hat. */
+  /** Color of the person named in `text`, for an avatar next to "new" —
+   * e.g. who an issue is now assigned to. */
   personColor?: string | null;
-  /** Verlinkt das Kürzel zum Issue. Ohne sie steht es als reiner Text da. */
+  /** Links the reference to the issue. Without it, it's shown as plain text. */
   workspaceSlug?: string;
-  /** Aktuelles Projekt hinter `projectId` — für Link und Avatar bei
+  /** Current project behind `projectId` — for the link and avatar in
    * `PROJECT_IS_TARGET`/`PROJECT_IS_CONTEXT` (`lib/audit/index.ts`). */
   projectRef?: EntityRef | null;
-  /** Aktueller Workspace hinter `workspaceId` — für den Avatar bei
-   * `WORKSPACE_IS_TARGET`, ohne Link (`lib/audit/index.ts`). */
+  /** Current workspace behind `workspaceId` — for the avatar in
+   * `WORKSPACE_IS_TARGET`, with no link (`lib/audit/index.ts`). */
   workspaceRef?: EntityRef | null;
 }
 
@@ -445,17 +447,17 @@ export function TargetLabel({
 }
 
 /**
- * Das Protokoll: wer, wann, was — und woran.
+ * The audit log: who, when, what — and on what.
  *
- * Es lässt sich nicht bearbeiten und nicht löschen; es gibt dafür keine Aktion,
- * weder hier noch im Server (`lib/audit/index.ts`). Zwei Filter, bewusst grob:
- * „alles"/„nur das Laute" als Schalter, und ein Vorgang-Filter, der nur zeigt,
- * was in dieser Liste überhaupt vorkommt — eine Auswahl aus lauter Vorgängen,
- * die gar nicht da sind, wäre nutzlos.
+ * It can't be edited and can't be deleted; there's no action for that,
+ * neither here nor on the server (`lib/audit/index.ts`). Two filters,
+ * deliberately coarse: "all"/"only the loud ones" as a toggle, and an action
+ * filter that only shows what actually occurs in this list — a picker full
+ * of actions that never happen would be useless.
  *
- * Die Namen in den Zeilen sind die von damals, nicht die von heute — sie wurden
- * beim Schreiben eingefroren. Wer sein Konto umbenennt, ändert damit nicht, was
- * das Protokoll über ihn sagt.
+ * The names in the rows are the ones from back then, not the ones from
+ * today — they were frozen at write time. Renaming your account therefore
+ * doesn't change what the log says about you.
  */
 export function AuditLog({
   entries,
@@ -489,9 +491,9 @@ export function AuditLog({
     .filter((e) => !loudOnly || isLoud(e.action))
     .filter((e) => actionFilter === "all" || e.action === actionFilter);
 
-  // Unbekannte Schlüssel zeigt die Liste roh statt gar nicht: das Protokoll ist
-  // älter als jede Fassung der Oberfläche, und eine Zeile, die diese Fassung
-  // nicht benennen kann, soll trotzdem dastehen.
+  // Unknown keys are shown raw instead of not at all: the log is older than
+  // any given version of the UI, and a row this version can't name should
+  // still appear.
   const label = (action: string) => {
     const meta = metaOf(action);
     return meta ? t(`audit.action.${meta.message}`) : action;
@@ -561,8 +563,8 @@ export function AuditLog({
       header: t("audit.colReason"),
       width: "minmax(0, 1.2fr)",
       sortValue: (row) => row.reason,
-      // Steht nur beim Notfall-Zugriff und ist dort die eigentliche Aussage der
-      // Zeile — deshalb eine eigene Spalte und keine Fußnote.
+      // Only present for break-glass access, where it's the row's actual
+      // point — hence its own column and not a footnote.
       cell: (row) =>
         row.reason ? (
           <span className={styles.reason} title={row.reason}>

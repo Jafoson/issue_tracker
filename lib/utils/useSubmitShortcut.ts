@@ -3,13 +3,13 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Löst `onSubmit` bei ⌘/Strg + Enter aus — die Abschick-Geste aller
- * Composer-Modals.
+ * Fires `onSubmit` on ⌘/Ctrl + Enter — the submit gesture used by every
+ * composer modal.
  *
- * Der Callback liegt in einer Ref, die nach jedem Render aktualisiert wird.
- * Dadurch bleibt der Listener über die Lebensdauer registriert und sieht
- * trotzdem immer den aktuellen Formularstand — ohne den Handler bei jedem
- * Tastendruck neu anzuhängen.
+ * The callback lives in a ref that's updated after every render. This way
+ * the listener stays registered for the whole lifetime and still always
+ * sees the current form state — without reattaching the handler on every
+ * keystroke.
  */
 export function useSubmitShortcut(onSubmit: () => void, enabled = true) {
   const handler = useRef(onSubmit);

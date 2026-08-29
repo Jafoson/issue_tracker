@@ -1,30 +1,31 @@
-/* Die Vorschlagsliste unter dem Cursor. Positioniert wird sie von Floating UI
-   (`props.mount` aus @tiptap/suggestion) — hier steht nur das Aussehen.
+/* The suggestion list under the cursor. Positioned by Floating UI
+   (`props.mount` from @tiptap/suggestion) — this file only holds the look.
 
-   Fläche, Rahmen, Rundung, Schatten und Auftritt kommen von `Popover` — das ist
-   das allgemeine Menü der Anwendung, und dieses hier soll nicht daneben stehen.
-   Eigen ist nur die feste Breite und die Höhenbegrenzung mit Scrollen. */
+   Surface, border, rounding, shadow, and entrance animation come from
+   `Popover` — that's the application's general menu, and this one shouldn't
+   look out of place next to it. What's specific here is only the fixed
+   width and the height limit with scrolling. */
 
-/* Liegt auf der Hülle, die `ReactRenderer` anlegt und Floating UI positioniert —
-   nicht auf `.menu` darin.
+/* Sits on the wrapper that `ReactRenderer` creates and Floating UI
+   positions — not on `.menu` inside it.
 
-   Das ist der Punkt: `z-index` greift nur bei positionierten Elementen, und
-   positioniert wird die Hülle, nicht ihr Kind. Ohne diese Klasse bliebe die
-   Hülle auf `z-index: auto` und das Modal (`--z-overlay`) deckte die Liste zu —
-   sichtbar blieb nur der Teil, der unten herausragt.
+   That's the point: `z-index` only takes effect on positioned elements, and
+   the wrapper is what's positioned, not its child. Without this class, the
+   wrapper would stay at `z-index: auto` and the modal (`--z-overlay`) would
+   cover the list — only the part sticking out below would remain visible.
 
-   `--z-popover` ist die Ebene für alles, was über einem Overlay schwebt; der
-   `Popover`-Atom sitzt aus demselben Grund dort. */
+   `--z-popover` is the layer for everything that floats above an overlay;
+   the `Popover` atom sits there for the same reason. */
 .floating {
   z-index: var(--z-popover);
 }
 
-/* Die Hülle: Fläche, Rahmen, Rundung, Schatten — und sonst nichts.
+/* The wrapper: surface, border, rounding, shadow — and nothing else.
 
-   Sie scrollt bewusst nicht selbst. Ein Element, das zugleich rundet und
-   scrollt, malt seine Bildlaufleiste über den abgerundeten Beschnitt; die
-   beiden Ecken auf der Leistenseite sehen dann eckig aus. `overflow: hidden`
-   hier und das Scrollen eine Ebene tiefer beschneidet sie sauber mit. */
+   It deliberately doesn't scroll itself. An element that both rounds and
+   scrolls paints its scrollbar over the rounded clip; the two corners on
+   the scrollbar's side then look square. `overflow: hidden` here, with
+   scrolling handled one level deeper, clips it cleanly along with the rest. */
 .menu {
   width: 320px;
   background: var(--surface);
@@ -35,7 +36,7 @@
   animation: pop .12s ease;
 }
 
-/* Hier wird gescrollt. Das Polster hält die Zeilen von der Rundung fern. */
+/* Scrolling happens here. The padding keeps the rows away from the rounding. */
 .list {
   max-height: 300px;
   overflow-y: auto;
@@ -90,7 +91,7 @@
   text-transform: uppercase;
   color: var(--on-surface-variant);
 
-  /* Der erste Kopf braucht oben keine Luft — der Rahmen liefert sie schon. */
+  /* The first heading needs no extra space above it — the padding already provides it. */
   .list > div:first-child & { padding-top: 3px; }
 }
 
@@ -101,10 +102,11 @@
   text-align: center;
 }
 
-/* Lokal, obwohl `pop` auch global in styles/globals.scss steht: CSS-Module
-   benennen Keyframe-Namen um, auch wenn sie hier gar nicht definiert sind.
-   Die Referenz zeigte deshalb auf einen Namen, den es nirgends gibt — die
-   Animation lief still ins Leere. Werte identisch mit dem globalen `pop`. */
+/* Local, even though `pop` also exists globally in styles/globals.scss: CSS
+   modules rename keyframe names even when they aren't defined here at all.
+   The reference therefore pointed to a name that doesn't exist anywhere —
+   the animation silently ran into nothing. Values identical to the global
+   `pop`. */
 @keyframes pop {
   from { opacity: .2; transform: translateY(-4px) scale(.985); }
 }

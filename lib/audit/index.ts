@@ -4,50 +4,49 @@ import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { resolveAvatarUrl } from "@/lib/storage";
 
-// ─── Audit-Log: schreiben und lesen ───────────────────────────────────────────
+// ─── Audit log: writing and reading ─────────────────────────────────────────────
 //
-// Die Vorgänge selbst stehen in `lib/audit/actions.ts` — abhängigkeitsfrei,
-// damit die Oberfläche sie benennen kann, ohne den Prisma-Client ins Bündel zu
-// ziehen. Hier steht, was nur der Server tut.
+// The events themselves live in `lib/audit/actions.ts` — dependency-free, so
+// the UI can name them without pulling the Prisma client into the bundle.
+// This is where what only the server does lives.
 //
-// ── Zwei Wege hinein ──
+// ── Two ways in ──
 //
-// `recordAudit` schluckt seine Fehler: eine Anmeldung soll nicht scheitern, weil
-// das Protokoll klemmt. `recordAuditIn` schreibt in eine laufende Transaktion
-// und schluckt nichts — für Vorgänge, bei denen der Eintrag der eigentliche
-// Punkt ist. Der Notfall-Zugriff nutzt diesen Weg: die Mitgliedschaft und ihr
-// Protokolleintrag entstehen zusammen oder gar nicht.
+// `recordAudit` swallows its errors: a login shouldn't fail because the log
+// is jammed. `recordAuditIn` writes into a running transaction and swallows
+// nothing — for events where the entry isn't just accompanying, it's the
+// point. Break-glass access uses this path: the membership and its log
+// entry come into being together, or not at all.
 
-// Die Registry wandert weiter durch dieses Modul hinaus: der Server-Code
-// importiert `@/lib/audit` und bekommt beides, ohne zwei Pfade zu kennen. Wer
-// im Browser rendert, importiert `@/lib/audit/actions` direkt.
+// The registry gets re-exported through this module: server code imports
+// `@/lib/audit` and gets both, without needing to know two paths. Whoever
+// renders in the browser imports `@/lib/audit/actions` directly.
 export * from "@/lib/audit/actions";
 
 export interface AuditInput {
   action: AuditAction;
-  /** Wer gehandelt hat. Die Beschriftung wird daraus nachgeladen. */
+  /** Who acted. The label is looked up from this. */
   actorId?: string | null;
   /**
-   * Beschriftung des Handelnden, wenn es keine Id gibt — bei einer
-   * fehlgeschlagenen Anmeldung steht hier die getippte Adresse. Ist beides
-   * gesetzt, gewinnt der nachgeladene Name.
+   * Label for the actor when there's no id — for a failed login this holds
+   * the typed-in address. If both are set, the looked-up name wins.
    */
   actorLabel?: string;
   target?: AuditTarget;
   /**
-   * Kontofarbe der Person, um die es geht, wenn das Ziel selbst keine Person
-   * ist — bei einer Zuweisung etwa das Ziel „Issue", nicht der neue Zuständige.
-   * Frei, weil nicht jeder Vorgang eine Person nennt.
+   * Account color of the person the event is about, when the target itself
+   * isn't a person — for an assignment, say, the target is "issue", not the
+   * new assignee. Optional, because not every event names a person.
    */
   personColor?: string | null;
   workspaceId?: string | null;
   projectId?: string | null;
-  /** Die Begründung — beim Notfall-Zugriff Pflicht, sonst leer. */
+  /** The justification — mandatory for break-glass access, otherwise empty. */
   reason?: string | null;
   meta?: Prisma.InputJsonValue;
 }
 
-/** Der schmale Ausschnitt von `db`, den das Protokoll braucht. */
+/** The narrow slice of `db` the log needs. */
 type AuditClient = Pick<typeof db, "auditLog" | "user">;
 
 const UNKNOWN_ACTOR = "Unbekannt";
@@ -58,13 +57,14 @@ interface ActorInfo {
 }
 
 /**
- * Wie der Handelnde zur Tatzeit hieß und aussah (Avatar-Farbe).
+ * What the actor was called and looked like (avatar color) at the time of
+ * the action.
  *
- * Beides wird beim Schreiben eingefroren, nicht beim Lesen aufgelöst. Wer
- * später heiratet, das Konto umbenennt, die Farbe wechselt oder gelöscht wird,
- * verändert damit nicht rückwirkend, was im Protokoll steht — und ein
- * gelöschtes Konto hinterlässt keine Zeile ohne Namen (nur ohne Farbe, dann
- * zeigt die Liste den Platzhalter-Avatar).
+ * Both are frozen at write time, not resolved at read time. Whoever later
+ * marries, renames their account, changes their color, or gets deleted
+ * doesn't retroactively change what's in the log — and a deleted account
+ * doesn't leave a row without a name (only without a color, in which case
+ * the list shows the placeholder avatar).
  */
 async function actorInfoFor(
   client: AuditClient,
@@ -84,8 +84,9 @@ async function actorInfoFor(
     },
   });
   if (!user) return { label: fallback?.trim() || UNKNOWN_ACTOR, color: null };
-  // Passkey-Konten ohne Adresse: `@handle` statt der Klammer, damit die Zeile
-  // trotzdem eindeutig bleibt, statt „(null)" anzuzeigen.
+  // Passkey accounts without an address: `@handle` instead of the
+  // parenthetical, so the row still stays unambiguous instead of showing
+  // "(null)".
   return {
     label:
       `${user.firstName} ${user.lastName} (${user.email ?? `@${user.handle}`})`.trim(),
@@ -111,11 +112,11 @@ function rowFor(input: AuditInput, actor: ActorInfo) {
 }
 
 /**
- * Einen Vorgang protokollieren, in einer laufenden Transaktion.
+ * Log an event, inside a running transaction.
  *
- * Fehler kommen hier durch. Für Vorgänge, bei denen der Eintrag nicht bloß
- * begleitet, sondern die Bedingung ist: ein Notfall-Zugriff ohne Protokoll wäre
- * genau das, was das Protokoll verhindern soll.
+ * Errors propagate here. For events where the entry isn't just
+ * accompanying but the precondition: a break-glass access without a log
+ * entry would be exactly what the log is meant to prevent.
  */
 export async function recordAuditIn(
   client: AuditClient,
@@ -126,11 +127,11 @@ export async function recordAuditIn(
 }
 
 /**
- * Einen Vorgang protokollieren.
+ * Log an event.
  *
- * Schluckt seine Fehler und meldet sie nur auf der Konsole: eine Anmeldung, ein
- * Rollenwechsel oder eine Löschung soll nicht daran scheitern, dass das
- * Protokoll gerade klemmt. Wer das nicht will, nimmt `recordAuditIn`.
+ * Swallows its errors and only reports them to the console: a login, a role
+ * change, or a deletion shouldn't fail because the log happens to be
+ * jammed. Whoever doesn't want that uses `recordAuditIn`.
  */
 export async function recordAudit(input: AuditInput): Promise<void> {
   try {
@@ -140,38 +141,39 @@ export async function recordAudit(input: AuditInput): Promise<void> {
   }
 }
 
-// ─── Lesen ────────────────────────────────────────────────────────────────────
+// ─── Reading ──────────────────────────────────────────────────────────────────
 
 export interface AuditFilter {
-  /** Nur Vorgänge dieses Workspace. Ohne Angabe: die ganze Plattform. */
+  /** Only events of this workspace. If omitted: the whole platform. */
   workspaceId?: string;
-  /** Nur Vorgänge dieses Projekts. */
+  /** Only events of this project. */
   projectId?: string;
   action?: AuditAction;
   actorId?: string;
   /**
-   * Nur Vorgänge, die diese Person betreffen — als Handelnde oder als Ziel.
-   * Für Ansichten ohne `audit.view`: wer die volle Liste nicht sehen darf,
-   * sieht wenigstens, was sie selbst getan hat oder was ihr passiert ist
-   * (aufgenommen, entfernt, umrollt). Reine Objekt-Ereignisse, bei denen die
-   * Person weder Akteur noch Ziel ist, fallen damit korrekt heraus.
+   * Only events involving this person — as actor or as target. For views
+   * without `audit.view`: whoever can't see the full list at least sees
+   * what they did themselves or what happened to them (added, removed,
+   * re-rolled). Pure object events where the person is neither actor nor
+   * target are correctly excluded by this.
    */
   selfOnly?: string;
-  /** Wie viele Zeilen höchstens. Vorgabe 100, Obergrenze 500. */
+  /** Maximum number of rows. Default 100, cap 500. */
   limit?: number;
-  /** Nachladen ab (ausschließlich) dieser Id, für Infinite Scroll. */
+  /** Load more starting after (exclusive) this id, for infinite scroll. */
   cursor?: string;
 }
 
 /**
- * Issue-Vorgänge und projektgebundene Label-Vorgänge tragen `workspaceId`
- * genauso wie `projectId` (siehe `recordIssueAudit` und `createLabel` in
- * `features/issues/actions.ts`) — nicht, weil sie zum Workspace als Ganzes
- * gehörten, sondern damit sie im Projekt-Feed erscheinen, dessen Query nur
- * `projectId` kennt. Im Workspace-Feed (`workspaceId` ohne `projectId`) wären
- * sie dagegen das Tagesgeschäft jedes einzelnen Projekts, nicht des
- * Workspace — und würden ihn zuspammen. Ein Label ohne `projectId` entsteht
- * direkt im Workspace-Kontext (`WorkspaceLabels`) und bleibt sichtbar.
+ * Issue events and project-bound label events carry `workspaceId` just as
+ * much as `projectId` (see `recordIssueAudit` and `createLabel` in
+ * `features/issues/actions.ts`) — not because they belong to the workspace
+ * as a whole, but so they show up in the project feed, whose query only
+ * knows `projectId`. In the workspace feed (`workspaceId` without
+ * `projectId`), on the other hand, they'd be the day-to-day business of
+ * each individual project, not of the workspace — and would spam it. A
+ * label without `projectId` is created directly in the workspace context
+ * (`WorkspaceLabels`) and stays visible.
  */
 function whereFor(filter: AuditFilter): Prisma.AuditLogWhereInput {
   const workspaceFeed = filter.workspaceId && !filter.projectId;
@@ -202,12 +204,12 @@ function whereFor(filter: AuditFilter): Prisma.AuditLogWhereInput {
 }
 
 /**
- * Das Protokoll lesen, neueste zuerst.
+ * Read the log, newest first.
  *
- * Prüft **nicht** selbst — der Ausschnitt ist das Recht. Die Aufrufer stellen
- * `audit.view` im passenden Kontext sicher und geben genau den Ausschnitt vor,
- * für den sie geprüft haben: die Plattformverwaltung alles,
- * eine Workspace-Ansicht nur ihren eigenen `workspaceId`.
+ * Does **not** check permissions itself — the slice is the permission. The
+ * callers ensure `audit.view` in the appropriate context and pass exactly
+ * the slice they checked for: the platform admin panel everything, a
+ * workspace view only its own `workspaceId`.
  */
 export async function listAudit(
   filter: AuditFilter = {},
@@ -232,16 +234,16 @@ export async function listAudit(
       workspaceId: true,
       projectId: true,
       reason: true,
-      // Anders als früher dokumentiert doch in der Auswahl: einige Issue-
-      // Vorgänge tragen darin Render-Hinweise (Status-/Prioritäts-Ids,
-      // Label-Farben) für Icon und Chip in `TargetLabel`. Der Rest der Zeilen
-      // trägt hier `null` und bleibt unberührt.
+      // Unlike previously documented, it is included in the selection after
+      // all: some issue events carry rendering hints in it (status/priority
+      // ids, label colors) for the icon and chip in `TargetLabel`. The rest
+      // of the rows carry `null` here and stay untouched.
       meta: true,
     },
   });
-  // `projectRef`/`workspaceRef`/`actorAvatarUrl` sind keine Spalten —
-  // Platzhalter, die die drei Funktionen unten befüllen, genau wie
-  // `withCurrentColor` es mit fehlender `actorColor` tut.
+  // `projectRef`/`workspaceRef`/`actorAvatarUrl` aren't columns —
+  // placeholders that the three functions below fill in, just like
+  // `withCurrentColor` does for a missing `actorColor`.
   const withPlaceholder: AuditEntry[] = entries.map((entry) => ({
     ...entry,
     actorAvatarUrl: null,
@@ -255,11 +257,12 @@ export async function listAudit(
 }
 
 /**
- * Ergänzt die aktuelle Kontofarbe, wo keine eingefroren ist — Zeilen, die vor
- * dieser Spalte entstanden sind. Anders als `actorLabel` gilt für die Farbe
- * keine Historientreue: ein Avatar ohne Farbe wäre nur ein grauer Platzhalter,
- * und die heutige Farbe ist die bessere Auskunft als gar keine. Neue Zeilen
- * bringen ihre Farbe schon mit (`actorInfoFor`) und lösen hier nichts aus.
+ * Fills in the current account color where none was frozen — rows created
+ * before this column existed. Unlike `actorLabel`, historical accuracy
+ * doesn't apply to the color: an avatar without a color would just be a
+ * gray placeholder, and today's color is a better answer than none at all.
+ * New rows already bring their own color (`actorInfoFor`) and trigger
+ * nothing here.
  */
 async function withCurrentColor(entries: AuditEntry[]): Promise<AuditEntry[]> {
   const missing = [
@@ -285,11 +288,11 @@ async function withCurrentColor(entries: AuditEntry[]): Promise<AuditEntry[]> {
 }
 
 /**
- * Ergänzt das Profilbild des Handelnden, live nachgeschlagen — anders als
- * `actorColor` gilt hier keine Zeitzeugenschaft (siehe `AuditEntry.actorAvatarUrl`):
- * eine signierte URL wäre nach einer Stunde ohnehin ungültig, „eingefroren"
- * ergäbe also keinen Sinn. Ein gelöschtes Konto liefert kein Bild — die Liste
- * zeigt dann den Farb- oder Platzhalter-Avatar.
+ * Fills in the actor's profile picture, looked up live — unlike
+ * `actorColor`, no historical accuracy applies here (see
+ * `AuditEntry.actorAvatarUrl`): a signed URL would be invalid after an hour
+ * anyway, so "frozen" wouldn't make sense. A deleted account yields no
+ * picture — the list then shows the color or placeholder avatar.
  */
 async function withActorAvatar(entries: AuditEntry[]): Promise<AuditEntry[]> {
   const actorIds = [
@@ -319,13 +322,13 @@ async function withActorAvatar(entries: AuditEntry[]): Promise<AuditEntry[]> {
 }
 
 /**
- * Ergänzt Slug, Name, Farbe und Profilbild des Projekts, zu dem die Zeile
- * gehört — für den Link samt Avatar in `TargetLabel` (`AuditLog`/
- * `ActivityFeed`). Kein Fremdschlüssel auf `AuditLog` (siehe
- * `prisma/schema.prisma`), also ist das hier der einzige Weg zu einem
- * klickbaren Projekt: eine gebündelte Nachfrage, nicht anders als
- * `withCurrentColor` nebenan. Ein inzwischen gelöschtes Projekt liefert
- * `null` — die Zeile bleibt dann unverlinkter Text statt eines toten Links.
+ * Fills in slug, name, color, and profile picture of the project the row
+ * belongs to — for the link plus avatar in `TargetLabel` (`AuditLog`/
+ * `ActivityFeed`). No foreign key on `AuditLog` (see
+ * `prisma/schema.prisma`), so this is the only way to a clickable project:
+ * a batched follow-up query, no different from `withCurrentColor` next
+ * door. A project that has since been deleted yields `null` — the row then
+ * stays unlinked text instead of a dead link.
  */
 async function withProjectRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
   const projectIds = [
@@ -364,10 +367,10 @@ async function withProjectRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
 }
 
 /**
- * Dasselbe für den Workspace hinter `workspaceId` — ohne Link, siehe
- * `AuditEntry.workspaceRef`. Betrifft praktisch nur `workspace.*`-Vorgänge im
- * Plattform-Protokoll; ein gelöschter Workspace liefert `null`, die Zeile
- * bleibt dann reiner Text.
+ * The same for the workspace behind `workspaceId` — without a link, see
+ * `AuditEntry.workspaceRef`. In practice only affects `workspace.*` events
+ * in the platform log; a deleted workspace yields `null`, the row then
+ * stays plain text.
  */
 async function withWorkspaceRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
   const workspaceIds = [
@@ -405,7 +408,7 @@ async function withWorkspaceRef(entries: AuditEntry[]): Promise<AuditEntry[]> {
   );
 }
 
-/** Wie viele Vorgänge es insgesamt gibt — für die Übersicht. */
+/** How many events there are in total — for the overview. */
 export async function countAudit(filter: AuditFilter = {}): Promise<number> {
   return db.auditLog.count({ where: whereFor(filter) });
 }

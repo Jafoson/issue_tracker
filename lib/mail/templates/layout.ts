@@ -1,12 +1,12 @@
 import { escapeHtml } from "@/lib/mail/templates/html";
 
-// ─── Gemeinsamer Rahmen für alle Mails ────────────────────────────────────────
+// ─── Shared frame for all emails ─────────────────────────────────────────────
 //
-// Ein Layout für jede Vorlage, statt jede Mail ihr eigenes HTML bauen zu
-// lassen — Kopf, Fuß, Knopf, Detailtabelle und Warnbox ändern sich damit an
-// einer Stelle. Tabellen und Inline-Styles statt einem `<style>`-Block: das
-// ist, was in Mail-Clients zuverlässig ankommt (Gmail entfernt `<head>`-Styles
-// regelmäßig, Outlook rendert mit der Word-Engine).
+// One layout for every template, instead of letting each email build its
+// own HTML — header, footer, button, detail table, and alert box thus
+// change in one place. Tables and inline styles instead of a `<style>`
+// block: that's what reliably survives in mail clients (Gmail routinely
+// strips `<head>` styles, Outlook renders with the Word engine).
 
 const BRAND = "Orbit";
 const BRAND_SUFFIX = "Issue Tracker";
@@ -21,9 +21,9 @@ const DANGER_BORDER = "#f0c9c0";
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 /**
- * Name und Adresse im Fußzeilentext — für viele Mailanbieter erwartet
- * (physische Adresse in kommerziellen Mails). Ohne Konfiguration bleibt die
- * Zeile weg, statt eine erfundene Adresse zu zeigen.
+ * Name and address in the footer text — expected by many mail providers
+ * (physical address in commercial emails). Without configuration, the line
+ * is simply omitted rather than showing a made-up address.
  */
 function companyLine(): string | null {
   const name = process.env.MAIL_COMPANY_NAME;
@@ -33,23 +33,22 @@ function companyLine(): string | null {
 }
 
 export interface LayoutInput {
-  /** Im Client-Vorschautext sichtbar, im Body nicht — kurz halten. */
+  /** Visible in the client's preview text, not in the body — keep it short. */
   preheader: string;
-  /** Die große Überschrift direkt unter der Marke. */
+  /** The large heading directly under the brand. */
   heading: string;
   bodyHtml: string;
   ctaLabel?: string;
   ctaUrl?: string;
-  /** Kleingedrucktes zwischen Knopf/Inhalt und Fußzeile, z. B. „Kennst du
-   *  die Person nicht? Ignorier die Mail.“ */
+  /** Fine print between the button/content and the footer, e.g. "Don't
+   *  recognize this person? Ignore this email." */
   footnoteHtml?: string;
-  /** Gesetzt = „Benachrichtigungen verwalten“ verlinkt dorthin. Nur bei
-   *  Mails, die tatsächlich an einer `*Email`-Einstellung hängen — eine
-   *  Einladung oder ein Passwort-Reset hat keinen Schalter, den man dort
-   *  umlegen könnte. */
+  /** Set = "Manage notifications" links there. Only for emails that
+   *  actually hang off a `*Email` setting — an invitation or a password
+   *  reset has no toggle you could flip there. */
   manageUrl?: string;
-  /** Für „Diese E-Mail wurde an … gesendet“ — der Aufrufer kennt den
-   *  Empfänger, diese Datei nicht. */
+  /** For "This email was sent to …" — the caller knows the recipient,
+   *  this file doesn't. */
   recipientEmail?: string;
 }
 
@@ -160,8 +159,8 @@ export function renderLayout(input: LayoutInput): string {
 </html>`;
 }
 
-/** Ruhige, sage-getönte Box mit Label/Wert-Zeilen — Einladungsdetails,
- *  Passwort-Reset-Kontext, was sonst als Definitionsliste liefe. */
+/** Quiet, sage-tinted box with label/value rows — invitation details,
+ *  password reset context, whatever would otherwise be a definition list. */
 export function renderDetailTable(
   rows: { label: string; value: string }[],
 ): string {
@@ -185,7 +184,7 @@ export function renderDetailTable(
     </table>`;
 }
 
-/** Rote Warnbox — „Warst das nicht du?“ und ähnliche Sicherheitshinweise. */
+/** Red alert box — "Wasn't you?" and similar security notices. */
 export function renderAlertBox(titleHtml: string, bodyHtml: string): string {
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: ${DANGER_BG}; border: 1px solid ${DANGER_BORDER}; border-radius: 8px; margin: 16px 0 0;">

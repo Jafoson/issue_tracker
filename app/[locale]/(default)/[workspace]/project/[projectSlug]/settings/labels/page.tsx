@@ -11,11 +11,11 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Labels eines Projekts — anlegen, umbenennen, umfärben, löschen.
+ * A project's labels — create, rename, recolor, delete.
  *
- * Was der Workspace vorgibt, steht mit in der Liste, aber nur zum Nachsehen:
- * `getProjectLabelsView` löst die `label.*`-Rechte im Projekt-Scope auf, und
- * der reicht für ein workspaceweites Label nicht.
+ * What the workspace provides is included in the list, but only for
+ * reference: `getProjectLabelsView` resolves the `label.*` permissions in
+ * the project scope, and that isn't sufficient for a workspace-wide label.
  */
 export default async function ProjectLabelsPage({
   params,

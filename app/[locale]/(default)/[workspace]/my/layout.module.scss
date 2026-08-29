@@ -1,6 +1,6 @@
-/* Topbar (flex: none) + View (flex: 1) — die View scrollt, die Spalte nicht.
-   Dieselbe Hülle wie beim Projekt: „Meine Aufgaben“ zeigt dieselben zwei
-   Ansichten, nur über alle Projekte hinweg. */
+/* Topbar (flex: none) + view (flex: 1) — the view scrolls, the column
+   doesn't. Same shell as the project: "My Issues" shows the same two views,
+   just across all projects. */
 .wrapper {
   display: flex;
   flex-direction: column;

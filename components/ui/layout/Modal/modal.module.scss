@@ -1,6 +1,6 @@
-/* Gemeinsames Chrome für alle Modal-Inhalte.
-   Positionierung, Backdrop und Animation liefert der ModalFrame
-   (lib/context/ModalContext) — hier lebt nur die Panel-Optik. */
+/* Shared chrome for all modal content.
+   Positioning, backdrop, and animation come from the ModalFrame
+   (lib/context/ModalContext) — this file only holds the panel look. */
 
 .modal {
   --modal-pad-x: 16px;
@@ -9,13 +9,14 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  /* `--modal-w` / `--modal-max-h` setzt die Komponente (Prop `width`) oder eine
-     Variante — als Custom Property, damit die Reihenfolge der Stylesheets
-     keine Rolle spielt. */
+  /* `--modal-w` / `--modal-max-h` is set by the component (the `width` prop)
+     or a variant — as a custom property, so the order of stylesheets doesn't
+     matter. */
   width: var(--modal-w, 620px);
   max-width: calc(100vw - 32px);
-  /* Der Overlay schiebt das Panel um 12vh nach unten — der Rest bleibt nutzbar,
-     überlanger Inhalt scrollt im Body statt aus dem Viewport zu laufen. */
+  /* The overlay pushes the panel down 12vh — the rest stays usable, and
+     overlong content scrolls within the body instead of running off the
+     viewport. */
   max-height: var(--modal-max-h, calc(100dvh - 12vh - 32px));
   background: var(--surface-container);
   border: 1px solid var(--outline-variant);
@@ -24,15 +25,16 @@
   overflow: hidden;
 }
 
-/* ---------- Variante: Seitenpanel ---------- */
+/* ---------- Variant: side panel ---------- */
 
-/* Sitzt bündig an der rechten Kante: volle Höhe, nur die Innenkante bleibt
-   sichtbar. Ob es dabei über der Seite liegt (Modal-Stack) oder neben ihr
-   (Dock), sieht man am Schatten — deshalb kommt der über `--modal-shadow`
-   von außen und ist hier nur voreingestellt.
+/* Sits flush against the right edge: full height, only the inner edge stays
+   visible. Whether it floats over the page (modal stack) or sits beside it
+   (dock) is shown by the shadow — that's why it comes in from outside via
+   `--modal-shadow` and is only defaulted here.
 
-   `max-width: 100%` statt `100vw`: im Dock ist der Platz daneben begrenzt,
-   und das Panel soll ihn nicht überlaufen. Über der Seite ist beides gleich. */
+   `max-width: 100%` instead of `100vw`: in the dock, the space beside it is
+   limited, and the panel shouldn't overflow it. Over the page, both are the
+   same. */
 .modal.panel {
   --modal-w: min(880px, 100vw);
   --modal-max-h: 100dvh;
@@ -121,7 +123,7 @@
   margin-left: auto;
 }
 
-/* ---------- Trennlinien ---------- */
+/* ---------- Dividers ---------- */
 
 .dividerBelow {
   border-bottom: 1px solid var(--outline-variant);
@@ -131,7 +133,7 @@
   border-top: 1px solid var(--outline-variant);
 }
 
-/* ---------- Tastenkürzel-Hinweis ---------- */
+/* ---------- Keyboard shortcut hint ---------- */
 
 .shortcut {
   display: inline-flex;
@@ -156,6 +158,6 @@
   color: var(--on-surface-variant);
 }
 
-/* ---------- Composer-Felder ---------- */
+/* ---------- Composer fields ---------- */
 
 

@@ -15,9 +15,9 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Wie Leute ins Projekt kommen: der teilbare Link oben, offene
- * E-Mail-Einladungen (Gäste eingeschlossen) darunter. Dasselbe Bauteil-Paar
- * wie auf Workspace-Ebene, nur mit den projektgebundenen Abfragen gefüttert.
+ * How people get into the project: the shareable link on top, open email
+ * invitations (guests included) below. The same pair of components as at
+ * the workspace level, just fed with the project-scoped queries.
  */
 export default async function ProjectSettingsInvitationsPage({
   params,

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { effectiveRank, rankBetween, sortByRank } from "@/features/issues/rank";
 import type { Issue } from "@/types";
 
-/** Nur die Felder, um die es hier geht — der Rest interessiert die Rechnung nicht. */
+/** Only the fields that matter here — the rest doesn't concern the calculation. */
 const issue = (id: string, rank: number, created = 0) =>
   ({ id, rank, created }) as Issue;
 
@@ -24,8 +24,8 @@ describe("sortByRank", () => {
   });
 
   test("mischt noch nie sortierte Issues über ihr Alter ein", () => {
-    // Rang wie Anlagezeitpunkt sind Millisekunden — beide liegen auf derselben
-    // Skala, ein unsortiertes Issue landet also dort, wo es entstanden ist.
+    // Rank and creation time are both milliseconds — they sit on the same
+    // scale, so an unsorted issue ends up where it was created.
     const input = [issue("neu", 0, 300), issue("alt", 0, 100), issue("x", 200)];
     expect(sortByRank(input).map((i) => i.id)).toEqual(["alt", "x", "neu"]);
   });

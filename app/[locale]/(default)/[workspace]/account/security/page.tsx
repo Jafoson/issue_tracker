@@ -7,7 +7,7 @@ import { accountPath } from "@/lib/nav";
 
 export const dynamic = "force-dynamic";
 
-/** Passwort, Anmeldeadresse, Anmeldewege. */
+/** Password, sign-in address, sign-in methods. */
 export default async function AccountSecurityPage({
   params,
 }: {
@@ -22,8 +22,8 @@ export default async function AccountSecurityPage({
   return (
     <AccountSecurity
       {...view}
-      // Der Pfad kennt den Workspace, die Komponente nicht — sie bekommt ihn
-      // fertig, wie überall in der App.
+      // The path knows the workspace, the component doesn't — it gets it
+      // ready-made, as everywhere else in the app.
       connectionsHref={accountPath(workspace, "connections")}
       hasOAuthProviders={enabledOAuthProviders.length > 0}
       passkeyLoginEnabled={passkeyLoginEnabled}

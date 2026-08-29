@@ -1,24 +1,24 @@
-/* Der Platz des Docks in der App-Hülle — ein Geschwister des Inhalts, kein
-   Overlay darüber. Die Breite bringt das Panel darin mit; die Hülle verteilt
-   den Rest an den Inhalt daneben. */
+/* The dock's spot in the app shell — a sibling of the content, not an
+   overlay on top of it. The panel inside brings its own width; the shell
+   hands the rest to the content next to it. */
 
 .dock {
   display: flex;
   flex: none;
-  /* Der Inhalt daneben behält immer sein knappes Drittel. Die Grenzen des
-     Ziehgriffs sind in Pixeln gedacht und wissen nichts vom Bildschirm — das
-     hier ist die letzte Instanz. */
+  /* The content next to it always keeps its scant third. The drag handle's
+     limits are thought of in pixels and know nothing about the screen —
+     this is the final authority. */
   max-width: 72vw;
 }
 
-/* Ohne Panel darin gibt es nichts zu zeigen. */
+/* Nothing to show without a panel inside. */
 .dock:empty {
   display: none;
 }
 
-/* Die Schicht zwischen Dock und Panel. An der Kante reicht sie die Maße nur
-   durch — sie steht dort, damit das Panel beim Ausklappen an derselben Stelle
-   im Baum bleibt und nicht neu aufgebaut wird. */
+/* The layer between dock and panel. At the edge it just passes the
+   dimensions through — it exists so the panel stays at the same spot in
+   the tree when expanding, instead of being rebuilt. */
 .layer {
   display: flex;
   min-width: 0;
@@ -29,18 +29,18 @@
   display: flex;
   min-width: 0;
   max-width: 100%;
-  /* Der Fokus landet beim Öffnen auf dem Bereich selbst; ein Ring um das
-     ganze Panel wäre dabei nur Lärm. Sichtbar wird er erst an dem Element
-     darin, das man tatsächlich ansteuert. */
+  /* Focus lands on the area itself when opening; a ring around the whole
+     panel would just be noise there. It only becomes visible on the
+     element inside that you actually navigate to. */
   outline: none;
   animation: dockIn .18s ease both;
 }
 
-/* ---------- Ausgeklappt: doch über der Seite ---------- */
+/* ---------- Expanded: floating over the page instead ---------- */
 
-/* Der große Dialog. Aus dem Nachbarn wird ein Overlay — und weil ein fixiertes
-   Element keinen Platz mehr im Fluss beansprucht, fällt das Dock daneben von
-   selbst auf null zurück und der Inhalt bekommt seine Breite wieder. */
+/* The large dialog. The neighbor becomes an overlay — and because a fixed
+   element no longer takes up space in the flow, the dock next to it falls
+   back to zero on its own and the content gets its width back. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -52,8 +52,8 @@
   animation: dockIn .16s ease both;
 }
 
-/* Deckt die Seite zu und schließt beim Klick — hier gelten die Regeln des
-   Modals vollständig, anders als an der Kante. */
+/* Covers the page and closes on click — the modal's rules apply in full
+   here, unlike at the edge. */
 .backdrop {
   position: absolute;
   inset: 0;
@@ -61,14 +61,14 @@
   cursor: default;
 }
 
-/* Über dem Backdrop statt darunter. */
+/* Above the backdrop instead of below it. */
 .overlay .panel {
   position: relative;
   z-index: 1;
 }
 
-/* Die Breite steht sofort, das Panel blendet sich hinein — ein Hereinschieben
-   ließe daneben einen Streifen offen, weil der Platz ja schon da ist. */
+/* The width is set immediately, the panel fades in — sliding in would
+   leave a gap next to it open, because the space is already there. */
 @keyframes dockIn {
   from { opacity: 0; }
 }

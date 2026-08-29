@@ -8,14 +8,15 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Mitglieder eines Projekts — hier im Rahmen der Einstellungen.
+ * A project's members — here within the settings frame.
  *
- * Dieselbe Ansicht steht unter `…/project/<slug>/members`, also einen Klick vom
- * Board entfernt. Beide Wege sind gewollt: wer im Projekt arbeitet, sucht die
- * Leute beim Projekt, wer es einrichtet, sucht sie in den Einstellungen neben
- * Rollen und Labels. Geteilt wird die Komponente, nicht die Route — dadurch
- * bringt jede Adresse den Rahmen mit, in den sie gehört (hier die Leiste der
- * Einstellungen), und die Rechte prüft ohnehin die Abfrage.
+ * The same view is available under `…/project/<slug>/members`, one click
+ * away from the board. Both paths are intentional: anyone working in the
+ * project looks for people at the project, anyone setting it up looks for
+ * them in settings next to roles and labels. It's the component that's
+ * shared, not the route — that way each URL still brings the frame it
+ * belongs in (here, the settings sidebar), and the query checks permissions
+ * regardless.
  */
 export default async function ProjectSettingsMembersPage({
   params,

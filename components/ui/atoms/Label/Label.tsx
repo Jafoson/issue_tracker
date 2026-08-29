@@ -9,15 +9,14 @@ interface LabelProps {
   style?: React.CSSProperties;
   children: React.ReactNode;
   hasIcon?: boolean;
-  /** Erklärt beim Überfahren, wofür das Label steht. */
+  /** Explains what the label stands for on hover. */
   title?: string;
   /**
-   * Hängt ein Kreuz zum Entfernen an. Ohne den Rückruf bleibt das Label reine
-   * Anzeige — die meisten Stellen zeigen es nur, ändern lässt es sich dort
-   * nicht.
+   * Attaches a remove cross. Without the callback the label stays purely
+   * for display — most places only show it, they don't let it be edited there.
    */
   onRemove?: () => void;
-  /** Barrierefreier Name des Kreuzes — bitte lokalisiert übergeben. */
+  /** Accessible name of the cross — pass it in localized. */
   removeLabel?: string;
 }
 
@@ -38,7 +37,7 @@ export function Label({
       title={title}
       className={[
         styles.label,
-        // "md" ist der Basis-Stil und hat bewusst keine Modifier-Klasse.
+        // "md" is the base style and deliberately has no modifier class.
         styles[size],
         filled && styles.filled,
         onRemove && styles.removable,
@@ -59,8 +58,8 @@ export function Label({
           className={styles.remove}
           aria-label={removeLabel}
           title={removeLabel}
-          // Das Label selbst kann anklickbar sein (Filter, Auswahl) — das
-          // Kreuz meint nur sich.
+          // The label itself can be clickable (filter, selection) — the
+          // cross only means itself.
           onClick={(event) => {
             event.stopPropagation();
             onRemove();

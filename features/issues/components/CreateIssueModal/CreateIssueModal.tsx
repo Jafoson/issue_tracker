@@ -39,7 +39,7 @@ import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import type { Label } from "@/types";
 
 interface CreateIssueModalProps {
-  /** Startprojekt — im Header umschaltbar. */
+  /** Starting project — switchable in the header. */
   projectId: string;
   initialStatus: string;
   data: IssueComposerData;
@@ -67,12 +67,12 @@ export function CreateIssueModal({
   const titleRef = useRef<HTMLInputElement>(null);
 
   /**
-   * Der Fokus gehört beim Öffnen ins Titelfeld.
+   * Focus belongs in the title field when the modal opens.
    *
-   * `autoFocus` allein reicht nicht verlässlich: der `ModalFrame` greift selbst
-   * nach dem Fokus und tritt nur zurück, wenn der Inhalt ihn zu seinem
-   * Effekt-Zeitpunkt schon hat. Kind-Effekte laufen vor denen des Elternteils
-   * — von hier aus ist die Reihenfolge also sicher.
+   * `autoFocus` alone isn't reliable enough: `ModalFrame` grabs focus itself
+   * and only backs off if the content already has it by the time its own
+   * effect runs. Child effects run before their parent's — so from here the
+   * ordering is guaranteed.
    */
   useEffect(() => {
     titleRef.current?.focus();
@@ -82,8 +82,9 @@ export function CreateIssueModal({
   const [projectId, setProjectId] = useState(initialProjectId);
   const project = projects.find((p) => p.id === projectId);
 
-  // Umschalten geht nur dorthin, wo auch etwas entstehen darf. `projects` bleibt
-  // vollständig — es löst die Angaben bestehender Issues auf.
+  // Switching is only possible to a project where creation is actually
+  // allowed. `projects` stays complete — it's used to resolve details of
+  // existing issues.
   const creatableProjects = projects.filter((p) =>
     data.creatableProjectIds.includes(p.id),
   );
@@ -106,11 +107,11 @@ export function CreateIssueModal({
     : null;
 
   /**
-   * Labels können projektgebunden sein (`Label.projectId`). Beim Projektwechsel
-   * fallen die des alten Projekts deshalb raus — workspace-weite Labels
-   * (`projectId: null`) bleiben erhalten, sofern das neue Projekt sie nicht
-   * ausgeblendet hat (`hiddenIn`). Ohne das Aufräumen würden Label-IDs
-   * abgeschickt, die im neuen Projekt gar nicht auswählbar sind.
+   * Labels can be project-bound (`Label.projectId`). On a project switch,
+   * those from the old project are therefore dropped — workspace-wide
+   * labels (`projectId: null`) are kept, as long as the new project hasn't
+   * hidden them (`hiddenIn`). Without this cleanup, label IDs that aren't
+   * even selectable in the new project would be submitted.
    */
   const changeProject = (id: string) => {
     setProjectId(id);
@@ -245,13 +246,13 @@ export function CreateIssueModal({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
         />
-        {/* Ruhezustand ist der gesetzte Text (bzw. der Platzhalter) — der
-            Editor mit seiner Leiste erscheint erst beim Hineinklicken. Ohne
-            Haken und Kreuz: dieses Fenster hat unten schon seine eigenen. */}
-        {/* `onChange` zusätzlich zu `onCommit`: ⌘/Strg + Enter hängt am
-            `document` und schickt ab, bevor das Feld sein Verlassen bemerkt.
-            Ohne den laufenden Abgleich entstünde das Issue ohne den zuletzt
-            getippten Satz. */}
+        {/* Idle state is the committed text (or the placeholder) — the editor
+            with its toolbar only appears once clicked into. No check/cross
+            buttons: this modal already has its own down below. */}
+        {/* `onChange` in addition to `onCommit`: Cmd/Ctrl + Enter is bound to
+            `document` and submits before the field notices it lost focus.
+            Without the running sync, the issue would be created without the
+            most recently typed sentence. */}
         <IssueRichText
           value={description}
           onChange={setDescription}
@@ -263,10 +264,9 @@ export function CreateIssueModal({
         />
       </ModalBody>
 
-      {/* Typ, Status und Priorität sind Pflichtfelder — sie tragen immer einen
-          Wert, bleiben deshalb neutral und bekommen keinen Clear-Button.
-          Assignee und Labels sind optional und heben sich hervor, sobald sie
-          gesetzt sind. */}
+      {/* Type, status, and priority are required fields — they always carry a
+          value, so they stay neutral and get no clear button. Assignee and
+          labels are optional and stand out once set. */}
       <ModalToolbar>
         <FilterChip
           name={t("fields.type")}

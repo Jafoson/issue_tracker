@@ -20,8 +20,8 @@ export default async function AppLayout({
 }) {
   const { locale, workspace: workspaceId } = await params;
 
-  // Aktive Workspace-ID request-scoped ablegen, damit verschachtelte Server
-  // Components sie via getCurrentWorkspace() lesen können (analog zur Session).
+  // Store the active workspace ID request-scoped so nested Server Components
+  // can read it via getCurrentWorkspace() (analogous to the session).
   setCurrentWorkspaceId(workspaceId);
 
   const session = await getSession();
@@ -30,11 +30,11 @@ export default async function AppLayout({
   const workspace = await getCurrentWorkspace();
   if (!workspace) notFound();
 
-  // Eine gültige Session ist noch kein Zutritt: die Workspace-Id steht in der
-  // URL, jeder Angemeldete könnte also einen fremden Slug eintippen. `notFound`
-  // statt einer Weiterleitung, damit die Existenz des Workspace nicht verrät,
-  // wer darin ist. Die Abfragen darunter prüfen zusätzlich selbst — dieses
-  // Layout schützt nur die Seiten unter sich.
+  // A valid session isn't admission by itself: the workspace ID is in the URL,
+  // so any signed-in person could type someone else's slug. `notFound` instead
+  // of a redirect, so the workspace's existence doesn't reveal who's in it.
+  // The queries below additionally check for themselves — this layout only
+  // protects the pages beneath it.
   if (!(await canEnterWorkspace(session.userId, workspace.id))) notFound();
 
   const security = await getMySecurity();

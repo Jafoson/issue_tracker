@@ -2,15 +2,16 @@ import { toDoc } from "./doc";
 import type { PMDoc, PMNode } from "./types";
 
 /**
- * Flacht ein Dokument zu reinem Text ab — für die Volltextsuche
- * (`Issue.descriptionText`) und für Vorschauzeilen wie im Inbox-Verlauf.
+ * Flattens a document into plain text — for full-text search
+ * (`Issue.descriptionText`) and for preview lines like in the inbox
+ * history.
  *
- * Die Spalte existiert nur, weil `contains` auf einer `Json`-Spalte nicht
- * arbeitet. Sie wird bei jedem Schreibvorgang neu aus dem Dokument abgeleitet
- * und ist nirgends die Quelle der Wahrheit.
+ * This column only exists because `contains` doesn't work on a `Json`
+ * column. It's re-derived from the document on every write and is never
+ * the source of truth anywhere.
  */
 
-/** Knoten, die im Fließtext eine sichtbare Grenze ziehen. */
+/** Nodes that draw a visible boundary in running text. */
 const BLOCKS = new Set([
   "paragraph",
   "heading",
@@ -26,8 +27,8 @@ const BLOCKS = new Set([
 function nodeText(node: PMNode): string {
   if (node.type === "text") return node.text ?? "";
 
-  // Chips tragen ihren Text in den Attributen — ohne sie fiele eine Erwähnung
-  // aus der Suche heraus, obwohl sie sichtbar im Text steht.
+  // Chips carry their text in their attributes — without them, a mention
+  // would fall out of search even though it's visibly present in the text.
   if (node.type === "mention") return `@${attr(node, "label")}`;
   if (node.type === "issueLink") return attr(node, "identifier");
   if (node.type === "linkChip")
@@ -46,8 +47,8 @@ function attr(node: PMNode, key: string): string {
 }
 
 /**
- * Mehrfache Umbrüche fallen zu einem zusammen und die Ränder werden getrimmt —
- * für Suche und Vorschau zählt der Wortlaut, nicht die Gliederung.
+ * Multiple consecutive line breaks collapse into one and the edges are
+ * trimmed — for search and preview, the wording matters, not the layout.
  */
 export function toPlainText(value: PMDoc | unknown): string {
   const doc = toDoc(value);
@@ -58,7 +59,7 @@ export function toPlainText(value: PMDoc | unknown): string {
     .trim();
 }
 
-/** Einzeilige Vorschau, an der Wortgrenze gekürzt. */
+/** Single-line preview, truncated at a word boundary. */
 export function toPreview(value: PMDoc | unknown, max = 140): string {
   const text = toPlainText(value).replace(/\s+/g, " ");
   if (text.length <= max) return text;
@@ -68,8 +69,8 @@ export function toPreview(value: PMDoc | unknown, max = 140): string {
 }
 
 /**
- * Die IDs aller erwähnten Mitglieder — Grundlage für Benachrichtigungen, sobald
- * es sie gibt, und heute schon nützlich, um Erwähnungen zu zählen.
+ * The ids of all mentioned members — the basis for notifications once they
+ * exist, and already useful today for counting mentions.
  */
 export function mentionedUserIds(value: PMDoc | unknown): string[] {
   const ids = new Set<string>();

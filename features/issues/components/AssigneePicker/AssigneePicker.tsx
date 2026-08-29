@@ -12,21 +12,21 @@ import styles from "./assigneePicker.module.scss";
 interface AssigneePickerProps {
   issue: IssueDetail;
   members: User[];
-  /** Größe des Avatars — die Fläche zum Anklicken wächst mit ihm. */
+  /** Avatar size — the clickable area grows with it. */
   size?: number;
 }
 
 /**
- * Die Zuweisung eines Issues, dort geändert, wo sie steht: der Avatar ist der
- * Auslöser. Liste und Board teilen sich den Picker — an beiden Stellen zeigt
- * derselbe Avatar dieselbe Sache, also soll er sich auch gleich anfassen lassen.
+ * An issue's assignment, changed right where it's shown: the avatar is the
+ * trigger. The list and board share this picker — the same avatar means the
+ * same thing in both places, so it should behave the same way when touched.
  *
- * `stop` am `InlinePicker` ist hier keine Feinheit, sondern Bedingung: auf dem
- * Board sitzt der Avatar in einer Karte, die selbst auf Klicks reagiert.
+ * `stop` on the `InlinePicker` isn't a nicety here but a requirement: on the
+ * board the avatar sits inside a card that itself reacts to clicks.
  *
- * Ohne `issue.access.canAssign` (spiegelt `issue.assign` in `updateIssue`)
- * bleibt der Avatar ein reiner Anzeigewert — derselbe Grund wie bei der
- * Detailansicht (`IssueProperties.tsx`): der Server lehnte den Patch ohnehin ab.
+ * Without `issue.access.canAssign` (mirrors `issue.assign` in `updateIssue`),
+ * the avatar stays a pure display value — the same reason as in the detail
+ * view (`IssueProperties.tsx`): the server would reject the patch anyway.
  */
 export function AssigneePicker({
   issue,

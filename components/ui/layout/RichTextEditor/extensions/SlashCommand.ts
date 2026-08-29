@@ -3,23 +3,24 @@ import { Suggestion, type SuggestionOptions } from "@tiptap/suggestion";
 import type { SuggestionItem } from "../components/SuggestionMenu/SuggestionMenu";
 
 /**
- * Das `/`-Menü.
+ * The `/` menu.
  *
- * Anders als die Chips fügt es keinen eigenen Knoten ein — es führt einen
- * Befehl auf dem Editor aus. Welche Befehle das sind, steht nicht hier: die
- * Liste wird im `RichTextEditor` gebaut, weil sie übersetzte Namen und Icons
- * braucht. Diese Erweiterung kennt nur den Auslöser.
+ * Unlike the chips, it doesn't insert its own node — it runs a command on
+ * the editor. Which commands those are isn't decided here: the list is built
+ * in `RichTextEditor`, because it needs translated names and icons. This
+ * extension only knows the trigger.
  */
 
 export interface SlashCommandItem extends SuggestionItem {
-  /** Was passiert, wenn der Eintrag gewählt wird. */
+  /** What happens when the entry is selected. */
   run: (props: { editor: Editor; range: Range }) => void;
   /**
-   * Weitere Wörter, über die der Eintrag zu finden ist — die Beschriftung
-   * steht ja nur in der gerade eingestellten Sprache da.
+   * Additional words the entry can be found by — the label, after all, only
+   * appears in whichever language is currently set.
    *
-   * Enthält jeweils den deutschen und den englischen Begriff sowie gängige
-   * Kurzformen, sodass `/trennlinie`, `/divider` und `/hr` dasselbe finden.
+   * Each entry carries the German and the English term as well as common
+   * short forms, so `/trennlinie`, `/divider`, and `/hr` all find the same
+   * thing.
    */
   keywords?: string[];
 }
@@ -29,9 +30,9 @@ export interface SlashCommandOptions {
 }
 
 /**
- * Kleinschreibung ohne diakritische Zeichen — damit `/uberschrift` auch
- * „Überschrift" findet und `/aufzahlung` die „Aufzählung". Wer sucht, tippt
- * selten Umlaute.
+ * Lowercased with diacritics stripped — so `/uberschrift` also matches
+ * "Überschrift" and `/aufzahlung` matches "Aufzählung". Someone searching
+ * rarely types umlauts.
  */
 export function normalize(value: string): string {
   return value
@@ -42,16 +43,16 @@ export function normalize(value: string): string {
 }
 
 /**
- * Die Treffer zur Eingabe im `/`-Menü.
+ * The matches for the input in the `/` menu.
  *
- * Gesucht wird über Beschriftung, Kennung **und** Suchbegriffe: die
- * Beschriftung steht nur in der eingestellten Sprache da, über die Begriffe
- * findet `/trennlinie` dasselbe wie `/divider`.
+ * Searched by label, id, **and** keywords: the label only appears in
+ * whichever language is set, while the keywords let `/trennlinie` find the
+ * same thing as `/divider`.
  *
- * Ohne Eingabe bleibt die Liste, wie sie ist — samt Gruppen. Sobald gesucht
- * wird, fallen die Gruppenköpfe weg: die Rangfolge zieht Einträge aus
- * verschiedenen Gruppen durcheinander, und dieselbe Überschrift stünde sonst
- * mehrfach in der Liste.
+ * Without input, the list stays as it is — groups included. As soon as
+ * there's a search, the group headings drop away: the ranking mixes up
+ * entries from different groups, and the same heading would otherwise show
+ * up multiple times in the list.
  */
 export function filterSlashItems(
   items: SlashCommandItem[],
@@ -67,9 +68,10 @@ export function filterSlashItems(
     items
       .map((item) => ({ item, terms: termsOf(item) }))
       .filter(({ terms }) => terms.some((term) => term.includes(q)))
-      // Treffer am Wortanfang zuerst: wer `/ta` tippt, meint „Tabelle", nicht
-      // „Nummerierte Liste" (die das `ta` in der Mitte trägt). `sort` ist stabil,
-      // innerhalb der Ränge bleibt die übergebene Reihenfolge erhalten.
+      // Matches at the start of a word come first: someone typing `/ta`
+      // means "Table", not "Numbered list" (which carries the `ta` in the
+      // middle). `sort` is stable, so within each rank the given order is
+      // preserved.
       .sort(
         (a, b) =>
           Number(!a.terms.some((t) => t.startsWith(q))) -

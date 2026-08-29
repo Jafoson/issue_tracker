@@ -1,461 +1,468 @@
-# Berechtigungs-Audit — Bestandsaufnahme
+# Permissions Audit — Inventory
 
-Wo im Code wird eine Berechtigung geprüft, wo nicht, und wo sieht es nur so aus.
-Stand: 6. August 2026, Commit `90bfceb`, Arbeitsverzeichnis sauber.
+Where the code checks a permission, where it doesn't, and where it only
+looks like it does.
+As of: August 6, 2026, commit `90bfceb`, clean working directory.
 
-Ergänzt [rbac.md](rbac.md): dort steht, wie das Modell gedacht ist, hier, was
-davon im Code angekommen ist.
+Complements [rbac.md](rbac.md): that document describes how the model is
+meant to work, this one describes what actually made it into the code.
 
 ---
 
-## Zusammenfassung
+## Summary
 
-204 rechte-relevante Flächen einzeln erfasst — jede Server Action, jede Abfrage,
-jeder Route Handler, jede Seite, jedes Layout, jede Komponente mit Rechtebezug
-und jede Hilfsfunktion in `lib/`.
+204 permission-relevant surfaces individually recorded — every Server
+Action, every query, every route handler, every page, every layout, every
+component with a permission dependency, and every helper function in `lib/`.
 
-| Schicht | Flächen | prüft selbst | teilweise | geerbt | nur Flags | keine | n. z. |
+| Layer | Surfaces | checks itself | partial | inherited | flags only | none | n/a |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Server Actions | 30 | 19 | 6 | — | — | 1 | 4 |
-| Abfragen (Lesepfad) | 37 | 15 | 9 | 10 | — | 3 | — |
-| Route Handler | 4 | 1 | — | — | — | — | 3 |
+| Queries (read path) | 37 | 15 | 9 | 10 | — | 3 | — |
+| Route Handlers | 4 | 1 | — | — | — | — | 3 |
 | Middleware (`proxy.ts`) | 3 | — | 2 | — | — | — | 1 |
 | Layouts | 4 | 2 | — | — | — | — | 2 |
-| Seiten | 22 | 13 | 4 | 2 | — | — | 3 |
-| UI-Komponenten | 56 | — | 10 | 5 | 12 | 22 | 7 |
-| Hilfsschicht `lib/` | 48 | 6 | 3 | 13 | — | 2 | 24 |
-| **Summe** | **204** | **56** | **34** | **30** | **12** | **28** | **44** |
+| Pages | 22 | 13 | 4 | 2 | — | — | 3 |
+| UI components | 56 | — | 10 | 5 | 12 | 22 | 7 |
+| Helper layer `lib/` | 48 | 6 | 3 | 13 | — | 2 | 24 |
+| **Total** | **204** | **56** | **34** | **30** | **12** | **28** | **44** |
 
-**Der Kern ist dicht.** Alle 30 Server Actions bis auf `suggestWorkspaceSlug`
-prüfen etwas, und der Lesepfad filtert an den Stellen, die
-[rbac.md](rbac.md#der-lesepfad-prüft-mit) zusagt — alle sieben Zeilen jener
-Tabelle halten. Von 105 gemeldeten Mängeln haben 91 die Gegenprüfung nicht
-überlebt, meist weil die Prüfung eine Ebene höher oder tiefer doch stattfindet.
+**The core is solid.** All 30 Server Actions except `suggestWorkspaceSlug`
+check something, and the read path filters exactly where
+[rbac.md](rbac.md#the-read-path-checks-too) promises it does — all seven
+rows of that table hold. Of 105 reported deficiencies, 91 did not survive
+the counter-check, mostly because the check does happen after all, one
+level up or down.
 
-**18 Befunde bleiben** — 5 hoch, 4 mittel, 9 niedrig, **keiner kritisch**. Kein
-Befund öffnet fremde Mandantendaten für Außenstehende. Die fünf schweren sind
-sämtlich Rechte-Eskalation *innerhalb* der Rollenverwaltung; drei von ihnen
-ruhen, solange nur die 15 System-Rollen im Einsatz sind, und werden scharf,
-sobald jemand eine eigene Rolle anlegt — also beim eigentlichen Zweck des
-Systems.
+**18 findings remain** — 5 high, 4 medium, 9 low, **none critical**. No
+finding exposes another tenant's data to outsiders. All five severe ones
+are privilege escalation *within* role management; three of them lie
+dormant as long as only the 15 system roles are in use, and become live the
+moment someone creates a custom role — the system's actual purpose.
 
-**Das Gefälle liegt in der Oberfläche.** 22 von 56 Komponenten bieten Aktionen
-an, für die sie kein Flag bekommen. Das ist laut
-[rbac.md](rbac.md#enforcement) Stufe 3 und damit „nur UX" — die Actions blocken
-zuverlässig. Es bedeutet aber, dass `project_viewer` und `blocked` heute eine
-voll bedienbare Oberfläche sehen, die erst beim Klick wirft. Und weil es im
-ganzen Baum **keine einzige `error.tsx`** gibt, wirft sie ungefangen
-([Befund 18](#18-kein-error-boundary-jeder-permissionerror-wird-ein-500-niedrig)).
+**The slope is in the UI.** 22 of 56 components offer actions for which
+they receive no flag. Per [rbac.md](rbac.md#enforcement) that's level 3 and
+so "UX only" — the actions block reliably. But it does mean that
+`project_viewer` and `blocked` today see a fully operable UI that only
+throws on click. And because there isn't a **single `error.tsx`** anywhere
+in the tree, it throws uncaught
+([finding 18](#18-no-error-boundary-every-permissionerror-becomes-a-500-low)).
 
 ---
 
-## Legende
+## Legend
 
-| Status | Bedeutung |
+| Status | Meaning |
 |---|---|
-| **prüft selbst** | Ruft `requirePermission` / `can` / `hasPermission` / `getAccess().has()` oder filtert auf `accessibleProjectIds` / `visibleProjectIds` |
-| **teilweise** | Prüft etwas, aber nicht alles — nur Session, nur Zugehörigkeit, am falschen Objekt, oder ein Feld bleibt ungeprüft |
-| **geerbt** | Keine eigene Prüfung, aber ein Layout oder jeder Aufrufer prüft nachweislich |
-| **nur Flags** | UI-Bauteil, das fertige Booleans bekommt und nur rendert (Stufe 3) |
-| **keine** | Auf keinem Pfad eine Prüfung |
-| **n. z.** | Bewusst öffentlich oder ohne Rechtebezug |
+| **checks itself** | Calls `requirePermission` / `can` / `hasPermission` / `getAccess().has()`, or filters on `accessibleProjectIds` / `visibleProjectIds` |
+| **partial** | Checks something, but not everything — only session, only membership, on the wrong object, or a field goes unchecked |
+| **inherited** | No check of its own, but a layout or every caller demonstrably checks |
+| **flags only** | UI piece that receives ready-made booleans and only renders (level 3) |
+| **none** | No check on any path |
+| **n/a** | Deliberately public, or has no permission dependency |
 
-Zwei Abgrenzungen, die das ganze Dokument tragen:
+Two distinctions carry the whole document:
 
-**Zugehörigkeit ist keine Berechtigung.** `canEnterWorkspace` hat absichtlich
-keinen Permission-Key ([rbac.md](rbac.md#zutritt-ist-keine-permission)). Eine
-Abfrage, die nur damit prüft, steht hier als „teilweise" — sie hält Fremde
-draußen, sagt aber nichts darüber, wer die Daten lesen darf.
+**Membership is not a permission.** `canEnterWorkspace` deliberately has no
+permission key ([rbac.md](rbac.md#entry-isnt-a-permission)). A query that
+only checks via that shows up here as "partial" — it keeps outsiders out,
+but says nothing about who's allowed to read the data.
 
-**Ein Rollenname ist keine Berechtigung.** Wer `me.role === "admin"` vergleicht,
-prüft etwas, aber am falschen Objekt: eigene Rollen tragen beliebige Keys. Das
-ist „teilweise", nicht „prüft selbst".
+**A role name is not a permission.** Whoever compares `me.role === "admin"`
+is checking something, but on the wrong object: custom roles carry
+arbitrary keys. That's "partial", not "checks itself".
 
 ---
 
 ## 1. Server Actions
 
-Stufe 1 — hier wird geblockt. Kontexte: `P` = Plattform, `W` = Workspace,
-`Pr` = Projekt.
+Level 1 — this is where it's blocked. Contexts: `P` = Platform, `W` =
+Workspace, `Pr` = Project.
 
 ### `features/issues/actions.ts`
 
-| Action | Status | Prüfung | Ktx |
+| Action | Status | Check | Ctx |
 |---|---|---|---|
-| [`moveIssue`](../features/issues/actions.ts#L46) | prüft selbst | `issue.update.any` \| `.own` (ownerIds: reporter, assignee) | Pr |
-| [`reorderIssue`](../features/issues/actions.ts#L63) | prüft selbst | `issue.update.any` \| `.own` | Pr |
-| [`updateIssue`](../features/issues/actions.ts#L80) | prüft selbst | `issue.update.any` \| `.own`; **zusätzlich** `issue.assign` bei gesetztem `patch.assignee` | Pr |
-| [`createIssue`](../features/issues/actions.ts#L116) | **teilweise** | nur `issue.create` — schreibt `assigneeId` ohne `issue.assign` → [Befund 1](#1-createissue-umgeht-das-assign-gate-hoch) | Pr |
-| [`createLabel`](../features/issues/actions.ts#L159) | prüft selbst | `label.create`, Kontext je nach `projectId` korrekt gewählt | Pr/W |
-| [`deleteIssue`](../features/issues/actions.ts#L207) | prüft selbst | `issue.delete.any` \| `.own` | Pr |
-| [`addComment`](../features/issues/actions.ts#L224) | prüft selbst | `comment.create` | Pr |
-| [`deleteComment`](../features/issues/actions.ts#L251) | prüft selbst | `comment.delete.any` \| `.own` (ownerIds: authorId) | Pr |
+| [`moveIssue`](../features/issues/actions.ts#L46) | checks itself | `issue.update.any` \| `.own` (ownerIds: reporter, assignee) | Pr |
+| [`reorderIssue`](../features/issues/actions.ts#L63) | checks itself | `issue.update.any` \| `.own` | Pr |
+| [`updateIssue`](../features/issues/actions.ts#L80) | checks itself | `issue.update.any` \| `.own`; **additionally** `issue.assign` when `patch.assignee` is set | Pr |
+| [`createIssue`](../features/issues/actions.ts#L116) | **partial** | only `issue.create` — writes `assigneeId` without `issue.assign` → [finding 1](#1-createissue-bypasses-the-assign-gate-high) | Pr |
+| [`createLabel`](../features/issues/actions.ts#L159) | checks itself | `label.create`, context correctly chosen based on `projectId` | Pr/W |
+| [`deleteIssue`](../features/issues/actions.ts#L207) | checks itself | `issue.delete.any` \| `.own` | Pr |
+| [`addComment`](../features/issues/actions.ts#L224) | checks itself | `comment.create` | Pr |
+| [`deleteComment`](../features/issues/actions.ts#L251) | checks itself | `comment.delete.any` \| `.own` (ownerIds: authorId) | Pr |
 
-Handwerklich sauber und mehrfach gegengeprüft:
+Clean craftsmanship, cross-checked multiple times:
 
-- Die `projectId` kommt überall aus `issueContext(id)`, also aus der DB — nicht
-  aus dem Aufruf. Ein Projektwechsel per Patch ist unmöglich: `IssuePatch`
-  ([types.ts:68](../features/issues/types.ts#L68)) kennt kein `projectId`, und
-  das `data`-Objekt ist eine explizite Feld-Allowlist.
-- `reporterId` und `authorId` kommen aus dem Rückgabewert von
-  `requirePermission`; die gleichnamigen Client-Parameter sind tot.
-- Bei einem Projekt-Label wird die `workspaceId` aus dem Projekt neu bestimmt
-  und die client-gelieferte überschrieben.
-- Nicht gefundene Issues werfen `PermissionError`, nicht „not found" — keine
-  Existenz-Preisgabe.
-- `descriptionText` / `bodyText` werden bei jedem Schreiben neu gesetzt
-  (CLAUDE.md-Pflicht erfüllt).
+- `projectId` comes from `issueContext(id)` everywhere — i.e. from the DB,
+  not from the call. Changing a project via patch is impossible: `IssuePatch`
+  ([types.ts:68](../features/issues/types.ts#L68)) has no `projectId`, and
+  the `data` object is an explicit field allowlist.
+- `reporterId` and `authorId` come from `requirePermission`'s return value;
+  the client parameters with the same names are dead.
+- For a project label, `workspaceId` is re-derived from the project and
+  overwrites the client-supplied one.
+- Issues that aren't found throw `PermissionError`, not "not found" — no
+  existence disclosure.
+- `descriptionText` / `bodyText` are re-set on every write (CLAUDE.md
+  requirement met).
 
-Nebenbefunde ohne Rechtebezug: `status` und `type` sind freie Strings und werden
-nicht gegen die Workspace-Konfiguration validiert; `labels` (String-Array ohne
-Fremdschlüssel) und `assigneeId` werden nicht auf Projekt-Zugehörigkeit geprüft.
-Datenintegrität, bleibt im eigenen Projekt. Und `issue.assign` greift auch beim
-Selbst-Zuweisen und beim Entfernen, obwohl die Registry es als „Issues *anderen*
-zuweisen" beschreibt — eine Rolle mit `issue.update.own` ohne `issue.assign`
-kann ein eigenes Issue nicht abgeben.
+Side findings with no permission relevance: `status` and `type` are free
+strings and aren't validated against the workspace configuration; `labels`
+(string array with no foreign key) and `assigneeId` aren't checked for
+project membership. Data integrity, stays within the same project. And
+`issue.assign` also applies to self-assignment and to unassigning, even
+though the registry describes it as "assign issues to *others*" — a role
+with `issue.update.own` but without `issue.assign` can't give up its own
+issue.
 
 ### `features/projects/actions.ts`
 
-| Action | Status | Prüfung | Ktx |
+| Action | Status | Check | Ctx |
 |---|---|---|---|
-| [`createProject`](../features/projects/actions.ts#L78) | prüft selbst | `project.create` | W |
-| [`updateProject`](../features/projects/actions.ts#L177) | **teilweise** | `project.update` — deckt den Wechsel `private → public` mit ab → [Befund 7](#7-sichtbarkeitswechsel-hängt-nur-am-projektlokalen-recht-mittel) | Pr |
-| [`deleteProject`](../features/projects/actions.ts#L239) | prüft selbst | `project.delete` | Pr |
-| [`addProjectMembers`](../features/projects/actions.ts#L360) | prüft selbst | `member.invite` + Rang; verlangt Workspace-Zugehörigkeit; **ohne** Selbstbezug-/`notDowngradable`-Regel | Pr |
-| [`setProjectMemberRole`](../features/projects/actions.ts#L398) | prüft selbst | `member.role.update` + Rang + Selbstbezug + `notDowngradable` | Pr |
-| [`removeProjectMember`](../features/projects/actions.ts#L442) | prüft selbst | `member.remove` + Rang + Selbstbezug + `notDowngradable` | Pr |
-| [`inviteProjectMember`](../features/projects/actions.ts#L486) | **teilweise** | `member.invite` (Projekt) + Rang; die *Workspace*-Zeile entsteht ohne Rang-Grenze → [Befund 2](#2-inviteprojectmember-legt-eine-workspace-rolle-ohne-rang-grenze-an-hoch) | Pr/W |
+| [`createProject`](../features/projects/actions.ts#L78) | checks itself | `project.create` | W |
+| [`updateProject`](../features/projects/actions.ts#L177) | **partial** | `project.update` — also covers the `private → public` switch → [finding 7](#7-visibility-switch-depends-only-on-the-project-local-permission-medium) | Pr |
+| [`deleteProject`](../features/projects/actions.ts#L239) | checks itself | `project.delete` | Pr |
+| [`addProjectMembers`](../features/projects/actions.ts#L360) | checks itself | `member.invite` + rank; requires workspace membership; **without** self-reference/`notDowngradable` rule | Pr |
+| [`setProjectMemberRole`](../features/projects/actions.ts#L398) | checks itself | `member.role.update` + rank + self-reference + `notDowngradable` | Pr |
+| [`removeProjectMember`](../features/projects/actions.ts#L442) | checks itself | `member.remove` + rank + self-reference + `notDowngradable` | Pr |
+| [`inviteProjectMember`](../features/projects/actions.ts#L486) | **partial** | `member.invite` (project) + rank; the *workspace* row is created without a rank limit → [finding 2](#2-inviteprojectmember-creates-a-workspace-role-without-a-rank-limit-high) | Pr/W |
 
-Die drei Rechte `member.invite` / `member.role.update` / `member.remove` sind
-getrennt geprüft, wie [rbac.md](rbac.md#mitglieder-verwalten-drei-rechte-nicht-eines)
-zusagt. Die drei Zusatzregeln (niemand fasst Höhergestellte an, niemand sich
-selbst, `project.view.all` schützt vor Herabstufung) greifen bei
-`setProjectMemberRole` und `removeProjectMember`; bei `addProjectMembers` fehlen
-sie, weshalb dort für einen Workspace-Owner ohne bestehende Zeile erstmalig eine
-niedrige Rolle angelegt werden kann.
+The three permissions `member.invite` / `member.role.update` / `member.remove`
+are checked separately, as [rbac.md](rbac.md#managing-members-three-permissions-not-one)
+promises. The three extra rules (nobody touches a higher-ranked member,
+nobody touches themselves, `project.view.all` protects against being
+downgraded) apply in `setProjectMemberRole` and `removeProjectMember`; they're
+missing in `addProjectMembers`, which is why a workspace owner with no
+existing row can initially be assigned a low role there.
 
-### `features/roles/actions.ts` — die eskalationskritische Fläche
+### `features/roles/actions.ts` — the escalation-critical surface
 
-| Action | Status | Prüfung |
+| Action | Status | Check |
 |---|---|---|
-| [`createRole`](../features/roles/actions.ts#L110) | prüft selbst | `role.manage` im Topf-Kontext + `rank ≤ assignmentCeiling`; `target.workspaceId` bleibt bei Projekt-Töpfen unvalidiert → [Befund 8](#8-createrole-schreibt-eine-unvalidierte-fremde-workspace-id-mittel) |
-| [`updateRole`](../features/roles/actions.ts#L162) | prüft selbst | `system`/`editable`-Sperre, `role.manage`, **alter und neuer** Rang gegen das Ceiling |
-| [`deleteRole`](../features/roles/actions.ts#L194) | prüft selbst | `system`/`editable`, `role.manage`, Rang, danach Trägerzahl über `_count` (inkl. `platformUsers`) |
-| [`setRoleGrant`](../features/roles/actions.ts#L233) | **teilweise** | `role.manage`, Rang, Registry-Key, Scope-Zulässigkeit, ALLOW nur für selbst gehaltene Keys — aber `effect === null` löscht ungeprüft → [Befund 3](#3-setrolegrant-löscht-ein-deny-ungeprüft-hoch) |
+| [`createRole`](../features/roles/actions.ts#L110) | checks itself | `role.manage` in the bucket context + `rank ≤ assignmentCeiling`; `target.workspaceId` stays unvalidated for project buckets → [finding 8](#8-createrole-writes-an-unvalidated-foreign-workspace-id-medium) |
+| [`updateRole`](../features/roles/actions.ts#L162) | checks itself | `system`/`editable` lock, `role.manage`, **both old and new** rank against the ceiling |
+| [`deleteRole`](../features/roles/actions.ts#L194) | checks itself | `system`/`editable`, `role.manage`, rank, then carrier count via `_count` (incl. `platformUsers`) |
+| [`setRoleGrant`](../features/roles/actions.ts#L233) | **partial** | `role.manage`, rank, registry key, scope validity, ALLOW only for keys the actor holds themselves — but `effect === null` deletes unchecked → [finding 3](#3-setrolegrant-deletes-a-deny-unchecked-high) |
 
-Die vier Regeln aus [rbac.md](rbac.md#schutz-gegen-rechte-eskalation) sind
-implementiert. Zwei Lücken bleiben: der `null`-Pfad in `setRoleGrant`, und
-`requireTargetManage` misst die Rechte im Kontext des Ziel-Topfes — der aus dem
-Client-Argument kommt → [Befund 4](#4-platform_admin-verwaltet-rollen-in-jedem-fremden-workspace-hoch).
+The four rules from [rbac.md](rbac.md#protection-against-privilege-escalation)
+are implemented. Two gaps remain: the `null` path in `setRoleGrant`, and
+`requireTargetManage` measures permissions in the context of the target
+bucket — which comes from the client argument → [finding 4](#4-platform_admin-manages-roles-in-any-foreign-workspace-high).
 
-Kein Pfad parst eine Rollen-Id: die deterministischen Ids aus
-[`lib/rbac/id.ts`](../lib/rbac/id.ts) werden nur gebildet, nie zerlegt — wie
-[rbac.md](rbac.md#datenmodell) verlangt.
+No path parses a role id: the deterministic ids from
+[`lib/rbac/id.ts`](../lib/rbac/id.ts) are only constructed, never taken
+apart — as [rbac.md](rbac.md#data-model) requires.
 
 ### `features/workspaces/actions.ts`
 
-| Action | Status | Prüfung | Ktx |
+| Action | Status | Check | Ctx |
 |---|---|---|---|
-| [`getProjectsForWorkspaces`](../features/workspaces/actions.ts#L49) | prüft selbst | Session + Schnitt mit den eigenen Workspaces, dann `visibleProjectIds` je Workspace | W/Pr |
-| [`suggestWorkspaceSlug`](../features/workspaces/actions.ts#L82) | **keine** | — → [Befund 13](#13-suggestworkspaceslug-ist-ein-unangemeldetes-existenz-orakel-niedrig) | — |
-| [`createWorkspace`](../features/workspaces/actions.ts#L86) | **teilweise** | nur `getSession()`; bewusst ohne Key — jeder Angemeldete darf einen Workspace anlegen und wird dessen Owner | Session |
-| [`setMemberRole`](../features/workspaces/actions.ts#L191) | prüft selbst | `member.role.update` + Rangvergleich beidseitig + Selbstbezug gesperrt | W |
-| [`removeMember`](../features/workspaces/actions.ts#L242) | prüft selbst | `member.remove` + Rang; `dropProjectMemberships` in derselben Transaktion | W |
-| [`inviteWorkspaceMember`](../features/workspaces/actions.ts#L290) | prüft selbst | `member.invite` + `assignmentCeiling`; `owner` gesperrt | W |
+| [`getProjectsForWorkspaces`](../features/workspaces/actions.ts#L49) | checks itself | Session + intersection with own workspaces, then `visibleProjectIds` per workspace | W/Pr |
+| [`suggestWorkspaceSlug`](../features/workspaces/actions.ts#L82) | **none** | — → [finding 13](#13-suggestworkspaceslug-is-an-unauthenticated-existence-oracle-low) | — |
+| [`createWorkspace`](../features/workspaces/actions.ts#L86) | **partial** | only `getSession()`; deliberately without a key — any signed-in person may create a workspace and becomes its owner | Session |
+| [`setMemberRole`](../features/workspaces/actions.ts#L191) | checks itself | `member.role.update` + rank comparison both ways + self-reference blocked | W |
+| [`removeMember`](../features/workspaces/actions.ts#L242) | checks itself | `member.remove` + rank; `dropProjectMemberships` in the same transaction | W |
+| [`inviteWorkspaceMember`](../features/workspaces/actions.ts#L290) | checks itself | `member.invite` + `assignmentCeiling`; `owner` blocked | W |
 
-`createWorkspace` ohne Key ist eine Produktentscheidung, keine Lücke — es gibt
-keinen Permission-Key dafür, und Selbstregistrierung ist der vorgesehene Weg.
-Fehlt: eine Mengenbegrenzung pro Konto.
+`createWorkspace` without a key is a product decision, not a gap — there's
+no permission key for it, and self-registration is the intended path.
+Missing: a per-account limit.
 
-Zwei Randfälle: `assignmentCeiling` liefert `Infinity`, wenn der Handelnde im
-Workspace-Scope selbst keine Rolle trägt — ein `tenant.access`-Support darf
-damit jede Nicht-Owner-Rolle austeilen, während `setMemberRole` ihn mit Rang -1
-blockt. Und `removeMember` löscht die offenen `Invitation`-Zeilen des Entfernten
-nicht mit; der Token bleibt einlösbar (setzt dann Passwort und Namen, aber ohne
-Workspace-Zutritt, weil die Mitgliedschaftszeile fehlt).
+Two edge cases: `assignmentCeiling` returns `Infinity` when the actor holds
+no role at all in the workspace scope — a `tenant.access` support agent can
+thereby hand out any non-owner role, while `setMemberRole` blocks them with
+rank -1. And `removeMember` doesn't also delete the removed person's open
+`Invitation` rows; the token stays redeemable (which then sets a password
+and name, but without workspace entry, because the membership row is
+missing).
 
 ### `features/auth/actions.ts`
 
-| Action | Status | Anmerkung |
+| Action | Status | Note |
 |---|---|---|
-| [`login`](../features/auth/actions.ts#L23) | n. z. | öffentlich; Passwortprüfung in [`auth.ts:52`](../auth.ts#L52) (bcrypt, einheitliche Fehlermeldung → keine Konten-Enumeration; kein Rate-Limit). `callbackUrl` unvalidiert → [Befund 14](#14-offene-weiterleitung-über-callbackurl-niedrig) |
-| [`register`](../features/auth/actions.ts#L50) | n. z. | öffentlich; kein Rate-Limit, und die Antwort unterscheidet „E-Mail existiert" vom Erfolg → Konten enumerierbar |
-| [`acceptInvitation`](../features/auth/actions.ts#L115) | **teilweise** | der Token *ist* die Berechtigung; [`openInvitation`](../lib/invitations.ts#L109) prüft Existenz, `acceptedAt`, Ablauf und `workspace.suspended`. `hasPassword` wird ignoriert → [Befund 6](#6-acceptinvitation-ignoriert-haspassword-mittel) |
-| [`logout`](../features/auth/actions.ts#L189) | n. z. | `signOut` mit festem Zielpfad |
-| [`signInWithOAuth`](../features/auth/actions.ts#L194) | n. z. | festes Ziel; `provider` wird nicht gegen `enabledOAuthProviders` validiert (Folge ist nur ein Auth.js-Fehler) |
+| [`login`](../features/auth/actions.ts#L23) | n/a | public; password check in [`auth.ts:52`](../auth.ts#L52) (bcrypt, uniform error message → no account enumeration; no rate limit). `callbackUrl` unvalidated → [finding 14](#14-open-redirect-via-callbackurl-low) |
+| [`register`](../features/auth/actions.ts#L50) | n/a | public; no rate limit, and the response distinguishes "email already exists" from success → accounts enumerable |
+| [`acceptInvitation`](../features/auth/actions.ts#L115) | **partial** | the token *is* the authorization; [`openInvitation`](../lib/invitations.ts#L109) checks existence, `acceptedAt`, expiry, and `workspace.suspended`. `hasPassword` is ignored → [finding 6](#6-acceptinvitation-ignores-haspassword-medium) |
+| [`logout`](../features/auth/actions.ts#L189) | n/a | `signOut` with a fixed target path |
+| [`signInWithOAuth`](../features/auth/actions.ts#L194) | n/a | fixed target; `provider` isn't validated against `enabledOAuthProviders` (the only consequence is an Auth.js error) |
 
 ---
 
-## 2. Der Lesepfad — Abfragen
+## 2. The read path — queries
 
-[rbac.md](rbac.md#der-lesepfad-prüft-mit) macht hier konkrete Zusagen. **Alle
-sieben Zeilen jener Tabelle halten.** Die Ergänzungen unten betreffen Abfragen,
-die dort nicht aufgeführt sind.
+[rbac.md](rbac.md#the-read-path-checks-too) makes concrete promises here.
+**All seven rows of that table hold.** The additions below cover queries
+not listed there.
 
 ### `features/issues/queries.ts`
 
-| Abfrage | Status | Prüfung |
+| Query | Status | Check |
 |---|---|---|
-| [`getIssuesByProject`](../features/issues/queries.ts#L257) | prüft selbst | `project.view` → `[]` |
-| [`getIssueById`](../features/issues/queries.ts#L377) | prüft selbst | `project.view` → `null` |
-| [`getIssueByRef`](../features/issues/queries.ts#L397) | prüft selbst | `project.view` → `null` |
-| [`getSearchIssues`](../features/issues/queries.ts#L419) | prüft selbst | `visibleProjectIds`, Early-Return `[]` |
-| [`getMyIssues`](../features/issues/queries.ts#L337) | prüft selbst | `accessibleProjectIds` |
-| [`getInboxIssues`](../features/issues/queries.ts#L352) | prüft selbst | `accessibleProjectIds` |
-| [`getProjects`](../features/issues/queries.ts#L101) | prüft selbst | `visibleProjectIds` |
-| [`getLabels`](../features/issues/queries.ts#L151) | **teilweise** | nur der Zweig `projectId: { in: visible }`; `projectId: null` bleibt ungefiltert, auch bei leerer Menge → [Befund 11](#11-workspaceweite-konfiguration-ist-ohne-zutritt-lesbar-niedrig) |
-| [`getMembers`](../features/issues/queries.ts#L123) | **teilweise** | nur `currentUserCanEnterWorkspace` → [Befund 9](#9-projekt-gäste-lesen-die-komplette-mitgliederliste-mittel) |
-| [`getTeams`](../features/issues/queries.ts#L233) | **teilweise** | nur Zutritt; `projects` gibt zusätzlich IDs unsichtbarer Projekte heraus |
-| [`getWorkspace`](../features/issues/queries.ts#L83) | **keine** | nur `where: { id, suspended: false }` — Name und Farbe jedes Workspace lesbar |
-| [`getUserWorkspaces`](../features/issues/queries.ts#L92) | geerbt | Aufrufer übergeben `session.userId`; kein Abgleich in der Funktion, kein Filter auf `pending`/`suspended` |
-| [`getStatuses`](../features/issues/queries.ts#L173) [`getPriorities`](../features/issues/queries.ts#L189) [`getIssueTypes`](../features/issues/queries.ts#L204) [`getRoles`](../features/issues/queries.ts#L219) | geerbt | keine eigene Prüfung; nur [`[workspace]/layout.tsx:34`](../app/[locale]/%28default%29/[workspace]/layout.tsx#L34) schützt sie → [Befund 11](#11-workspaceweite-konfiguration-ist-ohne-zutritt-lesbar-niedrig) |
+| [`getIssuesByProject`](../features/issues/queries.ts#L257) | checks itself | `project.view` → `[]` |
+| [`getIssueById`](../features/issues/queries.ts#L377) | checks itself | `project.view` → `null` |
+| [`getIssueByRef`](../features/issues/queries.ts#L397) | checks itself | `project.view` → `null` |
+| [`getSearchIssues`](../features/issues/queries.ts#L419) | checks itself | `visibleProjectIds`, early return `[]` |
+| [`getMyIssues`](../features/issues/queries.ts#L337) | checks itself | `accessibleProjectIds` |
+| [`getInboxIssues`](../features/issues/queries.ts#L352) | checks itself | `accessibleProjectIds` |
+| [`getProjects`](../features/issues/queries.ts#L101) | checks itself | `visibleProjectIds` |
+| [`getLabels`](../features/issues/queries.ts#L151) | **partial** | only the `projectId: { in: visible }` branch; `projectId: null` stays unfiltered, even for an empty set → [finding 11](#11-workspace-wide-configuration-is-readable-without-entry-low) |
+| [`getMembers`](../features/issues/queries.ts#L123) | **partial** | only `currentUserCanEnterWorkspace` → [finding 9](#9-project-guests-read-the-full-member-list-medium) |
+| [`getTeams`](../features/issues/queries.ts#L233) | **partial** | only entry; `projects` additionally leaks the IDs of invisible projects |
+| [`getWorkspace`](../features/issues/queries.ts#L83) | **none** | only `where: { id, suspended: false }` — the name and color of any workspace are readable |
+| [`getUserWorkspaces`](../features/issues/queries.ts#L92) | inherited | callers pass `session.userId`; no check inside the function itself, no filter on `pending`/`suspended` |
+| [`getStatuses`](../features/issues/queries.ts#L173) [`getPriorities`](../features/issues/queries.ts#L189) [`getIssueTypes`](../features/issues/queries.ts#L204) [`getRoles`](../features/issues/queries.ts#L219) | inherited | no check of their own; only [`[workspace]/layout.tsx:34`](../app/[locale]/%28default%29/[workspace]/layout.tsx#L34) protects them → [finding 11](#11-workspace-wide-configuration-is-readable-without-entry-low) |
 
-Alle Prüfungen fangen leer (`[]` / `null`) statt zu werfen — korrekt, weil
-Server Components parallel zum Layout rendern.
+All checks fail empty (`[]` / `null`) instead of throwing — correct, since
+Server Components render in parallel with the layout.
 
-### `features/projects/queries.ts` — hier entstehen die UI-Flags
+### `features/projects/queries.ts` — where the UI flags come from
 
-| Abfrage | Status | Prüfung und gelieferte Flags |
+| Query | Status | Check and flags supplied |
 |---|---|---|
-| [`getProjectsWithStats`](../features/projects/queries.ts#L21) | prüft selbst | `visibleProjectIds` |
-| [`getProjectSettingsView`](../features/projects/queries.ts#L55) | prüft selbst | `project.view` → `null`; Flags `canUpdate` (`project.update`), `canDelete` (`project.delete`) |
-| [`getProjectMembersView`](../features/projects/queries.ts#L135) | prüft selbst | `project.view` → `null`; Flags `canAdd`, `canSetRole`, `canRemove`, `actorRank`, **je Zeile `manageable`** (geerbte Zeilen `false`) |
+| [`getProjectsWithStats`](../features/projects/queries.ts#L21) | checks itself | `visibleProjectIds` |
+| [`getProjectSettingsView`](../features/projects/queries.ts#L55) | checks itself | `project.view` → `null`; flags `canUpdate` (`project.update`), `canDelete` (`project.delete`) |
+| [`getProjectMembersView`](../features/projects/queries.ts#L135) | checks itself | `project.view` → `null`; flags `canAdd`, `canSetRole`, `canRemove`, `actorRank`, **per-row `manageable`** (inherited rows `false`) |
 
-Vorbildlich: Prüfung und UI-Flag kommen aus derselben Auflösung, und die Flags
-entsprechen genau den Keys, die die Actions verlangen. Einzige Abweichung:
-`canAdd` spiegelt nur `member.invite` im Projekt, während
-`inviteProjectMember` für eine *unbekannte* Adresse zusätzlich `member.invite`
-im Workspace verlangt — das Einladeformular erscheint also auch dann, wenn es
-für neue Adressen scheitern wird.
+Exemplary: the check and the UI flag come from the same resolution, and the
+flags match exactly the keys the actions require. One deviation: `canAdd`
+only reflects `member.invite` in the project, while `inviteProjectMember`
+additionally requires `member.invite` in the workspace for an *unknown*
+address — so the invite form still appears even when it will fail for new
+addresses.
 
 ### `features/admin/queries.ts`
 
-| Abfrage | Status | Prüfung |
+| Query | Status | Check |
 |---|---|---|
-| [`getAllUsers`](../features/admin/queries.ts#L69) | prüft selbst | `requirePlatformAccess()` → `platform.access` |
-| [`getPlatformStats`](../features/admin/queries.ts#L96) | prüft selbst | `platform.access` |
-| [`getCurrentUser`](../features/admin/queries.ts#L51) | **keine** | kein Key, kein Selbstbezug-Abgleich → [Befund 12](#12-zwei-admin-abfragen-ohne-guard-niedrig) |
-| [`getFirstWorkspaceId`](../features/admin/queries.ts#L107) | **keine** | dito |
+| [`getAllUsers`](../features/admin/queries.ts#L69) | checks itself | `requirePlatformAccess()` → `platform.access` |
+| [`getPlatformStats`](../features/admin/queries.ts#L96) | checks itself | `platform.access` |
+| [`getCurrentUser`](../features/admin/queries.ts#L51) | **none** | no key, no self-reference check → [finding 12](#12-two-admin-queries-without-a-guard-low) |
+| [`getFirstWorkspaceId`](../features/admin/queries.ts#L107) | **none** | ditto |
 
-Die Doppelprüfung, die [rbac.md](rbac.md#enforcement) verspricht (Layout **und**
-Abfrage), gilt für zwei der vier Funktionen. Und `platform.access` ist der
-grobste Key: `user.manage` existiert in der Registry für genau diesen Zweck,
-wird aber nirgends geprüft — `platform_support` liest damit alle E-Mail-Adressen.
+The double-check that [rbac.md](rbac.md#enforcement) promises (layout
+**and** query) holds for two of the four functions. And `platform.access`
+is the coarsest key: `user.manage` exists in the registry for exactly this
+purpose, but is checked nowhere — so `platform_support` reads every email
+address with it.
 
-### `features/workspaces/queries.ts` und `features/roles/queries.ts`
+### `features/workspaces/queries.ts` and `features/roles/queries.ts`
 
-| Abfrage | Status | Prüfung |
+| Query | Status | Check |
 |---|---|---|
-| [`getWorkspaceProjects`](../features/workspaces/queries.ts#L112) [`getWorkspaceSearchIssues`](../features/workspaces/queries.ts#L136) | prüft selbst | delegieren an die gefilterten Issue-Abfragen |
-| [`requireWorkspaceId`](../features/workspaces/queries.ts#L39) | **keine** | zieht den Mandanten aus dem Request-Store und prüft nur, dass er *gesetzt* ist — die Klammer, auf die zwölf `getWorkspace*`-Funktionen ihre Absicherung auslagern |
-| [`getWorkspaceMembers`](../features/workspaces/queries.ts#L108) | **teilweise** | Einzeiler auf `getMembers` — also nur Zutritt, kein Key |
-| [`getCurrentWorkspace`](../features/workspaces/queries.ts#L50) | geerbt | keine eigene Prüfung; Gate nur im Layout |
-| [`getMe`](../features/workspaces/queries.ts#L75) | teilweise | Session; **fällt ohne Workspace-Mitgliedschaft auf das eigene Konto zurück** — deshalb fängt `if (!me) notFound()` Nicht-Mitglieder *nicht* ab |
-| [`getMyWorkspaces`](../features/workspaces/queries.ts#L58) | teilweise | filtert weder `suspended` noch `pending` — der Switcher zeigt Workspaces, die man nicht betreten kann |
-| [`getWorkspaceLabels`](../features/workspaces/queries.ts#L116) | teilweise | erbt die `getLabels`-Lücke |
-| [`getWorkspaceStatuses`](../features/workspaces/queries.ts#L120) … [`getWorkspaceRoles`](../features/workspaces/queries.ts#L132) | geerbt | siehe `getStatuses` ff. |
-| [`getRoleManagerView`](../features/roles/queries.ts#L25) | **teilweise** | liefert `canManage`, `grantable`, `maxRank`, `manageable` — liest die Rollen samt Grants und `memberCount` aber **vor** und unabhängig von `canManage` → [Befund 10](#10-adminroles-liest-ohne-rolemanage-niedrig) |
+| [`getWorkspaceProjects`](../features/workspaces/queries.ts#L112) [`getWorkspaceSearchIssues`](../features/workspaces/queries.ts#L136) | checks itself | delegate to the filtered issue queries |
+| [`requireWorkspaceId`](../features/workspaces/queries.ts#L39) | **none** | pulls the tenant from the request store and only checks that it's *set* — the bracket onto which twelve `getWorkspace*` functions offload their protection |
+| [`getWorkspaceMembers`](../features/workspaces/queries.ts#L108) | **partial** | one-liner over `getMembers` — so only entry, no key |
+| [`getCurrentWorkspace`](../features/workspaces/queries.ts#L50) | inherited | no check of its own; the gate is only in the layout |
+| [`getMe`](../features/workspaces/queries.ts#L75) | partial | session; **falls back to the person's own account without workspace membership** — which is why `if (!me) notFound()` does *not* catch non-members |
+| [`getMyWorkspaces`](../features/workspaces/queries.ts#L58) | partial | filters neither `suspended` nor `pending` — the switcher shows workspaces you can't actually enter |
+| [`getWorkspaceLabels`](../features/workspaces/queries.ts#L116) | partial | inherits the `getLabels` gap |
+| [`getWorkspaceStatuses`](../features/workspaces/queries.ts#L120) … [`getWorkspaceRoles`](../features/workspaces/queries.ts#L132) | inherited | see `getStatuses` etc. above |
+| [`getRoleManagerView`](../features/roles/queries.ts#L25) | **partial** | supplies `canManage`, `grantable`, `maxRank`, `manageable` — but reads the roles including their grants and `memberCount` **before**, and independent of, `canManage` → [finding 10](#10-adminroles-reads-without-rolemanage-low) |
 
-`getMe`s Fallback ist die stille Voraussetzung mehrerer Seiten: `notFound()` bei
-`!me` sieht nach einem Mitgliedschafts-Gate aus, ist aber keines.
+`getMe`'s fallback is the silent precondition of several pages: `notFound()`
+on `!me` looks like a membership gate, but isn't one.
 
 ---
 
-## 3. Die HTTP-Kante
+## 3. The HTTP edge
 
-`proxy.ts` klammert `/api` aus dem Matcher aus — Route Handler müssen deshalb
-alles selbst prüfen.
+`proxy.ts` excludes `/api` from the matcher — route handlers therefore have
+to check everything themselves.
 
-| Fläche | Status | Prüfung |
+| Surface | Status | Check |
 |---|---|---|
-| [`app/api/issues/[id]/route.ts` `GET`](../app/api/issues/[id]/route.ts#L14) | prüft selbst | `currentUserId()` → 401, dann `project.view` → **404** (nicht 403 — die Antwort verrät nicht, dass das Issue existiert). Nur `GET` existiert, also keine ungeschützte Methode |
-| [`app/api/auth/[...nextauth]/route.ts`](../app/api/auth/[...nextauth]/route.ts) | n. z. | Auth.js-Handler, CSRF durch `@auth/core` |
-| [`app/api/logout/route.ts`](../app/api/logout/route.ts#L6) | n. z. | kein Rechtebezug, aber zustandsändernder `GET` ohne Methodenbeschränkung → [Befund 15](#15-apilogout-ist-ein-zustandsändernder-get-niedrig) |
-| [`proxy.ts` `PUBLIC_PATHS`](../proxy.ts#L11) | n. z. | `/login`, `/register`, `/invite`; das Locale-Präfix wird vorher über [`i18n/routing.ts`](../i18n/routing.ts) abgeschnitten. Prefix-Match — künftige Unterpfade werden automatisch öffentlich |
-| [`proxy.ts` Middleware](../proxy.ts#L16) | teilweise | nur Session (JWT), kein Key und kein DB-Abgleich — das Token eines gelöschten Kontos passiert bis zum Ablauf |
-| [`proxy.ts` `config.matcher`](../proxy.ts#L47) | teilweise | `/((?!api\|_next\|_vercel\|.*\..*).*)` — Pfade mit Punkt sind ausgenommen |
+| [`app/api/issues/[id]/route.ts` `GET`](../app/api/issues/[id]/route.ts#L14) | checks itself | `currentUserId()` → 401, then `project.view` → **404** (not 403 — the response doesn't reveal that the issue exists). Only `GET` exists, so no unprotected method |
+| [`app/api/auth/[...nextauth]/route.ts`](../app/api/auth/[...nextauth]/route.ts) | n/a | Auth.js handler, CSRF handled by `@auth/core` |
+| [`app/api/logout/route.ts`](../app/api/logout/route.ts#L6) | n/a | no permission relevance, but a state-changing `GET` with no method restriction → [finding 15](#15-apilogout-is-a-state-changing-get-low) |
+| [`proxy.ts` `PUBLIC_PATHS`](../proxy.ts#L11) | n/a | `/login`, `/register`, `/invite`; the locale prefix is stripped beforehand via [`i18n/routing.ts`](../i18n/routing.ts). Prefix match — future subpaths become public automatically |
+| [`proxy.ts` middleware](../proxy.ts#L16) | partial | only session (JWT), no key and no DB check — a deleted account's token passes until it expires |
+| [`proxy.ts` `config.matcher`](../proxy.ts#L47) | partial | `/((?!api\|_next\|_vercel\|.*\..*).*)` — paths with a dot are excluded |
 
-Die Middleware ist **keine Sicherheitsgrenze**, sondern Routing: Server Actions
-haben global auflösbare IDs und sind über jeden öffentlichen Pfad erreichbar.
-Genau deshalb prüft jede Action selbst — mit der Ausnahme
-`suggestWorkspaceSlug`, die sich allein auf den Proxy verlässt.
+The middleware is **not a security boundary**, it's routing: Server
+Actions have globally resolvable IDs and are reachable through any public
+path. That's precisely why every action checks for itself — with the
+exception of `suggestWorkspaceSlug`, which relies solely on the proxy.
 
-Der einzige Client-Lesepfad über HTTP ist
+The only client read path over HTTP is
 [`useIssueDetail.ts:47`](../features/issues/components/IssueDetail/useIssueDetail.ts#L47),
-das `/api/issues/[id]` per `fetch` zieht und `updateIssue`/`addComment`/`deleteIssue`
-aufruft — die Absicherung liegt vollständig in Route und Actions.
-[`useTabBar.ts`](../components/ui/layout/TabBar/useTabBar.ts) ruft
-`getProjectsForWorkspaces` mit Workspace-IDs aus `localStorage` auf; die Action
-filtert selbst auf die eigenen Mandanten.
+which fetches `/api/issues/[id]` and calls
+`updateIssue`/`addComment`/`deleteIssue` — protection lives entirely in the
+route and the actions.
+[`useTabBar.ts`](../components/ui/layout/TabBar/useTabBar.ts) calls
+`getProjectsForWorkspaces` with workspace IDs from `localStorage`; the
+action filters to the caller's own tenants itself.
 
 ---
 
-## 4. Layouts und Seiten
+## 4. Layouts and pages
 
-Layouts sind Stufe 2 — bequem, aber keine harte Grenze.
+Layouts are level 2 — convenient, but not a hard boundary.
 
-| Layout | Status | Prüfung |
+| Layout | Status | Check |
 |---|---|---|
-| [`[workspace]/layout.tsx`](../app/[locale]/%28default%29/[workspace]/layout.tsx#L34) | prüft selbst | Session → `/login`, dann `canEnterWorkspace` → `notFound()` (nicht `redirect`, damit die Existenz des Workspace nichts verrät) |
-| [`admin/layout.tsx`](../app/[locale]/%28default%29/admin/layout.tsx#L25) | prüft selbst | `platform.access` → `notFound()` |
-| [`project/[projectSlug]/layout.tsx`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/layout.tsx) | **n. z.** | rein präsentational — **kein `project.view`**. Der Schutz aller Projektseiten hängt daran, dass jede Kindseite selbst prüft; ein Vergessen fällt nicht auf |
-| [`[locale]/layout.tsx`](../app/[locale]/layout.tsx#L36) | n. z. | nur Locale-Validierung |
+| [`[workspace]/layout.tsx`](../app/[locale]/%28default%29/[workspace]/layout.tsx#L34) | checks itself | Session → `/login`, then `canEnterWorkspace` → `notFound()` (not `redirect`, so the workspace's existence isn't revealed) |
+| [`admin/layout.tsx`](../app/[locale]/%28default%29/admin/layout.tsx#L25) | checks itself | `platform.access` → `notFound()` |
+| [`project/[projectSlug]/layout.tsx`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/layout.tsx) | **n/a** | purely presentational — **no `project.view`**. Protection of every project page hinges on each child page checking for itself; a missed one wouldn't be noticed |
+| [`[locale]/layout.tsx`](../app/[locale]/layout.tsx#L36) | n/a | locale validation only |
 
-Es gibt **kein** `app/layout.tsx` und keine `error.tsx` / `not-found.tsx` /
-`loading.tsx` im ganzen Baum ([Befund 18](#18-kein-error-boundary-jeder-permissionerror-wird-ein-500-niedrig)).
+There is **no** `app/layout.tsx` and no `error.tsx` / `not-found.tsx` /
+`loading.tsx` anywhere in the tree ([finding 18](#18-no-error-boundary-every-permissionerror-becomes-a-500-low)).
 
-### Seiten
+### Pages
 
-| Seite | Status | Prüfung |
+| Page | Status | Check |
 |---|---|---|
-| [`[workspace]/page.tsx`](../app/[locale]/%28default%29/[workspace]/page.tsx) | prüft selbst | `visibleProjectIds` über `getWorkspaceProjects` |
-| [`[workspace]/inbox`](../app/[locale]/%28default%29/[workspace]/inbox/page.tsx) [`my`](../app/[locale]/%28default%29/[workspace]/my/page.tsx) | prüft selbst | `accessibleProjectIds` + `issue.create` je Projekt |
-| [`[workspace]/issue/[issueRef]`](../app/[locale]/%28default%29/[workspace]/issue/[issueRef]/page.tsx) | prüft selbst | `getIssueByRef` → `null` → `notFound()`; auch `generateMetadata` (Zeile 21) läuft darüber. **Löst keine Schreibrechte für die UI auf** |
-| [`[workspace]/members`](../app/[locale]/%28default%29/[workspace]/members/page.tsx#L23) | prüft selbst | `getAccess({ workspaceId })` → `can.invite` / `.setRole` / `.remove`; Lesezugriff nur über Zutritt → [Befund 9](#9-projekt-gäste-lesen-die-komplette-mitgliederliste-mittel), [Befund 17](#17-die-workspace-mitgliederverwaltung-zeigt-mehr-als-die-action-erlaubt-niedrig) |
-| [`[workspace]/projects`](../app/[locale]/%28default%29/[workspace]/projects/page.tsx) | prüft selbst | `visibleProjectIds`; **kein `project.create`-Flag** für den Knopf |
-| [`[workspace]/roles`](../app/[locale]/%28default%29/[workspace]/roles/page.tsx#L30) | prüft selbst | `role.manage` → `notFound()` |
-| [`[workspace]/settings`](../app/[locale]/%28default%29/[workspace]/settings/page.tsx) | **teilweise** | nur `getMe()` → `notFound()`. **Kein `workspace.update`** → [Befund 16](#16-workspace-einstellungen-und-teams-ohne-recht-niedrig) |
-| [`[workspace]/teams`](../app/[locale]/%28default%29/[workspace]/teams/page.tsx) | **teilweise** | nur Zutritt via `getMembers`/`getTeams`. **Kein `team.*`** → [Befund 16](#16-workspace-einstellungen-und-teams-ohne-recht-niedrig) |
-| [`project/[projectSlug]/page.tsx`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/page.tsx) [`list`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/list/page.tsx) | prüft selbst | Slug gegen `visibleProjectIds` → `notFound()`, dann `project.view` in `getIssuesByProject` |
-| [`project/[projectSlug]/members`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/members/page.tsx) | prüft selbst | `getProjectMembersView` → `null` → `notFound()` |
-| [`project/[projectSlug]/settings`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/settings/page.tsx) | prüft selbst | `getProjectSettingsView` → `null` → `notFound()`; Flags `canUpdate`/`canDelete` |
-| [`project/[projectSlug]/roles`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/roles/page.tsx#L33) | prüft selbst | `role.manage` → `notFound()` |
-| [`admin/page.tsx`](../app/[locale]/%28default%29/admin/page.tsx) | prüft selbst | über `getPlatformStats` → `platform.access` (zusätzlich Layout) |
-| [`admin/members`](../app/[locale]/%28default%29/admin/members/page.tsx) | teilweise | über `getAllUsers` → `platform.access` — deckt aber E-Mail-Adressen aller Konten ab, wo `user.manage` gemeint wäre |
-| [`admin/roles`](../app/[locale]/%28default%29/admin/roles/page.tsx) | geerbt | nur `platform.access` vom Layout, **kein `role.manage`** → [Befund 10](#10-adminroles-liest-ohne-rolemanage-niedrig) |
-| [`[locale]/page.tsx`](../app/[locale]/page.tsx) | **teilweise** | wählt per `findFirst` einen Workspace **ohne** `canEnterWorkspace`, ohne `pending: false`, ohne `suspended: false` und ohne `orderBy` — wer nur eine offene Einladung hat, landet in einem `notFound` |
-| [`(auth)/login`](../app/[locale]/%28auth%29/login/page.tsx) | n. z. | öffentlich; `callbackUrl` unvalidiert → [Befund 14](#14-offene-weiterleitung-über-callbackurl-niedrig) |
-| [`(auth)/register`](../app/[locale]/%28auth%29/register/page.tsx) | n. z. | öffentlich; anders als `login` **ohne** Redirect für Angemeldete |
-| [`(auth)/invite/[token]`](../app/[locale]/%28auth%29/invite/[token]/page.tsx) | n. z. | bewusst öffentlich, der Token ist die Berechtigung. Unbekannt / abgelaufen / verbraucht / gesperrt sehen gleich aus — **kein Orakel** |
-| [`(auth)/create-workspace`](../app/[locale]/%28auth%29/create-workspace/page.tsx) | geerbt | Session nur über den Proxy; die Action prüft sie selbst |
+| [`[workspace]/page.tsx`](../app/[locale]/%28default%29/[workspace]/page.tsx) | checks itself | `visibleProjectIds` via `getWorkspaceProjects` |
+| [`[workspace]/inbox`](../app/[locale]/%28default%29/[workspace]/inbox/page.tsx) [`my`](../app/[locale]/%28default%29/[workspace]/my/page.tsx) | checks itself | `accessibleProjectIds` + `issue.create` per project |
+| [`[workspace]/issue/[issueRef]`](../app/[locale]/%28default%29/[workspace]/issue/[issueRef]/page.tsx) | checks itself | `getIssueByRef` → `null` → `notFound()`; `generateMetadata` (line 21) runs through it too. **Doesn't resolve write permissions for the UI** |
+| [`[workspace]/members`](../app/[locale]/%28default%29/[workspace]/members/page.tsx#L23) | checks itself | `getAccess({ workspaceId })` → `can.invite` / `.setRole` / `.remove`; read access only via entry → [finding 9](#9-project-guests-read-the-full-member-list-medium), [finding 17](#17-workspace-member-management-shows-more-than-the-action-allows-low) |
+| [`[workspace]/projects`](../app/[locale]/%28default%29/[workspace]/projects/page.tsx) | checks itself | `visibleProjectIds`; **no `project.create` flag** for the button |
+| [`[workspace]/roles`](../app/[locale]/%28default%29/[workspace]/roles/page.tsx#L30) | checks itself | `role.manage` → `notFound()` |
+| [`[workspace]/settings`](../app/[locale]/%28default%29/[workspace]/settings/page.tsx) | **partial** | only `getMe()` → `notFound()`. **No `workspace.update`** → [finding 16](#16-workspace-settings-and-teams-without-a-permission-low) |
+| [`[workspace]/teams`](../app/[locale]/%28default%29/[workspace]/teams/page.tsx) | **partial** | only entry via `getMembers`/`getTeams`. **No `team.*`** → [finding 16](#16-workspace-settings-and-teams-without-a-permission-low) |
+| [`project/[projectSlug]/page.tsx`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/page.tsx) [`list`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/list/page.tsx) | checks itself | slug checked against `visibleProjectIds` → `notFound()`, then `project.view` in `getIssuesByProject` |
+| [`project/[projectSlug]/members`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/members/page.tsx) | checks itself | `getProjectMembersView` → `null` → `notFound()` |
+| [`project/[projectSlug]/settings`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/settings/page.tsx) | checks itself | `getProjectSettingsView` → `null` → `notFound()`; flags `canUpdate`/`canDelete` |
+| [`project/[projectSlug]/roles`](../app/[locale]/%28default%29/[workspace]/project/[projectSlug]/roles/page.tsx#L33) | checks itself | `role.manage` → `notFound()` |
+| [`admin/page.tsx`](../app/[locale]/%28default%29/admin/page.tsx) | checks itself | via `getPlatformStats` → `platform.access` (plus the layout) |
+| [`admin/members`](../app/[locale]/%28default%29/admin/members/page.tsx) | partial | via `getAllUsers` → `platform.access` — but that covers every account's email address, where `user.manage` would be the intended key |
+| [`admin/roles`](../app/[locale]/%28default%29/admin/roles/page.tsx) | inherited | only `platform.access` from the layout, **no `role.manage`** → [finding 10](#10-adminroles-reads-without-rolemanage-low) |
+| [`[locale]/page.tsx`](../app/[locale]/page.tsx) | **partial** | picks a workspace via `findFirst` **without** `canEnterWorkspace`, without `pending: false`, without `suspended: false`, and without `orderBy` — anyone with only an open invitation ends up in a `notFound` |
+| [`(auth)/login`](../app/[locale]/%28auth%29/login/page.tsx) | n/a | public; `callbackUrl` unvalidated → [finding 14](#14-open-redirect-via-callbackurl-low) |
+| [`(auth)/register`](../app/[locale]/%28auth%29/register/page.tsx) | n/a | public; unlike `login`, **without** a redirect for already-signed-in users |
+| [`(auth)/invite/[token]`](../app/[locale]/%28auth%29/invite/[token]/page.tsx) | n/a | deliberately public, the token is the authorization. Unknown / expired / used / workspace-suspended all look the same — **no oracle** |
+| [`(auth)/create-workspace`](../app/[locale]/%28auth%29/create-workspace/page.tsx) | inherited | session only via the proxy; the action checks it itself |
 
 ---
 
-## 5. Die Oberfläche
+## 5. The UI
 
-[rbac.md](rbac.md#wie-die-oberfläche-davon-erfährt) fordert: **keine Komponente
-prüft selbst, keine kennt einen Rollennamen.** Die erste Hälfte hält —
-nachgeprüft: **keine** der 56 Komponenten ruft `getAccess`, `hasPermission`,
-`accessFor` oder `requirePermission` auf. Die zweite Hälfte nicht.
+[rbac.md](rbac.md#how-the-ui-finds-out) demands: **no component checks for
+itself, none knows a role name.** The first half holds — verified: **none**
+of the 56 components call `getAccess`, `hasPermission`, `accessFor`, or
+`requirePermission`. The second half doesn't.
 
-**Was Flags bekommt (12):**
+**What gets flags (12):**
 
-| Oberfläche | Flags | Quelle |
+| UI | Flags | Source |
 |---|---|---|
-| Mitglieder (Workspace) | `can.invite`, `can.setRole`, `can.remove` | [`members/page.tsx:23`](../app/[locale]/%28default%29/[workspace]/members/page.tsx#L23) via `getAccess` |
-| Mitglieder (Projekt) | `canAdd`, `canSetRole`, `canRemove`, je Zeile `manageable` | `getProjectMembersView` |
-| Projekt-Einstellungen | `canUpdate`, `canDelete` | `getProjectSettingsView` |
-| Rollen-Editor | `canManage`, `grantable`, `maxRank`, `manageable` | `getRoleManagerView` |
-| „Neues Issue" (3 Auslöser) | `creatableProjectIds` | `getIssueComposerData` |
+| Members (workspace) | `can.invite`, `can.setRole`, `can.remove` | [`members/page.tsx:23`](../app/[locale]/%28default%29/[workspace]/members/page.tsx#L23) via `getAccess` |
+| Members (project) | `canAdd`, `canSetRole`, `canRemove`, per-row `manageable` | `getProjectMembersView` |
+| Project settings | `canUpdate`, `canDelete` | `getProjectSettingsView` |
+| Role editor | `canManage`, `grantable`, `maxRank`, `manageable` | `getRoleManagerView` |
+| "New issue" (3 triggers) | `creatableProjectIds` | `getIssueComposerData` |
 
-Der letzte Fall ist das Vorbild: `issue.create` wird **einmal** je sichtbarem
-Projekt aufgelöst, die drei Auslöser
+The last case is the model: `issue.create` is resolved **once** per visible
+project, and the three triggers
 ([`NewIssueButton`](../features/issues/components/NewIssueButton/NewIssueButton.tsx),
 [`BoardColumn`](../features/issues/components/BoardColumn/BoardColumn.tsx),
 [`ListGroupHeader`](../features/issues/components/ListView/components/ListGroupHeader.tsx))
-fragen nur `includes(projectId)`, und der Projektwechsler im Dialog bietet nur
-die erlaubten an.
+only ask `includes(projectId)`, and the project switcher in the dialog only
+offers the allowed ones.
 
-**Was keine Flags bekommt (22 Komponenten, hier nach Bereich gruppiert — die
-Liste nennt auch die Hooks und die teilweise versorgten Fälle mit)** — jede
-rendert eine Aktion, die erst die Action ablehnt:
+**What gets no flags (22 components, grouped here by area — the list also
+names the hooks and the partially-supplied cases)** — each renders an
+action that only the action itself rejects:
 
-| Bereich | Komponenten | fehlendes Flag |
+| Area | Components | Missing flag |
 |---|---|---|
-| Issue-Detail | `IssueDetail`, `IssueDetailView`, `IssueDetailPage(View)`, `IssueTitle`, `IssueDescription`, `IssueProperties`, `IssueLabels`, `IssueComments`, `IssueActionsMenu`, `IssueSidebar` | `issue.update.own/.any`, `issue.delete.*`, `comment.create`, `issue.assign` |
-| Board / Liste | `Board`, `BoardCard`, `ListView`, `IssueCells`, `useBoardDnd`, `useIssuePatch` | `issue.update.*` (Ziehen, Statuswechsel) |
-| Zuweisen / Labels | `AssigneePicker`, `LabelPickerMenu`, `LabelFilter` | `issue.assign`, `label.create` |
-| Projekte | `NewProjectButton`, `CreateProjectModal` | `project.create` |
+| Issue detail | `IssueDetail`, `IssueDetailView`, `IssueDetailPage(View)`, `IssueTitle`, `IssueDescription`, `IssueProperties`, `IssueLabels`, `IssueComments`, `IssueActionsMenu`, `IssueSidebar` | `issue.update.own/.any`, `issue.delete.*`, `comment.create`, `issue.assign` |
+| Board / list | `Board`, `BoardCard`, `ListView`, `IssueCells`, `useBoardDnd`, `useIssuePatch` | `issue.update.*` (dragging, status change) |
+| Assign / labels | `AssigneePicker`, `LabelPickerMenu`, `LabelFilter` | `issue.assign`, `label.create` |
+| Projects | `NewProjectButton`, `CreateProjectModal` | `project.create` |
 | Navigation | `Sidebar`, `NavGroup`, `NavGroupWorkspace`, `NavGroupProjects`, `CommandPalette` | `member.invite`, `role.manage`, `workspace.update`, `project.update` |
 
-Praktische Folge: `project_viewer` und `blocked` sehen eine voll bedienbare
-Oberfläche. Kein Sicherheitsproblem — Stufe 1 hält —, aber `blocked` ist damit
-heute „eine Rolle, die Knöpfe *nicht* ausgraut".
+Practical consequence: `project_viewer` and `blocked` see a fully operable
+UI. Not a security problem — level 1 holds — but `blocked` is today "a
+role that does *not* gray out buttons."
 
-Strukturell fehlt dafür die Grundlage: [`lib/nav.ts`](../lib/nav.ts#L31) hat kein
-`permission`-Feld an `NavEntry`, und `Sidebar` nimmt kein Access-Objekt an.
-Solange das so ist, ist Stufe 3 für die Navigation gar nicht umsetzbar. Umgekehrt
-hat `deleteComment` überhaupt keine Oberfläche.
+Structurally, the foundation for that is missing anyway:
+[`lib/nav.ts`](../lib/nav.ts#L31) has no `permission` field on `NavEntry`,
+and `Sidebar` doesn't accept an access object. As long as that's the case,
+level 3 for navigation can't be implemented at all. Conversely,
+`deleteComment` has no UI whatsoever.
 
-Zwei Server Components liefern nebenbei personenbezogene Daten an den Client, die
-niemand rechtlich begrenzt: [`Topbar.tsx`](../features/issues/components/Topbar/Topbar.tsx)
-lädt `getWorkspaceMembers()` (inkl. E-Mail) für die Filterleiste, und
+Two Server Components also hand personal data to the client that nothing
+limits by permission: [`Topbar.tsx`](../features/issues/components/Topbar/Topbar.tsx)
+loads `getWorkspaceMembers()` (including email) for the filter bar, and
 [`IssueRichText`](../features/issues/components/IssueRichText/IssueRichText.tsx)
-gibt Mitgliederliste und workspaceweite Issue-Titel als `@`/`#`-Vorschläge in den
-Editor — beides trägt [Befund 9](#9-projekt-gäste-lesen-die-komplette-mitgliederliste-mittel).
+feeds the member list and workspace-wide issue titles into the editor as
+`@`/`#` suggestions — both carry [finding 9](#9-project-guests-read-the-full-member-list-medium).
 
-**Drei Verstöße gegen „keine Rollennamen im Code":**
+**Three violations of "no role names in the code":**
 
-| Ort | Code |
+| Location | Code |
 |---|---|
 | [`Settings.tsx:23`](../features/admin/components/Settings/Settings.tsx#L23) | `const isAdmin = me.role === "admin" \|\| me.role === "owner"` |
 | [`Teams.tsx:20`](../features/admin/components/Teams/Teams.tsx#L20) | `const isAdmin = me.role === "admin" \|\| me.role === "owner"` |
-| [`Members.tsx:49`](../features/admin/components/Members/Members.tsx#L49) | `roles.filter(r => r.id !== "owner" && r.rank <= (me.roleRank ?? -1))` — baut die Rangregel im Client nach |
+| [`Members.tsx:49`](../features/admin/components/Members/Members.tsx#L49) | `roles.filter(r => r.id !== "owner" && r.rank <= (me.roleRank ?? -1))` — reimplements the rank rule on the client |
 
-Das ist genau das Muster, das [rbac.md](rbac.md#die-impliziten-regeln) für
-abgeschafft erklärt („Im Code stehen keine Rollennamen mehr"). Es trägt heute
-nur, weil die beiden ersten Seiten keine Server Action haben. Eigene Rollen —
-der Sinn des ganzen Systems — werden davon nicht erfasst: eine selbst angelegte
-Rolle mit `team.create` sieht den Knopf nie, eine umbenannte Rolle mit dem Key
-`admin` dagegen immer. Dazu passend wählt
+This is exactly the pattern [rbac.md](rbac.md#the-implicit-rules) declares
+abolished ("No role names appear in the code anymore"). It only holds up
+today because these two pages have no Server Action. Custom roles — the
+whole point of the system — aren't covered by it: a custom role with
+`team.create` never sees the button, while a renamed role with the key
+`admin` always does. Fitting the pattern,
 [`InviteMemberModal.tsx:48`](../features/admin/components/Members/components/InviteMemberModal.tsx#L48)
-`"member"` als Default per Literal, statt eine `defaultRole` vom Server zu
-bekommen (wie `AddProjectMembersModal` sie hat).
+picks `"member"` as a literal default instead of receiving a `defaultRole`
+from the server (the way `AddProjectMembersModal` does).
 
 ---
 
-## 6. Hilfsschicht `lib/`
+## 6. Helper layer `lib/`
 
-| Datei | Status | Anmerkung |
+| File | Status | Note |
 |---|---|---|
-| [`lib/permissions.ts`](../lib/permissions.ts) | **die Quelle** | Alle Prüfungen laufen hier zusammen: `can`/`hasPermission`/`requirePermission(Or)`/`getAccess`/`accessFor`, `canEnterWorkspace`, `accessibleProjectIds`, `assignmentCeiling`. Die drei impliziten Regeln (`suspended`, `pending`, kein `ProjectMember`-Eintrag), der `tenant.access`-Generalschlüssel und `keepsProjectRights` stehen an genau einer Stelle — wie [rbac.md](rbac.md#die-impliziten-regeln) verspricht |
-| [`lib/rbac/*`](../lib/rbac/) | n. z. | reine Registry; die `scopes` werden beim Vergeben über `isPermissionAllowedIn` erzwungen |
-| [`lib/project-membership.ts`](../lib/project-membership.ts#L61) | geerbt | alle Aufrufer prüfen. Aber `projectRoleKeyFor` leitet aus `member.invite` die Rolle `project_admin` ab → [Befund 5](#5-projectrolekeyfor-verleiht-manager-die-rollenverwaltung-im-projekt-hoch) |
-| [`createInvitation`](../lib/invitations.ts#L38) | geerbt | keine eigene Prüfung; Aufrufer prüfen `member.invite` |
-| [`openInvitation`](../lib/invitations.ts#L109) | prüft selbst | Token, `acceptedAt`, Ablauf, `workspace.suspended`; liefert `hasPassword`, das nur die Seite honoriert → [Befund 6](#6-acceptinvitation-ignoriert-haspassword-mittel) |
-| [`lib/session.ts`](../lib/session.ts#L6) | teilweise | kein DB-Abgleich — Existenz oder Sperrung des Kontos wird nicht geprüft, das Token gilt bis zum Ablauf. Trägt, weil jede Rechteprüfung ohnehin frisch in die DB geht |
-| [`lib/current-workspace.ts`](../lib/current-workspace.ts) | n. z. | reiner Request-Store ohne Prüfung |
-| [`lib/rbac-provision.ts`](../lib/rbac-provision.ts) | n. z. | nur über Seed/Skript erreichbar, nicht über Action oder Route |
-| [`lib/nav.ts`](../lib/nav.ts#L31) | keine | Navigations-Konstanten ohne `permission`-Feld (siehe oben) |
-| [`lib/user-defaults.ts`](../lib/user-defaults.ts) [`lib/workspace-defaults.ts`](../lib/workspace-defaults.ts) | n. z. | Namens-/Handle-Erzeugung, kein Rechtebezug |
-| [`auth.config.ts`](../auth.config.ts#L22) | teilweise | `trustHost: true` bei auskommentiertem `AUTH_URL` ([`example.env:8`](../example.env#L8)) — hinter einem Proxy ohne Host-Filter per Host-Header beeinflussbar |
-| [`auth.ts`](../auth.ts#L52) | n. z. | bcrypt-Vergleich, einheitliche Fehlermeldung; **kein Rate-Limit/Lockout** |
+| [`lib/permissions.ts`](../lib/permissions.ts) | **the source** | Every check funnels through here: `can`/`hasPermission`/`requirePermission(Or)`/`getAccess`/`accessFor`, `canEnterWorkspace`, `accessibleProjectIds`, `assignmentCeiling`. The three implicit rules (`suspended`, `pending`, no `ProjectMember` row), the `tenant.access` master key, and `keepsProjectRights` live in exactly one place — as [rbac.md](rbac.md#the-implicit-rules) promises |
+| [`lib/rbac/*`](../lib/rbac/) | n/a | pure registry; the `scopes` are enforced on assignment via `isPermissionAllowedIn` |
+| [`lib/project-membership.ts`](../lib/project-membership.ts#L61) | inherited | every caller checks. But `projectRoleKeyFor` derives the role `project_admin` from `member.invite` → [finding 5](#5-projectrolekeyfor-grants-manager-role-management-within-the-project-high) |
+| [`createInvitation`](../lib/invitations.ts#L38) | inherited | no check of its own; callers check `member.invite` |
+| [`openInvitation`](../lib/invitations.ts#L109) | checks itself | token, `acceptedAt`, expiry, `workspace.suspended`; supplies `hasPassword`, which only the page honors → [finding 6](#6-acceptinvitation-ignores-haspassword-medium) |
+| [`lib/session.ts`](../lib/session.ts#L6) | partial | no DB check — the account's existence or suspension isn't checked, the token holds until it expires. Acceptable, because every permission check goes fresh to the DB anyway |
+| [`lib/current-workspace.ts`](../lib/current-workspace.ts) | n/a | pure request store, no checks |
+| [`lib/rbac-provision.ts`](../lib/rbac-provision.ts) | n/a | only reachable via the seed/script, not via an action or route |
+| [`lib/nav.ts`](../lib/nav.ts#L31) | none | navigation constants with no `permission` field (see above) |
+| [`lib/user-defaults.ts`](../lib/user-defaults.ts) [`lib/workspace-defaults.ts`](../lib/workspace-defaults.ts) | n/a | name/handle generation, no permission relevance |
+| [`auth.config.ts`](../auth.config.ts#L22) | partial | `trustHost: true` with `AUTH_URL` commented out ([`example.env:8`](../example.env#L8)) — behind a proxy without a host filter, influenceable via the Host header |
+| [`auth.ts`](../auth.ts#L52) | n/a | bcrypt comparison, uniform error message; **no rate limit/lockout** |
 
-Nicht einzeln aufgeführt, weil ohne Rechtebezug: [`lib/richtext/`](../lib/richtext/)
-(abhängigkeitsfrei, reine Dokumenttransformation), [`lib/context/`](../lib/context/),
-[`lib/utils/`](../lib/utils/), [`types/`](../types/) und die
-Rich-Text-Editor-Bausteine unter
+Not listed individually because they have no permission relevance:
+[`lib/richtext/`](../lib/richtext/) (dependency-free, pure document
+transformation), [`lib/context/`](../lib/context/), [`lib/utils/`](../lib/utils/),
+[`types/`](../types/), and the rich-text editor building blocks under
 [`components/ui/layout/RichTextEditor/`](../components/ui/layout/RichTextEditor/).
-[`i18n/routing.ts`](../i18n/routing.ts) ist mittelbar relevant: es definiert die
-Locale-Präfixe, die `proxy.ts` abschneidet, bevor `PUBLIC_PATHS` greift.
+[`i18n/routing.ts`](../i18n/routing.ts) is indirectly relevant: it defines
+the locale prefixes that `proxy.ts` strips before `PUBLIC_PATHS` applies.
 
 ---
 
-## 7. Permission-Keys: deklariert vs. durchgesetzt
+## 7. Permission keys: declared vs. enforced
 
-34 Keys in [`lib/rbac/permissions.ts`](../lib/rbac/permissions.ts).
-**13 haben keine einzige Prüfstelle** in `app/`, `features/`, `components/`, `lib/`:
+34 keys in [`lib/rbac/permissions.ts`](../lib/rbac/permissions.ts).
+**13 have not a single enforcement point** in `app/`, `features/`,
+`components/`, `lib/`:
 
-| Key | Warum ungeprüft |
+| Key | Why unchecked |
 |---|---|
-| `workspace.update` | Kein `updateWorkspace` existiert; [`Settings.tsx`](../features/admin/components/Settings/Settings.tsx) hat keine Server Action |
-| `workspace.delete` | keine Action |
-| `workspace.suspend` | keine Action — `Workspace.suspended` wird an vier Stellen *gelesen*, von keiner geschrieben |
-| `config.manage`, `audit.view` | kein Feature |
-| `user.manage` | Feature existiert ([`admin/members`](../app/[locale]/%28default%29/admin/members/page.tsx)), prüft aber `platform.access` statt diesen Key; es gibt keine Aktion, die `platformRoleId` ändert |
-| `team.create/.update/.delete/.member.manage/.project.manage` | [`Teams.tsx`](../features/admin/components/Teams/Teams.tsx) hat keine Server Action; Sichtbarkeit hängt an einem Rollennamen |
-| `label.update`, `label.delete` | kein `updateLabel`/`deleteLabel` |
+| `workspace.update` | No `updateWorkspace` exists; [`Settings.tsx`](../features/admin/components/Settings/Settings.tsx) has no Server Action |
+| `workspace.delete` | no action |
+| `workspace.suspend` | no action — `Workspace.suspended` is *read* in four places, written by none |
+| `config.manage`, `audit.view` | no feature |
+| `user.manage` | the feature exists ([`admin/members`](../app/[locale]/%28default%29/admin/members/page.tsx)), but checks `platform.access` instead of this key; there's no action that changes `platformRoleId` |
+| `team.create/.update/.delete/.member.manage/.project.manage` | [`Teams.tsx`](../features/admin/components/Teams/Teams.tsx) has no Server Action; visibility hangs off a role name |
+| `label.update`, `label.delete` | no `updateLabel`/`deleteLabel` |
 
-**Das sind überwiegend keine Lücken, sondern noch nicht gebaute Features** — die
-Registry läuft der Implementierung voraus, und die Rollenmatrix im Editor
-vergibt Rechte, die nichts bewirken. Zwei Ausnahmen:
+**These are mostly not gaps, but features not yet built** — the registry
+runs ahead of the implementation, and the role matrix in the editor grants
+permissions that have no effect. Two exceptions:
 
-- `user.manage` ist gebaut, aber der falsche (grobere) Key wird geprüft.
-- `workspace.update` und `team.*` fehlen dort, wo die Oberfläche stattdessen
-  Rollennamen vergleicht. Sobald diese Seiten eine Action bekommen, fehlt der
-  Guard vollständig — die Rollennamen-Prüfung ist Client-Code.
+- `user.manage` is built, but the wrong (coarser) key is checked.
+- `workspace.update` and `team.*` are missing exactly where the UI compares
+  role names instead. The moment these pages get an action, the guard is
+  missing entirely — the role-name check is client code.
 
-Die 21 durchgesetzten Keys, nach Prüfstellen: `project.view` (9),
+The 21 enforced keys, by number of enforcement points: `project.view` (9),
 `member.invite` (8), `project.view.all` (5), `member.remove` (5),
 `member.role.update` (5), `issue.update.any` (4), `project.delete` (4),
 `role.manage` (3), `project.update` (3), `label.create` (3),
@@ -466,453 +473,470 @@ Die 21 durchgesetzten Keys, nach Prüfstellen: `project.view` (9),
 
 ---
 
-## 8. Befunde
+## 8. Findings
 
-18 Befunde. Einstufung: **hoch** = Schreibvorgang oder Eskalation ohne Recht ·
-**mittel** = Datenleck ohne Änderung · **niedrig** = UX, Metainformation oder
-Robustheit. Keiner ist kritisch: kein Außenstehender erreicht fremde
-Mandantendaten.
+18 findings. Rating: **high** = write operation or escalation without a
+permission · **medium** = data leak without a change · **low** = UX, meta
+information, or robustness. None is critical: no outsider reaches another
+tenant's data.
 
-### 1. `createIssue` umgeht das Assign-Gate (hoch)
+### 1. `createIssue` bypasses the assign gate (high)
 
-[`features/issues/actions.ts:116`](../features/issues/actions.ts#L116) prüft nur
-`issue.create`, schreibt aber `assigneeId` — während
-[`updateIssue:93`](../features/issues/actions.ts#L93) für genau dieses Feld
-zusätzlich `issue.assign` verlangt. Der Zwei-Schritt-Weg ist zu, der
-Ein-Schritt-Weg offen.
+[`features/issues/actions.ts:116`](../features/issues/actions.ts#L116)
+only checks `issue.create`, but writes `assigneeId` — while
+[`updateIssue:93`](../features/issues/actions.ts#L93) additionally requires
+`issue.assign` for that exact field. The two-step path is closed, the
+one-step path is open.
 
-Mit den System-Rollen ruht die Lücke: jede Rolle mit `issue.create` trägt auch
-`issue.assign`. Sie greift bei eigenen Rollen — `setRoleGrant` setzt jeden Key
-einzeln, eine Rolle „Contributor ohne Zuweisung" ist baubar, und `createIssue`
-ignoriert dort sogar ein DENY.
+With the system roles the gap lies dormant: every role with `issue.create`
+also carries `issue.assign`. It bites for custom roles — `setRoleGrant`
+sets every key individually, a role "Contributor without assignment" is
+buildable, and `createIssue` even ignores a DENY there.
 
 **Fix:** `if (data.assignee) await requirePermission("issue.assign", { projectId: data.projectId })`.
 
-### 2. `inviteProjectMember` legt eine Workspace-Rolle ohne Rang-Grenze an (hoch)
+### 2. `inviteProjectMember` creates a workspace role without a rank limit (high)
 
-[`features/projects/actions.ts:486`](../features/projects/actions.ts#L486) prüft
-`member.invite` im Projekt und die Rang-Grenze der *Projekt*-Rolle korrekt. Für
-eine unbekannte Adresse entsteht zusätzlich eine `WorkspaceMember`-Zeile mit der
-Default-Rolle `member` (Rang 2) — **ohne** `assignmentCeiling(access, "WORKSPACE")`.
-[`inviteWorkspaceMember:308`](../features/workspaces/actions.ts#L308) erzwingt
-diese Grenze.
+[`features/projects/actions.ts:486`](../features/projects/actions.ts#L486)
+correctly checks `member.invite` in the project and the rank limit of the
+*project* role. For an unknown address, it additionally creates a
+`WorkspaceMember` row with the default role `member` (rank 2) — **without**
+`assignmentCeiling(access, "WORKSPACE")`.
+[`inviteWorkspaceMember:308`](../features/workspaces/actions.ts#L308)
+enforces that limit.
 
-Ausnutzbar über eine eigene Workspace-Rolle mit Rang 0 oder 1, die
-`member.invite` trägt — also genau die plausible „darf nur einladen"-Rolle. Wer
-sie hat, darf per `inviteWorkspaceMember` nur Rang ≤ 1 vergeben (viewer/guest),
-erzeugt hier aber ein Konto mit Rang 2 (`issue.create`, `issue.update.own`,
-`issue.assign`, `label.create`) — und bekommt den Einladungslink zurück, kann die
-zweite Identität also selbst übernehmen.
+Exploitable via a custom workspace role of rank 0 or 1 that carries
+`member.invite` — exactly the plausible "may only invite" role. Whoever
+holds it may only grant rank ≤ 1 (viewer/guest) via `inviteWorkspaceMember`,
+but creates an account of rank 2 here (`issue.create`,
+`issue.update.own`, `issue.assign`, `label.create`) — and gets the invite
+link back, so they can take over the second identity themselves.
 
-**Fix:** die abgeleitete Workspace-Rolle gegen `assignmentCeiling(…, "WORKSPACE")`
-stellen.
+**Fix:** check the derived workspace role against
+`assignmentCeiling(…, "WORKSPACE")`.
 
-### 3. `setRoleGrant` löscht ein DENY ungeprüft (hoch)
+### 3. `setRoleGrant` deletes a DENY unchecked (high)
 
-[`features/roles/actions.ts:254`](../features/roles/actions.ts#L254): bei
-`effect === null` löscht `deleteMany` die Zeile, ohne ihren bisherigen Effekt zu
-lesen. Die Regel „ALLOW nur für selbst gehaltene Keys" greift nur für
-`effect === "ALLOW"`.
+[`features/roles/actions.ts:254`](../features/roles/actions.ts#L254): for
+`effect === null`, `deleteMany` deletes the row without reading its
+previous effect. The rule "ALLOW only for keys the actor holds themselves"
+only applies for `effect === "ALLOW"`.
 
-Ein DENY zu entfernen ist rechteerweiternd, sobald es ein ALLOW einer anderen
-Ebene maskiert hat — und dass ein DENY über alle Ebenen sticht, ist gewollte
-Grenze ([rbac.md](rbac.md#wozu-dann-noch-deny)). Zwei erreichbare Fälle: eine
-Workspace-Rolle mit DENY auf einem projektbezogenen Key (die Projektrolle greift
-nach dem Löschen), und DENY auf `workspace.delete` oder `role.manage` — die
-einzigen Keys in PLATFORM *und* WORKSPACE, wo das Workspace-DENY das ALLOW der
-Plattform-Rolle maskiert.
+Removing a DENY expands permissions the moment it was masking an ALLOW from
+another level — and that a DENY cuts across every level is a deliberate
+boundary ([rbac.md](rbac.md#so-why-still-have-deny)). Two reachable cases: a
+workspace role with a DENY on a project-related key (the project role
+takes over after deletion), and DENY on `workspace.delete` or
+`role.manage` — the only keys in both PLATFORM *and* WORKSPACE, where the
+workspace DENY masks the platform role's ALLOW.
 
-Die Oberfläche schirmt nichts ab: in
-[`PermissionMatrix.tsx:56`](../features/roles/components/PermissionMatrix/PermissionMatrix.tsx#L56)
-ist nur der ALLOW-Knopf an `grantable` gebunden (`allowLocked`), der
-„unset"-Knopf ist frei klickbar. Und
+The UI shields nothing here: in
+[`PermissionMatrix.tsx:56`](../features/roles/components/PermissionMatrix/PermissionMatrix.tsx#L56),
+only the ALLOW button is bound to `grantable` (`allowLocked`), the "unset"
+button is freely clickable. And
 [`roleActions.test.ts:262`](../tests/unit/permissions/roleActions.test.ts#L262)
-schreibt das Verhalten sogar fest — der Test muss beim Fix mitgeändert werden.
+even locks in this behavior — the test has to change alongside the fix.
 
-**Fix:** vor dem Löschen den Eintrag lesen und bei `effect === "DENY"` dieselbe
-`access.has(permission)`-Prüfung anwenden.
+**Fix:** read the existing entry before deleting, and for `effect === "DENY"`
+apply the same `access.has(permission)` check.
 
-### 4. `platform_admin` verwaltet Rollen in jedem fremden Workspace (hoch)
+### 4. `platform_admin` manages roles in any foreign workspace (high)
 
-[`requireTargetManage`](../features/roles/actions.ts#L50) misst die Rechte im
-Kontext des Ziel-Topfes — und der kommt aus dem Client-Argument.
-[`loadBase`](../lib/permissions.ts#L262) vereinigt die Plattform-Grants ohne
-Herkunftsvermerk in das Workspace-Ergebnis, und `role.manage` ist in allen drei
-Scopes vergebbar. Also gilt `access.has("role.manage")` in **jedem** Workspace,
-auch einem gesperrten; `assignmentCeiling` liefert ohne eigene Workspace-Rolle
-`Infinity`.
+[`requireTargetManage`](../features/roles/actions.ts#L50) measures
+permissions in the context of the target bucket — and that comes from the
+client argument. [`loadBase`](../lib/permissions.ts#L262) merges the
+platform grants into the workspace result with no record of origin, and
+`role.manage` is grantable in all three scopes. So `access.has("role.manage")`
+holds in **every** workspace, including a suspended one; `assignmentCeiling`
+returns `Infinity` without a workspace role of your own.
 
-Wirkung: `platform_admin` (hat `role.manage`, aber ausdrücklich **nicht**
-`tenant.access`, und das Layout sperrt ihn aus dem Mandanten aus) kann in jedem
-fremden Workspace eigene Rollen anlegen, umbenennen, umranken, löschen und
-beliebige DENY-Einträge setzen. DENY unterliegt der Grant-Regel bewusst nicht —
-das ist Aussperr-Potenzial in fremden Mandanten.
+Effect: `platform_admin` (has `role.manage`, but explicitly **not**
+`tenant.access`, and the layout locks them out of the tenant) can create,
+rename, re-rank, and delete custom roles, and set arbitrary DENY entries,
+in any foreign workspace. DENY is deliberately exempt from the grant rule —
+that's lockout potential in other tenants.
 
-Nicht erreichbar: projektlokale Töpfe, System-Rollen, Inhaltsrechte (ALLOW nur
-`workspace.delete`/`role.manage`), jeder Lesezugriff auf Mandanteninhalte.
-Deshalb hoch, nicht kritisch.
+Not reachable: project-local buckets, system roles, content permissions
+(ALLOW is only `workspace.delete`/`role.manage`), any read access to
+tenant content. Hence high, not critical.
 
-**Fix:** in `requireTargetManage` für Mandanten-Töpfe zusätzlich
-`canEnterWorkspace(actorId, target.workspaceId)` verlangen — oder `loadBase` die
-Herkunft mitführen lassen.
+**Fix:** in `requireTargetManage`, additionally require
+`canEnterWorkspace(actorId, target.workspaceId)` for tenant buckets — or
+have `loadBase` carry the origin along.
 
-### 5. `projectRoleKeyFor` verleiht `manager` die Rollenverwaltung im Projekt (hoch)
+### 5. `projectRoleKeyFor` grants `manager` role management within the project (high)
 
-[`lib/project-membership.ts:72`](../lib/project-membership.ts#L72) leitet die
-automatische Projektrolle aus den Workspace-Rechten ab:
-`has("member.invite") || has("project.view.all")` → `project_admin`. Und
-`project_admin`s ALLOW ist `permissionsFor("PROJECT")` — das **enthält
-`role.manage`** (19 Keys, per `bun run` nachgeprüft).
+[`lib/project-membership.ts:72`](../lib/project-membership.ts#L72) derives
+the automatic project role from the workspace permissions:
+`has("member.invite") || has("project.view.all")` → `project_admin`. And
+`project_admin`'s ALLOW is `permissionsFor("PROJECT")` — which **includes
+`role.manage`** (19 keys, verified via `bun run`).
 
-Die Rolle `manager` ist in [`lib/rbac/roles.ts:129`](../lib/rbac/roles.ts#L129)
-ausdrücklich ohne `role.manage` definiert („Keine Rollenverwaltung"), trägt aber
-`member.invite`. Beim Anlegen eines öffentlichen Projekts wird sie deshalb als
-`project_admin` eingetragen — und hat dort `role.manage`, also projekteigene
-Rollenverwaltung. Die Rollenbeschreibung sagt das Gegenteil.
+The role `manager` is explicitly defined without `role.manage` in
+[`lib/rbac/roles.ts:129`](../lib/rbac/roles.ts#L129) ("No role
+management"), but carries `member.invite`. When a public project is
+created, they're therefore entered as `project_admin` — and hold
+`role.manage` there, i.e. project-local role management. The role
+description says the opposite.
 
-Die Ableitung entscheidet faktisch die Rechte jedes neu Aufgenommenen und ist in
-[rbac.md](rbac.md#projekt-sichtbarkeit) nicht dokumentiert — dort steht nur,
-*wer* eingetragen wird, nicht *mit welcher Rolle*.
+The derivation effectively decides the permissions of everyone newly added
+and isn't documented in [rbac.md](rbac.md#project-visibility) — that only
+says *who* gets added, not *with which role*.
 
-**Fix:** eine Projektrolle zwischen `project_admin` und `contributor` ohne
-`role.manage` als Ziel der Ableitung, oder die Ableitung an
-`role.manage`/`project.view.all` statt an `member.invite` hängen.
+**Fix:** target the derivation at a project role between `project_admin`
+and `contributor` without `role.manage`, or base the derivation on
+`role.manage`/`project.view.all` instead of `member.invite`.
 
-### 6. `acceptInvitation` ignoriert `hasPassword` (mittel)
+### 6. `acceptInvitation` ignores `hasPassword` (medium)
 
-[`lib/invitations.ts:151`](../lib/invitations.ts#L151) liefert `hasPassword`,
-aber nur die Seite
+[`lib/invitations.ts:151`](../lib/invitations.ts#L151) supplies
+`hasPassword`, but only the page
 ([`invite/[token]/page.tsx:31`](../app/[locale]/%28auth%29/invite/[token]/page.tsx#L31))
-honoriert es. Die Action
-[`acceptInvitation:127`](../features/auth/actions.ts#L127) überschreibt
-`passwordHash` und Namen jedes Kontos, zu dem ein offener Token existiert.
+honors it. The action
+[`acceptInvitation:127`](../features/auth/actions.ts#L127) overwrites the
+`passwordHash` and name of any account an open token exists for.
 
-Dass das heute niemanden übernimmt, ist Glück der Aufrufreihenfolge, keine
-Prüfung: Tokens entstehen nur für frisch angelegte Konten ohne Passwort. Sobald
-eine Einladung an ein bestehendes Konto möglich wird, ist es eine
-Konto-Übernahme — und der Guard steht auf Stufe 3, nicht auf Stufe 1.
+That nobody gets hijacked by this today is luck of call ordering, not a
+check: tokens are only created for freshly-created accounts without a
+password. The moment inviting an existing account becomes possible, it's
+an account takeover — and the guard sits at level 3, not level 1.
 
-**Fix:** die `hasPassword`-Prüfung in die Action ziehen.
+**Fix:** move the `hasPassword` check into the action.
 
-### 7. Sichtbarkeitswechsel hängt nur am projektlokalen Recht (mittel)
+### 7. Visibility switch depends only on the project-local permission (medium)
 
-[`updateProject:177`](../features/projects/actions.ts#L177) prüft
-`project.update` im Projekt-Kontext. Damit kann ein `project_admin` ohne jedes
-workspaceweite Recht ein privates Projekt auf `public` schalten — was laut
-[rbac.md](rbac.md#projekt-sichtbarkeit) **alle** Workspace-Mitglieder aufnimmt
-und deren Mitgliedszeilen anlegt. Ein Vorgang mit Workspace-Reichweite,
-autorisiert durch ein Projekt-Recht.
+[`updateProject:177`](../features/projects/actions.ts#L177) checks
+`project.update` in the project context. That lets a `project_admin`, with
+no workspace-wide permission at all, switch a private project to `public`
+— which per [rbac.md](rbac.md#project-visibility) adds **every** workspace
+member and creates their membership rows. An operation with workspace
+reach, authorized by a project permission.
 
-### 8. `createRole` schreibt eine unvalidierte fremde Workspace-Id (mittel)
+### 8. `createRole` writes an unvalidated foreign workspace id (medium)
 
-Bei `target = { scope: "PROJECT", workspaceId, projectId }` autorisiert
-[`targetGuard`](../features/roles/scope.ts#L83) über `{ projectId }`, geschrieben
-wird aber `ownerColumns(target).workspaceId` aus dem Client-Argument
-([`actions.ts:132`](../features/roles/actions.ts#L132)). Es fehlt die Prüfung,
-dass `projectId` zu `workspaceId` gehört. Die Vorbedingung ist billig:
-`Workspace.id` ist der frei gewählte Slug, und `suggestWorkspaceSlug` verrät,
-welche belegt sind.
+For `target = { scope: "PROJECT", workspaceId, projectId }`,
+[`targetGuard`](../features/roles/scope.ts#L83) authorizes via
+`{ projectId }`, but what gets written is
+`ownerColumns(target).workspaceId` from the client argument
+([`actions.ts:132`](../features/roles/actions.ts#L132)). The check that
+`projectId` actually belongs to `workspaceId` is missing. The precondition
+is cheap: `Workspace.id` is the freely-chosen slug, and
+`suggestWorkspaceSlug` reveals which ones are taken.
 
-Kein Rechtegewinn (die Zeile taucht in keinem Topf des fremden Workspace auf),
-aber ein falsches Cascade-Ziel: `Role_workspaceId_fkey` ist `ON DELETE CASCADE`,
-`ProjectMember.role` dagegen `RESTRICT` — der fremde Workspace lässt sich dann
-nicht mehr löschen.
+No permission gain (the row doesn't show up in any bucket of the foreign
+workspace), but a wrong cascade target: `Role_workspaceId_fkey` is
+`ON DELETE CASCADE`, while `ProjectMember.role` is `RESTRICT` — the foreign
+workspace then can no longer be deleted.
 
-### 9. Projekt-Gäste lesen die komplette Mitgliederliste (mittel)
+### 9. Project guests read the full member list (medium)
 
-[`getMembers:123`](../features/issues/queries.ts#L123) prüft nur
-`currentUserCanEnterWorkspace`. Weg 3 dieser Funktion (Projektmitgliedschaft
-ohne Workspace-Mitgliedschaft) lässt einen `project_guest` durch — jemanden, der
-laut Rollenbeschreibung „von außen zu genau diesem Projekt eingeladen" ist. Er
-erhält die vollständige `WorkspaceMember`-Liste mit Namen, Handle,
-**E-Mail-Adresse**, Rollen-Key, Rang und `pending`.
+[`getMembers:123`](../features/issues/queries.ts#L123) only checks
+`currentUserCanEnterWorkspace`. Path 3 of that function (project
+membership without workspace membership) lets a `project_guest` through —
+someone who, per the role description, is "invited from outside to
+exactly this project." They receive the complete `WorkspaceMember` list
+with name, handle, **email address**, role key, rank, and `pending`.
 
-Sichtbar unter [`/[workspace]/members`](../app/[locale]/%28default%29/[workspace]/members/page.tsx)
-(E-Mail in [`Members.tsx:112`](../features/admin/components/Members/Members.tsx#L112)),
-in `/teams`, in der [`Topbar`](../features/issues/components/Topbar/Topbar.tsx)
-und in den `@`-Mention-Vorschlägen. Erreichbar, weil `getMe()` auf das eigene
-Konto zurückfällt und `notFound()` deshalb ausbleibt.
+Visible under [`/[workspace]/members`](../app/[locale]/%28default%29/[workspace]/members/page.tsx)
+(email in [`Members.tsx:112`](../features/admin/components/Members/Members.tsx#L112)),
+in `/teams`, in the [`Topbar`](../features/issues/components/Topbar/Topbar.tsx),
+and in the `@`-mention suggestions. Reachable because `getMe()` falls back
+to the person's own account, so `notFound()` doesn't kick in.
 
-Einen Lesekey gibt es nicht — `member.view` existiert in der Registry nicht.
-`getTeams` hat dasselbe Muster und gibt zusätzlich IDs unsichtbarer Projekte
-heraus.
+There's no read key for this — `member.view` doesn't exist in the
+registry. `getTeams` has the same pattern and additionally leaks the IDs of
+invisible projects.
 
-**Fix:** entweder ein neuer Key, oder die Liste für Nicht-Workspace-Mitglieder
-auf die Mitglieder ihrer sichtbaren Projekte einschränken — wobei die
-`getMe()`-Ausnahme erhalten bleiben muss, sonst laufen Gäste in 404.
+**Fix:** either a new key, or restrict the list for non-workspace-members to
+the members of their visible projects — while keeping the `getMe()`
+exception, otherwise guests would fall into 404.
 
-### 10. `/admin/roles` liest ohne `role.manage` (niedrig)
+### 10. `/admin/roles` reads without `role.manage` (low)
 
-Die beiden Schwesterseiten prüfen `role.manage` und werfen `notFound()`;
-[`admin/roles/page.tsx`](../app/[locale]/%28default%29/admin/roles/page.tsx) erbt nur
-`platform.access` vom Layout. Ursache liegt tiefer:
-[`getRoleManagerView`](../features/roles/queries.ts#L32) lädt Rollen samt Grants
-und `memberCount` **unabhängig** von `canManage` — gedämpft werden nur
-`manageable`, `grantable` und `maxRank`.
+The two sibling pages check `role.manage` and throw `notFound()`;
+[`admin/roles/page.tsx`](../app/[locale]/%28default%29/admin/roles/page.tsx)
+only inherits `platform.access` from the layout. The cause runs deeper:
+[`getRoleManagerView`](../features/roles/queries.ts#L32) loads roles
+including their grants and `memberCount` **independent of** `canManage` —
+only `manageable`, `grantable`, and `maxRank` are dampened.
 
-Wer `platform.access` ohne `role.manage` hat (System-Rolle `platform_support`)
-sieht damit alle Plattform-Rollen samt Permission-Grants und Trägerzahlen.
-Schreiben ist dicht (`grantable` leer, `maxRank = -Infinity`), und
-`platform_support` liest über `tenant.access` ohnehin alles — daher niedrig.
+Whoever has `platform.access` without `role.manage` (system role
+`platform_support`) thereby sees every platform role, including permission
+grants and carrier counts. Writing is airtight (`grantable` empty,
+`maxRank = -Infinity`), and `platform_support` reads everything via
+`tenant.access` anyway — hence low.
 
-**Fix:** der Guard in `getRoleManagerView` selbst, dann greift er für alle drei
-Routen.
+**Fix:** put the guard in `getRoleManagerView` itself, and it then applies
+to all three routes.
 
-### 11. Workspaceweite Konfiguration ist ohne Zutritt lesbar (niedrig)
+### 11. Workspace-wide configuration is readable without entry (low)
 
-`getStatuses`, `getPriorities`, `getIssueTypes`, `getRoles` und
-[`getWorkspace:83`](../features/issues/queries.ts#L83) prüfen nichts;
-[`getLabels:151`](../features/issues/queries.ts#L151) filtert nur den
-Projekt-Zweig — `projectId: null` geht auch bei leerer `visible`-Menge hinaus.
-`getRoles` gibt dabei die selbst angelegten Rollennamen und Ränge eines
-beliebigen Workspace heraus.
+`getStatuses`, `getPriorities`, `getIssueTypes`, `getRoles`, and
+[`getWorkspace:83`](../features/issues/queries.ts#L83) check nothing;
+[`getLabels:151`](../features/issues/queries.ts#L151) only filters the
+project branch — `projectId: null` goes out even for an empty `visible`
+set. `getRoles` thereby leaks the custom role names and ranks of any
+workspace.
 
-Getragen wird das allein vom Workspace-Layout — also von der Stufe, die
-[rbac.md](rbac.md#enforcement) selbst „keine Sicherheitsgrenze" nennt. Solange
-diese Funktionen nur aus Seiten unter diesem Layout laufen, ist es dicht; ein
-Aufruf aus einer Server Action oder einem Route Handler wäre es nicht. Die
-gemeinsame Klammer ist [`requireWorkspaceId`](../features/workspaces/queries.ts#L39),
-die selbst nichts prüft.
+This is carried solely by the workspace layout — i.e. by the level
+[rbac.md](rbac.md#enforcement) itself calls "not a security boundary." As
+long as these functions only ever run from pages under that layout, it's
+airtight; a call from a Server Action or a route handler would not be. The
+shared bracket is
+[`requireWorkspaceId`](../features/workspaces/queries.ts#L39), which
+itself checks nothing.
 
-### 12. Zwei Admin-Abfragen ohne Guard (niedrig)
+### 12. Two admin queries without a guard (low)
 
-[`getCurrentUser:51`](../features/admin/queries.ts#L51) und
-[`getFirstWorkspaceId:107`](../features/admin/queries.ts#L107) prüfen weder
-`platform.access` noch den Selbstbezug — ein Aufruf mit fremder `userId` liefert
-E-Mail und Plattform-Rolle bzw. eine Workspace-Zugehörigkeit. Beide sind derzeit
-nirgends aufgerufen (tote Exporte); die pauschale Zusage in
-[rbac.md](rbac.md#enforcement) stimmt damit für 2 von 4 Funktionen.
+[`getCurrentUser:51`](../features/admin/queries.ts#L51) and
+[`getFirstWorkspaceId:107`](../features/admin/queries.ts#L107) check
+neither `platform.access` nor self-reference — a call with someone else's
+`userId` returns their email and platform role, or a workspace membership,
+respectively. Both are currently called nowhere (dead exports); the
+blanket promise in [rbac.md](rbac.md#enforcement) thus holds for 2 of 4
+functions.
 
-Dieselbe latente Form haben `getMyIssues`, `getInboxIssues` und
-`getUserWorkspaces` — sie berechnen die Sichtbarkeit für den *übergebenen*
-Nutzer, nicht für den eingeloggten. Heute wird überall die Session-Id übergeben.
+`getMyIssues`, `getInboxIssues`, and `getUserWorkspaces` have the same
+latent shape — they compute visibility for the *passed-in* user, not the
+signed-in one. Today the session id is passed everywhere.
 
-### 13. `suggestWorkspaceSlug` ist ein unangemeldetes Existenz-Orakel (niedrig)
+### 13. `suggestWorkspaceSlug` is an unauthenticated existence oracle (low)
 
-[`features/workspaces/actions.ts:82`](../features/workspaces/actions.ts#L82) — die
-einzige Server Action ohne jede eigene Prüfung. Die einzige Grenze ist das
-Session-Gate im Proxy, und das ist laut Next-Doku ausdrücklich kein Ersatz:
-Action-IDs sind global auflösbar, ein POST über `/login` oder `/invite/<token>`
-umgeht es. Die Antwort verrät, welche Slugs belegt sind — reine
-Metainformation, ein Slug ist kein Schlüssel (Zutritt hängt an
-`canEnterWorkspace`). Zusätzlich ohne Obergrenze: `uniqueWorkspaceSlug` macht
-eine Query je belegter Variante, ausgelöst per 300-ms-Debounce pro Tastendruck.
+[`features/workspaces/actions.ts:82`](../features/workspaces/actions.ts#L82)
+— the only Server Action with no check of its own. The only boundary is
+the session gate in the proxy, and per the Next docs that's explicitly not
+a substitute: action IDs are globally resolvable, a POST via `/login` or
+`/invite/<token>` bypasses it. The response reveals which slugs are
+taken — pure meta information, a slug isn't a key (entry hinges on
+`canEnterWorkspace`). Also without an upper bound:
+`uniqueWorkspaceSlug` makes one query per taken variant, triggered on a
+300ms debounce per keystroke.
 
-**Fix:** zwei Zeilen — `currentUserId()`-Prüfung plus eine Obergrenze.
+**Fix:** two lines — a `currentUserId()` check plus an upper bound.
 
-### 14. Offene Weiterleitung über `callbackUrl` (niedrig)
+### 14. Open redirect via `callbackUrl` (low)
 
-`callbackUrl` wird an keiner Stelle auf einen relativen Pfad geprüft und erreicht
-zwei Senken: [`login/page.tsx:16`](../app/[locale]/%28auth%29/login/page.tsx#L16)
-(`redirect` aus `next/navigation`, folgt absoluten Fremd-URLs; `/login` ist
-öffentlich, hier wirkt auch `//evil.example`) und
+`callbackUrl` is never checked against being a relative path, and reaches
+two sinks:
+[`login/page.tsx:16`](../app/[locale]/%28auth%29/login/page.tsx#L16)
+(`redirect` from `next/navigation`, follows absolute foreign URLs; `/login`
+is public, and `//evil.example` also works here), and
 [`actions.ts:39`](../features/auth/actions.ts#L39) → `router.push` in
 [`LoginForm.tsx:43`](../features/auth/components/LoginForm/LoginForm.tsx#L43).
-Auth.js' Same-Origin-Schutz ist umgangen, weil `signIn` mit `redirect: false`
-ohne `redirectTo` läuft.
+Auth.js's same-origin protection is bypassed because `signIn` runs with
+`redirect: false` and no `redirectTo`.
 
-Kein RBAC-Bypass, kein Cookie-Abfluss — Phishing auf einer vertrauenswürdig
-aussehenden URL. `javascript:`-URLs blockiert Next selbst.
+No RBAC bypass, no cookie leak — phishing on a trustworthy-looking URL.
+`javascript:` URLs are blocked by Next itself.
 
-**Fix:** ein `safeCallbackPath`-Helper, an beiden Senken verwendet (nur `/…`,
-nicht `//` oder `/\`).
+**Fix:** a `safeCallbackPath` helper, used at both sinks (only `/…`, not
+`//` or `/\`).
 
-### 15. `/api/logout` ist ein zustandsändernder GET (niedrig)
+### 15. `/api/logout` is a state-changing GET (low)
 
-[`app/api/logout/route.ts`](../app/api/logout/route.ts) beschränkt die Methode
-nicht, und `next-auth` ruft `signOut()` intern mit `skipCSRFCheck`. Ein fremdes
-`<img src="/api/logout">` loggt den Benutzer aus. Belästigung, kein
-Rechteproblem.
+[`app/api/logout/route.ts`](../app/api/logout/route.ts) doesn't restrict
+the method, and `next-auth` calls `signOut()` internally with
+`skipCSRFCheck`. A foreign `<img src="/api/logout">` logs the user out.
+An annoyance, not a permission problem.
 
-### 16. Workspace-Einstellungen und Teams ohne Recht (niedrig)
+### 16. Workspace settings and teams without a permission (low)
 
 [`settings/page.tsx`](../app/[locale]/%28default%29/[workspace]/settings/page.tsx)
-prüft kein `workspace.update`,
-[`teams/page.tsx`](../app/[locale]/%28default%29/[workspace]/teams/page.tsx) kein
-`team.*` — beide nur `getMe()` → `notFound()` plus Zutritt aus dem Layout. Heute
-harmlos, weil keine der beiden Seiten eine Server Action besitzt; die
-Sichtbarkeit hängt an einem Rollennamen im Client (siehe
-[Abschnitt 5](#5-die-oberfläche)). **Sobald diese Seiten eine Action bekommen,
-fehlt der Guard vollständig.**
+checks no `workspace.update`,
+[`teams/page.tsx`](../app/[locale]/%28default%29/[workspace]/teams/page.tsx)
+no `team.*` — both only `getMe()` → `notFound()` plus entry from the
+layout. Harmless today, because neither page has a Server Action;
+visibility hangs off a role name on the client (see
+[section 5](#5-the-ui)). **The moment these pages get an action, the guard
+is missing entirely.**
 
-### 17. Die Workspace-Mitgliederverwaltung zeigt mehr als die Action erlaubt (niedrig)
+### 17. Workspace member management shows more than the action allows (low)
 
-[`Members.tsx:134`](../features/admin/components/Members/Members.tsx#L134) füllt
-den Rollen-Picker jeder Zeile mit `roles` — **allen** Rollen, inklusive `owner`
-und solchen über dem eigenen Rang. Das vorgefilterte `assignableRoles` wird nur
-für den Einladungsdialog benutzt (Zeile 57). Der Entfernen-Knopf (Zeile 167)
-hängt nur an `can.remove` und „nicht ich selbst", ohne Rangvergleich gegen das
-Ziel.
+[`Members.tsx:134`](../features/admin/components/Members/Members.tsx#L134)
+fills each row's role picker with `roles` — **all** roles, including
+`owner` and ones above the actor's own rank. The pre-filtered
+`assignableRoles` is only used for the invite dialog (line 57). The remove
+button (line 167) only hinges on `can.remove` and "not myself", with no
+rank comparison against the target.
 
-`setMemberRole` und `removeMember` weisen das korrekt ab — die Oberfläche
-verspricht also mehr, als die Action durchlässt. Das ist genau umgekehrt zur
-Zusage in [rbac.md](rbac.md#mitglieder-verwalten-drei-rechte-nicht-eines) („zeigt
-genau das, was die Action auch durchlässt"), die auf Projekt-Ebene über das
-je-Zeile-`manageable` eingehalten wird. Auf Workspace-Ebene fehlt dieses Flag.
+`setMemberRole` and `removeMember` correctly reject these — so the UI
+promises more than the action lets through. That's exactly the reverse of
+the promise in [rbac.md](rbac.md#managing-members-three-permissions-not-one)
+("shows exactly what the action also allows through"), which is honored at
+the project level via the per-row `manageable`. That flag is missing at
+the workspace level.
 
-### 18. Kein Error-Boundary, jeder `PermissionError` wird ein 500 (niedrig)
+### 18. No error boundary, every `PermissionError` becomes a 500 (low)
 
-Im ganzen Baum existiert **keine** `error.tsx`, `not-found.tsx`,
-`global-error.tsx` oder `app/layout.tsx`. Ein `PermissionError` aus `moveIssue`,
-`updateIssue`, `setMemberRole` oder `removeMember` schlägt deshalb ungefangen
-durch. Weil zugleich 22 Komponenten Aktionen ohne Flag anbieten
-([Abschnitt 5](#5-die-oberfläche)), ist das der Regelfall für `project_viewer`
-und `blocked`, nicht der Ausnahmefall: sichtbarer Knopf → Klick → 500.
+Nowhere in the tree does an `error.tsx`, `not-found.tsx`,
+`global-error.tsx`, or `app/layout.tsx` exist. A `PermissionError` from
+`moveIssue`, `updateIssue`, `setMemberRole`, or `removeMember` therefore
+falls through uncaught. Because 22 components simultaneously offer actions
+with no flag ([section 5](#5-the-ui)), this is the normal case for
+`project_viewer` and `blocked`, not the exception: visible button → click →
+500.
 
-Die Actions, die `RoleResult`/`ProjectResult` mit `{ error }` zurückgeben, sind
-davon nicht betroffen — nur die, die werfen.
+Actions that return `RoleResult`/`ProjectResult` with `{ error }` aren't
+affected — only the ones that throw.
 
 ---
 
-## 9. Was nachweislich dicht ist
+## 9. What's demonstrably solid
 
-91 der 105 gemeldeten Mängel wurden widerlegt. Die aufschlussreichsten:
+91 of the 105 reported deficiencies were disproven. The most instructive:
 
-- **Der Lesepfad ist konsequent gefiltert.** Jede Behauptung, Issues aus
-  unsichtbaren Projekten seien erreichbar, scheiterte an `visibleProjectIds` /
-  `accessibleProjectIds` oder an `project.view` in `getIssueById`/`getIssueByRef`.
-- **Kommentare, Labels und Mention-Vorschläge** erben die Prüfung des Issues
-  bzw. sind auf sichtbare Projekte geschnitten.
-- **Der Projekt-Gast-Zweig** in `inviteProjectMember` ist bewusst so gebaut, vom
-  Resolver auf dieses eine Projekt begrenzt und durch
+- **The read path is consistently filtered.** Every claim that issues from
+  invisible projects were reachable failed against `visibleProjectIds` /
+  `accessibleProjectIds`, or against `project.view` in
+  `getIssueById`/`getIssueByRef`.
+- **Comments, labels, and mention suggestions** inherit the issue's check,
+  or are cut to visible projects.
+- **The project-guest branch** in `inviteProjectMember` is deliberately
+  built that way, bounded by the resolver to that one project, and locked
+  in by
   [`projectMembers.test.ts:437`](../tests/unit/projects/projectMembers.test.ts#L437)
-  fixiert — kein Mangel.
-- **Die geteilten System-Rollen** sind auf allen vier Pfaden von
-  `features/roles/actions.ts` unantastbar.
-- **`/invite/<token>`** ist kein Orakel: unbekannt, abgelaufen, verbraucht und
-  gesperrt sehen gleich aus.
-- **`app/api/issues/[id]`** antwortet bei fehlendem Recht 404, nicht 403.
-- **Keine Komponente** ruft `getAccess` oder `hasPermission` selbst auf.
-- **Keine Rollen-Id wird geparst.**
-- **Kein Kontext kommt aus dem Client, wo es zählt:** `projectId` stammt in den
-  Issue-Actions aus der DB, `reporterId`/`authorId` aus der Session, und die
-  `workspaceId` eines Projekt-Labels wird aus dem Projekt neu bestimmt.
+  — not a deficiency.
+- **The shared system roles** are untouchable across all four paths of
+  `features/roles/actions.ts`.
+- **`/invite/<token>`** is not an oracle: unknown, expired, used, and
+  suspended all look the same.
+- **`app/api/issues/[id]`** responds 404, not 403, for a missing
+  permission.
+- **No component** calls `getAccess` or `hasPermission` itself.
+- **No role id is ever parsed.**
+- **No context comes from the client where it counts:** `projectId` comes
+  from the DB in the issue actions, `reporterId`/`authorId` from the
+  session, and a project label's `workspaceId` is re-derived from the
+  project.
 
 ---
 
-## 10. Abgleich mit `docs/rbac.md`
+## 10. Comparison with `docs/rbac.md`
 
-**Stimmt:** das Enforcement-Stufenmodell; alle sieben Zeilen der Tabelle „Der
-Lesepfad prüft mit" inklusive „fangen leer statt zu werfen"; alle fünf Zeilen der
-Flag-Tabelle „Wie die Oberfläche davon erfährt"; die drei impliziten Regeln;
-`tenant.access`; die Rang-Hierarchie und `assignmentCeiling`; die drei
-getrennten `member.*`-Rechte; die vier Eskalationsregeln der Rollenverwaltung;
-die Rollen-Routen-Tabelle; 15 System-Rollen mit 212 `RolePermission`-Zeilen
-(nachgerechnet); der `CHECK`-Constraint und die partiellen Unique-Indizes; und
-alle in `rbac.md` genannten Testdateien existieren.
+**Correct:** the enforcement level model; all seven rows of the "The read
+path checks too" table, including "fail empty instead of throwing"; all
+five rows of the "How the UI finds out" flag table; the three implicit
+rules; `tenant.access`; the rank hierarchy and `assignmentCeiling`; the
+three separate `member.*` permissions; the four escalation rules of role
+management; the role-routes table; 15 system roles with 212
+`RolePermission` rows (recounted); the `CHECK` constraint and the partial
+unique indexes; and every test file named in `rbac.md` exists.
 
-**Veraltet oder zu optimistisch:**
+**Outdated or too optimistic:**
 
-| Zusage in `rbac.md` | Realität |
+| Promise in `rbac.md` | Reality |
 |---|---|
-| „im Workspace (`features/issues/actions.ts`)" für die `member.*`-Aktionen | Falscher Pfad — sie liegen in [`features/workspaces/actions.ts`](../features/workspaces/actions.ts#L191); in `features/issues/actions.ts` steht kein `member.*`-Guard |
-| „Im Code stehen keine Rollennamen mehr" | `Settings.tsx:23`, `Teams.tsx:20`, `Members.tsx:49`, `InviteMemberModal.tsx:48` |
-| „Keine Komponente prüft selbst — jede bekommt fertige Flags" | Erste Hälfte stimmt (0 von 56); 22 Komponenten bekommen **keine** Flags und rendern die Aktion trotzdem |
-| „zeigt genau das, was die Action auch durchlässt" | Auf Projekt-Ebene ja; auf Workspace-Ebene zeigt die UI **mehr** ([Befund 17](#17-die-workspace-mitgliederverwaltung-zeigt-mehr-als-die-action-erlaubt-niedrig)) |
-| Flag-Namen `canAdd`/`canSetRole`/`canRemove` für beide Ebenen | Auf Workspace-Ebene heißen sie `can.invite`/`can.setRole`/`can.remove` |
-| „die Abfragen in `features/admin/queries.ts` prüfen noch einmal selbst" | 2 von 4 |
-| „Fremdschlüssel auf `RESTRICT`" | Nur Workspace- und Projektrollen ([schema.prisma:140/194](../prisma/schema.prisma#L140)); `User.platformRole` ist `onDelete: SetNull` ([:76](../prisma/schema.prisma#L76)) — dort stoppt nur der App-Vorabcheck |
-| PLATFORM „steuert … Konten, Workspaces sperren" | Beide Features existieren nicht: `user.manage` und `workspace.suspend` haben keinen Guard und keine Action, `Workspace.suspended` wird nur gelesen |
-| `manager` „ohne `role.manage`" | Im Projekt-Kontext doch, über `projectRoleKeyFor` → `project_admin` ([Befund 5](#5-projectrolekeyfor-verleiht-manager-die-rollenverwaltung-im-projekt-hoch)) |
+| "in the workspace (`features/issues/actions.ts`)" for the `member.*` actions | Wrong path — they live in [`features/workspaces/actions.ts`](../features/workspaces/actions.ts#L191); `features/issues/actions.ts` has no `member.*` guard |
+| "No role names appear in the code anymore" | `Settings.tsx:23`, `Teams.tsx:20`, `Members.tsx:49`, `InviteMemberModal.tsx:48` |
+| "No component checks for itself — every one receives ready-made flags" | First half holds (0 of 56); 22 components get **no** flags and render the action anyway |
+| "shows exactly what the action also allows through" | True at the project level; at the workspace level the UI shows **more** ([finding 17](#17-workspace-member-management-shows-more-than-the-action-allows-low)) |
+| Flag names `canAdd`/`canSetRole`/`canRemove` for both levels | At the workspace level they're named `can.invite`/`can.setRole`/`can.remove` |
+| "the queries in `features/admin/queries.ts` check again themselves" | 2 of 4 |
+| "foreign key set to `RESTRICT`" | Only workspace and project roles ([schema.prisma:140/194](../prisma/schema.prisma#L140)); `User.platformRole` is `onDelete: SetNull` ([:76](../prisma/schema.prisma#L76)) — there, only the app's upfront check stops it |
+| PLATFORM "governs … accounts, suspending workspaces" | Neither feature exists: `user.manage` and `workspace.suspend` have no guard and no action, `Workspace.suspended` is only read |
+| `manager` "without `role.manage`" | It does have it in the project context, via `projectRoleKeyFor` → `project_admin` ([finding 5](#5-projectrolekeyfor-grants-manager-role-management-within-the-project-high)) |
 
-**Nicht dokumentiert:** dass 13 der 34 Keys keine Prüfstelle haben; dass
-`project/[projectSlug]/layout.tsx` keinen `project.view`-Guard hat; dass `getMe()`
-auf das eigene Konto zurückfällt und `if (!me) notFound()` deshalb keine
-Mitgliedschaft erzwingt; dass Zutritt zur Mitgliederliste E-Mail-Adressen
-einschließt; dass die Navigation nicht rechteabhängig gefiltert wird; dass
-`projectRoleKeyFor` die Startrolle im Projekt bestimmt; und dass es keinen
-Error-Boundary gibt.
+**Not documented:** that 13 of the 34 keys have no enforcement point; that
+`project/[projectSlug]/layout.tsx` has no `project.view` guard; that
+`getMe()` falls back to the person's own account, so `if (!me) notFound()`
+doesn't enforce membership; that entry to the member list includes email
+addresses; that navigation isn't filtered by permission; that
+`projectRoleKeyFor` decides the starting role in a project; and that
+there's no error boundary.
 
-**Nebenbefund Code vs. Schema:** [`lib/permissions.ts:141`](../lib/permissions.ts#L141)
-beschreibt „eine Zeile ohne `roleId`" in `ProjectMember`, aber
-[`schema.prisma:190`](../prisma/schema.prisma#L190) hat `roleId String` (NOT
-NULL) — der Fall kann nicht auftreten, der Kommentar ist irreführend.
+**Side finding, code vs. schema:** [`lib/permissions.ts:141`](../lib/permissions.ts#L141)
+describes "a row without `roleId`" in `ProjectMember`, but
+[`schema.prisma:190`](../prisma/schema.prisma#L190) has `roleId String`
+(NOT NULL) — that case can't occur, the comment is misleading.
 
 ---
 
-## 11. Testabdeckung
+## 11. Test coverage
 
-32 Testdateien, 442 Tests. Für Berechtigungen relevant:
+32 test files, 442 tests. Relevant to permissions:
 
-| Fläche | Tests | Datei |
+| Surface | Tests | File |
 |---|---:|---|
-| Resolver (Ersetzen, DENY, `tenant.access`, implizite Regeln, Zutritt, sichtbare Projekte) | 39 | [`permissions/resolver.test.ts`](../tests/unit/permissions/resolver.test.ts) |
-| Projekt-Mitglieder (drei Rechte, Rang, Selbstbezug) | 30 | [`projects/projectMembers.test.ts`](../tests/unit/projects/projectMembers.test.ts) |
-| Registry (flache Keys, Scopes, Rollen in sich stimmig) | 26 | [`permissions/rbac.test.ts`](../tests/unit/permissions/rbac.test.ts) |
-| Rollenverwaltung (geteilte Rollen, Rang, keine Eskalation) | 25 | [`permissions/roleActions.test.ts`](../tests/unit/permissions/roleActions.test.ts) |
+| Resolver (replacement, DENY, `tenant.access`, implicit rules, entry, visible projects) | 39 | [`permissions/resolver.test.ts`](../tests/unit/permissions/resolver.test.ts) |
+| Project members (three permissions, rank, self-reference) | 30 | [`projects/projectMembers.test.ts`](../tests/unit/projects/projectMembers.test.ts) |
+| Registry (flat keys, scopes, roles internally consistent) | 26 | [`permissions/rbac.test.ts`](../tests/unit/permissions/rbac.test.ts) |
+| Role management (shared roles, rank, no escalation) | 25 | [`permissions/roleActions.test.ts`](../tests/unit/permissions/roleActions.test.ts) |
 | `createProject` | 16 | [`projects/createProject.test.ts`](../tests/unit/projects/createProject.test.ts) |
-| Einladungen (Token, Frist, Gültigkeit) | 15 | [`invitations/invitations.test.ts`](../tests/unit/invitations/invitations.test.ts) |
-| Projekt-Einstellungen, Sichtbarkeit | 14 | [`projects/projectSettings.test.ts`](../tests/unit/projects/projectSettings.test.ts) |
-| Projekt-Mitgliedschaft (Aufnahme/Austritt) | 13 | [`projects/projectMembership.test.ts`](../tests/unit/projects/projectMembership.test.ts) |
-| Einladung annehmen | 11 | [`auth/acceptInvitation.test.ts`](../tests/unit/auth/acceptInvitation.test.ts) |
+| Invitations (token, deadline, validity) | 15 | [`invitations/invitations.test.ts`](../tests/unit/invitations/invitations.test.ts) |
+| Project settings, visibility | 14 | [`projects/projectSettings.test.ts`](../tests/unit/projects/projectSettings.test.ts) |
+| Project membership (joining/leaving) | 13 | [`projects/projectMembership.test.ts`](../tests/unit/projects/projectMembership.test.ts) |
+| Accepting an invitation | 11 | [`auth/acceptInvitation.test.ts`](../tests/unit/auth/acceptInvitation.test.ts) |
 | `createLabel` | 11 | [`issues/createLabel.test.ts`](../tests/unit/issues/createLabel.test.ts) |
-| Workspace-Einladung, Rang-Grenze | 11 | [`workspace/inviteWorkspaceMember.test.ts`](../tests/unit/workspace/inviteWorkspaceMember.test.ts) |
-| „Neues Issue"-Auslöser (Stufe 3) | 10 | [`ui/issueCreateButtons.test.tsx`](../tests/unit/ui/issueCreateButtons.test.tsx) |
-| Proxy / Middleware | 9 | [`proxy/proxy.test.ts`](../tests/unit/proxy/proxy.test.ts) |
+| Workspace invitation, rank limit | 11 | [`workspace/inviteWorkspaceMember.test.ts`](../tests/unit/workspace/inviteWorkspaceMember.test.ts) |
+| "New issue" triggers (level 3) | 10 | [`ui/issueCreateButtons.test.tsx`](../tests/unit/ui/issueCreateButtons.test.tsx) |
+| Proxy / middleware | 9 | [`proxy/proxy.test.ts`](../tests/unit/proxy/proxy.test.ts) |
 | `creatableProjectIds` | 5 | [`issues/composerData.test.ts`](../tests/unit/issues/composerData.test.ts) |
 
-**Die größte Lücke:** die Issue-Actions (`moveIssue`, `reorderIssue`,
-`updateIssue`, `createIssue`, `deleteIssue`, `addComment`, `deleteComment`) haben
-**keine eigene Testdatei**. Die `.own`/`.any`-Paare und das `issue.assign`-Gate —
-also die am häufigsten ausgeführten Guards des Systems — sind nirgends fixiert.
-Ebenso ungetestet: der Lesepfad (`getIssuesByProject`, `getIssueByRef`,
-`getSearchIssues`), `app/api/issues/[id]`, der Projekt-Knopf (das Issue-Pendant
-hat Tests) und die Navigationsfilterung.
+**The biggest gap:** the issue actions (`moveIssue`, `reorderIssue`,
+`updateIssue`, `createIssue`, `deleteIssue`, `addComment`, `deleteComment`)
+have **no dedicated test file**. The `.own`/`.any` pairs and the
+`issue.assign` gate — i.e. the system's most frequently executed guards —
+are locked in nowhere. Also untested: the read path
+(`getIssuesByProject`, `getIssueByRef`, `getSearchIssues`),
+`app/api/issues/[id]`, the project button (the issue equivalent has
+tests), and navigation filtering.
 
 [`roleActions.test.ts:262`](../tests/unit/permissions/roleActions.test.ts#L262)
-fixiert das fehlerhafte Verhalten aus
-[Befund 3](#3-setrolegrant-löscht-ein-deny-ungeprüft-hoch) und muss beim Fix
-mitgeändert werden.
+locks in the faulty behavior from
+[finding 3](#3-setrolegrant-deletes-a-deny-unchecked-high) and has to
+change alongside the fix.
 
-Aufruf immer mit `bun run test`, nie `bun test` (Modul-Cache, siehe CLAUDE.md).
-
----
-
-## 12. Empfohlene Reihenfolge
-
-1. **[Befund 3](#3-setrolegrant-löscht-ein-deny-ungeprüft-hoch)** — vier Zeilen,
-   schließt den einzigen Selbstbeförderungspfad. Test mitändern.
-2. **[Befund 5](#5-projectrolekeyfor-verleiht-manager-die-rollenverwaltung-im-projekt-hoch)** —
-   betrifft jeden Workspace mit einem `manager` und öffentlichen Projekten, also
-   den Standardfall.
-3. **[Befund 1](#1-createissue-umgeht-das-assign-gate-hoch)** und
-   **[Befund 2](#2-inviteprojectmember-legt-eine-workspace-rolle-ohne-rang-grenze-an-hoch)** —
-   je eine Zeile, beide sind Symmetriefehler gegenüber der Schwester-Action.
-4. **[Befund 4](#4-platform_admin-verwaltet-rollen-in-jedem-fremden-workspace-hoch)** —
-   eine Zeile in `requireTargetManage`.
-5. **[Befund 9](#9-projekt-gäste-lesen-die-komplette-mitgliederliste-mittel)** —
-   Entscheidung nötig: neuer Key `member.view` oder Einschränkung auf gemeinsame
-   Projekte.
-6. **[Befund 18](#18-kein-error-boundary-jeder-permissionerror-wird-ein-500-niedrig)** —
-   eine `error.tsx` je Route-Gruppe, danach sind die fehlenden UI-Flags
-   erträglich statt hässlich.
-7. **Tests für die Issue-Actions** — die ungetestete Fläche mit dem meisten
-   Verkehr.
-8. Die Stufe-3-Flags und `lib/nav.ts` um ein `permission`-Feld erweitern; die
-   drei Rollennamen-Vergleiche ersetzen.
+Always invoke with `bun run test`, never `bun test` (module cache, see
+CLAUDE.md).
 
 ---
 
-## Methode
+## 12. Recommended order
 
-11 parallele Leser über die Flächengruppen, jeder gemeldete Mangel anschließend
-von einem eigenen Agenten mit dem Auftrag geprüft, ihn zu **widerlegen**
-(Aufrufkette nach oben und unten, implizite Resolver-Regeln, bestehende Tests).
-105 Behauptungen, 91 widerlegt, 14 bestätigt; zwei weitere Befunde kamen aus dem
-Doku-Abgleich und einer aus der Vollständigkeitsprüfung hinzu. 118 Agenten
-insgesamt.
+1. **[Finding 3](#3-setrolegrant-deletes-a-deny-unchecked-high)** — four
+   lines, closes the only self-promotion path. Update the test alongside
+   it.
+2. **[Finding 5](#5-projectrolekeyfor-grants-manager-role-management-within-the-project-high)** —
+   affects every workspace with a `manager` and public projects, i.e. the
+   default case.
+3. **[Finding 1](#1-createissue-bypasses-the-assign-gate-high)** and
+   **[Finding 2](#2-inviteprojectmember-creates-a-workspace-role-without-a-rank-limit-high)** —
+   one line each, both are symmetry bugs relative to their sibling action.
+4. **[Finding 4](#4-platform_admin-manages-roles-in-any-foreign-workspace-high)** —
+   one line in `requireTargetManage`.
+5. **[Finding 9](#9-project-guests-read-the-full-member-list-medium)** —
+   needs a decision: a new key `member.view`, or restricting to shared
+   projects.
+6. **[Finding 18](#18-no-error-boundary-every-permissionerror-becomes-a-500-low)** —
+   one `error.tsx` per route group, after which the missing UI flags become
+   tolerable instead of ugly.
+7. **Tests for the issue actions** — the untested surface with the most
+   traffic.
+8. Extend the level-3 flags and `lib/nav.ts` with a `permission` field;
+   replace the three role-name comparisons.
 
-Vollständigkeit gegengeprüft über `grep -rl '"use server"'` (genau 5 Dateien),
-alle exportierten Funktionen je `actions.ts`/`queries.ts`, alle Router-Dateien,
-alle `db.`-Zugriffe außerhalb von `queries.ts`/`actions.ts` und eine Suche nach
-inline `"use server"` in `.tsx` (keine) — keine rechte-relevante Fläche fehlte.
+---
 
-Von Hand nachgeprüft: die Key-Abdeckung (34 deklariert, 13 ohne Prüfstelle),
-`setRoleGrant`s `null`-Pfad, `createIssue` ohne `issue.assign`,
-`requireTargetManage`s Kontext aus dem Client-Argument,
-`permissionsFor("PROJECT").includes("role.manage")` (via `bun run`), die
-Rollennamen in `Settings.tsx`/`Teams.tsx`/`Members.tsx`, `roles` vs.
-`assignableRoles` im Rollen-Picker, das Fehlen jeder `error.tsx`, die
-`onDelete`-Regeln in `schema.prisma`, die Zeilennummern in `lib/invitations.ts`,
-die fehlenden Actions für `workspace.*`/`team.*`/`label.update|delete`, und die
-vier Layouts.
+## Method
+
+11 parallel readers across the surface groups, each reported deficiency
+then checked by a separate agent tasked with **disproving** it (call chain
+up and down, implicit resolver rules, existing tests). 105 claims, 91
+disproven, 14 confirmed; two further findings came from the doc comparison
+and one from the completeness check. 118 agents total.
+
+Completeness cross-checked via `grep -rl '"use server"'` (exactly 5
+files), every exported function per `actions.ts`/`queries.ts`, every
+router file, every `db.` access outside `queries.ts`/`actions.ts`, and a
+search for inline `"use server"` in `.tsx` (none) — no permission-relevant
+surface was missing.
+
+Manually verified: key coverage (34 declared, 13 without an enforcement
+point), `setRoleGrant`'s `null` path, `createIssue` without `issue.assign`,
+`requireTargetManage`'s context from the client argument,
+`permissionsFor("PROJECT").includes("role.manage")` (via `bun run`), the
+role names in `Settings.tsx`/`Teams.tsx`/`Members.tsx`, `roles` vs.
+`assignableRoles` in the role picker, the absence of any `error.tsx`, the
+`onDelete` rules in `schema.prisma`, the line numbers in
+`lib/invitations.ts`, the missing actions for
+`workspace.*`/`team.*`/`label.update|delete`, and the four layouts.

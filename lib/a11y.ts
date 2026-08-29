@@ -1,12 +1,12 @@
 import type { KeyboardEvent } from "react";
 
 /**
- * onKeyDown-Handler, der `fn` bei Enter oder Leertaste auslöst — für Elemente
- * mit `role="button"` und `onClick`, damit sie auch per Tastatur bedienbar sind.
+ * onKeyDown handler that fires `fn` on Enter or Space — for elements with
+ * `role="button"` and `onClick`, so they're also usable via keyboard.
  *
- * Reagiert nur, wenn das Element selbst fokussiert ist (`target === currentTarget`),
- * damit Tastendrücke in verschachtelten Controls (z. B. Buttons, Inputs) nicht
- * versehentlich die Container-Aktion auslösen.
+ * Only reacts when the element itself is focused (`target === currentTarget`),
+ * so keypresses in nested controls (e.g. buttons, inputs) don't accidentally
+ * trigger the container's action.
  */
 export function onActivate<T extends Element = Element>(fn: () => void) {
   return (e: KeyboardEvent<T>) => {
@@ -19,11 +19,11 @@ export function onActivate<T extends Element = Element>(fn: () => void) {
 }
 
 /**
- * Die Modifikatortaste, wie sie auf diesem System heißt.
+ * The modifier key, named as it's called on this system.
  *
- * Nur im Browser aufrufbar — auf dem Server gäbe es kein `navigator`, und ein
- * geratener Wert führte beim ersten Abgleich zu einer Abweichung. Alle
- * Aufrufer sind Client-Komponenten.
+ * Only callable in the browser — on the server there'd be no `navigator`,
+ * and a guessed value would cause a mismatch on first hydration. All
+ * callers are client components.
  */
 export function modKey(): string {
   if (typeof navigator === "undefined") return "Ctrl";

@@ -5,10 +5,10 @@ import type { PMDoc, PMNode } from "@/lib/richtext/types";
 
 const render = (doc: PMDoc) => renderToStaticMarkup(<RichText value={doc} />);
 
-/** Kürzt die Testfälle: ein Dokument aus den übergebenen Blöcken. */
+/** Shortens the test cases: a document from the given blocks. */
 const doc = (...content: PMNode[]): PMDoc => ({ type: "doc", content });
 
-/** Ein Absatz aus einem einzelnen Textknoten. */
+/** A paragraph made of a single text node. */
 const p = (text: string, marks?: PMNode["marks"]): PMNode => ({
   type: "paragraph",
   content: [{ type: "text", text, ...(marks ? { marks } : {}) }],
@@ -105,7 +105,7 @@ describe("RichText", () => {
     );
     expect(html).toContain('data-checked="true"');
     expect(html).toContain('data-checked="false"');
-    // Nur Anzeige — angehakt wird im Editor.
+    // Display only — checking happens in the editor.
     expect(html).toContain("disabled");
   });
 
@@ -122,8 +122,8 @@ describe("RichText", () => {
       }),
     );
     expect(code).toContain('data-language="ts"');
-    // Der Code steht jetzt in Token zerlegt da — geprüft wird der Text ohne
-    // Auszeichnung, damit die Hervorhebung nichts verschluckt.
+    // The code is now split into tokens — checked against the text without
+    // markup, so the highlighting doesn't swallow anything.
     expect(textOf(code)).toContain("const a = 1");
 
     expect(render(doc({ type: "horizontalRule" }))).toContain("<hr/>");
@@ -145,8 +145,8 @@ describe("RichText", () => {
     expect(html).toContain("@Anna Weber");
     expect(html).toContain("ORB-42");
     expect(html).toContain('href="?issue=ORB-42"');
-    // React gibt `dateTime` unverändert aus; HTML-Attribute sind
-    // schreibweisenunabhängig, im Browser ist das dasselbe Attribut.
+    // React outputs `dateTime` unchanged; HTML attributes are case-insensitive,
+    // so in the browser it's the same attribute.
     expect(html).toContain("<time");
     expect(html).toContain('dateTime="2026-08-14"');
     expect(html).toContain("🚀");
@@ -189,7 +189,7 @@ describe("RichText", () => {
         p("klick", [{ type: "link", attrs: { href: "javascript:alert(1)" } }]),
       ),
     );
-    // Der Text bleibt, der Link verschwindet.
+    // The text stays, the link disappears.
     expect(html).toContain("klick");
     expect(html).not.toContain("javascript:");
     expect(html).not.toContain("<a");
@@ -214,8 +214,8 @@ describe("RichText", () => {
   });
 
   test("überlebt kaputte Eingaben", () => {
-    // Was nicht wie ein Dokument aussieht, wird zum leeren Dokument — ein
-    // einzelner leerer Absatz, kein Absturz und kein fremder Inhalt.
+    // Whatever doesn't look like a document becomes an empty document — a
+    // single empty paragraph, no crash, and no foreign content.
     for (const bad of [
       null,
       undefined,
@@ -227,7 +227,7 @@ describe("RichText", () => {
         '<div class="richText"><p></p></div>',
       );
     }
-    // Ein `doc` ohne `content` ist gültig und bleibt leer.
+    // A `doc` without `content` is valid and stays empty.
     expect(renderToStaticMarkup(<RichText value={{ type: "doc" }} />)).toBe(
       '<div class="richText"></div>',
     );
@@ -275,7 +275,7 @@ describe("RichText — Chips", () => {
       />,
     );
     expect(html).toContain('dateTime="2026-08-14"');
-    // Nicht mehr die Rohform im Text — dieselbe Schreibweise wie im Editor.
+    // No longer the raw form in the text — the same formatting as in the editor.
     expect(html).not.toMatch(/>2026-08-14</);
     expect(html).toMatch(/2026/);
   });
@@ -293,7 +293,7 @@ describe("RichText — Adresse beim Überfahren", () => {
     );
 
   test("der Link im Fließtext trägt seine Adresse als Titel", () => {
-    // Dem Wort sieht man sonst nicht an, wohin es führt.
+    // Otherwise you can't tell from the word alone where it leads.
     const html = render({
       type: "text",
       text: "hier",
@@ -318,7 +318,7 @@ describe("RichText — Adresse beim Überfahren", () => {
   });
 });
 
-/** Der sichtbare Text ohne Auszeichnung — Entities zurückübersetzt. */
+/** The visible text without markup — entities translated back. */
 const textOf = (html: string) =>
   html
     .replace(/<[^>]*>/g, "")
@@ -348,13 +348,13 @@ describe("RichText — Codeblock", () => {
   test("nennt die Programmiersprache im Kopf", () => {
     expect(codeBlock("x", "ts")).toContain("TypeScript");
     expect(codeBlock("x", "py")).toContain("Python");
-    // Über eine andere Schreibweise gefunden.
+    // Found via an alternate spelling.
     expect(codeBlock("x", "golang")).toContain("Go");
   });
 
   test("reicht eine unbekannte Angabe durch, statt sie zu verwerfen", () => {
-    // Sie kam vielleicht aus eingefügtem Markdown — die Information ist mehr
-    // wert als eine saubere Liste.
+    // It may have come from pasted Markdown — the information is worth more
+    // than a clean list.
     expect(codeBlock("x", "brainfuck")).toContain("brainfuck");
   });
 
@@ -368,15 +368,16 @@ describe("RichText — Codeblock", () => {
   });
 
   test("zählt einen abschließenden Umbruch nicht als weitere Zeile", () => {
-    // Sonst stünde unter dem letzten Zeichen eine leere Nummer.
+    // Otherwise there'd be an empty line number under the last character.
     expect(codeBlock("eins\nzwei\n").match(/class="codeLine"/g)).toHaveLength(
       2,
     );
   });
 
   test("hält die Zeilennummern aus dem Text heraus", () => {
-    // Sie stehen im CSS (`::before`) — sonst wanderten sie beim Kopieren mit.
-    // Geprüft am reinen Text: dort darf nichts stehen als der Code selbst.
+    // They live in CSS (`::before`) — otherwise they'd get copied along with
+    // the code. Checked against the plain text: nothing may appear there but
+    // the code itself.
     const html = codeBlock("eins\nzwei\ndrei", "ts");
     expect(textOf(html)).toContain("einszweidrei");
     expect(textOf(html)).not.toMatch(/1.*2.*3/);
@@ -388,7 +389,7 @@ describe("RichText — Codeblock", () => {
     expect(html).toContain("hljs-keyword");
     expect(html).toContain("hljs-string");
     expect(html).toContain("hljs-comment");
-    // Entscheidend: der Text bleibt Zeichen für Zeichen derselbe.
+    // The crucial part: the text stays the same character for character.
     expect(textOf(html)).toContain(quelle);
   });
 });

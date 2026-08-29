@@ -26,12 +26,13 @@ import styles from "./settings.module.scss";
 export const dynamic = "force-dynamic";
 
 /**
- * Rahmen der Projekteinstellungen: links die Bereiche, rechts der offene.
+ * Frame of the project settings: sections on the left, the open one on the
+ * right.
  *
- * Das Layout hält nur die Navigation zusammen. Jede Unterseite lädt ihre Daten
- * selbst und prüft dabei erneut — ein Layout schützt keine Server Action, und
- * eine ausgeblendete Zeile in der Leiste ist keine Zugriffskontrolle. Was hier
- * fehlt, ist nur nicht angeboten; verweigert wird es in der Seite.
+ * This layout only holds the navigation together. Every subpage loads its
+ * own data and checks access again — a layout doesn't protect a Server
+ * Action, and a hidden row in the sidebar isn't access control. What's
+ * missing here is simply not offered; it's denied on the page itself.
  */
 export default async function ProjectSettingsLayout({
   children,
@@ -54,8 +55,8 @@ export default async function ProjectSettingsLayout({
   ]);
   if (!access.has("project.view")) notFound();
 
-  // Hier ist das Projekt bekannt — der Umschalter führt zurück auf genau das,
-  // in dem man gerade steht, und nicht auf ein beliebiges anderes.
+  // The project is known here — the switcher leads back to exactly the one
+  // you're currently in, not to some arbitrary other one.
   const scope = visibleSettingsScope(
     settingsScopeItems({
       workspaceId: workspace,
@@ -72,11 +73,11 @@ export default async function ProjectSettingsLayout({
     },
   );
 
-  // Der Kopf der Leiste wechselt das Projekt und bleibt dabei in den
-  // Einstellungen — über Workspace-Grenzen hinweg, denn ein Projekt sucht man
-  // nach seinem Namen und nicht danach, wo es hängt. `getMyProjects` liefert
-  // genau die mit `project.view`, also dieselbe Hürde, die dieses Layout
-  // gleich prüft: was hier steht, öffnet sich auch.
+  // The sidebar's header switches the project while staying within
+  // settings — across workspace boundaries, because you look up a project by
+  // its name, not by which workspace it hangs off of. `getMyProjects` returns
+  // exactly the ones with `project.view`, the same gate this layout checks
+  // right below: whatever's listed here also opens.
   const siblings: SettingsNavSubject[] = (await getMyProjects()).map((p) => ({
     id: p.id,
     name: p.name,
@@ -86,9 +87,9 @@ export default async function ProjectSettingsLayout({
     group: p.workspaceName,
   }));
 
-  // Rollen sind der einzige Bereich mit eigener Hürde: dort stehen die Regeln,
-  // nach denen alles andere entschieden wird. Allgemein und Labels bleiben auch
-  // ohne Schreibrecht sichtbar — sie zeigen dann, was gilt, nur unveränderlich.
+  // Roles is the only section with its own gate: it holds the rules that
+  // decide everything else. General and Labels stay visible even without
+  // write access — they then show what's in effect, just read-only.
   const items: SettingsNavItem[] = PROJECT_SETTINGS_NAV.filter((entry) =>
     navEntryAllowed(access.has, entry),
   ).map((entry) => ({
@@ -99,7 +100,7 @@ export default async function ProjectSettingsLayout({
 
   return (
     <div className={styles.shell}>
-      {/* Nur "Persönlich" übrig heißt: nichts zum Umschalten. */}
+      {/* Only "Personal" remaining means: nothing to switch between. */}
       {scope.length > 1 && (
         <SettingsHeader
           items={scope}

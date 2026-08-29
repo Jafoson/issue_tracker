@@ -50,9 +50,9 @@ mock.module("@/lib/permissions", () => ({
   assignmentCeiling: mockAssignmentCeiling,
 }));
 
-// Die Team-Rollen-Synchronisation selbst hat ihre eigenen Tests
-// (tests/unit/projects/teamProjectRoles.test.ts) — hier zählt nur, dass
-// `createTeam`/`updateTeam`/`deleteTeam` sie mit den richtigen Ids aufrufen.
+// Team role synchronization itself has its own tests
+// (tests/unit/projects/teamProjectRoles.test.ts) — what matters here is only
+// that `createTeam`/`updateTeam`/`deleteTeam` call it with the correct ids.
 const mockSyncProjectTeamRoles = mock();
 
 mock.module("@/lib/project-membership", () => ({
@@ -82,13 +82,13 @@ const input = (over: Partial<Parameters<typeof createTeam>[1]> = {}) => ({
   desc: "",
   leadId: "u-lead",
   memberIds: ["u-1"],
-  // Ohne `roleKey` bleibt die Verknüpfung reine Gruppierung — dasselbe
-  // Verhalten wie vor den Team-Projektrollen.
+  // Without `roleKey` the link stays pure grouping — the same behavior
+  // as before team project roles existed.
   projects: [{ projectId: "p-1", roleKey: null }],
   ...over,
 });
 
-/** Welche der drei Team-Permissions der Handelnde hat. */
+/** Which of the three team permissions the actor has. */
 function grants(map: Record<string, boolean>) {
   mockCan.mockImplementation(async (_id: string, permission: string) =>
     permission in map ? map[permission] : false,
@@ -120,8 +120,8 @@ function reset() {
       fn.mockResolvedValue({});
     }
   }
-  // Vorheriger Stand für Sync-Vergleiche: ohne Mitglieder/Projekt-Rollen, wenn
-  // ein Test nichts anderes vorgibt.
+  // Previous state for sync comparisons: no members/project roles, unless
+  // a test specifies otherwise.
   mockTx.teamMember.findMany.mockResolvedValue([]);
   mockTx.teamProject.findMany.mockResolvedValue([]);
 
@@ -130,9 +130,9 @@ function reset() {
   mockTeamCreate.mockResolvedValue({ id: TEAM });
   mockTeamUpdate.mockResolvedValue({ id: TEAM });
   mockTeamDelete.mockResolvedValue({ id: TEAM });
-  // Kein Team trägt das Kürzel schon; beim Ändern wird das Team selbst geladen.
+  // No team already has the identifier; on update the team itself is loaded.
   mockTeamFindUnique.mockResolvedValue(null);
-  // Lead und Mitglied gehören zum Workspace, das Projekt auch.
+  // Lead and member belong to the workspace, and so does the project.
   mockMemberCount.mockResolvedValue(2);
   mockProjectCount.mockResolvedValue(1);
   mockTransaction.mockImplementation(
@@ -174,8 +174,8 @@ describe("createTeam()", () => {
     expect(mockTeamCreate.mock.calls[0][0].data.key).toBe("PLAT");
   });
 
-  // Ohne diese Prüfung ließe sich über fremde Ids ein Team zusammenstellen,
-  // das quer durch einen anderen Mandanten reicht.
+  // Without this check, foreign ids could be used to assemble a team
+  // that reaches across into another tenant.
   it("nimmt nur Mitglieder des Workspace auf", async () => {
     mockMemberCount.mockResolvedValue(1);
     expect(await createTeam(WS, input())).toEqual({
@@ -230,9 +230,9 @@ describe("createTeam()", () => {
       });
     });
 
-    // Ohne diese Prüfung könnte, wer nur `team.project.manage` trägt (z. B.
-    // die Rolle „Manager", ohne jedes Projektrecht), über ein Team Zugriff auf
-    // ein Projekt verleihen, in dem er selbst nichts darf.
+    // Without this check, someone who only holds `team.project.manage` (e.g.
+    // the "Manager" role, without any project permission) could use a team to
+    // grant access to a project in which they themselves can do nothing.
     it("lehnt eine Rolle über der eigenen Obergrenze im Projekt ab", async () => {
       mockAccessFor.mockResolvedValue({ has: () => true });
       mockAssignmentCeiling.mockReturnValue(2);
@@ -262,10 +262,10 @@ describe("createTeam()", () => {
 });
 
 describe("updateTeam()", () => {
-  // `team.findUnique` wird zweimal gefragt: einmal nach dem Team selbst (per
-  // Id) und einmal danach, ob das Kürzel schon vergeben ist (per
-  // workspaceId_key). Der Mock unterscheidet beides — sonst hielte die zweite
-  // Antwort das eigene Team für einen fremden Namensvetter.
+  // `team.findUnique` is queried twice: once for the team itself (by id)
+  // and once to check whether the identifier is already taken (by
+  // workspaceId_key). The mock distinguishes between the two — otherwise the
+  // second answer would mistake the team's own record for a foreign namesake.
   const onlyOwnTeam = async ({ where }: { where: { id?: string } }) =>
     where.id ? { workspaceId: WS } : null;
 
@@ -289,8 +289,8 @@ describe("updateTeam()", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  // Die drei Teile hängen an drei Rechten. Wer nur eines hat, ändert nur
-  // seinen Teil — der Rest wird übergangen, nicht abgelehnt.
+  // The three parts each depend on a separate permission. Whoever holds only
+  // one changes only their part — the rest is left alone, not rejected.
   it("ändert nur die Mitglieder, wenn nur team.member.manage vorliegt", async () => {
     grants({ "team.member.manage": true });
 
@@ -335,7 +335,7 @@ describe("updateTeam()", () => {
   it("synchronisiert Team-Rollen für alte und neue Mitglieder eines weiter verknüpften Projekts", async () => {
     mockAccessFor.mockResolvedValue({ has: () => true });
     mockRoleFindFirst.mockResolvedValue({ id: "role-contrib", rank: 3 });
-    // Vorher: u-2 war Mitglied, Projekt p-1 trug schon eine Rolle.
+    // Before: u-2 was a member, project p-1 already carried a role.
     mockTx.teamMember.findMany.mockResolvedValue([{ userId: "u-2" }]);
     mockTx.teamProject.findMany.mockResolvedValue([{ projectId: "p-1" }]);
 
@@ -355,7 +355,7 @@ describe("updateTeam()", () => {
   });
 
   it("synchronisiert auch das Projekt, das gerade seine Rolle verliert", async () => {
-    // Vorher trug p-1 eine Rolle; jetzt wird die Verknüpfung ganz entfernt.
+    // Before, p-1 carried a role; now the link is removed entirely.
     mockTx.teamProject.findMany.mockResolvedValue([{ projectId: "p-1" }]);
 
     await updateTeam(TEAM, input({ projects: [] }));

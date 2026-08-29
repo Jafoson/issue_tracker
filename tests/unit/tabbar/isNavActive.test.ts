@@ -16,8 +16,8 @@ describe("isNavActive()", () => {
     ).toBe(true);
   });
 
-  // Ohne die Wildcard verlöre „Einstellungen" seine Markierung, sobald man
-  // einen ihrer Bereiche öffnet — und der Zweig in der Seitenleiste klappte zu.
+  // Without the wildcard, "Settings" would lose its highlight as soon as you
+  // open one of its sub-sections — and the branch in the sidebar would collapse.
   it("deckt mit `/*` auch alles unterhalb ab", () => {
     const pattern = `${PROJ}/settings/*`;
     expect(isNavActive(`${PROJ}/settings`, "", pattern)).toBe(true);
@@ -29,7 +29,7 @@ describe("isNavActive()", () => {
     const pattern = `${PROJ}/settings/*`;
     expect(isNavActive(`${PROJ}/members`, "", pattern)).toBe(false);
     expect(isNavActive(`${PROJ}`, "", pattern)).toBe(false);
-    // Ein Präfix ist noch kein Segment: /settings-alt gehört nicht dazu.
+    // A prefix isn't a segment: /settings-alt doesn't belong to it.
     expect(isNavActive(`${PROJ}/settings-alt`, "", pattern)).toBe(false);
   });
 

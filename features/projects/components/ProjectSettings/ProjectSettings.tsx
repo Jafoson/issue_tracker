@@ -28,11 +28,11 @@ import styles from "./projectSettings.module.scss";
 
 interface Props extends ProjectSettingsView {
   workspaceId: string;
-  /** Die absolute Adresse des Projekts — fertig zusammengesetzt vom Server. */
+  /** The project's absolute address — already assembled by the server. */
   projectUrl: string;
 }
 
-/** Eine Einstellung als Zeile: worum es geht, was sie bedeutet, womit man sie ändert. */
+/** A setting as a row: what it's about, what it means, and how you change it. */
 interface SettingRow {
   id: string;
   label: string;
@@ -41,14 +41,13 @@ interface SettingRow {
 }
 
 /**
- * Zwei Spalten für jede Einstellung — und dieselbe Tabelle wie unter Labels und
- * Rollen. Die Definition braucht weder Übersetzung noch Zustand und steht
- * deshalb außerhalb der Komponente.
+ * Two columns for every setting — the same table as under Labels and Roles.
+ * The definition needs neither translation nor state and therefore lives
+ * outside the component.
  *
- * Links, worum es geht (Beschriftung über Erklärung), rechts, womit man es
- * ändert. Die Erklärung nimmt den freien Platz; jedes Bedienelement steht in
- * derselben festen Breite (`.control`), damit die rechten Kanten eine Linie
- * bilden.
+ * Left, what it's about (label above explanation); right, how you change
+ * it. The explanation takes the free space; every control sits at the same
+ * fixed width (`.control`), so the right edges form a line.
  */
 const COLUMNS: TableColumn<SettingRow>[] = [
   {
@@ -70,19 +69,20 @@ const COLUMNS: TableColumn<SettingRow>[] = [
 ];
 
 /**
- * Die Stammdaten eines Projekts: Name, Kürzel, Farbe, Sichtbarkeit, Löschen.
+ * A project's core data: name, prefix, color, visibility, delete.
  *
- * Was jemand darf, kommt fertig vom Server (`canUpdate`, `canDelete`) — die
- * Felder hier bauen keine Rechteregeln nach. Ohne `canUpdate` bleibt die Seite
- * lesbar: sie zeigt, was gilt, nur eben unveränderlich.
+ * What someone is allowed to do arrives ready-made from the server
+ * (`canUpdate`, `canDelete`) — the fields here don't reimplement permission
+ * rules. Without `canUpdate` the page stays readable: it shows what applies,
+ * just not changeable.
  *
- * Aufgebaut wie die übrigen Bereiche der Einstellungen: Kopfzeile mit der
- * Aktion rechts, darunter Listen in Karten, dazwischen Überschriften. Die drei
- * Textfelder teilen sich den Speichern-Knopf im Seitenkopf: wer ein Kürzel
- * ändert, prüft meist auch gleich den Namen, und drei einzelne Knöpfe würden
- * dafür drei Runden zum Server brauchen. Die Sichtbarkeit hat keinen — sie ist
- * ein Schalter, und ein Schalter, der erst durch „Speichern" wirkt, sieht aus,
- * als hätte er schon gewirkt.
+ * Structured like the rest of the settings sections: header with the action
+ * on the right, lists in cards below, headings in between. The three text
+ * fields share the save button in the page header: whoever changes a prefix
+ * usually checks the name at the same time too, and three separate buttons
+ * would need three round trips to the server for that. Visibility has none
+ * — it's a toggle, and a toggle that only takes effect via "Save" looks like
+ * it already took effect.
  */
 export function ProjectSettings({
   project,
@@ -148,9 +148,9 @@ export function ProjectSettings({
   const touch = () => setSaved(false);
 
   const general: SettingRow[] = [
-    // Der Slug steht in jeder URL des Projekts und ändert sich nicht mit dem
-    // Namen — sonst bräche jeder geteilte Link. Deshalb steht er hier zum
-    // Nachlesen und Mitnehmen, nicht als Feld.
+    // The slug appears in every URL of the project and doesn't change with
+    // the name — otherwise every shared link would break. That's why it's
+    // shown here for reference and copying, not as an editable field.
     {
       id: "url",
       label: t("projectSettings.url"),
@@ -236,8 +236,8 @@ export function ProjectSettings({
         actions={
           canUpdate && (
             <>
-              {/* Verschwindet, sobald wieder etwas geändert wird — die
-                  Bestätigung gehört zum abgeschlossenen Vorgang. */}
+              {/* Disappears as soon as something changes again — the
+                  confirmation belongs to the completed action. */}
               {saved && !dirty && (
                 <span className={styles.saved}>
                   <Icon icon="lucide:check" width={14} />
@@ -328,7 +328,7 @@ export function ProjectSettings({
                 }}
               />
             ) : (
-              // Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe.
+              // Without write access, all that's left of the color picker is the color.
               <span
                 role="img"
                 className={styles.colorProof}
@@ -351,8 +351,8 @@ export function ProjectSettings({
           <h2 className={styles.groupTitle}>
             {t("projectSettings.visibility")}
           </h2>
-          {/* Steht über der Karte, nicht darin: der Satz erklärt die Grenze des
-              Schalters, nicht seine Funktion. */}
+          {/* Sits above the card, not inside it: the sentence explains the
+              toggle's boundary, not its function. */}
           <p className={styles.groupDesc}>
             {t("projectSettings.visibilityNote", {
               count: project.memberCount,

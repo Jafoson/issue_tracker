@@ -1,8 +1,9 @@
-/* Das Raster der Zeilen kommt aus `components/ui/layout/SettingsList` — hier
-   steht nur, was die Zellen füllt. */
+/* The row grid comes from `components/ui/layout/SettingsList` — only what
+   fills the cells lives here. */
 
-/* Für die Farbwahl im Kopf (`SettingsIdentity`) — sie hat kein eigenes
-   `label`-Prop wie `Input`, also dieselbe Beschriftung von Hand daneben. */
+/* For the color picker in the header (`SettingsIdentity`) — it has no
+   `label` prop of its own like `Input`, so the same label is placed next to
+   it by hand. */
 .field {
   display: flex;
   flex-direction: column;
@@ -15,8 +16,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Eine Angabe ohne Bedienelement — an derselben Kante wie die Felder darüber,
-   aber zurückgenommen: es gibt nichts zu tun. */
+/* A value with no control — aligned to the same edge as the fields above,
+   but muted: there's nothing to act on. */
 .value {
   font-size: var(--text-base);
   color: var(--on-surface-variant);

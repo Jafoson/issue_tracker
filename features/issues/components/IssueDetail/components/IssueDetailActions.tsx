@@ -18,11 +18,12 @@ interface OpenPageButtonProps {
 }
 
 /**
- * Führt aus Panel und Dialog auf die Vollseite des Issues.
+ * Leads from the panel and dialog to the issue's full page.
  *
- * Ein Link, kein Knopf mit `router.push`: die Seite ist ein Ort, und den soll
- * man auch mit Cmd-Klick in einem neuen Tab öffnen können. Aussehen und Maße
- * kommen aus `.headerLink` — dieselben wie bei den Ghost-Buttons daneben.
+ * A link, not a button with `router.push`: the page is a place, and it
+ * should be possible to open it with a Cmd-click in a new tab too.
+ * Appearance and dimensions come from `.headerLink` — the same as the ghost
+ * buttons next to it.
  */
 export function OpenPageButton({
   workspaceId,
@@ -50,8 +51,8 @@ interface ShareIssueButtonProps {
   me: { id: string };
 }
 
-/** Öffnet den Dialog zum Ein-/Ausschalten des öffentlichen Lese-Links —
- *  ohne `issue.share.manage` bleibt der Knopf ganz weg. */
+/** Opens the dialog for enabling/disabling the public read-only link —
+ *  without `issue.share.manage` the button is left out entirely. */
 export function ShareIssueButton({
   issueId,
   shareUrl,
@@ -88,19 +89,19 @@ export function ShareIssueButton({
 
 interface IssueActionsMenuProps {
   onDelete: () => void;
-  /** `issue.access.canDelete` — ohne `issue.delete.any`/`.own` bleibt das Menü weg. */
+  /** `issue.access.canDelete` — without `issue.delete.any`/`.own` the menu is left out. */
   canDelete: boolean;
 }
 
 /**
- * „…“-Menü der Kopfzeile.
+ * The "…" menu in the header.
  *
- * Der Weg auf die Vollseite stand hier einmal als Eintrag — er ist jetzt ein
- * eigener Knopf daneben (`OpenPageButton`), und zweimal dieselbe Aktion in
- * derselben Zeile wäre nur Rauschen.
+ * The link to the full page used to be an entry here — it's now its own
+ * button next to it (`OpenPageButton`), and having the same action twice in
+ * the same row would just be noise.
  *
- * Aktuell der einzige Eintrag ist Löschen — ohne `canDelete` bliebe ein Menü
- * mit nichts drin, das rendert das Menü also gleich gar nicht.
+ * Currently the only entry is delete — without `canDelete` the menu would
+ * be left with nothing in it, so it isn't rendered at all in that case.
  */
 export function IssueActionsMenu({
   onDelete,

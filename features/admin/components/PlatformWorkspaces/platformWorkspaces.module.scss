@@ -1,4 +1,4 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
+/* Not the page that scrolls, but the table itself (`fill`). */
 .content {
   flex: 1;
   min-height: 0;
@@ -30,8 +30,8 @@
   font-size: var(--text-base);
   line-height: var(--leading-tight);
 
-  /* Der Name kürzt, die Plakette dahinter nicht — sonst verschwände zuerst die
-     Auskunft „gesperrt". */
+  /* The name truncates, the badge after it doesn't — otherwise the
+     "suspended" indicator would vanish first. */
   > :first-child {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -39,8 +39,8 @@
   }
 }
 
-/* Gesperrt ist ein Zustand, kein Fehler — die Plakette trägt die Warnfarbe,
-   nicht die des Verlusts. Rückgängig ist es mit einem Klick. */
+/* Suspended is a state, not an error — the badge carries the warning color,
+   not the color of loss. It's reversible with one click. */
 .suspended {
   border-color: color-mix(in oklab, var(--amber) 45%, var(--outline-variant));
   color: var(--amber);
@@ -80,8 +80,8 @@
   gap: 2px;
 }
 
-/* Erst unter dem Zeiger rot. Dauerhaft wäre jede Zeile ein Alarm; farblos sähe
-   der Knopf aus wie „bearbeiten". */
+/* Only red under the pointer. Permanently, every row would be an alarm;
+   colorless, the button would look like "edit". */
 .delete:hover:not(:disabled) {
   color: var(--error);
 }

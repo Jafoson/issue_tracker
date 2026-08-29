@@ -27,23 +27,24 @@ import { IssueTitle } from "./components/IssueTitle";
 import styles from "./issueDetail.module.scss";
 
 /**
- * Grenzen des Seitenpanels. Es steht an der rechten Kante und lässt sich am
- * linken Rand breiter ziehen — bis zur Obergrenze, denn ein Panel, das den
- * Bildschirm füllt, ist kein Panel mehr; dafür gibt es das Ausklappen.
+ * Bounds of the side panel. It sits at the right edge and can be dragged
+ * wider from its left edge — up to a cap, because a panel that fills the
+ * screen is no longer a panel; that's what expanding is for.
  *
- * Die Ausgangsbreite steht hier und nicht im Stylesheet: `.modal.panel` setzt
- * `--modal-w` mit zwei Klassen und schlüge jede Regel, die `.detail` dagegen
- * hält. Inline gewinnt sie ohne Wettrüsten — und der Ladeplatzhalter zeigt
- * denselben Wert, damit das Panel beim Eintreffen der Daten nicht springt.
+ * The starting width lives here rather than in the stylesheet:
+ * `.modal.panel` sets `--modal-w` with two classes and would win against
+ * any rule `.detail` holds against it. Inline wins without an arms race —
+ * and the loading placeholder shows the same value, so the panel doesn't
+ * jump when the data arrives.
  */
 const PANEL_MIN_W = 480;
 const PANEL_MAX_W = 1200;
 const PANEL_DEFAULT_W = 720;
 
 /**
- * Die Klassen der Hülle. Ausgeklappt bringt eigene Breite und einen Schatten
- * mit — und weil Ladezustand, Fehlzustand und fertige Ansicht dieselbe Hülle
- * tragen müssen, steht die Liste hier einmal statt dreimal.
+ * The shell's classes. Expanded brings its own width and a shadow — and
+ * since the loading state, error state, and finished view all need to
+ * carry the same shell, the list lives here once instead of three times.
  */
 function shellClass(isExpanded: boolean) {
   return [styles.detail, isExpanded && styles.expanded]
@@ -56,19 +57,19 @@ interface IssueDetailViewProps {
   data: IssueComposerData;
   onClose: () => void;
   /**
-   * Klappt zwischen Seitenpanel und großem Dialog um. Fehlt, wo es nichts
-   * umzuklappen gibt — auf der Vollseite.
+   * Toggles between side panel and large dialog. Missing wherever there's
+   * nothing to toggle — on the full page.
    */
   onToggleExpanded?: () => void;
   isExpanded?: boolean;
   onPatch: (patch: IssuePatch) => void;
   onComment: (body: PMDoc) => Promise<void>;
   onDelete: () => void;
-  /** Holt das Issue neu — für Anhänge, die am Hook vorbei geschrieben werden. */
+  /** Refetches the issue — for attachments that are written past the hook. */
   onRefresh: () => Promise<void>;
 }
 
-/** Reine Darstellung — alles, was schreibt, kommt als Callback herein. */
+/** Pure rendering — everything that writes comes in as a callback. */
 export function IssueDetailView({
   issue,
   data,
@@ -82,8 +83,8 @@ export function IssueDetailView({
 }: IssueDetailViewProps) {
   const t = useTranslations();
   const isPanel = !isExpanded;
-  // Nur das Panel ist ziehbar — der ausgeklappte Dialog bemisst sich an der
-  // Bildschirmbreite.
+  // Only the panel is resizable — the expanded dialog scales with the
+  // screen width.
   const [panelWidth, setPanelWidth] = useState(PANEL_DEFAULT_W);
   const prefix = data.projects.find((p) => p.id === issue.project)?.prefix;
   const identifier = `${prefix ?? "?"}-${issue.key}`;
@@ -117,8 +118,8 @@ export function IssueDetailView({
                 onClick={onToggleExpanded}
               />
             )}
-            {/* Panel und Dialog liegen beide über etwas anderem — von hier
-                führt der Knopf auf die Seite, die für sich steht. */}
+            {/* Both the panel and the dialog sit over something else — from
+                here, the button leads to the page that stands on its own. */}
             <OpenPageButton
               workspaceId={data.workspaceId}
               identifier={identifier}
@@ -141,13 +142,14 @@ export function IssueDetailView({
         closeLabel={t("actions.close")}
       />
 
-      {/* Das schmale Seitenpanel zeigt alles untereinander, in der Reihenfolge,
-          in der man das Issue liest: worum es geht, wie es eingeordnet ist, was
-          dazu zu sagen war. Eine zweite Spalte hätte dort nur einen Stapel mit
-          Trennlinie ergeben.
+      {/* The narrow side panel shows everything stacked, in the order you'd
+          read the issue: what it's about, how it's categorized, what was
+          said about it. A second column there would just have produced a
+          stack with a divider line.
 
-          Der große Dialog hat die Breite für zwei Spalten — dort bleibt es wie
-          auf der Vollseite beim Inhalt links, Attribute rechts. */}
+          The large dialog has the width for two columns — there, just like
+          on the full page, it stays content on the left, attributes on the
+          right. */}
       {isPanel ? (
         <div className={styles.body}>
           <IssueTitle
@@ -237,9 +239,10 @@ export function IssueDetailView({
         </div>
       )}
 
-      {/* Am linken Rand des Panels, absolut über allem. Steht zuletzt im
-          Markup, damit er sich beim Tabben nicht vor die Kopfzeile drängt —
-          gesehen wird er ohnehin an seiner Kante, nicht an seiner Stelle. */}
+      {/* At the panel's left edge, absolutely positioned above everything.
+          Placed last in the markup, so it doesn't jump ahead of the header
+          when tabbing — it's seen at its edge anyway, not at its position
+          in the markup. */}
       {isPanel && (
         <Resizer
           className={styles.panelResizer}
@@ -256,8 +259,8 @@ export function IssueDetailView({
 }
 
 /**
- * Platzhalter, solange das Issue noch geladen wird. Rendert dieselbe Hülle,
- * damit das Panel beim Eintreffen der Daten nicht die Größe wechselt.
+ * Placeholder while the issue is still loading. Renders the same shell, so
+ * the panel doesn't change size once the data arrives.
  */
 export function IssueDetailSkeleton({
   isExpanded = false,
@@ -308,8 +311,8 @@ export function IssueDetailSkeleton({
 }
 
 /**
- * Ein Link kann auf ein gelöschtes Issue zeigen — dann steht das hier statt
- * eines ewigen Ladezustands.
+ * A link can point to a deleted issue — this is shown then instead of an
+ * eternal loading state.
  */
 export function IssueDetailMissing({
   isExpanded = false,

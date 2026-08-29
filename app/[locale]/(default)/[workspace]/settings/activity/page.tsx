@@ -9,8 +9,8 @@ import { getAccess } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Die volle, ungefilterte Aktivität dieses Workspace — Gegenstück zu
- * `.../project/[projectSlug]/settings/activity`, eine Ebene höher.
+ * The full, unfiltered activity of this workspace — counterpart to
+ * `.../project/[projectSlug]/settings/activity`, one level up.
  */
 export default async function WorkspaceActivityPage({
   params,

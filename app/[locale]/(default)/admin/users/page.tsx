@@ -8,13 +8,13 @@ import { currentUserId } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Benutzerverwaltung — `user.manage`, nicht bloß `platform.access`.
+ * User management — `user.manage`, not just `platform.access`.
  *
- * Den Bereich zu betreten und Konten zu verwalten sind zwei verschiedene Dinge:
- * die Support-Rolle darf das erste und ausdrücklich nicht das zweite
- * (`lib/rbac/roles.ts`). `notFound` statt einer Fehlerseite, weil die
- * Seitenleiste den Eintrag für sie ohnehin nicht zeigt — eine Adresse, die man
- * nur durch Raten findet, soll auch nichts über sich verraten.
+ * Entering the section and managing accounts are two different things: the
+ * support role is allowed the former and explicitly not the latter
+ * (`lib/rbac/roles.ts`). `notFound` instead of an error page, because the
+ * sidebar doesn't show this entry for them anyway — a URL you can only find
+ * by guessing shouldn't reveal anything about itself either.
  */
 export default async function AdminUsersPage() {
   const userId = await currentUserId();

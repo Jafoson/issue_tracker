@@ -5,32 +5,32 @@ import { useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import styles from "./suggestionMenu.module.scss";
 
 /**
- * Die Liste, die unter `@`, `#`, `:` und `/` aufgeht — eine für alle vier.
+ * The list that pops up under `@`, `#`, `:`, and `/` — one for all four.
  *
- * Was sie zeigt, entscheidet der jeweilige Trigger; sie selbst kennt nur
- * `SuggestionItem`. Bedienung und Aussehen sind bewusst dieselben wie in der
- * `CommandPalette` (↑ ↓ zum Wandern, ↵ zum Wählen), damit sich beides gleich
- * anfühlt.
+ * What it shows is decided by the respective trigger; it itself only knows
+ * `SuggestionItem`. Operation and appearance are deliberately the same as in
+ * the `CommandPalette` (↑ ↓ to navigate, ↵ to select), so both feel
+ * consistent.
  *
- * Positioniert wird sie nicht hier, sondern von `props.mount` aus
- * `@tiptap/suggestion` — das hängt sie über Floating UI an den Cursor und hält
- * sie beim Scrollen dort.
+ * It isn't positioned here but by `props.mount` from `@tiptap/suggestion` —
+ * that attaches it to the cursor via Floating UI and keeps it there while
+ * scrolling.
  */
 
 export interface SuggestionItem {
   id: string;
   label: string;
-  /** Rechts außen, gedämpft — Issue-Schlüssel, Datum, Kurzform. */
+  /** Far right, muted — issue key, date, short form. */
   hint?: string;
-  /** Links, in der Größe der Zeile. */
+  /** On the left, sized to match the row. */
   icon?: ReactNode;
-  /** Überschrift, unter der die Einträge zusammenstehen. */
+  /** Heading under which entries are grouped together. */
   group?: string;
 }
 
-/** Was der Editor von außen aufrufen können muss. */
+/** What the editor needs to be able to call from outside. */
 export interface SuggestionMenuHandle {
-  /** `true`, wenn die Taste verbraucht wurde und nicht in den Text soll. */
+  /** `true` when the key was consumed and shouldn't go into the text. */
   onKeyDown: (event: KeyboardEvent) => boolean;
 }
 
@@ -38,7 +38,7 @@ interface SuggestionMenuProps {
   items: SuggestionItem[];
   command: (item: SuggestionItem) => void;
   loading?: boolean;
-  /** Steht anstelle der Liste, wenn nichts passt. */
+  /** Shown in place of the list when nothing matches. */
   emptyLabel: string;
   ref?: Ref<SuggestionMenuHandle>;
 }
@@ -53,15 +53,15 @@ export function SuggestionMenu({
   const [cursor, setCursor] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Nach jeder neuen Trefferliste wieder oben anfangen — der alte Index zeigte
-  // auf einen Eintrag, den es nicht mehr gibt.
+  // Start over at the top with every new result list — the old index would
+  // point to an entry that no longer exists.
   const [seen, setSeen] = useState(items);
   if (seen !== items) {
     setSeen(items);
     setCursor(0);
   }
 
-  // Der gewählte Eintrag muss sichtbar bleiben, auch wenn die Liste scrollt.
+  // The selected entry must stay visible even when the list scrolls.
   useLayoutEffect(() => {
     listRef.current
       ?.querySelector<HTMLElement>(`[data-index="${cursor}"]`)
@@ -70,7 +70,7 @@ export function SuggestionMenu({
 
   const move = (delta: number) => {
     if (!items.length) return;
-    // Umlaufend: von unten geht es oben weiter, wie in der Palette.
+    // Wraps around: from the bottom it continues at the top, like in the palette.
     setCursor((c) => (c + delta + items.length) % items.length);
   };
 
@@ -84,7 +84,7 @@ export function SuggestionMenu({
         move(-1);
         return true;
       }
-      // Tab wählt wie Enter — das erwartet, wer aus anderen Editoren kommt.
+      // Tab selects like Enter — that's what people coming from other editors expect.
       if (event.key === "Enter" || event.key === "Tab") {
         const item = items[cursor];
         if (!item) return false;
@@ -113,10 +113,10 @@ export function SuggestionMenu({
 
   let lastGroup: string | undefined;
 
-  // Zwei Hüllen, mit Absicht: außen liegt die Rundung, innen wird gescrollt.
-  // Auf einem Element zusammen ginge das schief — die Bildlaufleiste wird über
-  // den abgerundeten Beschnitt gemalt und macht die rechten Ecken wieder eckig.
-  // Das `overflow: hidden` außen beschneidet sie mit.
+  // Two wrappers, deliberately: the outer one holds the rounding, the inner
+  // one scrolls. Combined on a single element this would go wrong — the
+  // scrollbar gets painted over the rounded clip and makes the right corners
+  // square again. The outer `overflow: hidden` clips it along with everything else.
   return (
     <div className={styles.menu}>
       <div className={styles.list} ref={listRef} role="listbox">
@@ -134,7 +134,7 @@ export function SuggestionMenu({
                 aria-selected={index === cursor}
                 data-index={index}
                 className={`${styles.row}${index === cursor ? ` ${styles.active}` : ""}`}
-                // Der Fokus muss im Editor bleiben, sonst bricht die Auswahl weg.
+                // Focus must stay in the editor, otherwise the selection breaks.
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => setCursor(index)}
                 onClick={() => command(item)}

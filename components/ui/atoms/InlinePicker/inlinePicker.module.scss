@@ -1,5 +1,5 @@
-/* Der Riegel um das Menü (`stop`) ist reine Ereignis-Sache — im Layout darf er
-   nicht vorkommen, sonst stünde ein Kasten zwischen Popover und Inhalt. */
+/* The seal around the menu (`stop`) is purely an event-handling concern — it
+   must not show up in layout, or a box would sit between the popover and its content. */
 .seal {
   display: contents;
 }

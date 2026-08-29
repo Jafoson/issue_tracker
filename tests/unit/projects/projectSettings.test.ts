@@ -57,7 +57,7 @@ const PROJECT = "p-1";
 const WS = "acme";
 const ACTOR = "u-actor";
 
-/** Standardlage: eingeloggt, darf alles am Projekt, Projekt existiert. */
+/** Default state: logged in, may do anything to the project, project exists. */
 function reset() {
   for (const m of [
     mockProjectFindUnique,
@@ -192,13 +192,13 @@ describe("updateProject() — Sichtbarkeit", () => {
     });
     await updateProject(PROJECT, { visibility: "private" });
     expect(mockProjectUpdate.mock.calls[0][0].data.visibility).toBe("private");
-    // Keine Aufnahme, aber auch kein Entfernen: die Tabelle bleibt, wie sie ist.
+    // No enrolling, but no removing either: the table stays as it is.
     expect(mockWorkspaceMemberFindMany).not.toHaveBeenCalled();
     expect(mockProjectMemberCreateMany).not.toHaveBeenCalled();
   });
 
   it("protokolliert den Wechsel — der Feed fürs Workspace-Aktivitäts-Log", async () => {
-    // Default-Mock steht auf "private", also ein echter Wechsel.
+    // Default mock is "private", so this is a real change.
     await updateProject(PROJECT, { visibility: "public" });
     expect(mockAuditLogCreate).toHaveBeenCalledTimes(1);
     const entry = mockAuditLogCreate.mock.calls[0][0].data;
@@ -209,7 +209,7 @@ describe("updateProject() — Sichtbarkeit", () => {
   });
 
   it("protokolliert nichts, wenn sich die Sichtbarkeit nicht ändert", async () => {
-    // Default-Mock steht schon auf "private" — derselbe Wert ist kein Wechsel.
+    // Default mock is already "private" — the same value is not a change.
     await updateProject(PROJECT, { visibility: "private" });
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });

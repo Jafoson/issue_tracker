@@ -8,25 +8,24 @@ import styles from "./reactionBar.module.scss";
 export interface ReactionSummary {
   emoji: string;
   count: number;
-  /** Ob der Betrachter selbst mit diesem Emoji reagiert hat — steuert
-   *  Hervorhebung und ob ein Klick hinzufügt oder wieder entfernt. */
+  /** Whether the viewer themselves reacted with this emoji — controls
+   *  highlighting and whether a click adds or removes it again. */
   reactedByMe: boolean;
 }
 
 interface ReactionBarProps {
   reactions: ReactionSummary[];
-  /** Fügt hinzu oder entfernt wieder — derselbe Umschalter für Pille und
-   *  Picker, das Vorzeichen entscheidet sich am Server über den bestehenden
-   *  Zustand. */
+  /** Adds or removes again — the same toggle for both the pill and the
+   *  picker; the sign is decided on the server based on existing state. */
   onToggle: (emoji: string) => void;
   addLabel: string;
   searchPlaceholder: string;
 }
 
 /**
- * Reaktions-Pillen unter einem Kommentar plus ein „+"-Auslöser, der die volle
- * Auswahl öffnet (`ReactionPicker`). Rein präsentational — Daten und
- * Serveraufruf kommen von außen (`features/issues`).
+ * Reaction pills below a comment plus a "+" trigger that opens the full
+ * picker (`ReactionPicker`). Purely presentational — data and the server
+ * call come from outside (`features/issues`).
  */
 export function ReactionBar({
   reactions,

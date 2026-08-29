@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 //
-// `@/lib/invitations` bleibt ungemockt — seine eigenen Tests laufen im selben
-// Prozess (`tests/unit/invitations/invitations.test.ts`), siehe CLAUDE.md.
-// `createInvitation` läuft hier also echt, gegen den `db`-Mock.
+// `@/lib/invitations` stays unmocked — its own tests run in the same
+// process (`tests/unit/invitations/invitations.test.ts`), see CLAUDE.md.
+// So `createInvitation` runs for real here, against the `db` mock.
 
 const mockInvitationFindUnique = mock();
 const mockInvitationFindMany = mock();
@@ -92,8 +92,8 @@ function reset() {
     m.mockReset();
   }
 
-  // `$transaction` reicht denselben Mock-Client durch — die Tests prüfen
-  // direkt gegen die Top-Level-Mocks, kein separates `tx`-Objekt nötig.
+  // `$transaction` passes through the same mock client — the tests assert
+  // directly against the top-level mocks, no separate `tx` object needed.
   mockTransaction.mockImplementation(
     async (fn: (tx: typeof dbMock) => Promise<unknown>) => fn(dbMock),
   );
@@ -203,7 +203,7 @@ describe("revokeInvitation()", () => {
   });
 
   it("löscht Token und Mitgliedschaften und danach das Schatten-Konto", async () => {
-    // Standardlage: kein Passwort, keine übrigen Mitgliedschaften.
+    // Default situation: no password, no remaining memberships.
     const result = await revokeInvitation(TOKEN);
 
     expect(result).toEqual({ ok: true });
@@ -236,7 +236,7 @@ describe("revokeInvitation()", () => {
   });
 
   it("lässt das Konto stehen, wenn es noch anderswo Mitglied ist", async () => {
-    // Z. B. mitten in einer zweiten, unabhängigen Einladung.
+    // E.g. in the middle of a second, independent invitation.
     mockWorkspaceMemberCount.mockResolvedValue(1);
     await revokeInvitation(TOKEN);
     expect(mockUserDelete).not.toHaveBeenCalled();

@@ -16,7 +16,7 @@ import { createLabel, updateLabel } from "@/features/issues/actions";
 import { PALETTE } from "@/lib/utils";
 import styles from "./labelModal.module.scss";
 
-/** Was der Dialog von einem bestehenden Label braucht — Projekt wie Workspace. */
+/** What the dialog needs from an existing label — project as well as workspace. */
 interface EditableLabel {
   id: string;
   name: string;
@@ -26,24 +26,25 @@ interface EditableLabel {
 interface Props {
   workspaceId: string;
   /**
-   * Das Projekt, dem das neue Label gehören soll. Ohne es entsteht ein Label
-   * des Workspace, das in jedem seiner Projekte gilt — derselbe Dialog, eine
-   * Ebene höher. Beim Bearbeiten ist die Zugehörigkeit ohnehin entschieden.
+   * The project the new label should belong to. Without it, a
+   * workspace-level label is created that applies in every one of its
+   * projects — the same dialog, one level up. When editing, the ownership
+   * is already decided anyway.
    */
   projectId?: string | null;
-  /** Gesetzt = bearbeiten, offen = anlegen. */
+  /** Set = editing, unset = creating. */
   label?: EditableLabel;
   onDone: () => void;
   close: () => void;
 }
 
 /**
- * Anlegen und Bearbeiten in einem Dialog — es sind dieselben zwei Felder.
+ * Create and edit share one dialog — they're the same two fields.
  *
- * Der Slug fehlt bewusst: beim Anlegen vergibt ihn der Server aus dem Namen,
- * beim Bearbeiten bleibt er stehen, weil er in Filter-URLs steckt. Ein Feld,
- * das man sieht, aber nicht ändern kann, wirft mehr Fragen auf, als es
- * beantwortet — die Liste zeigt den Slug daneben.
+ * The slug is deliberately absent: when creating, the server derives it
+ * from the name; when editing, it stays fixed because it's embedded in
+ * filter URLs. A field you can see but not change raises more questions
+ * than it answers — the list shows the slug next to it instead.
  */
 export function LabelModal({
   workspaceId,
@@ -66,9 +67,10 @@ export function LabelModal({
 
     startTransition(async () => {
       try {
-        // `createLabel` wirft (es bedient auch den Label-Picker im Issue),
-        // `updateLabel` meldet zurück. Beide Wege enden hier in derselben
-        // Zeile — der Dialog soll den Unterschied nicht kennen müssen.
+        // `createLabel` throws (it also serves the label picker in the
+        // issue), `updateLabel` reports back. Both paths end up in the
+        // same line here — the dialog shouldn't have to know the
+        // difference.
         if (label) {
           const result = await updateLabel(label.id, { name: trimmed, color });
           if ("error" in result) {
@@ -140,7 +142,7 @@ export function LabelModal({
             </Label>
           </div>
 
-          {/* Absenden per Enter — der Knopf unten liegt außerhalb des Formulars. */}
+          {/* Submit via Enter — the button below sits outside the form. */}
           <button type="submit" hidden />
         </form>
       </ModalBody>

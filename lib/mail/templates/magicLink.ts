@@ -5,22 +5,22 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface MagicLinkEmailInput {
   to: string;
   url: string;
-  /** Derselbe Wert wie der `token` in `url` — roh, ohne Trennzeichen (die
-   *  Anzeige gruppiert ihn nur fürs Auge). Eingegeben auf der Login-Seite,
-   *  landet er als `?token=` an genau derselben Callback-Route, die der
-   *  Link auch ansteuert — zwei Wege zum selben Ziel, kein zweites Geheimnis. */
+  /** The same value as the `token` in `url` — raw, without separators (the
+   *  display only groups it for readability). Entered on the login page, it
+   *  arrives as `?token=` at exactly the same callback route the link also
+   *  targets — two paths to the same destination, no second secret. */
   code: string;
-  /** Für die Fußzeile — next-auth liefert nur eine Minutenzahl über
-   *  `AUTH_EMAIL_MAX_AGE`, hier fest auf den next-auth-Standard (24h). */
+  /** For the footer — next-auth only provides a number of minutes via
+   *  `AUTH_EMAIL_MAX_AGE`, hardcoded here to the next-auth default (24h). */
   expiresInMinutes: number;
 }
 
 /**
- * Der Anmeldelink selbst — verschickt von `next-auth/providers/nodemailer`s
- * `sendVerificationRequest`-Hook (`auth.ts`), nicht über `lib/mail/index.ts`.
- * Anders als die übrigen Vorlagen ohne `TemplateOverride`: der Text ist
- * sicherheitsrelevant (Ablauffrist, „niemandem weitergeben") und soll sich
- * nicht per Admin-Override verändern lassen.
+ * The login link itself — sent by `next-auth/providers/nodemailer`'s
+ * `sendVerificationRequest` hook (`auth.ts`), not via `lib/mail/index.ts`.
+ * Unlike the other templates, this one has no `TemplateOverride`: the text
+ * is security-relevant (expiry, "don't share with anyone") and shouldn't be
+ * alterable via admin override.
  */
 export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
   const heading = "Dein Anmeldelink für Orbit";

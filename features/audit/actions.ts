@@ -11,11 +11,11 @@ export interface ActivityPage {
 }
 
 /**
- * Eine weitere Seite fürs Infinite Scroll in `AuditLog`. Eigene Funktion statt
- * Wiederverwendung von `getWorkspaceActivity`/`getProjectActivity`: die Prüfung
- * steht hier noch einmal, weil eine Server Function als eigener Endpunkt
- * erreichbar ist — unabhängig davon, ob die Seite, die sie als Prop reicht,
- * den Zugriff schon geprüft hat.
+ * One more page for infinite scroll in `AuditLog`. A separate function
+ * instead of reusing `getWorkspaceActivity`/`getProjectActivity`: the check
+ * is repeated here because a server function is reachable as its own
+ * endpoint — regardless of whether the page that passes it down as a prop
+ * has already checked access.
  */
 export async function loadMoreWorkspaceActivity(
   workspaceId: string,
@@ -41,7 +41,7 @@ export async function loadMoreWorkspaceActivity(
   };
 }
 
-/** Spiegelbild von `loadMoreWorkspaceActivity` auf Projekt-Ebene. */
+/** Mirror image of `loadMoreWorkspaceActivity` at the project level. */
 export async function loadMoreProjectActivity(
   projectId: string,
   cursor: string,

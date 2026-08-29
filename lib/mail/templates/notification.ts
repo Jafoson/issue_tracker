@@ -11,17 +11,17 @@ export interface NotificationEmailInput {
   to: string;
   type: NotificationEvent;
   actorLabel: string;
-  /** Rollenname, Statuskey oder Kommentar-Vorschau — dieselbe Spalte wie in
-   *  `Notification.text` (siehe `lib/notify`). */
+  /** Role name, status key, or comment preview — the same column as
+   *  `Notification.text` (see `lib/notify`). */
   text: string;
   workspaceName: string;
   project: { name: string } | null;
   issue: { identifier: string; title: string } | null;
-  /** Wohin der Knopf führt — absolute URL, vom Aufrufer gebaut (`lib/nav` +
-   *  `lib/app-url`), damit diese Datei keine Routen kennen muss. */
+  /** Where the button leads — absolute URL, built by the caller (`lib/nav`
+   *  + `lib/app-url`), so this file doesn't need to know about routes. */
   url: string;
-  /** „Benachrichtigungen verwalten“-Link — die Einstellungsseite, auf der
-   *  genau der `{type}Email`-Schalter dieser Mail sitzt. */
+  /** "Manage notifications" link — the settings page where exactly this
+   *  email's `{type}Email` toggle lives. */
   manageUrl: string;
 }
 
@@ -72,7 +72,7 @@ const SUBJECT: Record<
       : HEADING.issueShared,
 };
 
-/** Die Einleitung unter der Überschrift, im Klartext (Default-Pfad). */
+/** The intro under the heading, in plain text (default path). */
 function defaultIntro(input: NotificationEmailInput): string {
   const issueLabel = input.issue ? input.issue.identifier : "";
   const target = input.project
@@ -99,9 +99,9 @@ function defaultIntro(input: NotificationEmailInput): string {
   }
 }
 
-/** Kommentar-/Erwähnungsvorschau bzw. persönliche Nachricht als Zitat — nur
- *  bei den Anlässen, bei denen `text` tatsächlich ein Textausschnitt ist,
- *  nicht ein Status- oder Rollenname. */
+/** Comment/mention preview or personal message as a quote — only for the
+ *  events where `text` is actually an excerpt of text, not a status or role
+ *  name. */
 function quoteFor(input: NotificationEmailInput): string | null {
   if (
     input.type !== "comment" &&
@@ -115,9 +115,9 @@ function quoteFor(input: NotificationEmailInput): string | null {
 }
 
 /**
- * `override` kommt aus `MailTemplate` (Schlüssel `notification.{type}`, siehe
- * `features/mail-templates`) — ersetzt Betreff/Überschrift/Einleitung, die
- * Issue-Karte und das Zitat bleiben davon unberührt.
+ * `override` comes from `MailTemplate` (key `notification.{type}`, see
+ * `features/mail-templates`) — replaces subject/heading/intro, the issue
+ * card and the quote stay unaffected by it.
  */
 export function notificationEmail(
   input: NotificationEmailInput,

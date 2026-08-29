@@ -2,20 +2,20 @@ import "server-only";
 import { getClient } from "@/lib/storage/client";
 import { storageConfig } from "@/lib/storage/config";
 
-// Kurz: der Upload beginnt sofort nach der Anfrage, keine Notwendigkeit für
-// eine lange Lebensdauer.
+// Short: the upload starts immediately after the request, no need for a
+// long lifetime.
 const PUT_EXPIRES_IN = 120;
-// Eine Server-Render-Ladung lang gültig — großzügig, da neu signiert wird,
-// sobald die Seite das nächste Mal rendert (kein URL-Cache, siehe avatars.ts).
+// Valid for one server-render's worth of time — generous, since it's
+// re-signed the next time the page renders (no URL cache, see avatars.ts).
 const GET_EXPIRES_IN = 3600;
 
-/** `/` in einem Objekt-Key bleibt Pfadtrenner, alles andere wird kodiert. */
+/** `/` in an object key stays a path separator, everything else gets encoded. */
 function encodeKey(key: string): string {
   return key.split("/").map(encodeURIComponent).join("/");
 }
 
-/** Immer Path-Style (`<endpoint>/<bucket>/<key>`) — funktioniert für rustfs,
- *  MinIO und AWS S3 gleichermaßen, ohne bucket-spezifische Subdomain. */
+/** Always path-style (`<endpoint>/<bucket>/<key>`) — works the same way
+ *  for rustfs, MinIO, and AWS S3, without a bucket-specific subdomain. */
 function objectUrl(endpoint: string, bucket: string, key: string): string {
   return `${endpoint.replace(/\/$/, "")}/${bucket}/${encodeKey(key)}`;
 }
@@ -80,7 +80,7 @@ export async function objectExists(
   }
 }
 
-/** Löscht ein Objekt best-effort — wirft nie, analog zu `sendMail()`. */
+/** Deletes an object best-effort — never throws, analogous to `sendMail()`. */
 export async function deleteObjectSafely(
   bucket: string,
   key: string,

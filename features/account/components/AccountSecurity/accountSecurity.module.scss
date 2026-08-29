@@ -1,7 +1,7 @@
-/* Das Formular steht als eigene Karte zwischen den Listen — dieselbe Fläche und
-   derselbe Rahmen wie sie, damit es zur Zeile darüber gehört und nicht wie ein
-   fremder Einschub wirkt. Die Felder stehen untereinander in Feldbreite: ein
-   Passwort liest niemand quer. */
+/* The form sits as its own card between the lists — same surface and same
+   border as they have, so it belongs with the row above instead of looking
+   like a foreign insert. The fields stack vertically at field width: nobody
+   reads a password sideways. */
 .form {
   display: flex;
   flex-direction: column;
@@ -19,8 +19,8 @@
   gap: 6px;
 }
 
-/* Angaben ohne Bedienelement: an derselben rechten Kante wie die Knöpfe darüber,
-   aber zurückgenommen — es gibt nichts zu tun. */
+/* Values with no control: aligned to the same right edge as the buttons
+   above, but muted — there's nothing to act on. */
 .status {
   display: inline-flex;
   align-items: center;
@@ -51,8 +51,8 @@
   color: var(--green);
 }
 
-/* Kein Fehler, nur ein offener Punkt — deshalb die Farbe der Nebentexte und
-   nicht die der Warnungen. */
+/* Not an error, just an open item — hence the color of secondary text and
+   not that of warnings. */
 .unverified {
   color: var(--on-surface-variant);
 }

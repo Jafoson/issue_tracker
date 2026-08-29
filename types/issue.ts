@@ -22,11 +22,11 @@ export interface Label {
   color: string;
   projectId?: string | null;
   /**
-   * Projekte, in denen dieses Workspace-Label nicht angeboten wird.
+   * Projects where this workspace label is not offered.
    *
-   * Ausgeblendet wird in den Label-Einstellungen des Projekts. Wer eine Auswahl
-   * baut, muss die Liste hier prüfen — an Aufgaben, die das Label schon tragen,
-   * bleibt es sichtbar.
+   * Hidden in the project's label settings. Anyone building a selection list
+   * must check this list — on issues that already carry the label, it stays
+   * visible.
    */
   hiddenIn?: string[];
 }
@@ -37,12 +37,12 @@ export interface IssueType {
   color: string;
 }
 
-/** Eine Reaktion, schon nach Emoji gruppiert. */
+/** A reaction, already grouped by emoji. */
 export interface CommentReactionSummary {
   emoji: string;
   count: number;
-  /** Ob der aktuelle Betrachter selbst mit diesem Emoji reagiert hat —
-   *  steuert die Hervorhebung der Pille und das Umschalten per Klick. */
+  /** Whether the current viewer reacted with this emoji themselves — drives
+   *  the pill's highlight and the click-to-toggle behavior. */
   reactedByMe: boolean;
 }
 
@@ -50,21 +50,21 @@ export interface Comment {
   id: string;
   author: string;
   time: number;
-  /** `null` = nie bearbeitet — steuert den „bearbeitet"-Hinweis. */
+  /** `null` = never edited — drives the "edited" note. */
   updated: number | null;
-  /** `null` = Top-Level-Kommentar, sonst die Id des Elternkommentars. */
+  /** `null` = top-level comment, otherwise the id of the parent comment. */
   parentId: string | null;
-  /** ProseMirror-Dokument — angezeigt von `components/ui/atoms/RichText`. */
+  /** ProseMirror document — rendered by `components/ui/atoms/RichText`. */
   body: PMDoc;
   reactions: CommentReactionSummary[];
 }
 
 /**
- * Ein Anhang, wie ihn die Detailansicht lädt — bereits aufgelöst: `url` ist
- * bei `kind: "file"` eine presignte S3-Adresse (eine Stunde gültig, bei jedem
- * Render frisch erzeugt), bei `kind: "link"` die extern eingetragene Adresse
- * unverändert. `null` heißt bei `kind: "file"`: Speicher nicht konfiguriert
- * oder Objekt fehlt.
+ * An attachment as loaded by the detail view — already resolved: for
+ * `kind: "file"`, `url` is a presigned S3 address (valid for one hour,
+ * freshly generated on every render); for `kind: "link"`, it's the
+ * externally entered address unchanged. `null` for `kind: "file"` means:
+ * storage not configured, or the object is missing.
  */
 export interface IssueAttachment {
   id: string;
@@ -89,42 +89,42 @@ export interface Issue {
   rank: number;
   created: number;
   updated: number;
-  /** ProseMirror-Dokument — angezeigt von `components/ui/atoms/RichText`. */
+  /** ProseMirror document — rendered by `components/ui/atoms/RichText`. */
   description: PMDoc;
   comments: Comment[];
   project: string;
   type: string;
-  /** Absolute URL des öffentlichen Lese-Links, `null` wenn Teilen aus ist
-   *  (`lib/issue-share.ts`). Fertig zusammengesetzt vom Server — der Client
-   *  baut keine URLs, `lib/app-url.ts` liest Umgebungsvariablen, die im
-   *  Browser nicht ankommen. */
+  /** Absolute URL of the public read link, `null` when sharing is off
+   *  (`lib/issue-share.ts`). Assembled fully on the server — the client
+   *  never builds URLs itself, since `lib/app-url.ts` reads environment
+   *  variables that never reach the browser. */
   shareUrl: string | null;
 }
 
 /**
- * Was der aktuelle Benutzer mit diesem einen Issue darf — abhängig von Rolle
- * UND Eigentümerschaft (`issue.update.own`/`issue.delete.own` greifen nur für
- * Reporter/Assignee), deshalb je Issue berechnet statt aus der Rolle allein
- * ableitbar. Spiegelt genau die Prüfungen in `updateIssue`/`deleteIssue`
- * (`features/issues/actions.ts`) — die Detailansicht bietet keine Bedienung
- * an, die der Server ohnehin ablehnen würde.
+ * What the current user is allowed to do with this one issue — depends on
+ * role AND ownership (`issue.update.own`/`issue.delete.own` only apply to the
+ * reporter/assignee), so it's computed per issue rather than derivable from
+ * the role alone. Mirrors exactly the checks in `updateIssue`/`deleteIssue`
+ * (`features/issues/actions.ts`) — the detail view never offers a control
+ * that the server would reject anyway.
  */
 export interface IssueAccess {
-  /** `issue.update.any` oder (`issue.update.own` und Reporter/Assignee). */
+  /** `issue.update.any`, or (`issue.update.own` and reporter/assignee). */
   canEdit: boolean;
-  /** `canEdit` UND `issue.assign` — nur relevant, wenn `canEdit` schon gilt. */
+  /** `canEdit` AND `issue.assign` — only relevant once `canEdit` already holds. */
   canAssign: boolean;
-  /** `issue.delete.any` oder (`issue.delete.own` und Reporter/Assignee). */
+  /** `issue.delete.any`, or (`issue.delete.own` and reporter/assignee). */
   canDelete: boolean;
-  /** `issue.share.manage` — öffentlichen Lese-Link erstellen/widerrufen. */
+  /** `issue.share.manage` — create/revoke the public read link. */
   canShare: boolean;
-  /** `comment.update.any` — fremde Kommentare bearbeiten, nicht nur eigene. */
+  /** `comment.update.any` — edit other people's comments, not just your own. */
   canUpdateAnyComment: boolean;
-  /** `comment.delete.any` — fremde Kommentare löschen, nicht nur eigene. */
+  /** `comment.delete.any` — delete other people's comments, not just your own. */
   canDeleteAnyComment: boolean;
 }
 
-/** Ein Issue, wie es die Detailansicht (Panel, Dialog, Vollseite) lädt. */
+/** An issue as loaded by the detail view (panel, dialog, full page). */
 export interface IssueDetail extends Issue {
   access: IssueAccess;
   attachments: IssueAttachment[];

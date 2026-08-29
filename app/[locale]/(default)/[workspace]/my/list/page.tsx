@@ -10,7 +10,7 @@ import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-/** Dieselben eigenen Aufgaben als Liste — mit einer Spalte für das Projekt. */
+/** The same own issues as a list — with a column for the project. */
 export default async function MyListPage({
   params,
   searchParams,
@@ -40,7 +40,7 @@ export default async function MyListPage({
         composer={composer}
         emptyTitle={t("empty.noAssignedIssues")}
       />
-      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      {/* Opens the clicked issue as a side panel (`?issue=` in the URL). */}
       <IssuePeek data={composer} />
     </>
   );

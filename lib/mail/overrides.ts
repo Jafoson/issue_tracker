@@ -2,9 +2,9 @@ import "server-only";
 import { db } from "@/lib/db";
 import type { TemplateOverride } from "@/lib/mail/templates/override";
 
-/** Der Admin-Override für eine Vorlage, wenn einer gesetzt ist — sonst
- *  `undefined`, damit die Vorlagenfunktionen ihren Code-Default nehmen
- *  (`override?: TemplateOverride` in jeder `lib/mail/templates/*.ts`). */
+/** The admin override for a template, if one is set — otherwise
+ *  `undefined`, so the template functions fall back to their code default
+ *  (`override?: TemplateOverride` in every `lib/mail/templates/*.ts`). */
 export async function getMailTemplateOverride(
   key: string,
 ): Promise<TemplateOverride | undefined> {

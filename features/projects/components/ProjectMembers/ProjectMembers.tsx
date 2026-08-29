@@ -33,18 +33,18 @@ import styles from "./projectMembers.module.scss";
 interface ProjectMembersProps extends ProjectMembersView {
   projectId: string;
   projectName: string;
-  /** Lädt die nächste Seite ab einem Offset (`loadMoreProjectMembers`,
-   * `features/projects/actions.ts`, an `projectId` gebunden). */
+  /** Loads the next page from an offset (`loadMoreProjectMembers`,
+   * `features/projects/actions.ts`, bound to `projectId`). */
   loadMore: (
     cursor: string,
   ) => Promise<{ items: ProjectMemberRow[]; nextCursor: string | null }>;
 }
 
 /**
- * Wer Zugriff auf ein Projekt hat, als eine Liste. Die Spalte „Zugriff" sagt,
- * woher er kommt: eine eigene Projektrolle oder die geerbte Workspace-Rolle.
- * Aus geerbtem Zugriff wird per Klick eine eigene Rolle — geändert wird nur,
- * was dem Projekt selbst gehört.
+ * Everyone with access to a project, as a list. The "Access" column says
+ * where it comes from: an own project role or the inherited workspace role.
+ * A click turns inherited access into an own role — only what belongs to
+ * the project itself gets changed.
  */
 export function ProjectMembers({
   projectId,
@@ -109,9 +109,9 @@ export function ProjectMembers({
   const roleCell = (row: ProjectMemberRow) => {
     const own = row.source === "project";
     const viaTeam = row.origin === "team";
-    // Gefüllt heißt „diese Rolle gehört dem Projekt". Eine geerbte
-    // Workspace-Rolle bleibt blass — sie gilt hier, entschieden wurde sie
-    // woanders. Das ersetzt die frühere eigene Spalte dafür.
+    // Filled means "this role belongs to the project". An inherited
+    // workspace role stays faded — it applies here, but was decided
+    // elsewhere. This replaces the former dedicated column for that.
     const pill = (
       <Label
         size="sm"
@@ -137,9 +137,9 @@ export function ProjectMembers({
         )}
       </Label>
     );
-    // Nur eine eigene Projektrolle lässt sich hier ändern, und nur mit
-    // `member.role.update`. Die geerbte gehört dem Workspace — wer sie anfassen
-    // will, nimmt die Person erst ins Projekt.
+    // Only a project's own role can be changed here, and only with
+    // `member.role.update`. The inherited one belongs to the workspace —
+    // whoever wants to touch it has to enroll the person into the project first.
     if (!own || !row.manageable || !canSetRole || assignableRoles.length === 0)
       return pill;
 
@@ -178,8 +178,8 @@ export function ProjectMembers({
     );
   };
 
-  // Aktiv ist der Normalfall und bleibt deshalb ruhig; eine offene Einladung
-  // ist der Sonderfall und meldet sich mit Farbe und Punkt.
+  // Active is the normal case and therefore stays quiet; a pending
+  // invitation is the special case and announces itself with color and dot.
   const statusCell = (row: ProjectMemberRow) =>
     row.pending ? (
       <span className={styles.statusInvited}>
@@ -192,9 +192,9 @@ export function ProjectMembers({
   const actionCell = (row: ProjectMemberRow) => {
     if (!row.manageable) return null;
 
-    // Geerbter Zugriff lässt sich nicht entziehen — nur in eine eigene
-    // Projektrolle überführen, die man danach ändern kann. Das ist eine Aufnahme
-    // ins Projekt und hängt deshalb an `member.invite`.
+    // Inherited access can't be revoked — only converted into an own
+    // project role, which can then be changed. That's an enrollment into
+    // the project and therefore requires `member.invite`.
     if (row.source === "workspace") {
       if (!canAdd) return null;
       const label = t("projectMembers.addToProject");
@@ -259,7 +259,7 @@ export function ProjectMembers({
       id: "role",
       header: t("fields.role"),
       width: "minmax(150px, max-content)",
-      // Nach Rang: „Admin vor Member" ist die Ordnung, die eine Rolle hat.
+      // By rank: "Admin before Member" is the ordering a role has.
       sortValue: (row) => row.roleRank,
       cell: roleCell,
     },

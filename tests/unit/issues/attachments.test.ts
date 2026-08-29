@@ -47,7 +47,7 @@ import {
   requestIssueAttachmentUpload,
 } from "@/features/issues/actions";
 
-/** Der Stand eines Issues, wie `issueContext` ihn liest. */
+/** The state of an issue, as `issueContext` reads it. */
 function issueRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     key: 1,

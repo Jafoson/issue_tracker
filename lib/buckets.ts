@@ -1,36 +1,36 @@
-// ─── Zeitachsen für das Dashboard ─────────────────────────────────────────────
+// ─── Time axes for the dashboard ─────────────────────────────────────────────
 //
-// Abhängigkeitsfrei: keine DB, kein `server-only`. Die Abfragen brauchen die
-// Achse, um Lücken zu füllen, und die Tests prüfen sie ohne Datenbank.
+// Dependency-free: no DB, no `server-only`. The queries need the axis to
+// fill gaps, and the tests check it without a database.
 //
-// **Die Achse entsteht hier, nicht in der Datenbank.** Eine Gruppierung liefert
-// nur Tage, an denen etwas passiert ist — ein Diagramm daraus hätte keine
-// Nullen, sondern gar keine Punkte, und ein ruhiges Wochenende sähe aus wie eine
-// durchgehende Linie. Deshalb wird die Achse vollständig erzeugt und die Zahlen
-// werden hineingelegt; was fehlt, ist eine Null.
+// **The axis is generated here, not in the database.** A grouping only
+// yields days something happened — a chart built from that would have no
+// zeros, just no points at all, and a quiet weekend would look like a
+// continuous line. That's why the axis is generated in full and the numbers
+// are placed into it; whatever's missing is a zero.
 
-/** Die Zeiträume, die das Dashboard anbietet. */
+/** The time ranges the dashboard offers. */
 export const RANGES = ["7d", "30d", "90d", "12m"] as const;
 
 export type RangeKey = (typeof RANGES)[number];
 
-/** In welchen Schritten die Achse läuft. */
+/** The step size the axis runs in. */
 export type BucketUnit = "day" | "week" | "month";
 
 interface RangeSpec {
   unit: BucketUnit;
-  /** Wie viele Schritte die Achse trägt, den laufenden eingeschlossen. */
+  /** How many steps the axis carries, including the current one. */
   steps: number;
 }
 
 /**
- * Je Zeitraum eine Schrittweite — so, dass die Achse zwischen 7 und 30 Marken
- * trägt.
+ * One step size per range — chosen so the axis carries between 7 and 30
+ * marks.
  *
- * Das ist die Grenze der Lesbarkeit in beide Richtungen: 90 Tagessäulen sind ein
- * Kamm, in dem man nichts mehr erkennt, und 12 Tagessäulen für ein Jahr wären
- * keine Antwort auf „wie hat sich das entwickelt". Ein Jahr läuft deshalb in
- * Monaten, ein Quartal in Wochen, alles Kürzere in Tagen.
+ * That's the readability limit in both directions: 90 daily bars are a comb
+ * you can no longer make sense of, and 12 daily bars for a year wouldn't
+ * answer "how has this developed". That's why a year runs in months, a
+ * quarter in weeks, and everything shorter in days.
  */
 const SPECS: Record<RangeKey, RangeSpec> = {
   "7d": { unit: "day", steps: 7 },
@@ -43,18 +43,18 @@ export function rangeSpec(range: RangeKey): RangeSpec {
   return SPECS[range];
 }
 
-/** Narrowt einen Wert aus der Adresszeile auf einen bekannten Zeitraum. */
+/** Narrows a value from the address bar to a known range. */
 export function toRange(value: string | undefined): RangeKey {
   return (RANGES as readonly string[]).includes(value ?? "")
     ? (value as RangeKey)
     : "30d";
 }
 
-// ─── Schritte auf der Achse ───────────────────────────────────────────────────
+// ─── Steps on the axis ─────────────────────────────────────────────────────────
 //
-// Alles rechnet in lokaler Zeit, passend zu `date_trunc` in der Datenbank: der
-// Server gruppiert in seiner Zeitzone, und die Achse muss dieselben Grenzen
-// ziehen, sonst landen Zahlen im Nachbartopf.
+// Everything is computed in local time, matching `date_trunc` in the
+// database: the server groups in its own time zone, and the axis has to
+// draw the same boundaries, or numbers end up in the neighboring bucket.
 
 function startOfDay(date: Date): Date {
   const out = new Date(date);
@@ -62,11 +62,11 @@ function startOfDay(date: Date): Date {
   return out;
 }
 
-/** Wochenanfang ist Montag — wie `date_trunc('week', …)` in PostgreSQL. */
+/** Week starts on Monday — like `date_trunc('week', …)` in PostgreSQL. */
 function startOfWeek(date: Date): Date {
   const out = startOfDay(date);
-  // `getDay()` zählt ab Sonntag; Montag als Anfang heißt: Sonntag ist der
-  // siebte Tag, nicht der erste.
+  // `getDay()` counts from Sunday; starting on Monday means Sunday is the
+  // seventh day, not the first.
   const weekday = (out.getDay() + 6) % 7;
   out.setDate(out.getDate() - weekday);
   return out;
@@ -78,14 +78,14 @@ function startOfMonth(date: Date): Date {
   return out;
 }
 
-/** Den Anfang des Topfes bestimmen, in dem dieser Zeitpunkt liegt. */
+/** Determine the start of the bucket this point in time falls into. */
 export function truncate(date: Date, unit: BucketUnit): Date {
   if (unit === "month") return startOfMonth(date);
   if (unit === "week") return startOfWeek(date);
   return startOfDay(date);
 }
 
-/** Einen Topf weiter (oder mit negativem `count` zurück). */
+/** One bucket forward (or backward, with a negative `count`). */
 export function step(date: Date, unit: BucketUnit, count: number): Date {
   const out = new Date(date);
   if (unit === "month") out.setMonth(out.getMonth() + count);
@@ -95,10 +95,10 @@ export function step(date: Date, unit: BucketUnit, count: number): Date {
 }
 
 /**
- * Der Schlüssel eines Topfes: `YYYY-MM-DD`, in lokaler Zeit.
+ * The key of a bucket: `YYYY-MM-DD`, in local time.
  *
- * Bewusst nicht `toISOString()` — das rechnet nach UTC um und schöbe östlich von
- * Greenwich jeden Topf um einen Tag zurück.
+ * Deliberately not `toISOString()` — that converts to UTC and would shift
+ * every bucket back a day east of Greenwich.
  */
 export function bucketKey(date: Date): string {
   const y = date.getFullYear();
@@ -108,21 +108,21 @@ export function bucketKey(date: Date): string {
 }
 
 export interface Window {
-  /** Erster Topf des Zeitraums, auf seinen Anfang gesetzt. */
+  /** First bucket of the range, set to its start. */
   from: Date;
-  /** Erster Topf **nach** dem Zeitraum — obere Grenze, nicht enthalten. */
+  /** First bucket **after** the range — upper bound, not included. */
   to: Date;
   unit: BucketUnit;
-  /** Alle Topf-Schlüssel in Reihenfolge, lückenlos. */
+  /** All bucket keys in order, with no gaps. */
   keys: string[];
 }
 
 /**
- * Der angezeigte Zeitraum, von `now` aus rückwärts.
+ * The displayed range, going backward from `now`.
  *
- * Der laufende Topf zählt mit und ist meist unvollständig — der heutige Tag ist
- * noch nicht vorbei. Das ist Absicht: eine Übersicht, die den aktuellen Tag
- * verschweigt, beantwortet die Frage „was ist gerade los" nicht.
+ * The current bucket counts too and is usually incomplete — today isn't
+ * over yet. That's deliberate: an overview that hides the current day
+ * doesn't answer the question "what's happening right now".
  */
 export function windowFor(range: RangeKey, now = new Date()): Window {
   const { unit, steps } = rangeSpec(range);
@@ -139,10 +139,9 @@ export function windowFor(range: RangeKey, now = new Date()): Window {
 }
 
 /**
- * Der gleich lange Zeitraum davor — die Grundlage jeder Veränderungsangabe.
+ * The equally long range before it — the basis for every change figure.
  *
- * „+12 % gegenüber den 30 Tagen davor" ist eine Aussage; „+12 %" allein ist
- * keine.
+ * "+12% versus the 30 days before" is a statement; "+12%" alone is not.
  */
 export function previousWindow(current: Window, range: RangeKey): Window {
   const { unit, steps } = rangeSpec(range);
@@ -157,10 +156,10 @@ export function previousWindow(current: Window, range: RangeKey): Window {
 }
 
 /**
- * Die Veränderung gegenüber dem Zeitraum davor, in Prozent.
+ * The change versus the previous range, in percent.
  *
- * `null`, wenn vorher nichts da war: von null auf zehn ist keine
- * Verhundertfachung, sondern ein Anfang — und „+∞ %" ist keine Auskunft.
+ * `null` if there was nothing before: going from zero to ten isn't a
+ * hundredfold increase, it's a beginning — and "+∞%" isn't information.
  */
 export function trend(current: number, previous: number): number | null {
   if (previous === 0) return null;

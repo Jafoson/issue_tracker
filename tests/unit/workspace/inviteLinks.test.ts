@@ -2,12 +2,11 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 //
-// `@/lib/invite-links` bleibt ungemockt (keine eigenen Tests im Prozess).
-// `@/lib/project-membership` wird dagegen — wie `inviteWorkspaceMember.test.ts`,
-// `teams.test.ts` und `removeMember.test.ts` im selben Verzeichnis — selbst
-// gemockt: der geteilte Modul-Cache (siehe CLAUDE.md) lässt ohnehin nur eine
-// Fassung pro Prozess gewinnen, und dieses Verzeichnis hat sich auf den Mock
-// festgelegt.
+// `@/lib/invite-links` stays unmocked (no tests of its own in this process).
+// `@/lib/project-membership`, on the other hand — like `inviteWorkspaceMember.test.ts`,
+// `teams.test.ts`, and `removeMember.test.ts` in the same directory — is
+// mocked itself: the shared module cache (see CLAUDE.md) lets only one
+// version win per process anyway, and this directory has committed to the mock.
 
 const mockRoleFindFirst = mock();
 const mockInviteLinkUpdateMany = mock();
@@ -16,7 +15,7 @@ const mockInviteLinkFindUnique = mock();
 const mockInviteLinkUpdate = mock();
 const mockTransaction = mock();
 
-// Der Tx-Client für `joinViaInviteLink` — `redeemInviteLink` schreibt hierauf.
+// The tx client for `joinViaInviteLink` — `redeemInviteLink` writes to this.
 const mockTxProjectMemberUpsert = mock();
 const mockTxWorkspaceMemberFindUnique = mock();
 const mockTxWorkspaceMemberCreate = mock();

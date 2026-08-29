@@ -5,8 +5,9 @@ mock.module("@/lib/db", () => ({
     label: { findUnique: mock(), update: mock(), delete: mock() },
     issue: { findMany: mock(), update: mock() },
     project: { findUnique: mock() },
-    // Die Transaktion bekommt fertige Prisma-Promises gereicht. Für den Test
-    // zählt nur, dass alles darin zusammen läuft — der Mock gibt sie durch.
+    // The transaction is handed finished Prisma promises. For the test all
+    // that matters is that everything runs together in it — the mock just
+    // passes them through.
     $transaction: mock(async (ops: unknown[]) => ops),
   },
 }));
@@ -126,8 +127,8 @@ describe("updateLabel()", () => {
     expect(mockLabelUpdate).not.toHaveBeenCalled();
   });
 
-  // Derselbe Key, zwei Ebenen: bei einem Projekt-Label entscheidet die
-  // Projektrolle, bei einem workspaceweiten die Workspace-Rolle.
+  // Same key, two levels: for a project label the project role decides,
+  // for a workspace-wide one the workspace role does.
   it("prüft ein Projekt-Label im Projekt-Scope", async () => {
     await updateLabel("l-1", { name: "Fehler" });
 
@@ -160,8 +161,8 @@ describe("deleteLabel()", () => {
     expect(mockLabelDelete).toHaveBeenCalledWith({ where: { id: "l-1" } });
   });
 
-  // `Issue.labels` ist ein ID-Array ohne Fremdschlüssel — bliebe die ID stehen,
-  // zeigte sie ins Leere und die Filter zählten sie weiter mit.
+  // `Issue.labels` is an ID array with no foreign key — if the ID were left
+  // in place, it would point nowhere and the filters would keep counting it.
   it("nimmt die ID aus den Issues, an denen sie hängt", async () => {
     mockIssueFindMany.mockResolvedValue([
       { id: "i-1", labels: ["l-1", "l-9"] },
@@ -186,7 +187,7 @@ describe("deleteLabel()", () => {
     await deleteLabel("l-1");
 
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    // Ein Aufräum-Schritt je Issue plus das Löschen selbst.
+    // One cleanup step per issue plus the deletion itself.
     expect(mockTransaction.mock.calls[0][0]).toHaveLength(2);
   });
 

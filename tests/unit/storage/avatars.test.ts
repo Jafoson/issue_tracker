@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
-// Mockt Geschwister-Module (`config`, `presign`) — wie `mail/send.test.ts`
-// `mail/config` + `mail/transport` mockt. Muss deshalb isoliert von
-// `config.test.ts` laufen (siehe package.json).
+// Mocks sibling modules (`config`, `presign`) — the same way `mail/send.test.ts`
+// mocks `mail/config` + `mail/transport`. Must therefore run isolated from
+// `config.test.ts` (see package.json).
 
 const CONFIG = {
   endpoint: "http://localhost:9000",

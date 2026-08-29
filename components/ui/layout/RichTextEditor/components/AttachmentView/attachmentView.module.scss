@@ -1,32 +1,36 @@
-/* Anhang im Editor — dieselbe Optik wie in der Anzeige (`richText.module.scss`),
-   nur mit einer Entfernen-Schaltfläche obendrauf. */
+/* Attachment in the editor — same look as in the display path
+   (`richText.module.scss`), just with a remove button added on top. */
 
-/* Tiptap hängt einen Inline-Node-View (siehe `inline: true` in
-   `extensions/attachment.ts`) in eine eigene `<span class="node-attachment">`
-   — die `ReactNodeView`-Klasse in `@tiptap/react` erzeugt sie automatisch
-   und reicht sie als tatsächliches DOM-Element an ProseMirror weiter.
-   *Diese* Spanne bekommt beim Auswählen `.ProseMirror-selectednode`
-   (`richTextEditor.module.scss`), nicht `.image`/`.video`/… selbst — die
-   sitzen als Kind darin. Ohne eigenes `display` bliebe die Spanne ein reines
-   Inline-Element, nach der Zeilenhöhe des umgebenden Fließtexts vermessen —
-   die Markierung säße dann sichtbar über dem Bild statt es zu umschließen.
-   `:has()` spiegelt hier nur nach außen, was das Kind an Layout ohnehin will
-   (`.image` fließt inline, `.video`/`.file`/`.missing` bleiben je eine
-   eigene Zeile). Bei `.image` bleibt die Markierung selbst ganz aus: die acht
-   Ziehgriffe zeigen die Auswahl schon an, wie beim Bild-Resizen sonst üblich
-   (Word, PowerPoint, …) — ein zusätzlicher Rahmen wäre doppelt.
+/* Tiptap wraps an inline node view (see `inline: true` in
+   `extensions/attachment.ts`) in its own `<span class="node-attachment">`
+   — the `ReactNodeView` class in `@tiptap/react` creates it automatically
+   and passes it to ProseMirror as an actual DOM element.
+   *This* span gets `.ProseMirror-selectednode` on selection
+   (`richTextEditor.module.scss`), not `.image`/`.video`/… themselves —
+   those sit as a child inside it. Without its own `display`, the span
+   would stay a plain inline element, measured against the surrounding text's
+   line height — the selection outline would then visibly sit above the
+   image instead of enclosing it.
+   The `:has()` here just mirrors outward what the child's layout already
+   wants (`.image` flows inline, `.video`/`.file`/`.missing` each stay on
+   their own line). For `.image`, the selection outline itself is omitted
+   entirely: the eight resize handles already show the selection, as is
+   customary for image resizing elsewhere (Word, PowerPoint, …) — an
+   additional border would be redundant.
 
-   Das `:has()` prüft ein `data-kind`-Attribut statt der Klasse
-   `.image`/`.video`/… selbst — Attribute sind nie vom Hashing lokaler
-   CSS-Modul-Klassen betroffen, ein Klassenname innerhalb eines `:has()`
-   unter `:global(...)` dagegen schon, je nach genauer Sass/PostCSS-Kette.
+   The `:has()` checks a `data-kind` attribute rather than the
+   `.image`/`.video`/… class itself — attributes are never affected by the
+   hashing of local CSS module classes, whereas a class name inside a
+   `:has()` under `:global(...)` can be, depending on the exact Sass/PostCSS
+   chain.
 
-   `outline: none` steht mit `!important`: Die eigentliche Auswahl-Markierung
-   kommt aus `richTextEditor.module.scss` (`.surface .ProseMirror-selectednode`)
-   — zwei Klassen, exakt dieselbe Spezifität wie `.node-attachment:has(…)`
-   hier. Bei Gleichstand entscheidet allein die Lade-Reihenfolge der
-   CSS-Chunks, welche Regel gewinnt — ohne `!important` blitzte die fremde
-   Outline je nach Bundling mal durch, mal nicht. */
+   `outline: none` carries `!important`: the actual selection outline comes
+   from `richTextEditor.module.scss`
+   (`.surface .ProseMirror-selectednode`) — two classes, exactly the same
+   specificity as `.node-attachment:has(…)` here. On a tie, only the load
+   order of the CSS chunks decides which rule wins — without `!important`
+   the foreign outline would flash through sometimes and not others,
+   depending on bundling. */
 :global(.node-attachment) {
   &:has([data-kind="image"]) {
     display: inline-block;
@@ -37,10 +41,10 @@
   &:has([data-kind="file"]),
   &:has([data-kind="missing"]) {
     display: block;
-    /* Ohne das streckt sich die Spanne als Block-Element auf die volle
-       Editorbreite — die Markierung (`.ProseMirror-selectednode`, oben)
-       würde dann weit über die eigentliche, per `max-width`/eigenem Inhalt
-       schmalere Karte hinausragen statt sie zu umschließen. */
+    /* Without this, the span stretches as a block element to the full
+       editor width — the selection outline (`.ProseMirror-selectednode`,
+       above) would then extend far beyond the actual card, which is
+       narrower via `max-width`/its own content, instead of enclosing it. */
     width: fit-content;
     max-width: 100%;
   }
@@ -71,22 +75,22 @@
 .image {
   position: relative;
   max-width: 100%;
-  /* Inline-Atom (siehe `extensions/attachment.ts`) — mehrere kleine Bilder
-     fließen so nebeneinander wie in Word, statt dass jedes eine eigene Zeile
-     erzwingt. `vertical-align: top`, damit unterschiedlich hohe Bilder in
-     einer Zeile nicht an der Grundlinie ausgerichtet werden. */
+  /* Inline atom (see `extensions/attachment.ts`) — multiple small images
+     flow side by side this way, like in Word, instead of each forcing its
+     own line. `vertical-align: top` so that images of different heights on
+     one line don't align to the baseline. */
   display: inline-block;
   vertical-align: top;
   margin: 2px 6px 2px 0;
-  /* Kein Rahmen, kein Hintergrund, keine Rundung — nur das Bild selbst und
-     seine Ziehgriffe, wie beim Bild-Resizen in Word/PowerPoint/Google Docs. */
+  /* No border, no background, no rounding — just the image itself and its
+     resize handles, like image resizing in Word/PowerPoint/Google Docs. */
 }
 
-/* Bleibt eine Karte mit Rahmen — Video behält seine Bildunterschrift (Name,
-   Größe), die braucht eine sichtbare Fläche, an der sie hängt. Kein
-   `overflow: hidden` (mehr): das schnitte die halb herausragenden Ziehgriffe
-   ab. Die Rundung übernehmen `.videoPlayer` (oben) und `.caption` (unten)
-   deshalb einzeln, statt sie vom Rahmen abschneiden zu lassen. */
+/* Stays a card with a border — video keeps its caption (name, size), which
+   needs a visible surface to hang on. No `overflow: hidden` (anymore): that
+   would clip the resize handles that stick out halfway. The rounding is
+   therefore handled individually by `.videoPlayer` (above) and `.caption`
+   (below), rather than letting the border clip it. */
 .video {
   position: relative;
   max-width: 100%;
@@ -104,9 +108,9 @@
   margin: 0;
 }
 
-/* Die acht Ziehgriffe — vier Ecken, vier Kantenmitten —, mittig auf dem Rand
-   sitzend wie in jedem gängigen Programm. Erscheinen nur, solange der Anhang
-   ausgewählt ist (`AttachmentView.tsx` rendert sie dann erst). */
+/* The eight resize handles — four corners, four edge midpoints —, sitting
+   centered on the edge like in any common program. Only appear while the
+   attachment is selected (`AttachmentView.tsx` renders them only then). */
 .resizeHandle {
   position: absolute;
   width: 9px;

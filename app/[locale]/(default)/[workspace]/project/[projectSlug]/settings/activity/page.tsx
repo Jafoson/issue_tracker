@@ -10,10 +10,10 @@ import { getAccess } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Die volle, ungefilterte Aktivität dieses Projekts — anders als die kompakte
- * Karte in der Übersicht (`ProjectProfileView`), die ohne `audit.view` nur
- * eigene Einträge zeigt. Hier gibt es keinen gefilterten Zwischenstand: wer
- * die Seite erreicht, hat die Berechtigung und sieht alles.
+ * The full, unfiltered activity of this project — unlike the compact card in
+ * the overview (`ProjectProfileView`), which without `audit.view` only shows
+ * your own entries. There's no filtered intermediate state here: anyone who
+ * reaches this page has the permission and sees everything.
  */
 export default async function ProjectActivityPage({
   params,

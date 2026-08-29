@@ -5,10 +5,10 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Wovon man erfahren will — und auf welchem Weg.
+ * What you want to be notified about — and through which channel.
  *
- * Design und Dichte liegen in derselben Zeile der Datenbank und kommen hier
- * deshalb mit; die Seite reicht nur die Schalter weiter, die sie zeigt.
+ * Theme and density live in the same database row and therefore come along
+ * here too; the page just forwards the toggles it actually displays.
  */
 export default async function AccountNotificationsPage({
   params,

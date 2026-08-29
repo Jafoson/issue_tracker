@@ -11,10 +11,10 @@ interface InlinePickerProps {
   maxWidth?: number;
   align?: "start" | "center" | "end";
   /**
-   * Hält die Klicks des Pickers bei sich — die des Auslösers wie die der
-   * Auswahl. Nötig, sobald er in etwas Anklickbarem sitzt (Board-Karte,
-   * Listenzeile): das Menü hängt zwar in einem Portal, seine Ereignisse steigen
-   * aber durch den React-Baum weiter zu dessen `onClick`.
+   * Keeps the picker's clicks to itself — both the trigger's and the
+   * selection's. Necessary as soon as it sits inside something clickable
+   * (board card, list row): the menu lives in a portal, but its events
+   * still bubble up through the React tree to that element's `onClick`.
    */
   stop?: boolean;
 }
@@ -61,11 +61,11 @@ export function InlinePicker({
         align={align}
       >
         {stop ? (
-          // Nur ein Riegel, kein Bedienelement: `display: contents` lässt das
-          // Menü selbst das Kind des Popovers bleiben. Eine Tastaturvariante
-          // braucht es nicht — der Riegel bedient nichts, er hält nur auf.
-          // biome-ignore lint/a11y/useKeyWithClickEvents: kein Bedienelement, nur ein Riegel für fremde Klicks
-          // biome-ignore lint/a11y/noStaticElementInteractions: fängt Klicks ab, die sonst im Aufrufer landen
+          // Just a seal, not a control: `display: contents` lets the menu
+          // itself remain the popover's child. No keyboard variant is
+          // needed — the seal doesn't control anything, it only intercepts.
+          // biome-ignore lint/a11y/useKeyWithClickEvents: not a control, just a seal for foreign clicks
+          // biome-ignore lint/a11y/noStaticElementInteractions: intercepts clicks that would otherwise reach the caller
           <div className={styles.seal} onClick={(e) => e.stopPropagation()}>
             {content}
           </div>

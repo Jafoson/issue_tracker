@@ -9,10 +9,11 @@
     animation: pop .12s ease;
 }
 
-/* Lokal, obwohl `pop` auch global in styles/globals.scss steht: CSS-Module
-   benennen Keyframe-Namen um, auch wenn sie hier gar nicht definiert sind.
-   Die Referenz zeigte deshalb auf einen Namen, den es nirgends gibt — die
-   Animation lief still ins Leere. Werte identisch mit dem globalen `pop`. */
+/* Local, even though `pop` also exists globally in styles/globals.scss:
+   CSS modules rename keyframe names even when they aren't defined here at
+   all. The reference therefore pointed to a name that doesn't exist
+   anywhere — the animation silently ran into nothing. Values identical to
+   the global `pop`. */
 @keyframes pop {
   from { opacity: .2; transform: translateY(-4px) scale(.985); }
 }

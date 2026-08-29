@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// Rollenvergabe und Stilllegung auf der Plattform-Ebene. Beides verschiebt
-// Rechte, für beides gelten dieselben zwei Regeln: nicht an sich selbst, und
-// nicht über den eigenen Rang hinaus.
+// Role assignment and deactivation at the platform level. Both shift
+// permissions, and both follow the same two rules: not on yourself, and
+// not above your own rank.
 
 const mockUserFindUnique = mock();
 const mockUserUpdate = mock();
@@ -36,8 +36,8 @@ function allow(...keys: string[]) {
 }
 
 /**
- * `setPlatformRole` liest Konto und Rolle nebenläufig — beide über dieselben
- * Mocks. Die Reihenfolge der Antworten liegt damit fest.
+ * `setPlatformRole` reads account and role concurrently — both through the
+ * same mocks. That fixes the order in which responses must be set up.
  */
 function target(opts: { rank?: number; key?: string } = {}) {
   mockUserFindUnique.mockResolvedValue({

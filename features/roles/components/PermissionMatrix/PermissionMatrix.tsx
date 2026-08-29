@@ -9,25 +9,26 @@ import type { GrantChange, RoleView } from "@/features/roles/types";
 import { roleColor } from "@/lib/rbac";
 import styles from "./permissionMatrix.module.scss";
 
-/** Adresse einer Zelle — dieselbe Bildung nutzt der Aufrufer für `changed`. */
+/** A cell's address — the caller uses the same construction for `changed`. */
 export const cellId = (roleId: string, permission: string) =>
   `${roleId}|${permission}`;
 
 interface Props {
-  /** Spalten. Reihenfolge wie hereingegeben (Rang absteigend), ohne die
-   *  ausgeblendeten — die Matrix kennt nur, was sie zeigen soll. Die noch
-   *  offenen Änderungen sind darin bereits verrechnet. */
+  /** Columns. Order as passed in (rank descending), without the hidden
+   *  ones — the matrix only knows what it should display. The still-pending
+   *  changes are already factored in. */
   roles: RoleView[];
-  /** Zeilen — die Permissions, die in diesem Scope vergeben werden dürfen. */
+  /** Rows — the permissions that may be assigned in this scope. */
   permissions: { key: string; desc: string }[];
-  /** Permissions, die der Handelnde weitergeben darf. */
+  /** Permissions the actor is allowed to pass on. */
   grantable: string[];
   /**
-   * Zellen, die vom Stand des Servers abweichen (`cellId`) — auch die gerade
-   * ausgeblendeten: die Leiste zählt alles, was beim Speichern mitginge.
+   * Cells that differ from the server's state (`cellId`) — including the
+   * currently hidden ones: the bar counts everything that would be included
+   * on save.
    */
   changed: ReadonlySet<string>;
-  /** Der Stapel geht gerade zum Server. */
+  /** The batch is currently being sent to the server. */
   saving: boolean;
   onChange: (change: GrantChange) => void;
   onSave: () => void;
@@ -35,24 +36,24 @@ interface Props {
 }
 
 /**
- * Eine Tabelle statt einer Liste je Rolle: Zeilen sind Permissions, Spalten
- * sind Rollen.
+ * A table instead of a list per role: rows are permissions, columns are
+ * roles.
  *
- * Der Vergleich ist der eigentliche Zweck dieser Seite — „darf der Viewer das,
- * was der Contributor darf?" beantwortet eine Zeile, nicht das Aufklappen zweier
- * Karten nacheinander. Deshalb bleiben Kopfzeile und erste Spalte beim Scrollen
- * stehen; ohne beides verliert eine Matrix ihren Nutzen.
+ * The comparison is this page's actual purpose — "can the Viewer do what
+ * the Contributor can?" is answered by one row, not by expanding two cards
+ * one after another. That's why the header row and first column stay fixed
+ * while scrolling; without both, a matrix loses its usefulness.
  *
- * Eine Zelle hat zwei Zustände: die Rolle hat die Permission, oder sie hat sie
- * nicht. Ein drittes „ausdrücklich verboten" gab es einmal; seit jeder Kontext
- * genau eine Rolle auflöst, wäre es von „hat sie nicht" nicht zu unterscheiden
- * — ein Verbotsschild, das nichts verbietet, gehört in keine Rechtetabelle.
+ * A cell has two states: the role has the permission, or it doesn't. There
+ * used to be a third, "explicitly denied"; since every context resolves to
+ * exactly one role, it would be indistinguishable from "doesn't have it" —
+ * a no-entry sign that denies nothing belongs in no permissions table.
  *
- * Geschrieben wird erst auf Knopfdruck. Ein Klick auf eine Zelle ist selten
- * allein gemeint: wer eine Rolle umbaut, geht eine Spalte entlang und trifft
- * dabei auch daneben. Als je eigener Schreibvorgang wäre jeder Fehlgriff sofort
- * geltendes Recht — gesammelt bleibt er bis zum Speichern eine Absicht, die man
- * zurücknehmen kann.
+ * Writes only happen on button press. A click on a single cell is rarely
+ * meant in isolation: reworking a role means going down a column, and
+ * missing along the way happens too. As its own separate write, every
+ * misclick would become law immediately — collected, it stays an intention
+ * until saved, one that can still be undone.
  */
 export function PermissionMatrix({
   roles,
@@ -82,10 +83,10 @@ export function PermissionMatrix({
   return (
     <div className={styles.matrix}>
       <div className={styles.toolbar}>
-        {/* Die Breite trägt die Hülle, nicht das Feld: `Input` reicht sein
-            `className` an das `<input>` durch, und dessen Rahmen zeichnet eine
-            Ebene darüber — dort gesetzt bliebe der Kasten trotzdem so breit wie
-            die Leiste. */}
+        {/* The wrapper carries the width, not the field: `Input` passes its
+            `className` down to the `<input>`, and its border is drawn one
+            level up — set there, the box would still stay as wide as the
+            toolbar. */}
         <div className={styles.search}>
           <Input
             variant="search"
@@ -97,9 +98,10 @@ export function PermissionMatrix({
           />
         </div>
 
-        {/* Die Bedienung steht vor der Tabelle, nicht hinter ihr: wer zum ersten
-            Mal auf ein Kästchen zielt, hat den Satz dann schon gelesen — unter
-            einer Tabelle, die selbst scrollt, stand er faktisch nie im Bild. */}
+        {/* The instructions sit before the table, not after it: whoever
+            targets a checkbox for the first time has already read the
+            sentence by then — below a table that scrolls on its own, it
+            would practically never be in view. */}
         <p className={styles.hint}>{t("roles.cycleHint")}</p>
 
         <ul className={styles.legend}>
@@ -222,11 +224,11 @@ export function PermissionMatrix({
         )}
       </div>
 
-      {/* Erscheint mit der ersten Änderung und bleibt unter der Tabelle stehen —
-          die Tabelle scrollt in sich, die Leiste ist deshalb immer im Bild.
-          `output` ist von sich aus eine Statusmeldung (`aria-live="polite"`):
-          das Auftauchen und jede neue Zahl werden angesagt, ohne dass der Fokus
-          aus der Matrix gezogen wird. */}
+      {/* Appears with the first change and stays fixed below the table — the
+          table scrolls within itself, so the bar is always in view.
+          `output` is inherently a status message (`aria-live="polite"`):
+          its appearance and every new count get announced without pulling
+          focus out of the matrix. */}
       {changed.size > 0 && (
         <output className={styles.pending}>
           <Icon
@@ -255,7 +257,7 @@ export function PermissionMatrix({
   );
 }
 
-// ─── Zelle ────────────────────────────────────────────────────────────────────
+// ─── Cell ───────────────────────────────────────────────────────────────────
 
 function Cell({
   role,
@@ -270,7 +272,7 @@ function Cell({
   permission: { key: string; desc: string };
   granted: boolean;
   allowLocked: boolean;
-  /** Weicht vom Stand des Servers ab und ginge beim Speichern mit. */
+  /** Differs from the server's state and would be included on save. */
   changed: boolean;
   saving: boolean;
   onChange: (change: GrantChange) => void;
@@ -279,9 +281,9 @@ function Cell({
 
   const state = granted ? t("roles.allowed") : t("roles.notAllowed");
 
-  // Zeile und Spalte stehen im Tabellenkopf; vorgelesen wird beides ohnehin.
-  // Der Name hier nennt sie trotzdem mit, weil der Schalter auch einzeln
-  // angesteuert wird.
+  // Row and column are named in the table headers; both get read out
+  // regardless. The name here still includes them because the switch can
+  // also be navigated to individually.
   const name = `${permission.desc} — ${role.name}: ${state}`;
 
   if (!role.manageable) {
@@ -302,8 +304,8 @@ function Cell({
     );
   }
 
-  // Wer eine Permission selbst nicht hat, kann sie nicht weitergeben. Wegnehmen
-  // darf er sie trotzdem — das vergrößert niemandes Rechte.
+  // Whoever doesn't hold a permission themselves can't pass it on. They can
+  // still take it away — that never expands anyone's rights.
   const locked = allowLocked && !granted;
 
   return (
@@ -334,13 +336,12 @@ function Cell({
   );
 }
 
-// ─── Gruppierung ──────────────────────────────────────────────────────────────
+// ─── Grouping ───────────────────────────────────────────────────────────────
 
 /**
- * Der erste Namensteil eines Keys nennt das Objekt, um das es geht. Ein paar
- * davon tragen nur eine einzige Permission (`user.manage`, `audit.view`) und
- * bekommen deshalb keine eigene Überschrift, sondern gehören zum nächstgrößeren
- * Thema.
+ * The first part of a key's name names the object it's about. A few of
+ * these carry only a single permission (`user.manage`, `audit.view`) and
+ * therefore don't get their own heading, but belong to the next-larger topic.
  */
 const GROUP_OF: Record<string, string> = {
   issue: "issue",
@@ -358,7 +359,7 @@ const GROUP_OF: Record<string, string> = {
   tenant: "platform",
 };
 
-/** Reihenfolge der Abschnitte: das Alltägliche zuerst, die Verwaltung zuletzt. */
+/** Order of the sections: the everyday ones first, administration last. */
 const GROUP_ORDER = {
   issue: 0,
   comment: 1,
@@ -377,9 +378,9 @@ const isGroupId = (value: string): value is GroupId => value in GROUP_ORDER;
 
 interface Group {
   id: string;
-  /** Gesetzt, wenn es für den Abschnitt eine Übersetzung gibt. */
+  /** Set when there's a translation for the section. */
   known: GroupId | null;
-  /** Notname für ein künftiges Objekt, das hier noch nicht bekannt ist. */
+  /** Fallback name for a future object not yet known here. */
   fallback: string;
   permissions: { key: string; desc: string }[];
 }

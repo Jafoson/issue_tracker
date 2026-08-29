@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 //
-// Geprüft wird eine einzige Frage: Wen zählt die Trägerzahl einer Rolle? Sie
-// hängt am Topf, in dem man steht, und ein falscher Ausschnitt fällt niemandem
-// auf — die Zahl sieht immer plausibel aus.
+// A single question is being checked here: who does a role's carrier count
+// count? It depends on the pot you're standing in, and a wrong slice goes
+// unnoticed by anyone — the number always looks plausible.
 
 const mockRoleFindMany = mock();
 const mockWorkspaceGroupBy = mock();
@@ -31,9 +31,9 @@ mock.module("@/lib/permissions", () => ({
 import { getRoleManagerView } from "@/features/roles/queries";
 import type { RoleTarget } from "@/features/roles/types";
 
-// ── Helfer ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Eine Rollenzeile, wie `findMany` sie liefert — überall zusammen acht Träger. */
+/** A role row as `findMany` returns it — eight carriers total across the board. */
 function roleRow(id: string) {
   return {
     id,
@@ -107,8 +107,8 @@ describe("Trägerzahl je Topf", () => {
   });
 
   it("zählt bei den Projektrollen des Workspace über alle seine Projekte", async () => {
-    // Dieser Topf gilt in jedem Projekt — ein einzelnes wäre der falsche
-    // Ausschnitt.
+    // This pot applies in every project — a single one would be the wrong
+    // slice.
     mockProjectGroupBy.mockResolvedValue([count("ws:ws1:custom", 7)]);
 
     const view = await getRoleManagerView({
@@ -126,7 +126,7 @@ describe("Trägerzahl je Topf", () => {
   });
 
   it("meldet null, wenn die Rolle hier von niemandem getragen wird", async () => {
-    // Die geteilte Standardrolle hat anderswo Träger — hier nicht.
+    // The shared default role has carriers elsewhere — not here.
     mockProjectGroupBy.mockResolvedValue([count("sys:PROJECT:member", 4)]);
 
     const view = await getRoleManagerView({
@@ -136,7 +136,7 @@ describe("Trägerzahl je Topf", () => {
     });
 
     expect(view.roles[0].memberCount).toBe(0);
-    // Löschen bleibt trotzdem versperrt: der Fremdschlüssel kennt keine Töpfe.
+    // Deleting stays blocked all the same: the foreign key doesn't know about pots.
     expect(view.roles[0].totalCarriers).toBe(8);
   });
 
@@ -150,8 +150,8 @@ describe("Trägerzahl je Topf", () => {
 
     const view = await getRoleManagerView({ scope: "PLATFORM" });
 
-    // Der Topf *ist* die Plattform — es gibt keinen engeren Ausschnitt und
-    // deshalb auch keine zweite Abfrage.
+    // The pot *is* the platform — there's no narrower slice and therefore no
+    // second query either.
     expect(mockWorkspaceGroupBy).not.toHaveBeenCalled();
     expect(mockProjectGroupBy).not.toHaveBeenCalled();
     expect(view.roles[0].memberCount).toBe(3);

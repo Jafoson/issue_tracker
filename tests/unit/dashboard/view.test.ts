@@ -5,15 +5,16 @@ import {
   toProjectView,
 } from "@/features/dashboard/view";
 
-// Welche der beiden Ansichten die Projektseite öffnet. Reine Rechnerei ohne
-// Datenbank — und die Stelle, an der drei Quellen zusammenkommen: die Adresse,
-// der Vermerk im Konto und die Vorgabe. Läuft die Rangfolge auseinander, öffnet
-// ein geteilter Link beim Empfänger etwas anderes, als der Absender gesehen hat.
+// Which of the two views the project page opens. Pure arithmetic with no
+// database involved — and the spot where three sources come together: the
+// URL, the note in the account, and the default. If the precedence order
+// diverges, a shared link opens something different for the recipient than
+// what the sender saw.
 
 describe("Die Vorgabe", () => {
   it("ist der Steckbrief", () => {
-    // Er beantwortet „was ist das hier" — die Frage dessen, der ein Projekt zum
-    // ersten Mal öffnet.
+    // It answers "what is this" — the question of someone opening a project
+    // for the first time.
     expect(DEFAULT_PROJECT_VIEW).toBe("profile");
     expect(PROJECT_VIEWS).toContain(DEFAULT_PROJECT_VIEW);
   });
@@ -31,21 +32,21 @@ describe("Die Rangfolge", () => {
   });
 
   it("überspringt, was fehlt, und nimmt den nächsten", () => {
-    // Der Alltagsfall: keine Adresse, aber ein Vermerk im Konto.
+    // The everyday case: no URL, but a note in the account.
     expect(toProjectView(undefined, "dashboard")).toBe("dashboard");
     expect(toProjectView(null, "dashboard")).toBe("dashboard");
   });
 
   it("lässt die Adresse über den Vermerk im Konto siegen", () => {
-    // Ein geteilter Link soll zeigen, was der Absender gesehen hat.
+    // A shared link should show what the sender saw.
     expect(toProjectView("profile", "dashboard")).toBe("profile");
   });
 });
 
 describe("Unbekannte Werte", () => {
   it("fallen durch, statt zu werfen", () => {
-    // Ein Tippfehler in einem Parameter, der nur die Darstellung wählt, ist kein
-    // Grund für eine 404.
+    // A typo in a parameter that only selects the presentation is no reason
+    // for a 404.
     expect(toProjectView("gibtsnicht")).toBe("profile");
     expect(toProjectView("")).toBe("profile");
   });

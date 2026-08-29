@@ -16,15 +16,14 @@ import styles from "./issueList.module.scss";
 
 interface Props<T extends DashboardIssue> {
   issues: T[];
-  /** Baut die Adresse einer Aufgabe aus ihrer Kennung (`NIM-142`). */
+  /** Builds an issue's address from its reference (`NIM-142`). */
   hrefFor: (ref: string) => string;
   /**
-   * Ein Zeichen ganz rechts, vor dem Zeitpunkt — z. B. „Liegengeblieben".
+   * A badge on the far right, before the timestamp — e.g. "Stale".
    *
-   * Bekommt die Zeile in ihrem eigenen Typ, nicht nur als `DashboardIssue`:
-   * „Braucht Aufmerksamkeit" hängt ihren Grund an die Zeile, und ohne den
-   * Typparameter müsste der Aufrufer ihn sich aus seiner eigenen Liste
-   * zurücksuchen.
+   * Gets the row in its own type, not just as `DashboardIssue`: "needs
+   * attention" attaches its reason to the row, and without the type
+   * parameter the caller would have to look it back up from its own list.
    */
   badgeFor?: (issue: T) => ReactNode;
   emptyIcon: ReactNode;
@@ -33,16 +32,16 @@ interface Props<T extends DashboardIssue> {
 }
 
 /**
- * Eine kurze Liste von Aufgaben, wie das Dashboard sie zeigt: Dringlichkeit,
- * Status, Kennung, Titel — und rechts, wer zuständig ist und wann zuletzt
- * etwas geschah.
+ * A short list of issues, the way the dashboard shows them: priority,
+ * status, reference, title — and on the right, who's responsible and when
+ * something last happened.
  *
- * Jede Zeile ist ein Link auf die Aufgabe. Das ist der Zweck der Liste: sie
- * beantwortet keine Frage abschließend, sondern zeigt, wo man weiterlesen muss.
+ * Every row is a link to the issue. That's the list's purpose: it doesn't
+ * conclusively answer a question, it shows where to read on.
  *
- * Die beiden Zeichen links stehen in fester Reihenfolge und fester Breite,
- * damit sie über die Zeilen hinweg zwei Spalten bilden statt zu tanzen — wie im
- * Board und in der Liste, aus denen sie stammen.
+ * The two icons on the left stay in a fixed order and fixed width, so they
+ * form two aligned columns down the rows instead of dancing around — as on
+ * the board and in the list they originate from.
  */
 export function IssueList<T extends DashboardIssue>({
   issues,
@@ -86,8 +85,8 @@ export function IssueList<T extends DashboardIssue>({
 
               {badge}
 
-              {/* Ohne Zuständige bleibt der Platz leer statt gefüllt: ein
-                  Platzhalter-Avatar sähe hier aus wie eine Person. */}
+              {/* With no assignee, the spot stays empty instead of filled: a
+                  placeholder avatar here would look like an actual person. */}
               {issue.assignee ? (
                 <Avatar avatar={issue.assignee} size={20} />
               ) : (
@@ -103,7 +102,7 @@ export function IssueList<T extends DashboardIssue>({
   );
 }
 
-/** Das Zeichen für einen Grund in „Braucht Aufmerksamkeit". */
+/** The badge for a reason in "needs attention". */
 export function ReasonBadge({ icon, label }: { icon: string; label: string }) {
   return (
     <Badge size="sm" mono={false} className={styles.reason}>

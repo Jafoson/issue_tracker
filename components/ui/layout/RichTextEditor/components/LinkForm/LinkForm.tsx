@@ -5,53 +5,54 @@ import { useState } from "react";
 import styles from "./linkForm.module.scss";
 
 /**
- * Die Adresszeile für einen Link.
+ * The address bar for a link.
  *
- * Ersetzt das `window.prompt`, das der Knopf in der Werkzeugleiste bisher
- * benutzt hat: das blockiert den Browser, lässt sich nicht gestalten und zeigt
- * je nach System eine andere Beschriftung.
+ * Replaces the `window.prompt` the toolbar button used to use: that blocks
+ * the browser, can't be styled, and shows a different label depending on the
+ * system.
  *
- * Positioniert wird sie wie das Kalenderblatt — vom Aufrufer an den Cursor
- * gehängt.
+ * Positioned like the date picker popover — attached to the cursor by the
+ * caller.
  */
 
 /**
- * Macht aus einer Eingabe eine brauchbare Adresse.
+ * Turns an input into a usable address.
  *
- * Wer einen Link setzt, tippt selten das Schema mit. Fehlt es, wird `https://`
- * ergänzt — außer bei den Formen, die auch ohne eindeutig sind: eine
- * Mailadresse, ein Pfad innerhalb der Anwendung, ein Sprungziel.
+ * Whoever sets a link rarely types the scheme along with it. If it's
+ * missing, `https://` is added — except for the forms that are unambiguous
+ * even without one: an email address, a path within the application, an
+ * anchor target.
  *
- * Alles, was danach kein erlaubtes Schema trägt, gilt als unbrauchbar. Damit
- * kommt `javascript:` gar nicht erst ins Dokument — dieselbe Linie wie in
- * `RichText`, nur eine Ebene früher.
+ * Anything that still carries no allowed scheme after that counts as
+ * unusable. That way `javascript:` never even makes it into the document —
+ * the same policy as in `RichText`, just one level earlier.
  */
 export function toHref(input: string): string | null {
   const value = input.trim();
   if (!value) return null;
 
   if (/^(?:https?:\/\/|mailto:|\/|#)/i.test(value)) return value;
-  // Ein `@` ohne Schema ist eine Mailadresse.
+  // An `@` without a scheme is an email address.
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return `mailto:${value}`;
-  // Ein anderes Schema (`javascript:`, `data:`) wird nicht ergänzt, sondern
-  // abgelehnt — sonst entstünde daraus `https://javascript:…`.
+  // Any other scheme (`javascript:`, `data:`) isn't completed but rejected —
+  // otherwise it would turn into `https://javascript:…`.
   if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return null;
 
   return `https://${value}`;
 }
 
 interface LinkFormProps {
-  /** Vorbelegung — die Adresse eines Links, auf dem der Cursor schon steht. */
+  /** Preset — the address of a link the cursor is already on. */
   initial?: string;
-  /** Vorbelegung des Namens. */
+  /** Preset for the name. */
   initialName?: string;
   /**
-   * Ob nach einem Namen gefragt wird. Aus, wenn Text markiert ist — der ist
-   * dann der Name, und ein zweites Feld führte nur in die Irre.
+   * Whether a name is asked for. Off when text is selected — that then
+   * becomes the name, and a second field would only be misleading.
    */
   withName?: boolean;
   onSubmit: (href: string, name: string) => void;
-  /** Nimmt den Link von der Auswahl. Fehlt, wenn es noch keinen gibt. */
+  /** Removes the link from the selection. Missing when there isn't one yet. */
   onRemove?: () => void;
   onCancel: () => void;
   label: string;
@@ -84,13 +85,13 @@ export function LinkForm({
     if (href) onSubmit(href, name.trim());
   };
 
-  /** Enter übernimmt, Escape bricht ab — in beiden Feldern gleich. */
+  /** Enter commits, Escape cancels — the same in both fields. */
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
       submit();
     }
-    // Nicht bis zum Modal durchlassen — sonst schlösse sich das Panel.
+    // Don't let this bubble up to the modal — otherwise the panel would close.
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
@@ -103,7 +104,7 @@ export function LinkForm({
       <div className={styles.row}>
         <Icon icon="lucide:link" width={15} className={styles.icon} />
         <input
-          // biome-ignore lint/a11y/noAutofocus: die Zeile geht auf Wunsch auf, der Fokus gehört sofort hinein
+          // biome-ignore lint/a11y/noAutofocus: the row opens on request, and focus belongs in it immediately
           autoFocus
           type="url"
           inputMode="url"
@@ -132,7 +133,7 @@ export function LinkForm({
           className={styles.action}
           aria-label={applyLabel}
           title={applyLabel}
-          // Ohne gültige Adresse gibt es nichts zu übernehmen.
+          // Without a valid address, there's nothing to commit.
           disabled={!href}
           onMouseDown={(e) => e.preventDefault()}
           onClick={submit}

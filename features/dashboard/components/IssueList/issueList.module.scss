@@ -6,9 +6,9 @@
   list-style: none;
 }
 
-/* Ein Raster und keine Flex-Zeile: die beiden Zeichen, die Kennung und alles
-   rechts sollen über die Zeilen hinweg untereinander stehen. In einer Flex-Zeile
-   wanderten sie mit der Länge des Titels. */
+/* A grid, not a flex row: the two icons, the reference, and everything on
+   the right should line up down the rows. In a flex row they'd shift with
+   the length of the title. */
 .row {
   display: grid;
   grid-template-columns: auto auto 1fr auto auto auto;
@@ -31,8 +31,8 @@
   gap: 8px;
 }
 
-/* Die Kennung in derselben Schrift wie überall in der App — sie ist ein
-   Bezeichner, kein Wort. */
+/* The reference in the same font as everywhere else in the app — it's an
+   identifier, not a word. */
 .ref {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -56,8 +56,8 @@
   border-color: color-mix(in oklab, var(--warning) 40%, var(--outline-variant));
 }
 
-/* Hält die Spalte offen, wenn niemand zuständig ist — dieselbe Breite wie der
-   Avatar daneben. */
+/* Keeps the column open when nobody's responsible — the same width as the
+   avatar next to it. */
 .noAvatar {
   width: 20px;
   height: 20px;
@@ -70,15 +70,15 @@
   white-space: nowrap;
 }
 
-/* Der leere Zustand steht in einer Karte und braucht deren Polster nicht noch
-   einmal. */
+/* The empty state sits inside a card and doesn't need its padding a second
+   time. */
 .empty {
   padding: 18px 0 6px;
 }
 
 @media (max-width: 700px) {
-  /* Auf schmalen Geräten fällt der Zeitpunkt weg — die Kennung und der Titel
-     sind die Auskunft, „vor 3 Tagen" ist die Verzierung. */
+  /* On narrow devices, the timestamp is dropped — the reference and title
+     are the information, "3 days ago" is decoration. */
   .row {
     grid-template-columns: auto auto 1fr auto auto;
   }

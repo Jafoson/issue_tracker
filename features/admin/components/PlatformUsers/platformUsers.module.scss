@@ -1,4 +1,4 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
+/* Not the page that scrolls, but the table itself (`fill`). */
 .content {
   flex: 1;
   min-height: 0;
@@ -8,9 +8,9 @@
   gap: 12px;
 }
 
-/* Der Auslöser der Rollenauswahl sieht aus wie die Plakette daneben, nur mit
-   einem Winkel dahinter: dass sich hier etwas ändern lässt, soll man sehen,
-   ohne dass die Spalte zur Knopfleiste wird. */
+/* The role picker's trigger looks like the badge next to it, only with a
+   chevron behind it: you should be able to see that something's editable
+   here, without the column turning into a toolbar. */
 .roleTrigger {
   display: inline-flex;
   align-items: center;
@@ -26,8 +26,8 @@
   }
 }
 
-/* Ein stillgelegtes Konto bleibt in der Liste, tritt aber zurück — es arbeitet
-   nicht mehr mit. */
+/* A deactivated account stays in the list but recedes — it no longer takes
+   part. */
 .dimmed {
   opacity: 0.55;
 }

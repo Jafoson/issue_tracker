@@ -15,15 +15,15 @@ interface FilePreviewProps {
   mimeType: string | null;
   size: number | null;
   /**
-   * `false` bei externen Link-Anhängen: der Download-Knopf lädt die Datei
-   * client-seitig als Blob nach (siehe unten) — das braucht CORS-Freigabe
-   * vom Host, die für den eigenen S3-Bucket gilt, für eine beliebige fremde
-   * Adresse aber nicht garantiert ist. Dort gibt es statt „Herunterladen"
-   * nur „Original öffnen".
+   * `false` for external link attachments: the download button re-fetches
+   * the file client-side as a blob (see below) — that requires CORS
+   * clearance from the host, which holds for our own S3 bucket but isn't
+   * guaranteed for an arbitrary foreign address. There, instead of
+   * "Download" there's only "Open original".
    */
   downloadable: boolean;
-  /** Schon fertig formatiert (`useTimeAgo`) — der Atom selbst bleibt ohne
-   *  next-intl, wie `LinkForm` und die übrigen `components/ui`-Bausteine. */
+  /** Already fully formatted (`useTimeAgo`) — the atom itself stays free of
+   *  next-intl, like `LinkForm` and the rest of the `components/ui` building blocks. */
   addedAt: string;
   close: () => void;
   closeLabel: string;
@@ -34,12 +34,13 @@ interface FilePreviewProps {
 }
 
 /**
- * Vorschau-Dialog für einen Anhang: Bild/Video direkt eingebettet, PDF per
- * `iframe`, alles andere nur als Symbol mit Hinweis. Der Download-Knopf lädt
- * die Datei erst als Blob und löst ihn dann über einen unsichtbaren Anker
- * aus — ein `<a download>` direkt auf die presignte S3-Adresse würde vom
- * Browser ignoriert (das Attribut wirkt nur bei gleicher Herkunft oder
- * `blob:`/`data:`, nicht cross-origin), die Datei liefe sonst nur im Tab auf.
+ * Preview dialog for an attachment: image/video embedded directly, PDF via
+ * `iframe`, everything else shown only as an icon with a note. The download
+ * button first fetches the file as a blob and then triggers it through an
+ * invisible anchor — an `<a download>` pointed directly at the presigned S3
+ * URL would be ignored by the browser (the attribute only works for
+ * same-origin or `blob:`/`data:`, not cross-origin), and the file would
+ * otherwise just open in the tab.
  */
 export function FilePreview({
   url,
@@ -92,10 +93,10 @@ export function FilePreview({
       <ModalBody>
         <div className={styles.preview}>
           {mimeType?.startsWith("image/") ? (
-            // biome-ignore lint/performance/noImgElement: presignte bzw. externe Adresse, next/image kann sie nicht optimieren
+            // biome-ignore lint/performance/noImgElement: presigned or external URL, next/image can't optimize it
             <img className={styles.image} src={url} alt={name} />
           ) : mimeType?.startsWith("video/") ? (
-            // biome-ignore lint/a11y/useMediaCaption: kein Untertitel-Text zur Hand — nutzergenerierter Datei-Anhang
+            // biome-ignore lint/a11y/useMediaCaption: no caption text available — user-generated file attachment
             <video className={styles.video} src={url} controls />
           ) : mimeType === "application/pdf" ? (
             <iframe className={styles.pdf} src={url} title={name} />

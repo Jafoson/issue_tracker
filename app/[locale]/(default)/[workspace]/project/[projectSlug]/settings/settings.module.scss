@@ -1,5 +1,5 @@
-/* Derselbe Aufbau wie in den Workspace-Einstellungen: oben die Kopfzeile mit dem
-   Bereichsumschalter, darunter zwei Spalten. */
+/* Same layout as in the workspace settings: header with the section switcher
+   on top, two columns below. */
 .shell {
   flex: 1;
   min-height: 0;
@@ -8,9 +8,10 @@
   overflow: hidden;
 }
 
-/* Zwei Spalten, eine Höhe: die Leiste steht, der Bereich daneben scrollt. Beide
-   bekommen `min-height: 0`, sonst wächst der Inhalt die Zeile auf und die Seite
-   scrollt als Ganzes — genau das, was die Spalten-Aufteilung verhindern soll. */
+/* Two columns, one height: the sidebar stays fixed, the panel next to it
+   scrolls. Both get `min-height: 0`, otherwise the content stretches the row
+   and the whole page scrolls — exactly what the column split is meant to
+   prevent. */
 .body {
   flex: 1;
   min-height: 0;
@@ -18,8 +19,8 @@
   overflow: hidden;
 }
 
-/* Der Bereich bringt seine eigene Kopfzeile mit (`PageHeader`) und regelt sein
-   Scrollen selbst — deshalb hier nur die Spalte, kein Polster. */
+/* The panel brings its own header (`PageHeader`) and handles its own
+   scrolling — so this is just the column, no padding. */
 .panel {
   flex: 1;
   min-width: 0;

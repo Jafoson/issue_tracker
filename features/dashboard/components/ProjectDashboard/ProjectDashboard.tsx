@@ -49,28 +49,28 @@ import { ProjectProfileView } from "./components/ProjectProfileView";
 import styles from "./projectDashboard.module.scss";
 
 interface Props extends ProjectDashboardView {
-  /** Welche Ansicht aufgeht — aus `?view=` in der Adresse. */
+  /** Which view is open — from `?view=` in the address. */
   view: ProjectView;
-  /** Basisadresse für Aufgaben: `/<workspace>/issue`. */
+  /** Base address for issues: `/<workspace>/issue`. */
   issueBase: string;
-  /** Für den Label-Dialog in der Übersicht — `LabelModal` braucht ihn direkt. */
+  /** For the label dialog in the overview — `LabelModal` needs it directly. */
   workspaceId: string;
-  /** Adressen der Nachbarbereiche dieses Projekts. */
+  /** Addresses of this project's neighboring areas. */
   links: {
     board: string;
     list: string;
     members: string;
     settings: string;
-    /** Die Teamverwaltung liegt eine Ebene höher — Teams gehören dem Workspace. */
+    /** Team management lives one level up — teams belong to the workspace. */
     teams: string;
-    /** Die volle, filterbare Liste — die Aktivitäts-Karte der Übersicht zeigt nur einen Ausschnitt. */
+    /** The full, filterable list — the overview's activity card shows only an excerpt. */
     activity: string;
   };
-  /** Für die Aktivitäts-Karte der Übersicht — bereits auf `audit.view` gefiltert (`getProjectActivity`). */
+  /** For the overview's activity card — already filtered by `audit.view` (`getProjectActivity`). */
   activity: ActivityView;
 }
 
-/** Die Zeichen der drei Gründe in „Braucht Aufmerksamkeit". */
+/** The icons for the three reasons in "needs attention". */
 const REASON_ICONS = {
   unassigned: "lucide:user-x",
   urgent: "lucide:triangle-alert",
@@ -78,51 +78,52 @@ const REASON_ICONS = {
 } as const;
 
 /**
- * Die Startseite eines Projekts — in zwei Ansichten.
+ * A project's home page — in two views.
  *
- * ── Übersicht oder Dashboard ──
+ * ── Overview or dashboard ──
  *
- * Beide beantworten eine andere Frage. Die **Übersicht** sagt, was das Projekt
- * ist: Zweck, Kürzel, Leitung, wer Zugriff hat. Das gilt auch nächsten Monat
- * noch und kennt deshalb gar keinen Zeitraum — sie ist die Vorgabe. Das
- * **Dashboard** sagt, wie es gerade läuft: Zahlen, Verläufe, was liegen bleibt.
- * Alles davon ändert sich stündlich und hängt am gewählten Zeitraum.
+ * Each answers a different question. The **overview** says what the project
+ * is: purpose, prefix, leadership, who has access. That still holds next
+ * month too, so it has no time period at all — it's the default. The
+ * **dashboard** says how it's currently doing: numbers, trends, what's
+ * falling behind. All of that changes hourly and depends on the chosen
+ * period.
  *
- * Welche von beiden aufgeht, merkt sich die Seite (`DashboardPreference.view`):
- * die Projektzeile in der Seitenleiste führt ohne `?view=` hierher, und wer
- * zuletzt die Zahlen ansah, will sie beim nächsten Klick nicht erst wieder
- * aufrufen.
+ * Which of the two is open is remembered by the page
+ * (`DashboardPreference.view`): the project row in the sidebar leads here
+ * with no `?view=`, and whoever last looked at the numbers doesn't want to
+ * call them up again on the next click.
  *
- * Sie stehen als Umschalter nebeneinander und nicht als zwei Routen, obwohl die
- * Einstellungen es andersherum machen: dort *ersetzt* der Wechsel den ganzen
- * Bereich samt Navigation, hier bleibt alles stehen und nur die Karten tauschen.
- * Die Daten für beide kommen ohnehin aus einem Aufruf (`getProjectDashboard`),
- * der Wechsel kostet also keinen Serverlauf — und `?view=` in der Adresse macht
- * ihn trotzdem teilbar und übersteht das Neuladen.
+ * They sit side by side as a toggle rather than as two routes, even though
+ * settings does it the other way around: there, switching *replaces* the
+ * whole area including navigation, here everything stays put and only the
+ * cards swap. The data for both comes from a single call anyway
+ * (`getProjectDashboard`), so switching costs no server round trip — and
+ * `?view=` in the address still makes it shareable and survives a reload.
  *
- * ── Der Aufbau ──
+ * ── The structure ──
  *
- * Oben eine Reihe Bedienelemente, darunter alles, was sie betreffen — der
- * Zeitraum gilt für jede Zahl auf dieser Seite, nicht je Karte. Ein Dashboard, in
- * dem zwei Karten verschiedene Wochen zeigen, ist keine Übersicht, sondern eine
- * Fehlerquelle. In der Übersicht steht die Reihe gar nicht erst da: Zeitraum,
- * Tabellenansicht und „Anpassen" haben dort nichts zu tun, und ein Bedienelement
- * ohne Wirkung ist schlimmer als keines.
+ * A row of controls at the top, below it everything they affect — the
+ * period applies to every number on this page, not per card. A dashboard
+ * where two cards show different weeks isn't an overview, it's a source of
+ * errors. In the overview, that row doesn't even appear: period, table view,
+ * and "customize" have no business there, and a control with no effect is
+ * worse than none at all.
  *
- * Der Zeitraum steht in der Adresse (`?range=30d`) statt im Zustand dieser
- * Komponente: damit ist er teilbar, überlebt das Neuladen, und die Zahlen kommen
- * frisch vom Server. Zusätzlich wird er im Konto vermerkt — die Adresse trägt
- * den Zeitraum *dieses* Aufrufs, die Vorliebe den, mit dem das Dashboard das
- * nächste Mal aufgeht.
+ * The period lives in the address (`?range=30d`) instead of this
+ * component's state: that makes it shareable, it survives a reload, and the
+ * numbers come fresh from the server. It's additionally recorded on the
+ * account — the address carries the period of *this* particular visit, the
+ * preference the one the dashboard opens with next time.
  *
- * ── Die Anordnung ──
+ * ── The layout ──
  *
- * Welche Bausteine in welcher Reihenfolge stehen, entscheidet jede Person für
- * sich (`features/dashboard/widgets.ts`). Diese Komponente kennt die
- * Entscheidung nicht, sie liest sie: `order` kommt fertig vom Server, und die
- * Schleife unten zeichnet, was darin steht. Ein `if` je Baustein hätte dieselbe
- * Reihenfolge ein zweites Mal festgeschrieben — und zwar die, die im Quelltext
- * steht, nicht die, die jemand eingestellt hat.
+ * Which widgets appear in which order is decided by each person individually
+ * (`features/dashboard/widgets.ts`). This component doesn't know that
+ * decision, it just reads it: `order` arrives fully resolved from the
+ * server, and the loop below renders whatever's in it. An `if` per widget
+ * would have hardcoded that same order a second time — and specifically the
+ * one written in the source, not the one someone configured.
  */
 export function ProjectDashboard({
   project,
@@ -146,12 +147,12 @@ export function ProjectDashboard({
   const [asTable, setAsTable] = useState(false);
 
   /**
-   * Die Übersicht ist die Vorgabe und kennt gar keinen Zeitraum — sie bekommt
-   * die blanke Adresse, ohne `?view=` und ohne `?range=`. Alles andere trägt
-   * beide Werte, auch den, der gerade nicht wechselt: sonst verlöre ein
-   * Wechsel der Ansicht den eingestellten Zeitraum, und wer vom Dashboard
-   * zurück zur Übersicht und wieder zum Dashboard geht, stünde erneut auf der
-   * Vorgabe.
+   * The overview is the default and has no time period at all — it gets the
+   * bare address, with no `?view=` and no `?range=`. Everything else
+   * carries both values, including the one that isn't currently changing:
+   * otherwise switching views would lose the configured period, and anyone
+   * going from the dashboard back to the overview and back to the dashboard
+   * would land on the default again.
    */
   const urlWith = (patch: {
     view?: ProjectView;
@@ -171,11 +172,12 @@ export function ProjectDashboard({
 
   const pickRange = (range: RangeKey) => {
     startTransition(async () => {
-      // `replace` und nicht `push`: einen Zeitraum zu wechseln ist keine neue
-      // Station, durch die man sich zurückklicken will.
+      // `replace` and not `push`: switching a period isn't a new stop you'd
+      // want to click back through.
       router.replace(urlWith({ range }));
-      // Und nebenbei merken, womit dieses Dashboard künftig aufgehen soll. Wer
-      // einmal auf „12 Monate" stellt, meint selten nur diesen einen Aufruf.
+      // And, on the side, remember what this dashboard should open with
+      // going forward. Anyone who sets "12 months" once rarely means only
+      // this one visit.
       await setDashboardRange(project.id, range);
     });
   };
@@ -189,12 +191,12 @@ export function ProjectDashboard({
 
   const pickView = (next: string) => {
     startTransition(async () => {
-      // `replace`: das sind zwei Blicke auf dasselbe Projekt, keine zwei
-      // Stationen. Die Daten liegen schon im Client — der Wechsel ist sofort
-      // da, die Adresse zieht nur nach.
+      // `replace`: these are two views of the same project, not two stops.
+      // The data is already in the client — the switch happens instantly,
+      // the address just catches up.
       router.replace(urlWith({ view: next as ProjectView }));
-      // Und merken, wo man war: die Projektzeile in der Seitenleiste führt ohne
-      // `?view=` hierher zurück und soll dann dieselbe Ansicht öffnen.
+      // And remember where you were: the project row in the sidebar leads
+      // back here with no `?view=` and should then open the same view.
       await setDashboardView(project.id, next);
     });
   };
@@ -215,10 +217,10 @@ export function ProjectDashboard({
 
   const issueHref = (ref: string) => `${issueBase}/${ref.toLowerCase()}`;
 
-  // ── Die Achse beschriften ──
+  // ── Labeling the axis ──
   //
-  // Tage tragen Tag und Monat, Monate den Monatsnamen. Der Tooltip zeigt das
-  // volle Datum; an der Achse wäre es eine Wand aus Ziffern.
+  // Days carry day and month, months carry the month name. The tooltip shows
+  // the full date; on the axis it would be a wall of digits.
   const axisLabel = (iso: string) => {
     const date = new Date(`${iso}T00:00:00`);
     if (data.unit === "month") return format.dateTime(date, { month: "short" });
@@ -234,7 +236,7 @@ export function ProjectDashboard({
       month: "short",
       year: "numeric",
     });
-    // Eine Woche ist ein Zeitraum, kein Tag — die Beschriftung sagt das.
+    // A week is a period, not a day — the label says so.
     return data.unit === "week" ? t("dashboard.weekOf", { date: day }) : day;
   };
 
@@ -245,8 +247,8 @@ export function ProjectDashboard({
     values,
   }));
 
-  // Angelegt zuerst, geschlossen darüber: gelesen wird „wie viel kommt herein,
-  // wie viel geht hinaus", und in dieser Reihenfolge steht es auch im Tooltip.
+  // Created first, closed above it: read as "how much comes in, how much
+  // goes out", and it appears in the tooltip in this same order.
   const flowSeries: ChartSeries[] = [
     {
       key: "created",
@@ -260,11 +262,11 @@ export function ProjectDashboard({
     },
   ];
 
-  // ── Die Kennzahlen ──
+  // ── The key figures ──
   //
-  // Bestand zuerst, Bewegung danach, und am Ende die Zeit, die beides verbindet.
-  // Jede trägt eine zweite Zeile, die sagt, worauf sich die Zahl bezieht — eine
-  // Zahl ohne Bezugsgröße ist keine Auskunft.
+  // Stock first, movement after, and at the end the time that connects both.
+  // Each carries a second line stating what the number refers to — a number
+  // with no reference point isn't information.
   const stats = [
     {
       key: "open",
@@ -290,8 +292,8 @@ export function ProjectDashboard({
       key: "closed",
       label: t("dashboard.statClosed"),
       value: format.number(data.stats.closed),
-      // Der Saldo ist die eigentliche Auskunft: fünf geschlossene Aufgaben sind
-      // ein Fortschritt, wenn drei dazukamen, und keiner, wenn es acht waren.
+      // The net change is the actual information: five closed issues are
+      // progress if three were added, and none at all if it was eight.
       foot: t("dashboard.statClosedFoot", {
         created: data.stats.created,
         net: `${data.stats.created - data.stats.closed >= 0 ? "+" : ""}${
@@ -309,8 +311,8 @@ export function ProjectDashboard({
               count: data.stats.urgentUnassigned,
             })
           : t("dashboard.statUrgentAssigned"),
-      // Rot nur, wenn es etwas zu sagen hat. Eine Kachel, die immer leuchtet,
-      // leuchtet für nichts.
+      // Red only when it has something to say. A tile that always glows
+      // glows for nothing.
       warn: data.stats.urgent > 0,
     },
     {
@@ -329,10 +331,10 @@ export function ProjectDashboard({
     },
   ];
 
-  // Der Name kommt aus den Workspace-Stammdaten und nicht aus dem
-  // Sprachkatalog — genauso, wie ihn Board und Liste nebenan zeigen. Ein
-  // Dashboard, das „Dringend" schreibt, während die Spalte daneben „Urgent"
-  // sagt, sähe aus wie zwei verschiedene Programme.
+  // The name comes from the workspace's metadata and not from the
+  // translation catalog — exactly as the board and list next to it display
+  // it. A dashboard that writes "Dringend" while the column next to it says
+  // "Urgent" would look like two different apps.
   const priorityRows: BarRow[] = data.priorities.map((priority) => ({
     id: String(priority.id),
     label: priority.name,
@@ -358,11 +360,12 @@ export function ProjectDashboard({
     ),
   }));
 
-  // ── Ein Baustein je Schlüssel ──
+  // ── One widget per key ──
   //
-  // Ein Objekt und keine `switch`-Anweisung: so ist auf einen Blick zu sehen,
-  // dass jeder Schlüssel aus der Registry hier eine Entsprechung hat, und ein
-  // vergessener fällt beim Typecheck auf statt still nichts zu zeichnen.
+  // An object, not a `switch` statement: this way it's visible at a glance
+  // that every key from the registry has a counterpart here, and a
+  // forgotten one fails the type check instead of silently rendering
+  // nothing.
   const widgets: Record<WidgetKey, ReactNode> = {
     stats: (
       <div className={styles.stats}>
@@ -487,10 +490,10 @@ export function ProjectDashboard({
 
   const isDashboard = view === "dashboard";
 
-  // Auslastung ist eine Frage der Verteilung über mehrere Personen — bezogen
-  // auf nur die eigene Person hat sie keine Antwort mehr. Nur die Zeichnung
-  // blendet ihn aus, die gespeicherte Anordnung bleibt unberührt: schaltet
-  // jemand zurück auf „Alle", steht der Baustein wieder da, wo er stand.
+  // Workload is a question of distribution across multiple people —
+  // narrowed to just yourself, it no longer has an answer. Only the
+  // rendering hides it; the saved layout stays untouched: switch back to
+  // "all" and the widget reappears exactly where it was.
   const visibleOrder =
     data.scope === "mine" ? order.filter((key) => key !== "workload") : order;
 
@@ -506,17 +509,17 @@ export function ProjectDashboard({
           />
         }
         title={project.name}
-        // Ohne Beschreibungssatz — in beiden Ansichten. Was die Seite zeigt,
-        // sagt der Umschalter daneben schon, und in der Übersicht sagt es die
-        // Kopfkarte darunter noch genauer. Wichtig ist nur, dass *beide*
-        // Ansichten es gleich halten: eine Kopfzeile, die in der einen zwei und
-        // in der anderen eine Zeile hoch ist, springt beim Umschalten und reißt
-        // alles darunter mit. Das Polster stellt `PageHeader` selbst um
-        // (`:has(.description)`).
-        // Der Umschalter steht ganz oben, auf einer Höhe mit dem Projektnamen:
-        // er wechselt die ganze Seite und gehört damit über alles, was er
-        // wechselt — nicht in die Reihe der Bedienelemente darunter, die nur
-        // für eine der beiden Ansichten gilt.
+        // No description line — in either view. What the page shows is
+        // already stated by the toggle next to it, and in the overview the
+        // header card below states it even more precisely. What matters is
+        // only that *both* views keep this consistent: a header that's two
+        // lines tall in one and one line tall in the other would jump on
+        // switching and drag everything below it along. `PageHeader` adjusts
+        // its own padding for this (`:has(.description)`).
+        // The toggle sits at the very top, level with the project name: it
+        // switches the whole page and therefore belongs above everything it
+        // switches — not in the row of controls below, which only applies
+        // to one of the two views.
         actions={
           <SegmentedControl
             variant="surface"
@@ -539,9 +542,9 @@ export function ProjectDashboard({
       />
 
       <div className={styles.body} data-view={view}>
-        {/* Eine Reihe, über allem, was sie betrifft — und nur dort, wo sie
-            etwas bewirkt. Die Übersicht kennt keinen Zeitraum, keine
-            Tabellenansicht und nichts zum Anpassen. */}
+        {/* A single row, above everything it affects — and only where it
+            has an effect. The overview has no period, no table view, and
+            nothing to customize. */}
         {isDashboard && (
           <div className={styles.controls}>
             <RangePicker
@@ -551,9 +554,10 @@ export function ProjectDashboard({
               labelFor={(range) => t(`dashboard.range_${range}`)}
             />
 
-            {/* Nur, wer `dashboard.view.all` trägt, darf zwischen den eigenen
-                und den Zahlen des ganzen Projekts wählen — für alle anderen
-                ist `data.scope` ohnehin fest auf "mine" (`getProjectDashboard`). */}
+            {/* Only someone with `dashboard.view.all` may choose between
+                their own numbers and the whole project's — for everyone
+                else `data.scope` is fixed to "mine" anyway
+                (`getProjectDashboard`). */}
             {profile.canViewAllStats && (
               <ScopePicker
                 value={data.scope}
@@ -591,9 +595,9 @@ export function ProjectDashboard({
           </p>
         )}
 
-        {/* Während neue Zahlen geladen werden, bleibt das alte Bild stehen und
-            tritt zurück. Ein Skelett an dieser Stelle wäre ein Sprung im
-            Layout und ein Blitzen bei jedem Klick. */}
+        {/* While new numbers are loading, the old view stays in place and
+            recedes. A skeleton here would be a layout jump and a flash on
+            every click. */}
         {isDashboard ? (
           <div className={styles.grid} data-loading={isPending || undefined}>
             {visibleOrder.map((key) => (

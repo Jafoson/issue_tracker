@@ -23,9 +23,9 @@ interface IssuePropertiesProps {
 }
 
 /**
- * Ein beschriftetes Attribut. In der Spalte steht die Beschriftung über dem
- * Wert (die Leiste soll flach bleiben), in der Attributspalte daneben (dort
- * ist die Breite knapp, die Höhe nicht).
+ * A labeled attribute. In the main column, the label sits above the value
+ * (the bar should stay flat), in the attributes sidebar it sits next to it
+ * (there, width is scarce, height is not).
  */
 function Field({
   label,
@@ -54,23 +54,24 @@ function Field({
 }
 
 /**
- * Derselbe Wert, ohne Knopf: kein Klick öffnet ein Menü, kein Fokusring.
- * Für Felder, die `IssueAccess` gerade verbietet — der Server lehnte den
- * Patch ohnehin ab (`updateIssue`), hier fehlt nur die Einladung dazu.
+ * The same value, without a button: no click opens a menu, no focus ring.
+ * For fields that `IssueAccess` currently forbids — the server would reject
+ * the patch anyway (`updateIssue`), this just leaves out the invitation to
+ * try.
  */
 function ValueDisplay({ children }: { children: React.ReactNode }) {
   return <span className={styles.valueBtn}>{children}</span>;
 }
 
 /**
- * Die vier Attribute, die am Issue am häufigsten wechseln — Typ, Status,
- * Priorität, Zuständigkeit.
+ * The four attributes that change most often on an issue — type, status,
+ * priority, assignee.
  *
- * In der Spalte stehen sie als eigene Leiste direkt unter dem Titel: dort ist
- * das die einzige Stelle, an der man sie sieht, ohne erst an der Beschreibung
- * vorbeizuscrollen. Nebeneinander statt untereinander, damit der Block flach
- * bleibt. In der zweispaltigen Ansicht sind sie der Kopf der Attributspalte
- * und stehen als Zeilen untereinander.
+ * In the main column they form their own bar directly below the title:
+ * that's the only place there where they're visible without first
+ * scrolling past the description. Side by side rather than stacked, so the
+ * block stays flat. In the two-column view they're the header of the
+ * attributes sidebar and appear as stacked rows.
  */
 export function IssueProperties({
   issue,

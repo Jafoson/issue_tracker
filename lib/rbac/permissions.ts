@@ -1,37 +1,38 @@
-// ─── RBAC: Permission-Registry ────────────────────────────────────────────────
+// ─── RBAC: permission registry ────────────────────────────────────────────────
 //
-// Reine Datendefinition — kein DB-Zugriff, kein `server-only`, keine Prisma-
-// Importe. Diese Datei wird von der Runtime (lib/permissions.ts), vom Seed
-// (prisma/seed.ts), von der Provisionierung (lib/rbac-provision.ts) und von den
-// Tests importiert.
+// Pure data definition — no DB access, no `server-only`, no Prisma imports.
+// This file is imported by the runtime (lib/permissions.ts), by the seed
+// (prisma/seed.ts), by provisioning (lib/rbac-provision.ts), and by the
+// tests.
 //
-// Ein Permission-Key nennt **Objekt und Aktion** — nicht die Ebene. Wo eine
-// Permission wirkt, entscheidet der Scope der Rolle, die sie trägt:
+// A permission key names **object and action** — not the level. Where a
+// permission takes effect is decided by the scope of the role that carries
+// it:
 //
-//   label.create in einer Workspace-Rolle → Labels im ganzen Workspace
-//   label.create in einer Projektrolle    → Labels in diesem Projekt
+//   label.create on a workspace role → labels across the whole workspace
+//   label.create on a project role   → labels in that project
 //
-// Deshalb steht bei jeder Permission, in welchen Scopes sie vergeben werden
-// darf. `workspace.delete` in einer Projektrolle wäre sinnlos und ist gesperrt.
+// That's why each permission records the scopes it may be granted in.
+// `workspace.delete` on a project role would be meaningless and is blocked.
 //
-// Diese Liste ist zugleich die Grenze zwischen den Ebenen. Jeder Kontext löst
-// **genau eine** Rolle auf (`lib/permissions.ts`), und `collect()` nimmt aus ihr
-// nur, was sie laut `scopes` überhaupt tragen darf. Eine Permission, die hier
-// nicht für einen Scope freigegeben ist, kann dort also gar nicht wirken — auch
-// dann nicht, wenn eine alte Zeile in `RolePermission` das Gegenteil behauptet.
+// This list also marks the boundary between the levels. Each context
+// resolves **exactly one** role (`lib/permissions.ts`), and `collect()` only
+// takes from it what the `scopes` field actually allows it to carry. A
+// permission not enabled here for a scope therefore cannot take effect
+// there — even if a stale row in `RolePermission` claims otherwise.
 //
-// Zwei Keys durchbrechen die Trennung bewusst, und nur sie. Es sind die
-// Generalschlüssel, mit denen eine Ebene die darunter aufschließt:
+// Two keys deliberately cross that boundary, and only these two. They're the
+// master keys with which one level unlocks the level below:
 //
-//   tenant.access      (PLATFORM)   → alles in jedem Workspace und Projekt
-//   project.admin.all  (WORKSPACE)  → alles in jedem Projekt des Workspace
-//   project.view.all   (WORKSPACE)  → lesend in jedes Projekt des Workspace
+//   tenant.access      (PLATFORM)   → everything in every workspace and project
+//   project.admin.all  (WORKSPACE)  → everything in every project of the workspace
+//   project.view.all   (WORKSPACE)  → read access to every project of the workspace
 //
-// Sie stehen im Resolver vor der Rollenauflösung. Genau daran hängt die Zusage,
-// dass die Leitung eines Workspace sich aus keinem seiner Projekte aussperren
-// lässt: eine Projektrolle wird für sie gar nicht erst geladen.
+// They're checked in the resolver before role resolution. That's exactly
+// what backs the guarantee that a workspace's leadership can't be locked out
+// of any of its projects: a project role is never even loaded for them.
 
-/** Die drei Scopes, in denen Rollen existieren. */
+/** The three scopes in which roles exist. */
 export type RoleScope = "PLATFORM" | "WORKSPACE" | "PROJECT";
 
 export const ROLE_SCOPES = [
@@ -42,7 +43,7 @@ export const ROLE_SCOPES = [
 
 interface PermissionDef {
   desc: string;
-  /** Scopes, in denen diese Permission vergeben werden darf. */
+  /** Scopes in which this permission may be granted. */
   scopes: readonly RoleScope[];
 }
 
@@ -50,18 +51,19 @@ const PLATFORM_ONLY = ["PLATFORM"] as const;
 const WORKSPACE_ONLY = ["WORKSPACE"] as const;
 const PROJECT_ONLY = ["PROJECT"] as const;
 /**
- * Für Objekte, die es auf beiden Ebenen wirklich gibt: einen workspaceweiten
- * Label und einen Projekt-Label, ein Workspace-Mitglied und ein Projekt-Mitglied.
- * Der Key ist derselbe, gemeint ist je nach tragender Rolle ein anderes Objekt.
+ * For objects that genuinely exist at both levels: a workspace-wide label and
+ * a project label, a workspace member and a project member. The key is the
+ * same; which object is meant depends on which role carries it.
  *
- * Das ist keine Abkürzung für „gilt auch im Projekt". Was es nur im Projekt gibt
- * — Issues, Kommentare, das Projekt selbst — steht auf `PROJECT_ONLY`, sonst
- * könnte eine Workspace-Rolle daran vorbei in jedes Projekt hineinregieren.
+ * This is not shorthand for "also applies in the project". Whatever exists
+ * only in the project — issues, comments, the project itself — is
+ * `PROJECT_ONLY`; otherwise a workspace role could reach past that boundary
+ * and govern every project.
  */
 const WORKSPACE_AND_PROJECT = ["WORKSPACE", "PROJECT"] as const;
 
 export const PERMISSIONS = {
-  // ── Plattform ───────────────────────────────────────────────────────────────
+  // ── Platform ───────────────────────────────────────────────────────────────
   "platform.access": {
     desc: "Zugang zum Plattform-Bereich (/admin)",
     scopes: PLATFORM_ONLY,
@@ -83,23 +85,23 @@ export const PERMISSIONS = {
     scopes: PLATFORM_ONLY,
   },
 
-  // ── Plattform: Stammdaten und Notfall ───────────────────────────────────────
+  // ── Platform: core data and break-glass ─────────────────────────────────────
   //
-  // Diese beiden trennen, was in einer Plattformverwaltung sonst gern
-  // zusammenfällt: *dass* es ein Projekt gibt, und *was* darin steht.
+  // These two separate what a platform admin panel would otherwise conflate:
+  // *that* a project exists, and *what's* in it.
   //
-  // `project.metadata.view` zeigt die Hülle jedes Projekts — Name, Workspace,
-  // Ersteller, Alter, Zustand — auch die privater. Genau das braucht, wer
-  // verwaiste Projekte neu zuordnen und Kosten zurechnen muss. Inhalte fallen
-  // ausdrücklich nicht darunter: `features/admin/queries.ts` liest keine Issues,
-  // keine Kommentare, keine Anhänge.
+  // `project.metadata.view` shows the shell of every project — name,
+  // workspace, creator, age, state — including private ones. That's exactly
+  // what's needed to reassign orphaned projects and attribute costs.
+  // Content is explicitly excluded: `features/admin/queries.ts` reads no
+  // issues, no comments, no attachments.
   //
-  // `project.breakglass` ist der Weg hinein, wenn es sein muss — und nur dieser.
-  // Er trägt niemanden heimlich in ein Projekt: er legt eine gewöhnliche
-  // Mitgliedschaft an, verlangt eine Begründung und schreibt beides ins
-  // Protokoll (`features/admin/actions.ts`). Danach steht die Plattformleitung
-  // in der Mitgliederliste des Projekts wie jeder andere auch — sichtbar für
-  // alle, die dort arbeiten.
+  // `project.breakglass` is the way in when it has to happen — and the only
+  // one. It never enrolls anyone into a project covertly: it creates an
+  // ordinary membership, requires a justification, and writes both to the
+  // log (`features/admin/actions.ts`). Afterward, the platform's leadership
+  // appears in the project's member list like anyone else — visible to
+  // everyone working there.
   "project.metadata.view": {
     desc: "Stammdaten aller Projekte sehen, auch privater — ohne deren Inhalte",
     scopes: PLATFORM_ONLY,
@@ -113,7 +115,7 @@ export const PERMISSIONS = {
     scopes: PLATFORM_ONLY,
   },
 
-  // ── Workspace ───────────────────────────────────────────────────────────────
+  // ── Workspace ────────────────────────────────────────────────────────────────
   "workspace.update": {
     desc: "Name, Farbe und Slug des Workspace ändern",
     scopes: WORKSPACE_ONLY,
@@ -126,29 +128,29 @@ export const PERMISSIONS = {
     desc: "Status, Prioritäten und Issue-Typen verwalten",
     scopes: WORKSPACE_ONLY,
   },
-  // Derselbe Key in allen drei Scopes, drei Ausschnitte desselben Protokolls:
-  // auf der Plattform das ganze, im Workspace nur, was dort geschah, im
-  // Projekt nur, was dort geschah. Den Ausschnitt setzt nicht die Permission,
-  // sondern die Abfrage (`lib/audit/index.ts`).
+  // The same key in all three scopes, three slices of the same log: the
+  // whole thing on the platform, only what happened there in the workspace,
+  // only what happened there in the project. The permission doesn't set the
+  // slice — the query does (`lib/audit/index.ts`).
   "audit.view": {
     desc: "Audit-Log einsehen",
     scopes: ["PLATFORM", "WORKSPACE", "PROJECT"],
   },
 
-  // ── Rollen ──────────────────────────────────────────────────────────────────
+  // ── Roles ───────────────────────────────────────────────────────────────────
   "role.manage": {
     desc: "Rollen dieses Scopes definieren und Berechtigungen zuweisen",
     scopes: ROLE_SCOPES,
   },
 
-  // ── Mitglieder ──────────────────────────────────────────────────────────────
-  // Dieselben drei Permissions in beiden Scopes: im Workspace betreffen sie
-  // seine Mitglieder, im Projekt dessen Projektmitglieder.
+  // ── Members ─────────────────────────────────────────────────────────────────
+  // The same three permissions in both scopes: in the workspace they apply
+  // to its members, in the project to that project's members.
   //
-  // `member.view` ist bewusst nur WORKSPACE: sie entscheidet allein, ob der
-  // Tab "Mitglieder" erscheint (`lib/nav.ts`, `getWorkspaceMembersView`). Die
-  // Projekt-Mitgliederliste hängt daran nicht — dafür gibt es (noch) kein
-  // eigenes Gate.
+  // `member.view` is deliberately WORKSPACE only: it alone decides whether
+  // the "Members" tab appears (`lib/nav.ts`, `getWorkspaceMembersView`). The
+  // project member list doesn't depend on it — there's (still) no dedicated
+  // gate for that.
   "member.view": {
     desc: "Die Mitgliederliste des Workspace sehen",
     scopes: WORKSPACE_ONLY,
@@ -166,7 +168,7 @@ export const PERMISSIONS = {
     scopes: WORKSPACE_AND_PROJECT,
   },
 
-  // ── Projekte ────────────────────────────────────────────────────────────────
+  // ── Projects ────────────────────────────────────────────────────────────────
   "project.create": {
     desc: "Neues Projekt im Workspace anlegen",
     scopes: WORKSPACE_ONLY,
@@ -194,9 +196,9 @@ export const PERMISSIONS = {
 
   // ── Dashboard ───────────────────────────────────────────────────────────────
   //
-  // Ohne diese Permission sieht eine Person auf dem Dashboard nur, was sich auf
-  // sie selbst bezieht (ihre zugewiesenen Issues) — kein verstecktes Gate,
-  // sondern gefilterte statt gesperrte Zahlen, siehe `getProjectDashboard` /
+  // Without this permission, a person sees only what relates to them on the
+  // dashboard (their assigned issues) — not a hidden gate, but filtered
+  // rather than blocked numbers, see `getProjectDashboard` /
   // `getWorkspaceDashboard`.
   "dashboard.view.all": {
     desc: "Sieht die Dashboard-Zahlen des ganzen Projekts bzw. Workspace, nicht nur die eigenen",
@@ -205,9 +207,9 @@ export const PERMISSIONS = {
 
   // ── Teams ───────────────────────────────────────────────────────────────────
   //
-  // Ohne dieses Recht sieht man nur die Teams, in denen man selbst Mitglied
-  // ist (`getWorkspaceTeamsView`) — kein verstecktes Gate, sondern gefilterte
-  // statt leerer Liste, anders als `member.view` beim Mitglieder-Tab.
+  // Without this permission, you only see the teams you're a member of
+  // yourself (`getWorkspaceTeamsView`) — not a hidden gate, but a filtered
+  // rather than empty list, unlike `member.view` for the members tab.
   "team.view.all": {
     desc: "Alle Teams des Workspace sehen, nicht nur die eigenen",
     scopes: WORKSPACE_ONLY,
@@ -234,9 +236,10 @@ export const PERMISSIONS = {
 
   // ── Issues ──────────────────────────────────────────────────────────────────
   //
-  // Ein Issue liegt immer in einem Projekt — es gibt kein workspaceweites Issue.
-  // Status und Priorität zu setzen steckt in `issue.update.*`; welche Status und
-  // Prioritäten es überhaupt gibt, regelt `config.manage` im Workspace.
+  // An issue always lives in a project — there's no workspace-wide issue.
+  // Setting status and priority is covered by `issue.update.*`; which
+  // statuses and priorities exist at all is governed by `config.manage` in
+  // the workspace.
   "issue.create": { desc: "Issue erstellen", scopes: PROJECT_ONLY },
   "issue.update.any": {
     desc: "Beliebige Issues bearbeiten (Status, Priorität, Labels, Text)",
@@ -263,7 +266,7 @@ export const PERMISSIONS = {
     scopes: PROJECT_ONLY,
   },
 
-  // ── Kommentare ──────────────────────────────────────────────────────────────
+  // ── Comments ────────────────────────────────────────────────────────────────
   "comment.create": {
     desc: "Kommentar zu einem Issue schreiben",
     scopes: PROJECT_ONLY,
@@ -294,12 +297,12 @@ export type Permission = keyof typeof PERMISSIONS;
 
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
 
-/** Menschlich lesbare Beschreibung einer Permission. */
+/** Human-readable description of a permission. */
 export function permissionDesc(permission: Permission): string {
   return PERMISSIONS[permission].desc;
 }
 
-/** Darf eine Rolle dieses Scopes die Permission tragen? */
+/** May a role of this scope carry the permission? */
 export function isPermissionAllowedIn(
   permission: Permission,
   scope: RoleScope,
@@ -309,17 +312,17 @@ export function isPermissionAllowedIn(
   );
 }
 
-/** Alle Permissions, die eine Rolle dieses Scopes tragen darf. */
+/** All permissions that a role of this scope may carry. */
 export function permissionsFor(scope: RoleScope): Permission[] {
   return ALL_PERMISSIONS.filter((p) => isPermissionAllowedIn(p, scope));
 }
 
-/** Narrowt einen beliebigen (DB-)String auf die `Permission`-Union. */
+/** Narrows an arbitrary (DB) string to the `Permission` union. */
 export function toPermission(value: string): Permission | null {
   return value in PERMISSIONS ? (value as Permission) : null;
 }
 
-/** Narrowt einen beliebigen (DB-)String auf die `RoleScope`-Union. */
+/** Narrows an arbitrary (DB) string to the `RoleScope` union. */
 export function toRoleScope(value: string): RoleScope | null {
   return (ROLE_SCOPES as readonly string[]).includes(value)
     ? (value as RoleScope)

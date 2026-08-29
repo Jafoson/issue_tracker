@@ -1,9 +1,9 @@
-/* Gerenderter Rich Text. Größe und Farbe erbt der Block von seinem Umfeld —
-   hier steht nur, was die einzelnen Auszeichnungen daraus machen.
+/* Rendered rich text. The block inherits size and color from its
+   surroundings — this file only defines what the individual marks make of it.
 
-   Dieselbe Datei versorgt die Anzeige und den Editor: `richTextEditor.module.scss`
-   komponiert `.richText` in die ProseMirror-Fläche, damit Geschriebenes und
-   Gelesenes nicht auseinanderlaufen. */
+   The same file serves both the display and the editor:
+   `richTextEditor.module.scss` composes `.richText` into the ProseMirror
+   surface, so written and read content never drift apart. */
 
 .richText {
   line-height: var(--leading-loose);
@@ -48,7 +48,7 @@
   pre {
     margin: 0;
     padding: 10px 0;
-    /* Langer Code scrollt in seinem Block, statt das Panel breit zu ziehen. */
+    /* Long code scrolls within its block instead of stretching the panel wide. */
     overflow-x: auto;
 
     code { padding: 0; background: none; border: none; }
@@ -59,9 +59,9 @@
     padding: 4px 14px;
     border-left: 3px solid var(--outline-variant);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    /* Eine Stufe höher als das Panel darunter — dieselbe wie Codeblock,
-       Inline-Code und Tabellenkopf. Das Zitat stand als einziger eingelassener
-       Block eine Stufe tiefer und hob sich kaum ab. */
+    /* One step lighter than the panel below — the same as the code block,
+       inline code, and table header. The quote used to be the only inset
+       block one step darker and barely stood out. */
     background: var(--surface-container-high);
     color: var(--on-surface-variant);
   }
@@ -78,7 +78,7 @@
   }
 }
 
-/* ─── Checklisten ──────────────────────────────────────────────────────────── */
+/* ─── Task lists ──────────────────────────────────────────────────────────── */
 
 .taskList {
   padding-left: 0;
@@ -91,13 +91,13 @@
   align-items: flex-start;
 
   > input {
-    /* Auf die Höhe der ersten Textzeile schieben — `line-height` ist lose. */
+    /* Nudge to the height of the first text line — `line-height` is loose. */
     margin-top: .35em;
     flex: none;
     accent-color: var(--primary);
   }
 
-  /* Der Absatz im Listenpunkt soll die Zeile nicht auseinanderziehen. */
+  /* The paragraph inside the list item shouldn't stretch the line apart. */
   > div > p { margin: 0; }
 
   &[data-checked="true"] > div {
@@ -106,7 +106,7 @@
   }
 }
 
-/* ─── Tabellen ─────────────────────────────────────────────────────────────── */
+/* ─── Tables ─────────────────────────────────────────────────────────────── */
 
 .tableWrap {
   margin: .7em 0;
@@ -136,42 +136,44 @@
 /* ─── Panels ───────────────────────────────────────────────────────────────── */
 
 .panel {
-  /* Bewusst kein Flex-Kasten: der legte mehrere Absätze nebeneinander statt
-     untereinander. Der Inhalt fließt normal, das Zeichen liegt darüber. */
+  /* Deliberately not a flex box: that placed multiple paragraphs side by
+     side instead of stacked. The content flows normally, the icon sits
+     over it. */
   position: relative;
   margin: .7em 0;
-  /* Links Platz für das Zeichen. */
+  /* Room for the icon on the left. */
   padding: 11px 14px 11px 46px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--kind-border);
   background: var(--kind-bg);
-  /* Der Text nimmt einen Teil des Kastentons an — genug, um dazuzugehören,
-     wenig genug, um lesbar zu bleiben. */
+  /* The text takes on part of the box's tone — enough to belong, little
+     enough to stay readable. */
   color: var(--kind-fg);
 
   > * { margin: 0; }
   > * + * { margin-top: .4em; }
 
-  /* Überschriften und Fettung setzen sonst `--on-surface` und fielen aus dem
-     Ton wieder heraus. */
+  /* Headings and bold text would otherwise set `--on-surface` and fall
+     back out of the tone. */
   :is(h1, h2, h3, h4, h5, h6, strong) { color: inherit; }
 
-  /* Das Zeichen steht im CSS, nicht im Dokument — der gespeicherte Knoten
-     trägt nur seine Art, und übersetzbar bleibt es damit auch.
+  /* The icon lives in CSS, not in the document — the stored node only
+     carries its kind, which keeps it translatable too.
 
-     Als Maske statt als Glyphe: `ℹ` und `⚠` zeichnet jedes System anders, mal
-     als Schrift, mal als buntes Emoji, und in der Größe schwanken sie stark.
-     Dieselbe Regel greift im Editor, weil dort dieselbe Klasse liegt. */
+     As a mask rather than a glyph: `ℹ` and `⚠` render differently on every
+     system, sometimes as a font glyph, sometimes as a colored emoji, and
+     their size varies a lot. The same rule applies in the editor, because
+     the same class is used there. */
   &::before {
     content: "";
-    /* Mittig zur ganzen Box, nicht zur ersten Zeile. */
+    /* Centered on the whole box, not on the first line. */
     position: absolute;
     left: 15px;
     top: 50%;
     transform: translateY(-50%);
     width: 20px;
     height: 20px;
-    /* Kräftiger als der Text: das Zeichen trägt die Bedeutung. */
+    /* Bolder than the text: the icon carries the meaning. */
     background: var(--kind-accent);
     mask: var(--kind-icon) center / contain no-repeat;
     -webkit-mask: var(--kind-icon) center / contain no-repeat;
@@ -196,39 +198,41 @@
 
 /* ─── Chips ────────────────────────────────────────────────────────────────── */
 
-/* Form, Fläche und Rundung kommen vom `Chip`-Atom (`size="inline"`) — hier
-   steht nur, was die drei voneinander unterscheidet: das Zeichen davor.
+/* Shape, surface, and rounding come from the `Chip` atom (`size="inline"`) —
+   this only defines what differentiates the three from each other: the icon
+   in front.
 
-   Als Maske und nicht als Icon-Komponente, weil dieselbe Klasse auch im Editor
-   greifen muss: dessen `renderHTML` baut reines DOM, dort gibt es kein React. */
+   As a mask rather than an icon component, because the same class also has
+   to apply in the editor: its `renderHTML` builds plain DOM, there's no
+   React there. */
 
 .issueIcon,
 .dateIcon {
   display: inline-block;
   width: 1em;
   height: 1em;
-  /* Der Chip ist jetzt ein `inline`-Element — das Icon setzt sich selbst auf
-     die Grundlinie des Texts statt von einem Flex-Kasten zentriert zu werden. */
+  /* The chip is now an `inline` element — the icon positions itself on the
+     text's baseline instead of being centered by a flex box. */
   vertical-align: -.14em;
-  /* Abgeschwächt über die Farbe, nicht über `opacity`: das läge sonst auch
-     über dem Favicon des Link-Chips und machte es blass. */
+  /* Muted via color, not via `opacity`: that would otherwise also affect
+     the link chip's favicon and wash it out. */
   background: color-mix(in oklab, currentColor 60%, transparent);
   mask: var(--chip-icon) center / contain no-repeat;
   -webkit-mask: var(--chip-icon) center / contain no-repeat;
 }
 
-/* Das Website-Icon eines Link-Chips.
+/* The website icon of a link chip.
 
-   Zwei Ebenen übereinander: unten das Kettenglied als Ersatz, darüber das
-   Favicon der Seite. Lädt es, deckt es das Zeichen zu; lädt es nicht — und
-   nicht jede Seite hat etwas unter `/favicon.ico` —, bleibt die obere Ebene
-   durchsichtig und das Kettenglied steht da. Ohne JavaScript, also auch
-   serverseitig.
+   Two layers stacked: the chain-link icon underneath as a fallback, the
+   page's favicon on top. If it loads, it covers the icon; if it doesn't
+   load — and not every site has something at `/favicon.ico` — the top
+   layer stays transparent and the chain-link icon shows through. No
+   JavaScript, so this also works server-side.
 
-   Die Maske liegt dabei auf `::before` und **nicht** auf dem Element: eine
-   Maske beschneidet alles, was darin gezeichnet wird, die Pseudo-Elemente
-   eingeschlossen. Am Element hätte sie das Favicon in die Form des
-   Kettenglieds gestanzt — und genau so sah es dann auch aus. */
+   The mask sits on `::before` and **not** on the element itself: a mask
+   clips everything drawn inside it, pseudo-elements included. On the
+   element, it would have punched the favicon into the shape of the
+   chain-link icon — and that's exactly how it looked. */
 .linkIcon {
   position: relative;
   display: inline-block;
@@ -243,7 +247,7 @@
     inset: 0;
   }
 
-  /* Ersatzzeichen. */
+  /* Fallback icon. */
   &::before {
     background: color-mix(in oklab, currentColor 60%, transparent);
     mask: var(--chip-icon) center / contain no-repeat;
@@ -251,7 +255,7 @@
     --chip-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
   }
 
-  /* Favicon darüber — unbeschnitten. */
+  /* Favicon on top — unclipped. */
   &::after {
     background: var(--favicon) center / contain no-repeat;
     border-radius: 2px;
@@ -267,15 +271,15 @@
 }
 
 
-/* Chips, die in einem `<a>` stecken — verlinktes Issue und Website-Link.
-   Der Chip darin soll die Unterstreichung des Links nicht erben. */
+/* Chips embedded in an `<a>` — linked issue and website link.
+   The chip inside shouldn't inherit the link's underline. */
 .chipLink {
   text-decoration: none;
   color: inherit;
 
-  /* Der Grundton des Chips liegt schon auf `--surface-container-highest` —
-     darüber gibt es keinen Token mehr, deshalb hier ein Schritt in Richtung
-     Textfarbe. Drei Selektorteile schlagen die zwei von `.chip.inline`. */
+  /* The chip's base tone already sits on `--surface-container-highest` —
+     there's no token beyond that, so this steps toward the text color
+     instead. Three selector parts beat the two of `.chip.inline`. */
   &:hover .chipHover {
     background: color-mix(in oklab, var(--surface-container-highest) 90%, var(--on-surface));
     border-color: color-mix(in oklab, var(--outline) 75%, transparent);
@@ -284,14 +288,14 @@
 
 .issueLinkLabel { font-family: var(--font-mono); font-size: .92em; }
 
-/* ─── Codeblock ────────────────────────────────────────────────────────────── */
+/* ─── Code block ────────────────────────────────────────────────────────────── */
 
 .codeBlock {
   margin: .7em 0;
   background: var(--surface-container-high);
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
-  /* Damit die Kopfzeile nicht mit eckigen Ecken aufsitzt. */
+  /* So the header row doesn't sit on top with square corners. */
   overflow: hidden;
 }
 
@@ -312,15 +316,16 @@
   color: var(--on-surface-variant);
 }
 
-/* Jede Zeile ein eigenes Element — nur so lässt sich die Nummer danebenstellen.
-   `counter-increment` statt einer Zahl im Text: Inhalte von `::before` wandern
-   beim Markieren und Kopieren nicht mit, der Code bleibt also sauber. */
+/* Every line gets its own element — that's the only way to put the number
+   next to it. `counter-increment` instead of a number in the text: content
+   from `::before` isn't carried along when selecting and copying, so the
+   code stays clean. */
 .codeLine {
   display: block;
   counter-increment: codeline;
-  /* Platz links für die Spalte mit den Nummern. */
+  /* Room on the left for the number column. */
   padding-left: 52px;
-  /* Leere Zeilen behalten ihre Höhe. */
+  /* Empty lines keep their height. */
   min-height: 1.5em;
 
   &::before {
@@ -331,27 +336,27 @@
     padding-right: 12px;
     text-align: right;
     color: var(--outline);
-    /* Ziffern gleicher Breite: sonst wackelt die Spalte ab der zehnten Zeile. */
+    /* Equal-width digits: otherwise the column wobbles from the tenth line on. */
     font-variant-numeric: tabular-nums;
     user-select: none;
   }
 }
 
-/* Bezugspunkt für die absolut gesetzten Nummern und Ursprung des Zählers. */
+/* Reference point for the absolutely positioned numbers and origin of the counter. */
 .codeBlock pre {
   position: relative;
   counter-reset: codeline;
 }
 
-/* ─── Anhänge ──────────────────────────────────────────────────────────────── */
+/* ─── Attachments ──────────────────────────────────────────────────────────── */
 
-/* Dieselbe Optik wie `AttachmentView` im Editor (`attachmentView.module.scss`)
-   — beim Speichern soll nichts springen, nur ohne die Entfernen-Schaltfläche. */
+/* Same look as `AttachmentView` in the editor (`attachmentView.module.scss`)
+   — nothing should jump on save, just without the remove button. */
 
-/* Die tatsächliche Breite kommt als Inline-Stil (siehe `RichText.tsx`,
-   `clampAttachmentWidth` in `lib/richtext/attachments.ts`) — dieselbe, die
-   beim Bearbeiten am Ziehgriff gesetzt wurde. Hier nur die Obergrenze, damit
-   sie die Spalte nie sprengt. */
+/* The actual width comes as an inline style (see `RichText.tsx`,
+   `clampAttachmentWidth` in `lib/richtext/attachments.ts`) — the same one
+   set via the drag handle while editing. Only the upper bound lives here,
+   so it never overflows the column. */
 .attachmentImage, .attachmentVideo {
   max-width: 100%;
   border-radius: var(--radius-sm);
@@ -360,16 +365,16 @@
   background: var(--surface-container-high);
 }
 
-/* Inline im Fließtext wie im Editor (`attachmentView.module.scss`) — mehrere
-   kleine Bilder passen so nebeneinander in eine Zeile. */
+/* Inline in running text like in the editor (`attachmentView.module.scss`)
+   — this lets several small images fit side by side in one line. */
 .attachmentImage {
   display: inline-block;
   vertical-align: top;
   margin: 2px 6px 2px 0;
 }
 
-/* Bleibt block-artig, trotz desselben Schemas wie das Bild — siehe
-   Kommentar in `extensions/attachment.ts`. */
+/* Stays block-like despite sharing the same scheme as the image — see
+   the comment in `extensions/attachment.ts`. */
 .attachmentVideo {
   display: block;
   margin: .7em 0;

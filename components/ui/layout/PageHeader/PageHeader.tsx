@@ -4,29 +4,29 @@ import styles from "./pageHeader.module.scss";
 
 interface PageHeaderProps {
   title: ReactNode;
-  /** Zähler direkt hinter dem Titel — meist die Zeilenzahl der Liste darunter. */
+  /** Counter right after the title — usually the row count of the list below. */
   count?: number;
-  /** Ein Satz darüber, was diese Seite verwaltet. */
+  /** One sentence about what this page manages. */
   description?: ReactNode;
-  /** Slot links vom Titel — Icon, Farbpunkt, Avatar … */
+  /** Slot to the left of the title — icon, color dot, avatar … */
   leading?: ReactNode;
-  /** Aktionen rechts, in der Regel der Primär-Button der Seite. */
+  /** Actions on the right, usually the page's primary button. */
   actions?: ReactNode;
   /**
-   * Trennlinie nach unten. Default: true. Aus, wenn der Inhalt darunter seinen
-   * eigenen Rahmen mitbringt — zwei Kanten übereinander trennen nichts mehr.
+   * Divider below. Default: true. Off when the content below brings its own
+   * border — two edges stacked no longer separate anything.
    */
   divider?: boolean;
   className?: string;
 }
 
 /**
- * Kopfzeile einer Verwaltungsseite: Titel, Zähler, Beschreibung, Aktionen.
+ * Header of a management page: title, counter, description, actions.
  *
- * Das Gegenstück zur `Topbar` der Issue-Ansichten — die filtert und zählt, das
- * hier benennt nur. Bewusst ohne eigenen Zustand und ohne `"use client"`, damit
- * Server Components es direkt rendern können; interaktive Aktionen kommen als
- * fertige Elemente in den `actions`-Slot.
+ * The counterpart to the `Topbar` of the issue views — that one filters and
+ * counts, this one only labels. Deliberately without its own state and
+ * without `"use client"`, so Server Components can render it directly;
+ * interactive actions come in as finished elements via the `actions` slot.
  */
 export function PageHeader({
   title,
@@ -46,8 +46,8 @@ export function PageHeader({
       <div className={styles.titleRow}>
         {leading}
         <h1 className={styles.title}>{title}</h1>
-        {/* Dasselbe Zeichen wie im Kopf einer Board-Spalte: eine Zahl neben
-            einem Titel ist überall in der App ein Badge. */}
+        {/* Same convention as a board column's header: a number next to a
+            title is a badge everywhere in the app. */}
         {count !== undefined && <Badge mono>{count}</Badge>}
         {actions && <div className={styles.actions}>{actions}</div>}
       </div>

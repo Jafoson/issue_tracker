@@ -6,8 +6,8 @@ interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   /**
-   * Was der Schalter schaltet — sichtbar daneben oder, in einer Tabelle mit
-   * Spaltenköpfen, nur für Screenreader (`labelHidden`).
+   * What the switch controls — visible next to it, or, in a table with
+   * column headers, screen-reader only (`labelHidden`).
    */
   label: string;
   labelHidden?: boolean;
@@ -16,16 +16,16 @@ interface SwitchProps {
 }
 
 /**
- * Ein zweiwertiger Schalter: an oder aus, sofort wirksam.
+ * A two-state switch: on or off, effective immediately.
  *
- * Er trägt bewusst kein „Speichern" — ein Schalter, dessen Stellung erst nach
- * einem Knopfdruck gilt, zeigt zwischendurch etwas an, das nicht stimmt. Wer ihn
- * setzt, schreibt in derselben Bewegung.
+ * It deliberately has no "Save" — a switch whose position only takes effect
+ * after pressing a button shows something incorrect in the meantime.
+ * Whoever sets it writes in the same motion.
  *
- * Innen liegt eine echte Checkbox: Tastatur, Fokus und Screenreader kommen von
- * ihr, sichtbar ist nur die Bahn mit dem Knauf darauf. `role="switch"` sagt
- * dabei „an/aus" statt „ausgewählt/nicht ausgewählt" — dasselbe Element, die
- * passendere Ansage.
+ * Underneath sits a real checkbox: keyboard, focus, and screen reader
+ * support all come from it, only the track with the knob on top is visible.
+ * `role="switch"` announces "on/off" rather than "selected/not selected" —
+ * same element, the more fitting announcement.
  */
 export function Switch({
   checked,
@@ -41,9 +41,9 @@ export function Switch({
         id={id}
         type="checkbox"
         role="switch"
-        // Doppelt gemoppelt: die Checkbox trägt ihren Zustand schon selbst.
-        // `role="switch"` erwartet ihn laut ARIA trotzdem ausdrücklich, und
-        // widersprechen können sich beide nicht — sie kommen aus derselben Prop.
+        // Belt and braces: the checkbox already carries its state on its
+        // own. `role="switch"` still expects it explicitly per ARIA, and
+        // the two can't contradict each other — they come from the same prop.
         aria-checked={checked}
         className={styles.input}
         checked={checked}

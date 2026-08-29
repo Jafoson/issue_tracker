@@ -11,11 +11,11 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Projekte des Workspace — anlegen, ändern, löschen.
+ * The workspace's projects — create, edit, delete.
  *
- * Gelistet ist, was der Handelnde sehen darf; was er damit tun darf, steht an
- * jeder Zeile einzeln (`getWorkspaceProjectsView`). `project.update` und
- * `project.delete` gelten im Projekt, nicht im Workspace.
+ * What's listed is what the actor is allowed to see; what they're allowed to
+ * do with it is decided per row (`getWorkspaceProjectsView`). `project.update`
+ * and `project.delete` apply within the project, not the workspace.
  */
 export default async function WorkspaceProjectsPage({
   params,

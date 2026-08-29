@@ -1,9 +1,9 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). */
+/* It's not the page that scrolls, but the table itself (`fill`). */
 .content {
-  /* Eine Mitgliederzeile trägt zwei Textzeilen neben dem Avatar. Sie bekommt
-     deutlich mehr Luft als die einzeilige Vorgabe der Tabelle — die Liste ist
-     kurz und wird gelesen, nicht überflogen. Gilt nur hier: die Issue-Liste
-     bleibt bei ihren engeren Zeilen. */
+  /* A member row carries two lines of text next to the avatar. It gets
+     noticeably more breathing room than the table's single-line default —
+     the list is short and is meant to be read, not skimmed. Applies only
+     here: the issue list keeps its tighter rows. */
   --table-row-height: 64px;
 
   flex: 1;
@@ -14,8 +14,8 @@
   gap: 12px;
 }
 
-/* Auslöser des Rollen-Menüs: der Pfeil steht neben der Rolle, nicht in ihr —
-   die Farbfläche gehört der Rolle, das Aufklappen ist eine eigene Geste. */
+/* Trigger for the role menu: the arrow sits next to the role, not inside
+   it — the colored fill belongs to the role, expanding is its own gesture. */
 .roleTrigger {
   display: inline-flex;
   align-items: center;
@@ -30,9 +30,8 @@
   }
 }
 
-/* Markiert eine Rolle, die von einem Team übernommen ist, statt von Hand
-   gesetzt zu sein — die Farbe der Rolle bleibt, das Icon ergänzt nur, woher
-   sie kommt. */
+/* Marks a role that was taken over from a team instead of being set by
+   hand — the role's color stays, the icon only adds where it came from. */
 .teamIcon {
   margin-inline-start: 2px;
   opacity: 0.75;
@@ -49,8 +48,8 @@
   font-size: var(--text-base);
 }
 
-/* Eine offene Einladung ist ein Zwischenzustand, kein aktiver Zugang — deshalb
-   die gleiche Warnfarbe wie andere „noch nicht fertig"-Marker. */
+/* A pending invitation is an intermediate state, not active access — hence
+   the same warning color as other "not yet done" markers. */
 .statusInvited {
   display: inline-flex;
   align-items: center;
@@ -67,8 +66,8 @@
   }
 }
 
-/* Fehler einer Zeilenaktion — steht über der Karte, damit die Meldung nicht in
-   der Zeile verschwindet, die sie ausgelöst hat. */
+/* Error from a row action — sits above the card so the message doesn't
+   vanish inside the row that triggered it. */
 .error {
   display: flex;
   align-items: center;

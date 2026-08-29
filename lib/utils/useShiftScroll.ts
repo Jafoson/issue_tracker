@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 
 /**
- * Firefox meldet Mausrad-Rasten in Zeilen statt in Pixeln — ohne Umrechnung
- * käme dort pro Raste ein Ruck von drei Pixeln heraus.
+ * Firefox reports mouse wheel notches in lines instead of pixels — without
+ * conversion, each notch would come out as a jump of just three pixels.
  */
 const LINE = 16;
 
-/** Das Rad-Delta in Pixeln, in welcher Einheit der Browser es auch liefert. */
+/** The wheel delta in pixels, whatever unit the browser delivers it in. */
 function pixels(e: WheelEvent, page: number) {
-  // Mit gedrückter Shift-Taste legen manche Browser die Bewegung von sich aus
-  // auf die X-Achse. Es zählt deshalb die Achse, die den Ausschlag trägt.
+  // With Shift held, some browsers redirect the motion onto the X axis on
+  // their own. So whichever axis actually carries the movement is the one
+  // that counts.
   const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
   if (e.deltaMode === WheelEvent.DOM_DELTA_LINE) return delta * LINE;
   if (e.deltaMode === WheelEvent.DOM_DELTA_PAGE) return delta * page;
@@ -19,46 +20,48 @@ function pixels(e: WheelEvent, page: number) {
 }
 
 /**
- * Shift + Mausrad schiebt den Container waagerecht — über seiner ganzen Fläche,
- * auch dort, wo ein Kind unter dem Zeiger selbst senkrecht scrollt.
+ * Shift + mouse wheel scrolls the container horizontally — across its
+ * entire area, even where a child under the pointer scrolls vertically on
+ * its own.
  *
- * Ohne das übernimmt beim Board die Spalte unter dem Zeiger die Bewegung: sie
- * ist der nächste Scroll-Container, und ob der Browser Shift + Rad überhaupt
- * auf die Waagerechte umlegt, ist von Browser zu Browser verschieden. Die Geste
- * funktionierte dann nur in den Lücken zwischen den Spalten — also fast
- * nirgends.
+ * Without this, the column under the pointer on the board takes over the
+ * movement: it's the nearest scroll container, and whether the browser even
+ * remaps Shift + wheel to horizontal scrolling varies from browser to
+ * browser. The gesture would then only work in the gaps between columns —
+ * which is to say, almost nowhere.
  *
  * ```tsx
  * const ref = useShiftScroll()
  * return <div ref={ref} className={styles.board}>…</div>
  * ```
  *
- * Der Listener hängt von Hand am Element statt als `onWheel`-Prop: React meldet
- * Rad-Ereignisse passiv an, und passiv heißt, `preventDefault` bleibt wirkungslos.
+ * The listener is attached to the element by hand instead of as an
+ * `onWheel` prop: React registers wheel events passively, and passive means
+ * `preventDefault` has no effect.
  */
 export function useShiftScroll() {
-  // Das Element als Zustand, nicht als Ref: nur so erfährt der Effekt davon und
-  // hängt seinen Listener an.
+  // The element as state, not as a ref: only this way does the effect find
+  // out about it and attach its listener.
   const [element, setElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!element) return;
 
     const onWheel = (e: WheelEvent) => {
-      // Strg + Rad ist der Zoom des Browsers, die übrigen Kombinationen gehören
-      // dem System — nur Shift allein ist die Geste.
+      // Ctrl + wheel is the browser's zoom, the other combinations belong
+      // to the system — Shift alone is the gesture.
       if (!e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
-      // Steht alles nebeneinander, gibt es nichts zu schieben; dann behält der
-      // Browser seine gewohnte Reaktion.
+      // If everything's already side by side, there's nothing to scroll;
+      // then the browser keeps its usual behavior.
       if (element.scrollWidth <= element.clientWidth) return;
 
       const delta = pixels(e, element.clientWidth);
       if (delta === 0) return;
 
       e.preventDefault();
-      // Am Rand angekommen bleibt die Bewegung liegen, statt weiterzureichen:
-      // ein Board, das sich nicht weiter schieben lässt, soll auch nicht
-      // plötzlich eine Spalte senkrecht bewegen.
+      // Once it hits the edge, the movement is simply dropped instead of
+      // being passed along: a board that can't scroll any further
+      // shouldn't suddenly start scrolling a column vertically either.
       element.scrollLeft += delta;
     };
 

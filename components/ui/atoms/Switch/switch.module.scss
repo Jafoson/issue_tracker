@@ -1,6 +1,7 @@
-/* Bahn und Knauf sind reine Anzeige; bedient wird die Checkbox darunter. Sie
-   liegt deckungsgleich darüber und ist unsichtbar — so bleiben Klickfläche,
-   Tastatur und Fokus die des Browsers, ohne dass ein Nachbau nötig wäre. */
+/* Track and knob are purely visual; the checkbox underneath is what's
+   actually interacted with. It sits exactly on top and is invisible — this
+   way click area, keyboard, and focus stay the browser's own, with no need
+   to rebuild them. */
 .root {
   position: relative;
   display: inline-flex;
@@ -60,7 +61,7 @@
   background: var(--on-primary);
 }
 
-/* Der Fokus sitzt am sichtbaren Teil, nicht am unsichtbaren Feld darüber. */
+/* The focus ring sits on the visible part, not on the invisible field on top. */
 .input:focus-visible + .track {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -71,8 +72,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Sagt es nur dem Screenreader: in einer Tabelle mit Spaltenköpfen steht die
-   Beschriftung schon oben, und zweimal dasselbe zu lesen hilft niemandem. */
+/* Announces it only to the screen reader: in a table with column headers,
+   the label already sits above, and reading the same thing twice helps nobody. */
 .hiddenLabel {
   position: absolute;
   width: 1px;

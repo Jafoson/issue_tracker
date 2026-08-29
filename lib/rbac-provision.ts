@@ -7,15 +7,15 @@ import {
   systemRoleId,
 } from "@/lib/rbac";
 
-// Legt die Permission-Tabelle und die System-Rollen an — **einmal pro
-// Datenbank**, nicht pro Workspace. Genau darin liegt der Unterschied zum
-// früheren Modell: es gibt keine Rollen-Kopien je Mandant mehr, alle zeigen auf
-// dieselben Zeilen.
+// Creates the permission table and the system roles — **once per
+// database**, not per workspace. This is exactly the difference from the
+// earlier model: there are no more per-tenant role copies, all tenants point
+// at the same rows.
 //
-// Idempotent über `skipDuplicates`, damit Seed und ein erneuter Aufruf nichts
-// zerstören. Bestehende Zeilen werden nicht überschrieben; ändert sich eine
-// System-Rolle im Code, braucht das eine Migration (die dann aber nur eine
-// Zeile anfassen muss statt einer je Workspace).
+// Idempotent via `skipDuplicates`, so the seed and a repeat call don't
+// destroy anything. Existing rows are never overwritten; if a system role
+// changes in code, that needs a migration (which then only has to touch one
+// row instead of one per workspace).
 
 type Tx = Prisma.TransactionClient;
 
@@ -29,7 +29,7 @@ function roleRow(r: SystemRole) {
     name: r.name,
     desc: r.desc,
     rank: r.rank,
-    // Geteilte Rollen sind nicht editierbar — eine Änderung träfe alle Mandanten.
+    // Shared roles are not editable — a change would affect every tenant.
     editable: false,
     system: true,
   };
@@ -41,8 +41,8 @@ function grantRows(r: SystemRole) {
 }
 
 /**
- * Die Permission-Tabelle mit der Code-Registry abgleichen. Sie ist FK-Ziel für
- * `RolePermission` und muss deshalb vor allen Rollen stehen.
+ * Sync the permission table with the code registry. It's the FK target for
+ * `RolePermission` and must therefore be provisioned before any roles.
  */
 export async function provisionPermissions(tx: Tx): Promise<void> {
   await tx.permission.createMany({
@@ -52,7 +52,7 @@ export async function provisionPermissions(tx: Tx): Promise<void> {
 }
 
 /**
- * Permissions und alle System-Rollen aller Scopes. Einmal pro Datenbank.
+ * Permissions and all system roles of all scopes. Once per database.
  */
 export async function provisionSystemRbac(tx: Tx): Promise<void> {
   await provisionPermissions(tx);

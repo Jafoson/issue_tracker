@@ -1,28 +1,28 @@
 import styles from "./modal.module.scss";
 
 /**
- * `dialog` schwebt mittig über der Seite, `panel` steht als Seitenpanel an der
- * Kante: volle Höhe, kein Radius, breiter. Gehört zu
+ * `dialog` floats centered over the page, `panel` sits as a side panel
+ * against the edge: full height, no radius, wider. Belongs to
  * `openModal(…, { placement: "right" })`.
  */
 type ModalVariant = "dialog" | "panel";
 
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Panel-Breite. Zahl = px, sonst beliebiger CSS-Wert. Default: 620px. */
+  /** Panel width. A number = px, otherwise any CSS value. Default: 620px. */
   width?: number | string;
   /** Default: "dialog". */
   variant?: ModalVariant;
 }
 
 /**
- * Panel-Hülle für Modal-Inhalte: Fläche, Rahmen, Radius, Schatten und
- * Spalten-Layout. Erwartet als Kinder die Modal-Regionen in dieser Reihenfolge:
- * `ModalHeader` → `ModalBody` → `ModalToolbar` → `ModalFooter`. Nur der Body
- * wächst und scrollt, die übrigen Regionen bleiben fix sichtbar.
+ * Panel wrapper for modal content: surface, border, radius, shadow, and
+ * column layout. Expects the modal regions as children in this order:
+ * `ModalHeader` → `ModalBody` → `ModalToolbar` → `ModalFooter`. Only the body
+ * grows and scrolls, the other regions stay fixed in view.
  *
- * Overlay, Backdrop, Escape-Handling und Fokus-Rückgabe kommen vom
- * `ModalFrame` in `lib/context/ModalContext` — hier bewusst nicht dupliziert,
- * damit jedes Modal über `openModal()` dasselbe Verhalten bekommt.
+ * Overlay, backdrop, Escape handling, and focus restoration come from the
+ * `ModalFrame` in `lib/context/ModalContext` — deliberately not duplicated
+ * here, so every modal opened via `openModal()` gets the same behavior.
  */
 export function Modal({
   width,
@@ -54,7 +54,7 @@ export function Modal({
 
 type ModalBodyProps = React.HTMLAttributes<HTMLDivElement>;
 
-/** Scrollender Inhaltsbereich des Modals. */
+/** Scrolling content area of the modal. */
 export function ModalBody({ className, children, ...rest }: ModalBodyProps) {
   return (
     <div
@@ -67,13 +67,13 @@ export function ModalBody({ className, children, ...rest }: ModalBodyProps) {
 }
 
 interface ModalToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Trennlinie nach oben. Default: true. */
+  /** Divider above. Default: true. */
   divider?: boolean;
 }
 
 /**
- * Umbrechende Leiste für Attribut-Picker (Status, Priorität, Assignee …)
- * zwischen Body und Footer.
+ * Wrapping bar for attribute pickers (status, priority, assignee …) between
+ * body and footer.
  */
 export function ModalToolbar({
   divider = true,

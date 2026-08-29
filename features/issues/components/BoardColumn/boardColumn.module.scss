@@ -1,7 +1,8 @@
 .col {
-  /* Die Karten füllen die Spalte komplett — ihre Breite hängt allein an diesem
-     Wert, deshalb hier zentral tunen statt in der Karte selbst. Der min()-Guard
-     verhindert, dass eine Spalte auf schmalen Viewports breiter als der Screen wird. */
+  /* The cards fill the column completely — their width depends solely on
+     this value, so tune it centrally here rather than in the card itself.
+     The min() guard prevents a column from becoming wider than the screen
+     on narrow viewports. */
   --col-w: 320px;
 
   width: min(var(--col-w), 84vw);
@@ -46,9 +47,10 @@
   min-height: 60px;
   flex: 1;
   overflow-y: auto;
-  /* Nur senkrecht abriegeln: am Ende der Spalte soll nicht die Seite
-     weiterrutschen. Waagerecht muss die Bewegung dagegen durchkommen — sonst
-     verschluckt die Spalte die Trackpad-Wische, die dem Board gilt. */
+  /* Only lock scrolling vertically: at the end of the column, the page
+     shouldn't keep scrolling. Horizontally, the motion must pass through
+     though — otherwise the column would swallow trackpad swipes meant for
+     the board. */
   overscroll-behavior-y: contain;
 }
 

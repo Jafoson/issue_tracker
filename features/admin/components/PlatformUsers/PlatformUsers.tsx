@@ -30,10 +30,10 @@ import styles from "./platformUsers.module.scss";
 interface Props {
   users: PlatformUser[];
   roles: PlatformRoleOption[];
-  /** Die eigene Id — die eigene Zeile lässt sich nicht anfassen. */
+  /** Your own id — your own row can't be touched. */
   currentUserId: string;
   nextCursor: string | null;
-  /** Lädt die nächste Seite ab einem Cursor (`loadMoreUsers`,
+  /** Loads the next page from a cursor (`loadMoreUsers`,
    * `features/admin/actions.ts`). */
   loadMore: (
     cursor: string,
@@ -41,18 +41,19 @@ interface Props {
 }
 
 /**
- * Alle Konten der Plattform: wer da ist, womit er hereinkommt, was er darf und
- * wann er zuletzt da war.
+ * All accounts on the platform: who's there, what they sign in with, what
+ * they're allowed to do, and when they were last around.
  *
- * Zwei Eingriffe hängen an jeder Zeile, und beide sind Rechteverschiebungen —
- * die Plattform-Rolle setzen und ein Konto stilllegen. Beide landen im
- * Protokoll, beide sind an der eigenen Zeile gesperrt: `setPlatformRole` und
- * `setUserActive` weisen das ab, und die Oberfläche zeigt es gar nicht erst an.
+ * Two interventions hang off every row, and both are permission shifts —
+ * setting the platform role and deactivating an account. Both end up in the
+ * audit log, both are locked on your own row: `setPlatformRole` and
+ * `setUserActive` reject that, and the UI doesn't even display it as an
+ * option.
  *
- * Was hier **nicht** steht, ist genauso Absicht wie das, was dasteht. Es gibt
- * keine Passwort-Spalte, keinen Hash, keine „Passwort anzeigen"-Aktion. Ob
- * überhaupt eines gesetzt ist, sagt das Zeichen in der Zutritt-Spalte — mehr
- * erfährt auf dieser Ebene niemand, und mehr gibt der Server auch nicht heraus
+ * What is **not** here is just as deliberate as what is. There's no password
+ * column, no hash, no "show password" action. Whether one is even set is
+ * conveyed by the icon in the access column — nobody learns more than that
+ * at this level, and the server doesn't hand out more either
  * (`features/admin/queries.ts`).
  */
 export function PlatformUsers({
@@ -85,8 +86,9 @@ export function PlatformUsers({
   const toggleActive = async (row: PlatformUser) => {
     const active = row.deactivatedAt === null;
 
-    // Stilllegen ist die einschneidendere Richtung und bekommt die Rückfrage —
-    // sie sagt zugleich, was dabei *nicht* passiert: die Arbeit bleibt stehen.
+    // Deactivating is the more drastic direction and gets the confirmation
+    // prompt — it also states what *doesn't* happen in the process: the
+    // work stays in place.
     if (active) {
       const ok = await confirm({
         title: t("platform.deactivateTitle", { name: fullName(row) }),
@@ -109,8 +111,8 @@ export function PlatformUsers({
       </Label>
     );
 
-    // Die eigene Rolle nicht über diese Tabelle: Selbstbeförderung wäre der Weg
-    // an der Rangordnung vorbei, und der Server lehnt sie ohnehin ab.
+    // Not your own role through this table: self-promotion would be a way
+    // around the rank order, and the server rejects it anyway.
     if (row.id === currentUserId || roles.length === 0) return pill;
 
     return (
@@ -188,8 +190,8 @@ export function PlatformUsers({
       header: t("platform.colAccess"),
       width: "minmax(110px, max-content)",
       sortValue: (row) => (row.hasPasskey ? 1 : 0),
-      // Wer keinen Passkey hat, kommt über einen verbundenen Anbieter herein
-      // oder hat die Einladung noch nicht angenommen.
+      // Anyone without a passkey gets in via a connected provider or hasn't
+      // accepted their invitation yet.
       cell: (row) => (
         <span className={styles.access}>
           <Icon

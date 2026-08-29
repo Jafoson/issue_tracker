@@ -1,22 +1,22 @@
 /**
- * Die Sprachen, die ein Codeblock kennt.
+ * The languages a code block knows about.
  *
- * Eine handverlesene Liste statt einer vollständigen: die Angabe steht im
- * Dokument und dient zwei Zwecken — sie beschriftet den Block und wäre der
- * Anker für eine spätere Einfärbung. Beides braucht keine dreihundert
- * Einträge, und eine kurze Liste lässt sich im Menü überblicken.
+ * A hand-picked list rather than a complete one: the value lives in the
+ * document and serves two purposes — it labels the block and would be the
+ * anchor for later syntax highlighting. Neither needs three hundred
+ * entries, and a short list stays scannable in the menu.
  *
- * Die Werte sind die üblichen Kurznamen, damit sie zu dem passen, was in
- * Markdown hinter den drei Backticks steht (```ts) — und damit `fromMarkdown`
- * sie unverändert übernehmen kann.
+ * The values are the usual short names, so they match what follows the
+ * three backticks in Markdown (```ts) — and so `fromMarkdown` can carry
+ * them over unchanged.
  */
 
 export interface CodeLanguage {
-  /** Steht im Dokument. */
+  /** Lives in the document. */
   value: string;
-  /** Steht im Menü. */
+  /** Shown in the menu. */
   label: string;
-  /** Weitere Schreibweisen, die auf denselben Eintrag zeigen. */
+  /** Other spellings that point to the same entry. */
   aliases?: string[];
 }
 
@@ -51,7 +51,7 @@ export const CODE_LANGUAGES: CodeLanguage[] = [
   { value: "graphql", label: "GraphQL", aliases: ["gql"] },
 ];
 
-/** Der Eintrag zu einer gespeicherten Angabe — über Wert oder Schreibweise. */
+/** The entry for a stored value — matched by value or by an alias. */
 export function findLanguage(value: unknown): CodeLanguage | null {
   if (typeof value !== "string" || !value) return null;
   const needle = value.trim().toLowerCase();
@@ -62,24 +62,24 @@ export function findLanguage(value: unknown): CodeLanguage | null {
   );
 }
 
-/** Steht am Block, solange keine Sprache gewählt ist. Fachbegriff, unübersetzt. */
+/** Shown on the block as long as no language is chosen. Technical term, left untranslated. */
 export const PLAIN_LANGUAGE = "Plain";
 
 /**
- * Ausdrücklich keine Sprache.
+ * Explicitly no language.
  *
- * Zu unterscheiden von `null`, das „noch nicht entschieden" heißt: nur dort
- * darf die Erkennung raten. Wer im Menü „Plain" wählt, meint es so — und soll
- * es nicht beim nächsten Tastendruck wieder überschrieben bekommen.
+ * To be distinguished from `null`, which means "not yet decided": only
+ * there is detection allowed to guess. Whoever picks "Plain" in the menu
+ * means it — and shouldn't have it overwritten again on the next keystroke.
  */
 export const PLAIN_VALUE = "plain";
 
 /**
- * Was am Block steht.
+ * What's shown on the block.
  *
- * Eine unbekannte Angabe wird nicht verworfen, sondern durchgereicht: sie kam
- * vielleicht aus einem eingefügten Markdown-Block, und die Information ist
- * mehr wert als eine saubere Liste.
+ * An unknown value isn't discarded, it's passed through: it might have come
+ * from a pasted Markdown block, and the information is worth more than a
+ * clean list.
  */
 export function languageLabel(value: unknown): string {
   const known = findLanguage(value);
@@ -89,10 +89,10 @@ export function languageLabel(value: unknown): string {
     : PLAIN_LANGUAGE;
 }
 
-/** Zählt die Zeilen eines Codeblocks — Grundlage für die Zeilennummern. */
+/** Counts the lines of a code block — the basis for line numbers. */
 export function countLines(code: string): number {
-  // Ein abschließender Umbruch erzeugt keine weitere Zeile: sonst stünde unter
-  // dem letzten Zeichen eine leere Nummer.
+  // A trailing line break doesn't create another line: otherwise there'd
+  // be an empty number under the last character.
   const text = code.endsWith("\n") ? code.slice(0, -1) : code;
   return text.length === 0 ? 1 : text.split("\n").length;
 }

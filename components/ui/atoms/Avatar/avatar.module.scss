@@ -11,12 +11,12 @@
   display: block;
 }
 
-// Ecken skalieren mit der Größe: ein 64px-Avatar braucht mehr Rundung als ein 16px-Avatar.
+// Corners scale with size: a 64px avatar needs more rounding than a 16px avatar.
 $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
 
 .avatar {
-  /* Von der Komponente gesetzt: --avatar-size, --avatar-bg, --avatar-fg
-     und optional --avatar-font-size als Override. */
+  /* Set by the component: --avatar-size, --avatar-bg, --avatar-fg
+     and optionally --avatar-font-size as an override. */
   --avatar-size: 22px;
   --avatar-font-size: max(7px, calc(var(--avatar-size) * 0.5));
   --avatar-radius: #{$square-radius};
@@ -25,11 +25,11 @@ $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  // Ohne das: eine reine Bild-Kachel hat (anders als eine mit Initialen-Text)
-  // keine eigene Baseline, und der Browser weicht auf die untere Kante als
-  // Baseline aus — das reserviert Nachkommastellen-Platz darunter und schiebt
-  // sie sichtbar nach oben, sobald sie neben Text oder anderen Avataren in
-  // einer Inline-/Flex-Zeile steht (z. B. `AvatarStack`).
+  // Without this: a pure image tile (unlike one with initials text) has no
+  // baseline of its own, and the browser falls back to using its bottom
+  // edge as the baseline — that reserves descender space below it and
+  // visibly shifts it upward whenever it sits next to text or other avatars
+  // in an inline/flex row (e.g. `AvatarStack`).
   vertical-align: middle;
   flex: none;
   width: var(--avatar-size);
@@ -45,7 +45,7 @@ $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
   user-select: none;
 }
 
-/* Zwei Initialen brauchen mehr Breite als eine — sonst laufen sie über den Rand. */
+/* Two initials need more width than one — otherwise they overflow the edge. */
 .avatar[data-initials="2"] {
   --avatar-font-size: max(7px, calc(var(--avatar-size) * 0.42));
 }
@@ -62,8 +62,8 @@ $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
   box-shadow: 0 0 0 2px var(--shadow);
 }
 
-/* Leerer Zustand: gestrichelter Ring + Personen-Icon signalisiert "niemand zugewiesen".
-   Bewusst ohne Füllfarbe, damit er neben echten Avataren nicht wie eine Person wirkt. */
+/* Empty state: dashed ring + person icon signals "nobody assigned".
+   Deliberately without a fill color so it doesn't read as a real person next to actual avatars. */
 .placeholder {
   --avatar-bg: transparent;
   --avatar-fg: var(--outline);
@@ -76,7 +76,7 @@ $square-radius: clamp(3px, calc(var(--avatar-size) * 0.28), var(--radius-lg));
   }
 }
 
-/* "+N"-Chip am Ende eines AvatarStack */
+/* "+N" chip at the end of an AvatarStack */
 .more {
   --avatar-bg: var(--elev);
   --avatar-fg: var(--text-2);

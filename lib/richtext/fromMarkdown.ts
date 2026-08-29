@@ -2,17 +2,17 @@ import { emptyDoc } from "./doc";
 import type { PMDoc, PMMark, PMNode } from "./types";
 
 /**
- * Markdown → ProseMirror-JSON.
+ * Markdown → ProseMirror JSON.
  *
- * Zwei Aufgaben: die einmalige Umstellung der Bestandsdaten
- * (`scripts/migrate-richtext.ts`) und das Seed, das weiterhin bequem in
- * Markdown geschrieben wird.
+ * Two jobs: the one-time conversion of existing data
+ * (`scripts/migrate-richtext.ts`) and the seed, which continues to be
+ * written conveniently in Markdown.
  *
- * Die Grammatik ist absichtlich dieselbe wie im abgelösten `Markdown`-Renderer —
- * dieselben Ausdrücke, dieselbe Reihenfolge. Was Leserinnen und Leser vor der
- * Umstellung gesehen haben, kommt danach genauso heraus. Deshalb auch kein
- * `@tiptap/markdown`: das braucht ein DOM, läuft also in keinem Bun-Skript, und
- * ist von Tiptap selbst noch als "early release" gekennzeichnet.
+ * The grammar is deliberately the same as in the retired `Markdown`
+ * renderer — same expressions, same order. What readers saw before the
+ * switch comes out exactly the same afterward. That's also why there's no
+ * `@tiptap/markdown`: it needs a DOM, so it can't run in any Bun script,
+ * and it's still marked "early release" by Tiptap itself.
  */
 
 const FENCE = /^\s*```(\w*)\s*$/;
@@ -23,7 +23,7 @@ const ORDERED = /^\s*\d+[.)]\s+(.*)$/;
 const QUOTE = /^\s*>\s?(.*)$/;
 const RULE = /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/;
 
-/** Reihenfolge zählt: längere Marker müssen vor ihren kürzeren Varianten stehen. */
+/** Order matters: longer markers must come before their shorter variants. */
 const INLINE_PATTERN = [
   "(`[^`]+`)",
   "(\\*\\*[^]+?\\*\\*)",
@@ -63,9 +63,9 @@ function withMark(marks: PMMark[], type: string): PMMark[] {
 }
 
 /**
- * Zerlegt eine Zeile in Textknoten samt Auszeichnungen. Der Scanner wird pro
- * Aufruf neu gebaut, weil verschachtelte Auszeichnungen zurückspringen und sich
- * beide sonst die Suchposition der Regex teilen würden.
+ * Splits a line into text nodes with their marks. The scanner is rebuilt on
+ * every call because nested marks recurse back into this function, and
+ * without a fresh scanner they'd share the regex's search position.
  */
 function parseInline(source: string, marks: PMMark[] = []): PMNode[] {
   const scanner = new RegExp(INLINE_PATTERN, "g");
@@ -74,8 +74,8 @@ function parseInline(source: string, marks: PMMark[] = []): PMNode[] {
   let match = scanner.exec(source);
 
   const plain = (value: string) => {
-    // Einzelne Umbrüche im Absatz waren im alten Renderer sichtbar (`pre-wrap`);
-    // in ProseMirror ist das ein harter Umbruch.
+    // Single line breaks within a paragraph were visible in the old
+    // renderer (`pre-wrap`); in ProseMirror that's a hard break.
     value.split("\n").forEach((part, index) => {
       if (index > 0) nodes.push({ type: "hardBreak" });
       if (part) nodes.push(text(part, marks));
@@ -108,7 +108,7 @@ function parseToken(token: string, marks: PMMark[]): PMNode[] {
   if (link) {
     const [, bang, label, target] = link;
     const url = safeUrl(target);
-    // Unsichere Adressen bleiben Text — genau wie im alten Renderer.
+    // Unsafe URLs stay text — exactly as in the old renderer.
     if (!url) return [text(token, marks)];
     if (bang) return [{ type: "image", attrs: { src: url, alt: label } }];
     return parseInline(label, [
@@ -124,7 +124,7 @@ function parseToken(token: string, marks: PMMark[]): PMNode[] {
   return parseInline(token.slice(1, -1), withMark(marks, "italic"));
 }
 
-/** Ein Absatz mit Inhalt — leere `content`-Arrays mag ProseMirror nicht. */
+/** A paragraph with content — ProseMirror doesn't like empty `content` arrays. */
 function paragraph(nodes: PMNode[]): PMNode {
   return nodes.length
     ? { type: "paragraph", content: nodes }
@@ -156,7 +156,7 @@ export function fromMarkdown(source: string): PMDoc {
         attrs: { language: fence[1] || null },
         ...(code ? { content: [{ type: "text", text: code }] } : {}),
       });
-      i++; // schließender Zaun
+      i++; // closing fence
       continue;
     }
 
@@ -177,7 +177,7 @@ export function fromMarkdown(source: string): PMDoc {
       continue;
     }
 
-    // Checklisten vor den Aufzählungen: `- [ ] x` erfüllt auch BULLET.
+    // Checklists before bullet lists: `- [ ] x` also matches BULLET.
     if (TASK.test(line)) {
       const items: PMNode[] = [];
       while (i < lines.length) {
@@ -199,7 +199,7 @@ export function fromMarkdown(source: string): PMDoc {
       const matcher = ordered ? ORDERED : BULLET;
       const items: PMNode[] = [];
       while (i < lines.length) {
-        // Eine Checkliste beendet die einfache Aufzählung.
+        // A checklist ends a plain bullet list.
         if (!ordered && TASK.test(lines[i])) break;
         const item = matcher.exec(lines[i]);
         if (!item) break;

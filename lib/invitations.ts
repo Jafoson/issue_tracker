@@ -1,30 +1,32 @@
-// ─── Einladungen ──────────────────────────────────────────────────────────────
+// ─── Invitations ──────────────────────────────────────────────────────────────
 //
-// Wer per E-Mail eingeladen wird, bekommt sofort ein Konto — ohne Passwort und
-// mit `WorkspaceMember.pending = true`. Bis hierher kam das Projekt schon vorher;
-// was fehlte, war der Weg von dort zum fertigen Zugang. Diese Datei ist dieser
-// Weg: einen Token ausstellen, ihn einlösen, und dazwischen nichts verraten.
+// Whoever is invited by email gets an account immediately — without a
+// password and with `WorkspaceMember.pending = true`. The project already
+// got this far before; what was missing was the path from there to a
+// finished login. This file is that path: issue a token, redeem it, and
+// give nothing away in between.
 //
-// Der Versand selbst steht nicht hier, sondern in `lib/mail` (`sendInvitationEmail`,
-// aus den Aktionen aufgerufen) — diese Datei bleibt der schmale Token-Baustein.
-// Ohne SMTP-Konfiguration verschickt `lib/mail` nichts; die Action gibt den Link
-// trotzdem zurück, und die Oberfläche zeigt ihn zum Kopieren.
+// Sending the mail itself doesn't live here, but in `lib/mail`
+// (`sendInvitationEmail`, called from the actions) — this file stays the
+// narrow token building block. Without SMTP configuration, `lib/mail` sends
+// nothing; the action still returns the link, and the UI shows it for
+// copying.
 
 import { randomBytes } from "node:crypto";
 import { appUrl } from "@/lib/app-url";
 import type { Prisma } from "@/lib/generated/prisma/client";
 
-/** Passt auf den Prisma-Client wie auf einen Transaktions-Client. */
+/** Fits both the Prisma client and a transaction client. */
 type Db = Prisma.TransactionClient;
 
-/** Wie lange eine Einladung gilt. */
+/** How long an invitation stays valid. */
 const VALID_DAYS = 14;
 
 /**
- * 32 Byte aus dem Zufallsgenerator des Betriebssystems, base64url kodiert.
+ * 32 bytes from the OS's random number generator, base64url encoded.
  *
- * Der Token ist der einzige Schutz des Links — er muss unerratbar sein, nicht
- * kurz. `randomBytes` statt `Math.random`: letzteres ist vorhersagbar.
+ * The token is the link's only protection — it needs to be unguessable, not
+ * short. `randomBytes` instead of `Math.random`: the latter is predictable.
  */
 export function newInvitationToken(): string {
   return randomBytes(32).toString("base64url");
@@ -32,17 +34,17 @@ export function newInvitationToken(): string {
 
 export interface CreatedInvitation {
   token: string;
-  /** Damit die Einladungsmail dieselbe Frist nennt, die auch gilt — statt
-   *  `VALID_DAYS` an zwei Stellen zu pflegen. */
+  /** So the invitation email states the same deadline that actually applies
+   *  — instead of maintaining `VALID_DAYS` in two places. */
   expiresAt: Date;
 }
 
 /**
- * Stellt eine Einladung aus und gibt Token und Frist zurück.
+ * Issues an invitation and returns the token and deadline.
  *
- * Ältere, noch offene Einladungen derselben Person in denselben Workspace werden
- * dabei verworfen: es soll nicht zwei Links geben, von denen einer ins Leere
- * führt, sobald der andere benutzt wurde.
+ * Older, still-open invitations for the same person in the same workspace
+ * are discarded in the process: there shouldn't be two links where one
+ * leads nowhere as soon as the other is used.
  */
 export async function createInvitation(
   db: Db,
@@ -79,16 +81,16 @@ export async function createInvitation(
   return { token, expiresAt: expires };
 }
 
-/** Der Pfad, unter dem eine Einladung angenommen wird. Ohne Locale-Präfix. */
+/** The path where an invitation is accepted. Without a locale prefix. */
 export function invitationPath(token: string): string {
   return `/invite/${token}`;
 }
 
 /**
- * Die absolute Einladungs-URL.
+ * The absolute invitation URL.
  *
- * Woher die Basis kommt, steht in `lib/app-url` — dieselbe Quelle wie für jede
- * andere Adresse, die die App zum Kopieren anbietet.
+ * Where the base comes from is documented in `lib/app-url` — the same
+ * source as for every other URL the app offers for copying.
  */
 export function invitationUrl(token: string): string {
   return appUrl(invitationPath(token));
@@ -103,17 +105,17 @@ export interface OpenInvitation {
   email: string;
   firstName: string;
   lastName: string;
-  /** Das Konto hat schon einen Passkey — die Einladung ist überflüssig,
-   *  eine normale Anmeldung reicht. */
+  /** The account already has a passkey — the invitation is redundant,
+   *  a normal login is enough. */
   hasPasskey: boolean;
 }
 
 /**
- * Lädt eine Einladung, die noch eingelöst werden kann.
+ * Loads an invitation that can still be redeemed.
  *
- * `null` heißt in jedem Fall dasselbe: unbekannt, abgelaufen oder schon benutzt.
- * Die Seite zeigt darauf eine Meldung, die zwischen diesen Fällen nicht
- * unterscheidet — sonst wäre der Endpunkt ein Orakel für gültige Tokens.
+ * `null` always means the same thing: unknown, expired, or already used.
+ * The page shows a message for it that doesn't distinguish between these
+ * cases — otherwise the endpoint would be an oracle for valid tokens.
  */
 export async function openInvitation(
   db: Db,
@@ -145,7 +147,7 @@ export async function openInvitation(
   if (!invitation) return null;
   if (invitation.acceptedAt) return null;
   if (invitation.expires <= now) return null;
-  // Ein gesperrter Workspace nimmt niemanden auf — auch keinen Eingeladenen.
+  // A suspended workspace admits no one — not even someone invited.
   if (invitation.workspace.suspended) return null;
 
   return {
@@ -154,8 +156,8 @@ export async function openInvitation(
     workspaceName: invitation.workspace.name,
     projectId: invitation.projectId,
     userId: invitation.user.id,
-    // Das Schatten-Konto einer Einladung entsteht immer mit der eingeladenen
-    // Adresse — der Fallback ist reine Typsicherheit, kein erwarteter Fall.
+    // An invitation's shadow account is always created with the invited
+    // address — the fallback is pure type safety, not an expected case.
     email: invitation.user.email ?? "",
     firstName: invitation.user.firstName,
     lastName: invitation.user.lastName,

@@ -32,28 +32,28 @@ interface Props {
   view: View;
   title: string;
   subtitle: string;
-  /** Auf Seiten mit Umschalter steht der Titel schon auf dem Reiter. */
+  /** On pages with a tab switcher, the title is already on the tab. */
   showTitle?: boolean;
 }
 
 /**
- * Rollen eines Topfes anzeigen und bearbeiten.
+ * Display and edit the roles of one pool.
  *
- * Dieselbe Komponente bedient alle drei Scopes — was sich unterscheidet, steht
- * im `target` und in den vom Server bereits ausgerechneten Grenzen
- * (`manageable`, `grantable`, `maxRank`). Die Oberfläche kennt weder
- * Rollennamen noch Rangregeln.
+ * The same component serves all three scopes — what differs lives in
+ * `target` and in the limits the server has already computed
+ * (`manageable`, `grantable`, `maxRank`). The UI knows neither role names
+ * nor rank rules.
  *
- * Geteilte System-Rollen erscheinen mit, sind aber gesperrt: sie sind für alle
- * Mandanten dieselbe Zeile. Sichtbar bleiben sie, damit nachvollziehbar ist,
- * was etwa „Member" gewährt — und weil ein Vergleich mit ihnen der häufigste
- * Grund ist, überhaupt hier zu sein.
+ * Shared system roles appear alongside the rest but are locked: they're the
+ * same row for every tenant. They stay visible so it's possible to trace
+ * what, say, "Member" grants — and because comparing against them is the
+ * most common reason to be here at all.
  *
- * Stammdaten einer Rolle (Name, Rang, Löschen) gehen sofort zum Server — es
- * sind einzelne Felder mit einzelnen Absichten. Die Matrix nicht: dort sammelt
- * `pending` die Klicks, bis jemand speichert. Wer eine Rolle umbaut, arbeitet
- * eine ganze Spalte durch, und aus derselben Erwägung heraus fährt ein
- * Wächter mit, der die Seite nicht ungefragt verlassen lässt.
+ * A role's core data (name, rank, delete) goes straight to the server —
+ * these are individual fields with individual intents. The matrix doesn't:
+ * there, `pending` collects the clicks until someone saves. Reworking a
+ * role means working through an entire column, and for the same reason a
+ * guard rides along that won't let the page be left without asking.
  */
 export function RoleManagerView({
   view,
@@ -72,10 +72,10 @@ export function RoleManagerView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Welche Spalten die Matrix gerade nicht zeigt. Bleibt im Browser: es ist
-  // eine Frage des Blicks, nicht der Daten — zwei Leute vergleichen dieselben
-  // Rollen nicht mit derselben Auswahl, und `router.refresh()` nach jedem
-  // Klick in der Matrix würde eine gespeicherte Auswahl ohnehin nur einholen.
+  // Which columns the matrix is currently not showing. Stays in the
+  // browser: it's a matter of view, not data — two people comparing the
+  // same roles won't use the same selection, and `router.refresh()` after
+  // every click in the matrix would just catch up to a saved selection anyway.
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
 
   const toggleHidden = (roleId: string) =>
@@ -85,14 +85,14 @@ export function RoleManagerView({
       return next;
     });
 
-  // Die noch nicht geschriebenen Klicks in der Matrix, je Zelle einer.
+  // The not-yet-written clicks in the matrix, one per cell.
   const [draft, setDraft] = useState<ReadonlyMap<string, GrantChange>>(
     new Map(),
   );
 
   const roles = withDraft(view.roles, draft);
 
-  /** Was der Server heute sagt — der Bezugspunkt für „geändert". */
+  /** What the server currently says — the reference point for "changed". */
   const saved = (roleId: string, permission: string) =>
     view.roles
       .find((role) => role.id === roleId)
@@ -102,17 +102,17 @@ export function RoleManagerView({
     setDraft((current) => {
       const next = new Map(current);
       const id = cellId(change.roleId, change.permission);
-      // Wer zweimal klickt, ist wieder beim Ausgangswert und hat nichts geändert
-      // — dann verschwindet die Zelle aus dem Stapel und mit ihr womöglich die
-      // ganze Leiste.
+      // Whoever clicks twice is back at the starting value and hasn't
+      // changed anything — the cell then disappears from the batch, and
+      // with it possibly the entire bar.
       if (change.granted === saved(change.roleId, change.permission))
         next.delete(id);
       else next.set(id, change);
       return next;
     });
 
-  // Jede Aktion gibt entweder `ok` oder einen Text zurück. Der Fehler landet
-  // sichtbar über der Matrix statt still in der Konsole.
+  // Every action returns either `ok` or a text. The error shows up visibly
+  // above the matrix instead of silently in the console.
   const run = (action: () => Promise<{ ok: true } | { error: string }>) =>
     startTransition(async () => {
       const result = await action();
@@ -124,18 +124,18 @@ export function RoleManagerView({
     if (draft.size === 0) return;
     run(async () => {
       const result = await setRoleGrants([...draft.values()]);
-      // Erst nach dem Ja des Servers — und im selben Übergang wie das
-      // `router.refresh()` in `run`. React zeigt beides zusammen, sonst stünde
-      // für einen Wimpernschlag der alte Stand da, den man gerade überschrieben
-      // hat. Bei einem Fehler bleibt der Stapel stehen: die Arbeit einer
-      // Viertelstunde wirft man nicht wegen einer Fehlermeldung weg.
+      // Only after the server's yes — and in the same transition as the
+      // `router.refresh()` in `run`. React shows both together, otherwise
+      // the old state you just overwrote would flash back for an instant.
+      // On an error, the batch stays put: you don't throw away a quarter
+      // hour of work over one error message.
       if (!("error" in result)) setDraft(new Map());
       return result;
     });
   };
 
-  // Der Wächter fragt, bevor die Seite verschwindet — ein Klick in der Matrix
-  // sieht aus wie ein Schreibvorgang, und wer das glaubt, geht arglos weiter.
+  // The guard asks before the page navigates away — a click in the matrix
+  // looks like a write, and whoever believes that keeps going unsuspecting.
   useUnsavedChanges(draft.size > 0, () =>
     confirm({
       title: t("roles.leaveTitle"),
@@ -167,15 +167,16 @@ export function RoleManagerView({
     ? (roles.find((role) => role.id === editingId) ?? null)
     : null;
 
-  // Beide Felder tragen dieselbe Tastatur: Eingabe legt an, Escape bricht ab.
+  // Both fields share the same keyboard behavior: Enter creates, Escape cancels.
   const onCreateKey = (event: React.KeyboardEvent) => {
     if (event.key === "Enter") submitNew();
     if (event.key === "Escape") setCreating(false);
   };
 
-  // Die Trägerzahl auf den Karten zählt den Topf, in dem man gerade steht.
-  // Welcher das ist, weiß nur diese Ebene — die Projektrollen des Workspace
-  // gelten in allen seinen Projekten und werden deshalb auch über alle gezählt.
+  // The carrier count on the cards counts the pool you're currently in.
+  // Only this layer knows which one that is — the workspace's project
+  // roles apply in all of its projects and are therefore counted across
+  // all of them too.
   const carriersHint =
     view.target.scope === "PLATFORM"
       ? t("roles.carriersOnPlatform")
@@ -184,26 +185,27 @@ export function RoleManagerView({
         : t("roles.carriersInWorkspace");
 
   const shown = roles.filter((role) => !hidden.has(role.id));
-  // Gelöschte Rollen können in der Auswahl zurückbleiben; gezählt wird, was
-  // wirklich noch ausgeblendet werden kann.
+  // Deleted roles can linger in the selection; what's counted is what can
+  // actually still be hidden.
   const hiddenCount = roles.length - shown.length;
 
   return (
     <section className={styles.wrap}>
-      {/* Ohne eigenen Titel steht über der Kopfzeile der Umschalter, und der
-          bringt die obere Linie schon mit — siehe `.underSwitcher`. */}
+      {/* Without its own title, the switcher sits above the header, and it
+          already brings the top line along — see `.underSwitcher`. */}
       <header
         className={`${styles.pageHeader} ${showTitle ? "" : styles.underSwitcher}`}
       >
         <div className={styles.headText}>
-          {/* Auf Seiten mit Umschalter steht der Titel schon auf dem Reiter. */}
+          {/* On pages with a tab switcher, the title is already on the tab. */}
           {showTitle && <h2 className={styles.pageTitle}>{title}</h2>}
           <p className={styles.subtitle}>{subtitle}</p>
         </div>
 
         <div className={styles.headAction}>
-          {/* Steht nur da, wenn es etwas zurückzuholen gibt — und auch für
-              Leute ohne Rechte: ausblenden darf jeder, der zusieht. */}
+          {/* Only shown when there's something to bring back — and for
+              people without permissions too: anyone watching is allowed to
+              hide things. */}
           {hiddenCount > 0 && (
             <Button
               variant="text"
@@ -236,9 +238,9 @@ export function RoleManagerView({
 
         {creating && (
           <div className={styles.createRow}>
-            {/* Die Beschreibung gleich mit: sie steht später auf der Karte und
-                ist das Einzige, was erklärt, wofür eine Rolle gedacht ist.
-                Wer sie erst im Editor nachträgt, lässt sie meistens leer. */}
+            {/* The description right away: it later shows on the card and
+                is the only thing that explains what a role is meant for.
+                Whoever adds it later in the editor mostly leaves it empty. */}
             <Input
               autoFocus
               size="sm"
@@ -293,9 +295,9 @@ export function RoleManagerView({
                     const result = await deleteRole(editing.id);
                     if (!("error" in result)) {
                       setEditingId(null);
-                      // Mit der Rolle geht auch, was für sie offen war — sonst
-                      // hinge die Leiste an einer Spalte, die es nicht mehr
-                      // gibt, und das Speichern liefe in einen Fehler.
+                      // Whatever was pending for the role goes with it —
+                      // otherwise the bar would hang onto a column that no
+                      // longer exists, and saving would hit an error.
                       setDraft(withoutRole(editing.id));
                     }
                     return result;
@@ -322,7 +324,7 @@ export function RoleManagerView({
   );
 }
 
-/** Nimmt alles aus dem Stapel, was zu einer Rolle gehört. */
+/** Removes everything from the batch that belongs to a role. */
 const withoutRole =
   (roleId: string) => (current: ReadonlyMap<string, GrantChange>) =>
     new Map(
@@ -330,10 +332,11 @@ const withoutRole =
     ) as ReadonlyMap<string, GrantChange>;
 
 /**
- * Legt die noch nicht gespeicherten Klicks über den Stand des Servers.
+ * Overlays the not-yet-saved clicks on top of the server's state.
  *
- * Die Matrix bekommt dadurch nur eine Liste von Rollen zu sehen und muss nicht
- * wissen, welcher Wert woher stammt — welche Zelle offen ist, sagt ihr `changed`.
+ * This way the matrix only ever sees a list of roles and doesn't need to
+ * know which value came from where — its `changed` prop tells it which
+ * cell is pending.
  */
 function withDraft(
   roles: RoleView[],

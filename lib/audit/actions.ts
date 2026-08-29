@@ -1,32 +1,32 @@
-// ─── Audit-Log: die Registry ──────────────────────────────────────────────────
+// ─── Audit log: the registry ────────────────────────────────────────────────────
 //
-// Reine Datendefinition — kein DB-Zugriff, kein `server-only`, keine Prisma-
-// Importe. Dieselbe Trennung wie bei `lib/rbac`, und aus demselben Grund: die
-// Oberfläche muss die Vorgänge benennen können, und eine Liste im Protokoll
-// rendert im Browser. Läge das hier neben `db`, zöge ein `"use client"`-Modul
-// den Prisma-Client ins Bündel — und der Build bräche mit „server-only".
+// Pure data definition — no DB access, no `server-only`, no Prisma imports.
+// Same separation as `lib/rbac`, and for the same reason: the UI needs to be
+// able to name these events, and a list in the log renders in the browser.
+// If this lived next to `db`, a `"use client"` module would pull the Prisma
+// client into the bundle — and the build would break with "server-only".
 //
-// Geschrieben und gelesen wird nebenan in `lib/audit/index.ts`.
+// Written and read next door, in `lib/audit/index.ts`.
 //
-// Ein Protokoll beantwortet drei Fragen, und die Auswahl unten folgt genau
-// ihnen: **Wer war wann da?** (`auth.*`) **Wer hat wem Rechte gegeben?**
-// (`user.role.platform`, `member.role.changed`) **Wer hat etwas Großes gelöscht
-// oder aufgebrochen?** (`project.deleted`, `workspace.deleted`,
-// `project.breakglass`).
+// A log answers three questions, and the selection below follows exactly
+// those: **Who was here, and when?** (`auth.*`) **Who gave whom
+// permissions?** (`user.role.platform`, `member.role.changed`) **Who
+// deleted or broke into something big?** (`project.deleted`,
+// `workspace.deleted`, `project.breakglass`).
 //
-// Was hier nicht steht, steht mit Absicht nicht hier. Jede gelesene Seite zu
-// protokollieren, erzeugt eine Menge, die niemand mehr durchsieht — und ein
-// Protokoll, das niemand durchsieht, schützt niemanden. Aufgezeichnet wird, was
-// Rechte verschiebt oder Daten vernichtet.
+// What isn't listed here is deliberately absent. Logging every page view
+// creates a volume no one reviews anymore — and a log no one reviews
+// protects no one. What gets recorded is what shifts permissions or
+// destroys data.
 
 /**
- * Die Vorgänge, die protokolliert werden — Schlüssel und Klartext.
+ * The events that get logged — key and plain-language text.
  *
- * Der Schlüssel steht in der Datenbank und ändert sich nie. Der Text hier ist
- * für die, die das Protokoll in der Datenbank lesen; die Beschriftung in der
- * Oberfläche kommt aus `messages/*.json`. Die beiden Namen sind **nicht**
- * dieselben: next-intl liest den Punkt als Verschachtelung, die Nachrichten
- * heißen deshalb flach, und die Brücke steht in `PlatformAudit`.
+ * The key lives in the database and never changes. The text here is for
+ * people reading the log directly in the database; the label shown in the
+ * UI comes from `messages/*.json`. The two names are **not** the same:
+ * next-intl reads the dot as nesting, so the messages are named flat, and
+ * the bridge lives in `PlatformAudit`.
  */
 export const AUDIT_ACTIONS = {
   "auth.login": "Angemeldet",
@@ -46,14 +46,14 @@ export const AUDIT_ACTIONS = {
   "mail.template.updated": "Mail-Vorlage bearbeitet",
   "mail.template.reset": "Mail-Vorlage auf Standard zurückgesetzt",
 
-  // ── Alltägliches in Projekt und Workspace ──────────────────────────────────
+  // ── Everyday events in project and workspace ───────────────────────────────
   //
-  // Anders als der Rest dieser Liste sind das keine sicherheitsrelevanten
-  // Vorgänge, sondern der Lebenszyklus dessen, womit Projekt- und
-  // Workspace-Übersicht ihren Aktivitäts-Feed füllen (`features/audit`).
-  // Anlegen/Entfernen für die meisten Objekte — bei Issues zusätzlich ein
-  // grober Bearbeitungs-Verlauf (welcher Aspekt sich änderte, nicht wie:
-  // kein Vorher/Nachher, das wäre ein Diff und kein Protokolleintrag).
+  // Unlike the rest of this list, these aren't security-relevant events —
+  // they're the lifecycle of what fills the activity feed on the project
+  // and workspace overview (`features/audit`). Create/remove for most
+  // objects — for issues, additionally a coarse edit history (which aspect
+  // changed, not how: no before/after, that would be a diff, not a log
+  // entry).
   "project.created": "Projekt angelegt",
   "project.visibility.changed": "Sichtbarkeit geändert",
   "member.added": "Mitglied zum Workspace hinzugefügt",
@@ -82,12 +82,12 @@ export type AuditAction = keyof typeof AUDIT_ACTIONS;
 export const AUDIT_ACTION_KEYS = Object.keys(AUDIT_ACTIONS) as AuditAction[];
 
 /**
- * Narrowt einen Schlüssel aus der Datenbank auf die bekannte Menge.
+ * Narrows a key from the database to the known set.
  *
- * Das Protokoll ist älter als jede Fassung der Oberfläche: darin können
- * Vorgänge stehen, die diese Fassung nicht mehr kennt (oder noch nicht). Die
- * Liste zeigt solche Zeilen dann roh statt sie zu verschlucken — eine
- * unbekannte Zeile im Protokoll ist eine Information, keine Störung.
+ * The log is older than any given version of the UI: it can contain events
+ * this version no longer knows (or doesn't know yet). The list then shows
+ * such rows raw instead of swallowing them — an unknown row in the log is
+ * information, not a malfunction.
  */
 export function toAuditAction(value: string): AuditAction | null {
   return (AUDIT_ACTION_KEYS as string[]).includes(value)
@@ -96,9 +96,9 @@ export function toAuditAction(value: string): AuditAction | null {
 }
 
 /**
- * Woran gehandelt wurde. Bewusst eine kleine, offene Liste statt einer Relation
- * je Art: das Protokoll überlebt seine Ziele (siehe `prisma/schema.prisma`), es
- * kann also gar nicht auf sie zeigen.
+ * What was acted on. Deliberately a small, open list instead of a relation
+ * per type: the log outlives its targets (see `prisma/schema.prisma`), so it
+ * can't point at them at all.
  */
 export type AuditTargetType =
   | "user"
@@ -112,40 +112,40 @@ export type AuditTargetType =
 export interface AuditTarget {
   type: AuditTargetType;
   id: string;
-  /** Wie das Ziel zur Tatzeit hieß. */
+  /** What the target was called at the time of the action. */
   label: string;
 }
 
 /**
- * Nur der Name aus `actorLabel` (das Format ist immer "Vorname Nachname
- * (E-Mail)") — der Avatar braucht die Initialen, nicht die Adresse in Klammern
- * dahinter. Eine getippte Adresse ohne Konto (fehlgeschlagene Anmeldung) trägt
- * ohnehin keine Klammer und kommt unverändert durch.
+ * Just the name from `actorLabel` (the format is always "First Last
+ * (email)") — the avatar needs the initials, not the address in parentheses
+ * after it. A typed-in address with no account (failed login) carries no
+ * parentheses anyway and passes through unchanged.
  */
 export function actorDisplayName(actorLabel: string): string {
   return actorLabel.replace(/\s*\([^)]*\)\s*$/, "");
 }
 
-/** Ein Kürzel wie `MOB-1` am Anfang von `targetLabel` — Issue-Vorgänge
- * (`features/issues/actions.ts#issueRef`), gefolgt von `: ` und optional
- * einem „Alt → Neu". */
+/** A code like `MOB-1` at the start of `targetLabel` — issue events
+ * (`features/issues/actions.ts#issueRef`), followed by `: ` and optionally
+ * an "old → new". */
 const REF_PATTERN = /^([A-Z0-9]{1,4}-\d+)(?:: ([\s\S]*))?$/;
 
 export interface ParsedTargetLabel {
-  /** Das Kürzel, falls `targetLabel` damit beginnt — sonst `undefined`. */
+  /** The code, if `targetLabel` starts with one — otherwise `undefined`. */
   ref?: string;
-  /** Der alte Wert, wenn der Rest ein „Alt → Neu" ist. */
+  /** The old value, when the rest is an "old → new". */
   before?: string;
-  /** Der neue Wert (bei „Alt → Neu") oder der ganze Rest ohne Kürzel. */
+  /** The new value (for "old → new") or the entire rest without the code. */
   after?: string;
 }
 
 /**
- * Zerlegt `targetLabel` in Kürzel, Vorher und Nachher — für eine Anzeige, die
- * nicht als ein ununterscheidbarer Fließtext daherkommt (`TargetLabel` in
- * `features/audit/components/AuditLog/AuditLog.tsx`). Reine Zeichenkettenarbeit,
- * bewusst getrennt von der React-Komponente: so lässt sie sich prüfen, ohne
- * etwas zu rendern.
+ * Splits `targetLabel` into code, before, and after — for a display that
+ * doesn't come across as one indistinguishable block of text (`TargetLabel`
+ * in `features/audit/components/AuditLog/AuditLog.tsx`). Pure string
+ * handling, deliberately separate from the React component: this way it can
+ * be tested without rendering anything.
  */
 export function parseTargetLabel(text: string): ParsedTargetLabel {
   const match = text.match(REF_PATTERN);
@@ -163,11 +163,11 @@ export function parseTargetLabel(text: string): ParsedTargetLabel {
 }
 
 /**
- * Eine Zeile des Protokolls, wie die Oberfläche sie bekommt.
+ * A row of the log, as the UI receives it.
  *
- * Steht hier und nicht bei der Abfrage, weil die Liste sie als Prop erhält und
- * im Browser rendert — der Typ muss also von dort erreichbar sein, ohne den
- * Server-Teil mitzuziehen.
+ * Lives here rather than with the query, because the list receives it as a
+ * prop and renders it in the browser — the type therefore needs to be
+ * reachable from there without pulling in the server part.
  */
 export interface AuditEntry {
   id: string;
@@ -175,40 +175,41 @@ export interface AuditEntry {
   action: string;
   actorId: string | null;
   actorLabel: string;
-  /** Kontofarbe zur Tatzeit, für den Avatar — `null` ohne Konto (fehlgeschlagene
-   * Anmeldung) oder wenn es inzwischen gelöscht ist. */
+  /** Account color at the time of the action, for the avatar — `null` with no
+   * account (failed login) or if it has since been deleted. */
   actorColor: string | null;
   /**
-   * Das hochgeladene Profilbild des Handelnden, live nachgeschlagen wie
-   * `projectRef` — anders als `actorColor` nicht eingefroren: eine signierte
-   * URL hat ohnehin nur eine Stunde Gültigkeit, ein „zur Tatzeit"-Bild ließe
-   * sich also gar nicht aufheben. `null` ohne Konto, ohne Bild oder wenn das
-   * Konto inzwischen gelöscht ist — die Liste zeigt dann die Initialen.
+   * The actor's uploaded profile picture, looked up live like `projectRef`
+   * — unlike `actorColor`, not frozen: a signed URL is only valid for an
+   * hour anyway, so an "as of the time of the action" picture couldn't be
+   * preserved at all. `null` with no account, no picture, or if the account
+   * has since been deleted — the list then shows the initials.
    */
   actorAvatarUrl: string | null;
   targetType: string | null;
   targetId: string | null;
   targetLabel: string | null;
-  /** Kontofarbe der Person in `targetLabel`, wenn das Ziel selbst keine ist
-   * (z. B. die/der Zugewiesene bei einem Issue) — sonst `null`. */
+  /** Account color of the person named in `targetLabel`, when the target
+   * itself isn't a person (e.g. the assignee of an issue) — otherwise `null`. */
   personColor: string | null;
   workspaceId: string | null;
   projectId: string | null;
   reason: string | null;
   /**
-   * Rohdaten je nach Vorgang — bei den meisten Zeilen ungenutzt. Bei Status-,
-   * Prioritäts- und Labelwechsel eines Issues trägt es Render-Hinweise (Icon,
-   * Farbe), die `TargetLabel` ausliest — siehe `PriorityChangeMeta`,
-   * `StatusChangeMeta`, `LabelsChangeMeta`. Ungeprüft: geschrieben wird es nur
-   * von `features/issues/actions.ts`, in genau dieser Form.
+   * Raw data depending on the event — unused for most rows. For status,
+   * priority, and label changes on an issue it carries rendering hints
+   * (icon, color) that `TargetLabel` reads out — see `PriorityChangeMeta`,
+   * `StatusChangeMeta`, `LabelsChangeMeta`. Unvalidated: it's only ever
+   * written by `features/issues/actions.ts`, in exactly this shape.
    */
   meta: unknown;
   /**
-   * Slug, Name, Farbe und Profilbild des Projekts hinter `projectId`, live
-   * nachgeschlagen wie `actorColor` in `withCurrentColor` (`lib/audit/index.ts`)
-   * — nicht eingefroren, weil es nur für einen Link und einen Avatar taugen
-   * muss, nicht für Zeitzeugenschaft. `null` ohne `projectId` oder wenn das
-   * Projekt inzwischen gelöscht ist; die Zeile bleibt dann unverlinkter Text.
+   * Slug, name, color, and profile picture of the project behind
+   * `projectId`, looked up live like `actorColor` in `withCurrentColor`
+   * (`lib/audit/index.ts`) — not frozen, because it only needs to serve a
+   * link and an avatar, not stand as a historical record. `null` with no
+   * `projectId` or if the project has since been deleted; the row then
+   * stays unlinked text.
    */
   projectRef: {
     slug: string;
@@ -217,10 +218,11 @@ export interface AuditEntry {
     avatarUrl: string | null;
   } | null;
   /**
-   * Dasselbe für den Workspace hinter `workspaceId` — ohne Link (eine
-   * Plattform-Admin ist in fremden Workspaces kein Mitglied, siehe
-   * `PlatformWorkspaces`), nur für den Avatar neben `workspace.*`-Vorgängen.
-   * `null` ohne `workspaceId` oder wenn der Workspace inzwischen gelöscht ist.
+   * The same for the workspace behind `workspaceId` — without a link (a
+   * platform admin isn't a member of other workspaces, see
+   * `PlatformWorkspaces`), only for the avatar next to `workspace.*`
+   * events. `null` with no `workspaceId` or if the workspace has since been
+   * deleted.
    */
   workspaceRef: {
     slug: string;
@@ -230,15 +232,15 @@ export interface AuditEntry {
   } | null;
 }
 
-/** `meta` bei `issue.priority.changed` — Prioritäts-Id reicht, das Symbol
- * kommt aus `PriorityIcon` (feste Zuordnung, keine Farbe nötig). */
+/** `meta` for `issue.priority.changed` — the priority id is enough, the
+ * icon comes from `PriorityIcon` (fixed mapping, no color needed). */
 export interface PriorityChangeMeta {
   from: number;
   to: number;
 }
 
-/** `meta` bei `issue.status.changed` — Farbe eingefroren wie `actorColor`,
- * weil `Status.color` sich ändern kann. */
+/** `meta` for `issue.status.changed` — color frozen like `actorColor`,
+ * because `Status.color` can change. */
 export interface StatusChangeMeta {
   from: string;
   to: string;
@@ -252,7 +254,7 @@ export interface LabelChangeItem {
   color: string;
 }
 
-/** `meta` bei `issue.labels.changed`. */
+/** `meta` for `issue.labels.changed`. */
 export interface LabelsChangeMeta {
   added: LabelChangeItem[];
   removed: LabelChangeItem[];

@@ -57,26 +57,26 @@ import type {
   Workspace,
 } from "@/types";
 
-// Serverseitiger Ersatz für den früheren `useWorkspace()`-Client-Context —
-// dasselbe Muster wie `getSession()`: kein Prop-Drilling, kein Provider nötig,
-// direkt aus jeder Server Component aufrufbar. Die aktive Workspace-ID kommt aus
-// dem Request-Store (`lib/current-workspace.ts`), den das App-Layout seedet.
+// Server-side replacement for the former `useWorkspace()` client context —
+// the same pattern as `getSession()`: no prop drilling, no provider needed,
+// callable directly from any Server Component. The active workspace id comes
+// from the request store (`lib/current-workspace.ts`), which the app layout seeds.
 //
-// Alle Funktionen sind über `cache()` pro Request dedupliziert — mehrfache
-// Aufrufe aus verschiedenen Komponenten kosten nur eine DB-Abfrage.
+// All functions are deduplicated per request via `cache()` — multiple calls
+// from different components cost only one DB query.
 
-/** Aktive Workspace-ID, oder Fehler außerhalb der Workspace-Shell (z.B. /admin). */
+/** Active workspace id, or an error outside the workspace shell (e.g. /admin). */
 function requireWorkspaceId(): string {
   const id = getCurrentWorkspaceId();
   if (!id) {
     throw new Error(
-      "Kein aktiver Workspace im Request — diese Query ist nur innerhalb der Workspace-Shell nutzbar.",
+      "No active workspace in the request — this query can only be used inside the workspace shell.",
     );
   }
   return id;
 }
 
-/** Aktueller Workspace, oder `null` außerhalb der Workspace-Shell. Analog zu `getSession()`. */
+/** Current workspace, or `null` outside the workspace shell. Analogous to `getSession()`. */
 export const getCurrentWorkspace = cache(
   async (): Promise<Workspace | null> => {
     const id = getCurrentWorkspaceId();

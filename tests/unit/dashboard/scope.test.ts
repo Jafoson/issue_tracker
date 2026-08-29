@@ -5,9 +5,10 @@ import {
   toDashboardScope,
 } from "@/features/dashboard/scope";
 
-// Ob ein Dashboard die Zahlen des ganzen Projekts/Workspace zeigt oder nur die
-// der eigenen Person. Reine Rechnerei ohne Datenbank — die Rechteprüfung (wer
-// „all" überhaupt wählen darf) sitzt in `getProjectDashboard`, nicht hier.
+// Whether a dashboard shows the numbers for the whole project/workspace or
+// only for the current person. Pure arithmetic with no database involved —
+// the permission check (who's even allowed to choose "all") lives in
+// `getProjectDashboard`, not here.
 
 describe("Die Vorgabe", () => {
   it("ist der ganze Umfang", () => {

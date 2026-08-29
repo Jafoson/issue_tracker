@@ -9,12 +9,12 @@ import { projectPath } from "@/lib/nav";
 export const dynamic = "force-dynamic";
 
 /**
- * Stammdaten, Sichtbarkeit und Löschen eines Projekts.
+ * Core data, visibility, and deletion of a project.
  *
- * Die Seite war in `PROJECT_NAV` schon verlinkt, bevor es sie gab. Sie ist der
- * Ort, an dem `project.update` und `project.delete` überhaupt erst etwas
- * bedeuten — geprüft wird beides in `getProjectSettingsView` und noch einmal in
- * den Actions.
+ * This page was already linked in `PROJECT_NAV` before it existed. It's the
+ * place where `project.update` and `project.delete` first mean anything at
+ * all — both are checked in `getProjectSettingsView` and again in the
+ * actions.
  */
 export default async function ProjectSettingsPage({
   params,
@@ -35,9 +35,9 @@ export default async function ProjectSettingsPage({
     <ProjectSettings
       {...view}
       workspaceId={workspace}
-      // Absolut, nicht als Pfad: die Adresse wird kopiert und woanders
-      // eingefügt. Zusammengesetzt wird sie hier, weil nur der Server weiß,
-      // unter welchem Host die App läuft (`AUTH_URL`).
+      // Absolute, not a path: the URL gets copied and pasted elsewhere.
+      // It's assembled here because only the server knows which host the app
+      // runs under (`AUTH_URL`).
       projectUrl={appUrl(projectPath(workspace, project.slug, ""))}
     />
   );

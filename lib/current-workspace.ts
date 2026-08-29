@@ -1,31 +1,31 @@
 import "server-only";
 import { cache } from "react";
 
-// Serverseitiges Pendant zu `lib/session.ts`: `getSession()` liest die aktive
-// User-ID aus dem Cookie, hier lesen wir die aktive Workspace-ID. Da diese nur
-// in der URL steckt (nicht in einem Cookie), seedet die Route den Wert, und
-// verschachtelte Server Components lesen ihn ohne Prop-Drilling.
+// Server-side counterpart to `lib/session.ts`: `getSession()` reads the
+// active user id from the cookie, here we read the active workspace id.
+// Since this only lives in the URL (not in a cookie), the route seeds the
+// value, and nested Server Components read it without prop drilling.
 //
-// `cache()` liefert pro Request dieselbe Objekt-Referenz → wir nutzen das als
-// request-scoped Speicher. Kein Zustand leckt zwischen Requests.
+// `cache()` returns the same object reference per request → we use that as
+// request-scoped storage. No state leaks between requests.
 const store = cache(() => ({ id: null as string | null }));
 
 /**
- * Seedet den Request-Store mit der aktiven Workspace-ID.
+ * Seeds the request store with the active workspace id.
  *
- * Muss von **jeder** Route unter `/[workspace]` aufgerufen werden — Layout und
- * Page gleichermaßen. Das Layout allein reicht nicht: bei Client-Navigation
- * innerhalb desselben Segments rendert Next.js nur die Page neu, das Layout
- * bleibt stehen und der Store bliebe leer. Genau das ließ workspace-Queries in
- * Pages nach einem Klick fehlschlagen, während sie nach einem Reload gingen.
+ * Must be called from **every** route under `/[workspace]` — layout and
+ * page alike. The layout alone isn't enough: on client navigation within
+ * the same segment, Next.js only re-renders the page, the layout stays put
+ * and the store would remain empty. That's exactly what made workspace
+ * queries in pages fail after a click, while they worked after a reload.
  *
- * Idempotent — mehrfaches Setzen im selben Request ist unkritisch.
+ * Idempotent — setting it multiple times within the same request is harmless.
  */
 export function setCurrentWorkspaceId(id: string): void {
   store().id = id;
 }
 
-/** Aktive Workspace-ID des Requests, oder `null` außerhalb der App-Shell. */
+/** Active workspace id of the request, or `null` outside the app shell. */
 export function getCurrentWorkspaceId(): string | null {
   return store().id;
 }

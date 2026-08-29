@@ -22,25 +22,26 @@ interface Props {
   canCreate: boolean;
   workspaceId: string;
   nextCursor: string | null;
-  /** Lädt die nächste Seite ab einem Cursor (`loadMoreProjectsOverview`,
-   * `features/projects/actions.ts`, an `workspaceId` gebunden). */
+  /** Loads the next page from a cursor (`loadMoreProjectsOverview`,
+   * `features/projects/actions.ts`, bound to `workspaceId`). */
   loadMore: (
     cursor: string,
   ) => Promise<{ items: ProjectOverviewRow[]; nextCursor: string | null }>;
 }
 
 /**
- * Alle Projekte, die man sehen darf, in einer Liste.
+ * All the projects you're allowed to see, in one list.
  *
- * Eine Übersicht, keine Verwaltung: eine Tabelle statt zweier Abschnitte nach
- * Sichtbarkeit, und nur die vier Angaben, nach denen man ein Projekt sucht —
- * Name, wofür es da ist, wer es leitet, unter welchem Kürzel seine Aufgaben
- * laufen. Ob es privat ist, spielt hier keine Rolle: was in der Liste steht,
- * darf man ohnehin sehen.
+ * An overview, not management: one table instead of two sections split by
+ * visibility, and only the four pieces of info you look for when searching
+ * for a project — name, what it's for, who leads it, under which prefix its
+ * tasks run. Whether it's private plays no role here: whatever is in the
+ * list is fine to see anyway.
  *
- * Geändert und gelöscht wird eine Ebene weiter, in
- * `features/workspaces/components/WorkspaceProjects` — dort stehen Stift und
- * Papierkorb, dort auch die Zahlen. Die Zeile hier führt einfach ins Projekt.
+ * Editing and deleting happen one level over, in
+ * `features/workspaces/components/WorkspaceProjects` — that's where the pen
+ * and trash icons live, and the numbers too. The row here simply leads into
+ * the project.
  */
 export function ProjectOverview({
   rows,
@@ -83,9 +84,9 @@ export function ProjectOverview({
     {
       id: "desc",
       header: t("fields.description"),
-      // Die Beschreibung bekommt den Rest der Breite und wird beschnitten: eine
-      // Liste, in der jede Zeile gleich hoch ist, überfliegt sich leichter als
-      // eine, in der ein langer Satz drei Zeilen bekommt.
+      // The description gets the remaining width and is truncated: a list
+      // where every row is the same height is easier to skim than one where
+      // a long sentence gets three lines.
       width: "minmax(0, 1fr)",
       sortValue: (row) => row.desc,
       cell: (row) =>
@@ -99,8 +100,8 @@ export function ProjectOverview({
       id: "lead",
       header: t("fields.lead"),
       width: "minmax(170px, max-content)",
-      // Ohne Leitung nach unten: die Frage der Spalte ist „wer", und „niemand"
-      // ist die schwächste Antwort darauf.
+      // Without a lead, sorts to the bottom: the column's question is "who",
+      // and "nobody" is the weakest answer to that.
       sortValue: (row) => (row.lead ? fullName(row.lead) : "￿"),
       cell: (row) =>
         row.lead ? (
@@ -149,8 +150,8 @@ export function ProjectOverview({
           rows={sortRows(items)}
           sort={sort}
           getRowKey={(row) => row.id}
-          // Die Zeile führt ins Projekt — als Link, damit Tastatur, Mittelklick
-          // und „in neuem Tab öffnen" mitkommen.
+          // The row leads into the project — as a link, so keyboard,
+          // middle-click, and "open in new tab" all keep working.
           rowOverlay={(row) => (
             <Link
               href={projectPath(workspaceId, row.slug, "")}

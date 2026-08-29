@@ -9,24 +9,26 @@ import { db } from "@/lib/db";
 import { currentUserCanEnterWorkspace, hasPermission } from "@/lib/permissions";
 import { getSession } from "@/lib/session";
 
-// Wie die eigenen Einstellungen (`features/account/actions.ts`) kennen diese
-// Aktionen nur eine Frage nach der Person: wer ist eingeloggt? Es gibt keinen
-// Parameter „welcher Benutzer" — geschrieben wird immer in die eigene Zeile.
+// Like your own settings (`features/account/actions.ts`), these actions only
+// ask one question about the person: who is logged in? There is no "which
+// user" parameter — writes always go to your own row.
 //
-// Das Projekt dagegen kommt von außen herein und wird deshalb geprüft. Nicht,
-// weil in der Zeile etwas Schützenswertes stünde — es ist eine Anordnung von
-// Kacheln —, sondern weil ohne Prüfung jeder Eingeloggte Zeilen zu beliebigen
-// Projekt-Ids anlegen könnte. Dieselbe Erlaubnis wie zum Lesen des Dashboards.
+// The project, on the other hand, comes in from outside and is therefore
+// checked. Not because the row contains anything worth protecting — it's an
+// arrangement of tiles — but because without a check, anyone logged in could
+// create rows for arbitrary project ids. Same permission as for reading the
+// dashboard.
 
 type Result = { ok: true } | { error: string };
 
 const NOT_ALLOWED = "You cannot change this dashboard.";
 
 /**
- * Schreibt in die eigene Zeile und legt sie an, falls es noch keine gibt.
+ * Writes to your own row and creates it if none exists yet.
  *
- * `upsert` statt `update`, weil die Zeile erst mit der ersten Änderung entsteht:
- * wer nie etwas verstellt, hat keine, und das ist der Normalfall.
+ * `upsert` instead of `update`, because the row only comes into existence
+ * with the first change: anyone who never customizes anything has none, and
+ * that's the normal case.
  */
 async function write(
   projectId: string,
@@ -50,21 +52,21 @@ async function write(
     update: data,
   });
 
-  // Wie überall in diesem Projekt: der Baum ab der Wurzel. Die Seite selbst
-  // gezielt zu benennen ginge, hieße aber, ihren Routen-Pfad samt Gruppe und
-  // Platzhaltern hier ein zweites Mal zu führen — und der bricht still, sobald
-  // die Route umzieht.
+  // As everywhere in this project: the whole tree from the root. Naming the
+  // page specifically would be possible, but would mean maintaining its
+  // route path, including group and placeholders, a second time here — and
+  // that breaks silently the moment the route moves.
   revalidatePath("/", "layout");
   return { ok: true };
 }
 
 /**
- * Die Anordnung sichern: was steht wo, und was ist abgewählt.
+ * Save the arrangement: what sits where, and what's deselected.
  *
- * Beides in einem Aufruf, weil es eine Handlung ist — der Dialog schließt mit
- * einem Stand, nicht mit zwei. Was hereinkommt, wird gegen die Registry
- * gefiltert: ein unbekannter Schlüssel ist kein Fehler, den man dem Aufrufer
- * meldet, sondern einer, den man nicht speichert.
+ * Both in one call, because it's a single action — the dialog closes with
+ * one resulting state, not two. What comes in is filtered against the
+ * registry: an unknown key isn't an error reported to the caller, it's one
+ * that simply isn't saved.
  */
 export async function saveDashboardLayout(
   projectId: string,
@@ -77,7 +79,7 @@ export async function saveDashboardLayout(
   });
 }
 
-/** Der Zeitraum, mit dem dieses Dashboard künftig aufgeht. */
+/** The period this dashboard will open with going forward. */
 export async function setDashboardRange(
   projectId: string,
   range: string,
@@ -89,12 +91,11 @@ export async function setDashboardRange(
 }
 
 /**
- * Die Ansicht, in der diese Projektseite künftig aufgeht.
+ * The view this project page will open in going forward.
  *
- * Wird bei jedem Umschalten mitgeschrieben, damit die Projektzeile in der
- * Seitenleiste dorthin zurückführt, wo man zuletzt war. Anders als bei der
- * Anordnung gibt es dafür kein „Speichern": es ist eine Beobachtung, keine
- * Einstellung.
+ * Written along on every toggle, so the project row in the sidebar leads
+ * back to wherever you last were. Unlike the layout, there's no "save" for
+ * this: it's an observation, not a setting.
  */
 export async function setDashboardView(
   projectId: string,
@@ -107,12 +108,12 @@ export async function setDashboardView(
 }
 
 /**
- * Der Umfang, mit dem dieses Dashboard künftig aufgeht — "all" oder "mine".
+ * The scope this dashboard will open with going forward — "all" or "mine".
  *
- * `"all"` verlangt `dashboard.view.all`: ohne die Berechtigung zeigt der
- * Umschalter gar nicht erst, aber ein direkter Aufruf dieser Aktion soll die
- * gespeicherte Zeile nicht auf einen Umfang setzen, den die Person beim Lesen
- * ohnehin nicht bekäme (`getProjectDashboard` erzwingt dort "mine").
+ * `"all"` requires `dashboard.view.all`: without the permission, the toggle
+ * doesn't even appear, but a direct call to this action shouldn't be able to
+ * set the saved row to a scope the person wouldn't get on read anyway
+ * (`getProjectDashboard` forces "mine" there).
  */
 export async function setDashboardScope(
   projectId: string,
@@ -131,12 +132,12 @@ export async function setDashboardScope(
 }
 
 /**
- * Zurück auf die Vorgabe — die Zeile verschwindet.
+ * Reset to the default — the row disappears.
  *
- * Löschen und nicht „alle Vorgabewerte hineinschreiben": eine Zeile, die genau
- * die Vorgabe enthält, friert sie ein. Wer später einen Baustein ergänzt, hätte
- * ihn bei allen, die je zurückgesetzt haben, an einer festgeschriebenen Stelle —
- * oder gar nicht.
+ * Deleting, not "write in every default value": a row that holds exactly the
+ * default would freeze it in place. Whoever adds a widget later would find
+ * it stuck at a fixed position for everyone who ever reset — or not appear
+ * for them at all.
  */
 export async function resetDashboardLayout(projectId: string): Promise<Result> {
   const session = await getSession();
@@ -150,11 +151,11 @@ export async function resetDashboardLayout(projectId: string): Promise<Result> {
   return { ok: true };
 }
 
-// ─── Dasselbe eine Ebene höher: das Dashboard eines Workspace ────────────────
+// ─── The same, one level up: a workspace's dashboard ──────────────────────────
 //
-// Derselbe Aufbau wie oben — `write`, drei Aktionen, dieselbe Prüfung des
-// Zutritts. Kein `setDashboardView`-Gegenstück: Dashboard und Übersicht sind
-// beim Workspace zwei eigene Routen, keine gespeicherte Ansicht.
+// Same structure as above — `write`, three actions, the same access check.
+// No `setDashboardView` counterpart: for a workspace, dashboard and overview
+// are two separate routes, not a stored view.
 
 async function writeWorkspace(
   workspaceId: string,
@@ -197,7 +198,7 @@ export async function setWorkspaceDashboardRange(
   return writeWorkspace(workspaceId, { range: range as RangeKey });
 }
 
-/** Der Umfang, mit dem dieses Workspace-Dashboard künftig aufgeht — das Gegenstück zu `setDashboardScope`. */
+/** The scope this workspace dashboard will open with going forward — the counterpart to `setDashboardScope`. */
 export async function setWorkspaceDashboardScope(
   workspaceId: string,
   scope: string,

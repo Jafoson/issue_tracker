@@ -7,7 +7,7 @@ export default async function LocaleRootPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  // Locale-Validierung übernimmt app/[locale]/layout.tsx (hasLocale → notFound).
+  // Locale validation is handled by app/[locale]/layout.tsx (hasLocale → notFound).
   const { locale } = await params;
 
   const session = await getSession();
@@ -19,9 +19,9 @@ export default async function LocaleRootPage({
   });
   if (!user) redirect(`/api/logout?to=/${locale}/login`);
 
-  // Frisch selbst angemeldet (Passkey/Magic Link/OAuth), noch kein Konto
-  // eingerichtet — eingeladene Konten haben das schon bei der Einladung
-  // erledigt bekommen (`onboardedAt` dort sofort gesetzt).
+  // Just signed up themselves (passkey/magic link/OAuth), no account set up
+  // yet — invited accounts already had this done at invitation time
+  // (`onboardedAt` is set immediately there).
   if (!user.onboardedAt) redirect(`/${locale}/onboarding`);
 
   const membership = await db.workspaceMember.findFirst({

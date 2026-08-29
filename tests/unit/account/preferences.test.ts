@@ -35,8 +35,8 @@ describe("updateAppearance()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  // Der Wert landet als `data-theme` am Dokument — was hier durchkäme, stünde
-  // später im HTML.
+  // The value ends up as `data-theme` on the document — whatever got through
+  // here would end up in the HTML.
   it("lässt nur bekannte Werte durch", async () => {
     expect(
       await updateAppearance({ theme: "neon" as unknown as "dark" }),
@@ -44,8 +44,8 @@ describe("updateAppearance()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  // Die Zeile entsteht erst mit der ersten Änderung; alles Ungenannte bleibt
-  // beim `@default` aus dem Schema.
+  // The row is only created on the first change; anything not specified stays
+  // at the `@default` from the schema.
   it("legt die Zeile an, wenn es noch keine gibt", async () => {
     expect(await updateAppearance({ theme: "system" })).toEqual({ ok: true });
     expect(mockUpsert).toHaveBeenCalledWith({
@@ -55,7 +55,7 @@ describe("updateAppearance()", () => {
     });
   });
 
-  // Nichts zu ändern ist kein Fehler — die Zeile bleibt, wie sie ist.
+  // Nothing to change is not an error — the row stays as it is.
   it("schreibt nichts, wenn kein Wert kommt", async () => {
     expect(await updateAppearance({})).toEqual({ ok: true });
     expect(mockUpsert.mock.calls[0][0].update).toEqual({});
@@ -73,8 +73,8 @@ describe("setNotification()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  // Der Schlüssel wird zum Spaltennamen — alles, was nicht in der Tabelle steht,
-  // bleibt draußen.
+  // The key becomes the column name — anything not in the table
+  // is left out.
   it("lässt nur bekannte Schalter durch", async () => {
     expect(
       await setNotification("passwordHash" as NotificationKey, true),

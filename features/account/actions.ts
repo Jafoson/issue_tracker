@@ -17,12 +17,12 @@ import {
 } from "@/lib/storage";
 import { isValidEmail } from "@/lib/utils/parse-emails";
 
-// Die eigenen Einstellungen kennen keine Rechteprüfung, nur eine Frage: wer ist
-// eingeloggt? Jede Aktion arbeitet ausschließlich auf diesem Konto — es gibt
-// nirgends einen Parameter, mit dem sich ein fremdes treffen ließe.
+// Your own settings don't involve a permission check, only one question: who is
+// logged in? Every action operates exclusively on that account — there is
+// nowhere a parameter that could target someone else's.
 //
-// Alle geben Fehler zurück statt zu werfen: sie hängen an Formularen, die den
-// Grund anzeigen sollen.
+// All of them return errors instead of throwing: they're wired to forms that
+// need to display the reason.
 
 type Result = { ok: true } | { error: string };
 
@@ -30,8 +30,8 @@ const NOT_LOGGED_IN = "You must be logged in.";
 
 const THEMES: Theme[] = ["dark", "light", "system"];
 
-/** Alle gültigen Spaltennamen der Benachrichtigungen — Schutz vor allem, was
- *  sonst noch als String hereinkäme. */
+/** All valid notification column names — a guard against anything else that
+ *  might otherwise come in as a string. */
 const NOTIFICATION_KEYS = new Set<string>(
   NOTIFICATION_EVENTS.flatMap((event) =>
     NOTIFICATION_CHANNELS.map((channel) => `${event}${channel}`),
@@ -39,12 +39,11 @@ const NOTIFICATION_KEYS = new Set<string>(
 );
 
 /**
- * Schreibt in die eigene Vorlieben-Zeile und legt sie an, falls es noch keine
- * gibt.
+ * Writes to your own preferences row, creating it if none exists yet.
  *
- * `upsert` statt `update`, weil die Zeile erst mit der ersten Änderung entsteht
- * (siehe `features/account/queries.ts`). Beim Anlegen zählen für alles
- * Ungenannte die `@default`s aus dem Schema.
+ * `upsert` instead of `update`, because the row only comes into existence with
+ * the first change (see `features/account/queries.ts`). On creation, anything
+ * not named here falls back to the `@default`s from the schema.
  */
 async function writePreferences(
   userId: string,
@@ -58,16 +57,16 @@ async function writePreferences(
 }
 
 /**
- * Name, Benutzername und Farbe.
+ * Name, username, and color.
  *
- * Der Benutzername steht in den Filter-Adressen (`?assignee=@handle`) und ist
- * workspaceübergreifend eindeutig — deshalb die Prüfung auf Form und Kollision,
- * bevor die Datenbank mit ihrem eigenen Fehler antwortet.
+ * The username appears in filter addresses (`?assignee=@handle`) and is unique
+ * across workspaces — hence the check on shape and collision before the
+ * database answers with its own error.
  *
- * Zum Schluss wird das Sitzungs-Token nachgezogen: Name und Farbe stehen darin
- * und werden aus ihm gezeichnet (Menü unten links, Avatare). Ohne diesen Schritt
- * bliebe die Anzeige bis zur nächsten Anmeldung beim alten Stand — der Vorgang
- * sähe aus, als hätte er nicht gewirkt.
+ * At the end, the session token gets synced: name and color live in it and are
+ * drawn from it (bottom-left menu, avatars). Without this step, the display
+ * would stay at the old state until the next login — the action would look
+ * like it hadn't taken effect.
  */
 export async function updateProfile(data: {
   firstName: string;
@@ -83,7 +82,7 @@ export async function updateProfile(data: {
   const handle = data.handle.trim().toLowerCase();
   const color = data.color.trim();
 
-  // Vorname ist Pflicht, Nachname optional (`features/onboarding`).
+  // First name is required, last name is optional (`features/onboarding`).
   if (!firstName) return { error: "First name is required." };
   if (!/^[a-z0-9][a-z0-9-]{1,29}$/.test(handle)) {
     return {
@@ -116,11 +115,11 @@ type UploadUrlResult =
   | { error: string };
 
 /**
- * Erster Schritt des Avatar-Uploads: stellt eine presigned PUT-URL aus, gegen
- * die der Client direkt (ohne Umweg über den Server) hochlädt. Kein
- * `unstable_update()` nötig — anders als Name/Farbe steht der Avatar nicht im
- * Sitzungs-Token (`UserMenu` liest ihn schon heute live aus der DB, wie auch
- * `handle`), `revalidatePath` unten genügt.
+ * First step of the avatar upload: issues a presigned PUT URL that the client
+ * uploads against directly (without a detour through the server). No
+ * `unstable_update()` needed — unlike name/color, the avatar isn't in the
+ * session token (`UserMenu` already reads it live from the DB today, same as
+ * `handle`), the `revalidatePath` below is enough.
  */
 export async function requestAvatarUploadUrl(input: {
   contentType: string;
@@ -136,8 +135,8 @@ export async function requestAvatarUploadUrl(input: {
   });
 }
 
-/** Zweiter Schritt: nach dem direkten PUT gegen S3 den Key in der DB
- *  hinterlegen und den vorherigen Avatar best-effort löschen. */
+/** Second step: after the direct PUT against S3, store the key in the DB
+ *  and best-effort delete the previous avatar. */
 export async function confirmAvatarUpload(key: string): Promise<Result> {
   const session = await getSession();
   if (!session) return { error: NOT_LOGGED_IN };
@@ -178,11 +177,11 @@ export async function removeAvatar(): Promise<Result> {
 }
 
 /**
- * Das Design.
+ * The theme.
  *
- * Hier wird festgehalten, was gelten soll; gerendert wird es vom Wurzel-Layout
- * als `data-theme` am `<html>`. `revalidatePath` unten sorgt dafür, dass das
- * Layout die neue Wahl auch wirklich neu rendert.
+ * This is where the choice gets recorded; it's rendered by the root layout as
+ * `data-theme` on `<html>`. The `revalidatePath` below makes sure the layout
+ * actually re-renders with the new choice.
  */
 export async function updateAppearance(data: {
   theme?: Theme;
@@ -203,13 +202,13 @@ export async function updateAppearance(data: {
 }
 
 /**
- * Der Hinweis im Plattform-Bereich: gelesen, oder wieder anzeigen.
+ * The notice in the platform area: dismissed, or show it again.
  *
- * Eine Vorliebe wie das Design, deshalb steht sie hier und nicht bei den
- * Plattform-Aktionen — sie gehört der Person, nicht der Plattform, und gilt auf
- * jedem Gerät. Sie in der Datenbank zu halten statt im Browser hat einen
- * zweiten Grund: die Seite wird auf dem Server gerendert, und was nur der
- * Browser weiß, käme dort zu spät.
+ * A preference like the theme, which is why it lives here and not with the
+ * platform actions — it belongs to the person, not the platform, and applies
+ * on every device. Keeping it in the database instead of the browser has a
+ * second reason: the page is rendered on the server, and anything only the
+ * browser knows would arrive too late there.
  */
 export async function setAdminNoticeHidden(hidden: boolean): Promise<Result> {
   const session = await getSession();
@@ -217,19 +216,19 @@ export async function setAdminNoticeHidden(hidden: boolean): Promise<Result> {
 
   await writePreferences(session.userId, { adminNoticeHidden: hidden });
 
-  // Nur der Plattform-Bereich zeigt ihn — der Rest der App muss dafür nicht neu
-  // gebaut werden.
+  // Only the platform area shows it — the rest of the app doesn't need to be
+  // rebuilt for this.
   revalidatePath("/admin");
   return { ok: true };
 }
 
 /**
- * Ein einzelner Schalter der Benachrichtigungen.
+ * A single notification toggle.
  *
- * Einzeln und nicht als ganzer Satz: die Schalter gelten sofort, und wer einen
- * umlegt, hat zu genau einem Punkt eine Meinung geäußert. Ein Rundumschlag über
- * alle zehn würde bei zwei offenen Reitern den jeweils anderen Stand
- * überschreiben.
+ * Individually and not as a whole batch: the toggles apply immediately, and
+ * flipping one expresses an opinion about exactly that one point. A blanket
+ * update across all ten would, with two open tabs, overwrite whatever state
+ * the other tab had.
  */
 export async function setNotification(
   key: NotificationKey,
@@ -244,17 +243,16 @@ export async function setNotification(
 }
 
 /**
- * Eine Adresse zu einem Konto ohne E-Mail nachtragen (Passkey-Erstkonten,
- * `auth.ts`s WebAuthn-`getUserInfo`).
+ * Add an address to an account that has no email yet (passkey-first accounts,
+ * `auth.ts`'s WebAuthn `getUserInfo`).
  *
- * Nur *hinzufügen*, nicht *ändern*: ein Konto mit schon gesetzter Adresse
- * lehnt ab — eine bestehende Anmeldeadresse zu ersetzen ist eine
- * sicherheitsrelevante Operation, die eine Bestätigung der neuen Adresse
- * verlangen würde, und es gibt in dieser App noch kein Token-System dafür
- * (`lib/mail`s `emailVerification.ts` ist "noch nicht verdrahtet"). Die
- * frisch eingetragene Adresse landet deshalb als `emailVerified: null` —
- * unbestätigt, aber nutzbar für Magic Link/Einladung/Benachrichtigung, genau
- * wie jede andere unbestätigte Adresse in dieser App auch.
+ * Only *adding*, not *changing*: an account with an address already set is
+ * rejected — replacing an existing sign-in address is a security-sensitive
+ * operation that would require confirming the new address, and this app
+ * doesn't have a token system for that yet (`lib/mail`'s `emailVerification.ts`
+ * is "not wired up yet"). The freshly added address therefore lands as
+ * `emailVerified: null` — unverified, but usable for magic link/invitation/
+ * notification, exactly like any other unverified address in this app.
  */
 export async function addEmail(email: string): Promise<Result> {
   const session = await getSession();
@@ -290,12 +288,11 @@ export async function addEmail(email: string): Promise<Result> {
 }
 
 /**
- * Einen fremden Anmeldeweg vom Konto lösen.
+ * Disconnect a third-party sign-in method from the account.
  *
- * Der letzte geht nicht: ohne verbundenes Konto und ohne Passkey käme niemand
- * mehr herein. Geprüft wird das hier und nicht in der Oberfläche — der Knopf
- * ist dort zwar ausgeblendet, aber eine Server Function ist eine Adresse wie
- * jede andere.
+ * The last one can't go: without a connected account and without a passkey,
+ * nobody could get in anymore. This is checked here and not in the UI — the
+ * button is hidden there, but a server function is an address like any other.
  */
 export async function disconnectAccount(provider: string): Promise<Result> {
   const session = await getSession();
@@ -327,11 +324,11 @@ export async function disconnectAccount(provider: string): Promise<Result> {
 }
 
 /**
- * Einen Passkey vom Konto entfernen.
+ * Remove a passkey from the account.
  *
- * Derselbe „letzter Weg hinein"-Schutz wie bei `disconnectAccount`: die
- * verbundenen Anbieter und die übrigen Passkeys zählen zusammen als Pool —
- * bleibt keiner übrig, wird nicht gelöscht.
+ * The same "last way in" protection as `disconnectAccount`: the connected
+ * providers and the remaining passkeys together count as one pool — if none
+ * would be left, nothing gets deleted.
  */
 export async function removePasskey(credentialID: string): Promise<Result> {
   const session = await getSession();

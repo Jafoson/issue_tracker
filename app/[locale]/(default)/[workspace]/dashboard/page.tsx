@@ -14,11 +14,10 @@ import { workspacePath, workspaceSettingsPath } from "@/lib/nav";
 export const dynamic = "force-dynamic";
 
 /**
- * Das Dashboard des Workspace — die Zahlen über alle seine Projekte hinweg.
- * Die Gegenansicht ist die Wurzel des Workspace (`/<workspaceId>`, kein
- * `/overview`); anders als beim Projekt sind es hier zwei eigene Routen mit
- * je einem eigenen Navlink in der Seitenleiste, siehe `WorkspaceDashboard`
- * für die Begründung.
+ * The workspace dashboard — the numbers across all of its projects. Its
+ * counterpart is the workspace root (`/<workspaceId>`, no `/overview`);
+ * unlike with a project, these are two separate routes here, each with its
+ * own nav link in the sidebar — see `WorkspaceDashboard` for the reasoning.
  */
 export default async function WorkspaceDashboardPage({
   params,

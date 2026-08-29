@@ -15,18 +15,18 @@ const db = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const WS = "nimbus";
 
-// Bootstrap: erster Plattform-Admin (SaaS-Betreiber-Ebene über allen Workspaces).
-// u1 (Mara) wird global zum Plattform-Admin ernannt. Hat keinen Durchgriff auf
-// Tenant-Inhalte, nur auf Plattform-Operationen.
+// Bootstrap: first platform admin (SaaS operator level, above all workspaces).
+// u1 (Mara) is globally appointed platform admin. Has no reach into
+// tenant content, only into platform operations.
 const PLATFORM_ADMIN_IDS = new Set(["u1"]);
 
-// Platform Support trägt `tenant.access` — der einzige Generalschlüssel, der
-// jede Sperre (gesperrter Workspace, privates Projekt, `blocked`) durchbricht.
-// Zum Testen bewusst getrennt von `platform_admin`, der genau das NICHT darf.
+// Platform Support carries `tenant.access` — the only master key that
+// overrides every lock (locked workspace, private project, `blocked`).
+// Deliberately kept separate from `platform_admin`, which explicitly may NOT do this, for testing purposes.
 const PLATFORM_SUPPORT_IDS = new Set(["u18"]);
 
-// u20 (deactivated1) testet die Sperre am Login selbst: `auth.ts` weist ein
-// stillgelegtes Konto zurück, noch bevor irgendeine Rolle geladen wird.
+// u20 (deactivated1) tests the lock at login itself: `auth.ts` rejects a
+// deactivated account before any role is even loaded.
 const DEACTIVATED_USER_IDS = new Set(["u20"]);
 
 // ─── Workspace Config ─────────────────────────────────────────────────────────
@@ -154,10 +154,10 @@ const LABELS = [
 
 // ─── Seed Data ───────────────────────────────────────────────────────────────
 
-// Handle/E-Mail tragen die zu testende Rolle im Namen (owner@, manager1@, …)
-// statt eines Fantasienamens — beim Durchklicken der Mitgliederliste ist so
-// auf einen Blick klar, wer welche Rechte mitbringt und mit wem eingeloggt
-// werden muss, um sie zu prüfen.
+// Handle/email carry the role being tested in their name (owner@, manager1@, …)
+// instead of a made-up name — this makes it immediately obvious, when clicking
+// through the member list, who carries which permissions and which account
+// needs to be logged into to verify them.
 const USERS = [
   {
     id: "u1",
@@ -215,9 +215,9 @@ const USERS = [
     email: "viewer1@nimbus.io",
     color: "#cf9a3b",
   },
-  // u8+: Deckt die restlichen Workspace-Rollen ab (manager, project_lead,
-  // guest fehlten oben ganz) und gibt jeder Rolle genug Köpfe, um Listen,
-  // Rechte-Matrix und Mitgliederverwaltung mit realistischer Menge zu prüfen.
+  // u8+: Covers the remaining workspace roles (manager, project_lead,
+  // guest were missing entirely above) and gives each role enough people to
+  // test lists, the permission matrix, and member management at a realistic scale.
   {
     id: "u8",
     firstName: "Noah",
@@ -298,9 +298,9 @@ const USERS = [
     email: "guest2@nimbus.io",
     color: "#4a6ed9",
   },
-  // u18+: Randfälle jenseits der reinen Workspace-Rollen-Matrix — Support-
-  // Durchgriff, ein Projekt-Gast ganz ohne Workspace-Mitgliedschaft, ein
-  // stillgelegtes Konto und eine noch offene Einladung.
+  // u18+: Edge cases beyond the pure workspace role matrix — support
+  // override access, a project guest with no workspace membership at all, a
+  // deactivated account, and a still-open invitation.
   {
     id: "u18",
     firstName: "Robin",
@@ -353,18 +353,18 @@ const WORKSPACE_MEMBERS = [
   { workspaceId: WS, userId: "u15", role: "viewer", pending: false },
   { workspaceId: WS, userId: "u16", role: "guest", pending: false },
   { workspaceId: WS, userId: "u17", role: "guest", pending: false },
-  // u18 (support) und u19 (projectguest1) bleiben absichtlich außen vor: der
-  // eine braucht keine Workspace-Mitgliedschaft (tenant.access durchbricht das
-  // ohnehin), der andere soll genau die Rolle "nur in einem Projekt, nirgends
-  // sonst" abbilden.
+  // u18 (support) and u19 (projectguest1) are deliberately left out: one
+  // doesn't need workspace membership (tenant.access overrides that
+  // anyway), the other is meant to represent exactly the role "only in one
+  // project, nowhere else".
   { workspaceId: WS, userId: "u20", role: "member", pending: false },
   { workspaceId: WS, userId: "u21", role: "member", pending: true },
 ];
 
-// `ownerId` ist die Zuständigkeit, nicht der Zugriff — Zugriff kommt aus
-// `ProjectMember`. Die Plattformverwaltung liest sie, um verwaiste Projekte zu
-// finden (`features/admin/queries.ts`); ohne sie sähe hier jedes Projekt aus wie
-// eines, um das sich niemand mehr kümmert.
+// `ownerId` is responsibility, not access — access comes from
+// `ProjectMember`. Platform administration reads it to find orphaned
+// projects (`features/admin/queries.ts`); without it, every project here
+// would look like one that nobody is taking care of anymore.
 const PROJECTS = [
   {
     id: "p1",
@@ -396,11 +396,11 @@ const PROJECTS = [
     color: "#d5733b",
     ownerId: "u1",
   },
-  // Einziges privates Projekt im Seed: NICHT automatisch für alle
-  // Workspace-Mitglieder eingetragen (siehe lib/project-membership.ts).
-  // Damit lässt sich direkt gegentesten, wer es sieht (Mitglieder + wer
-  // project.admin.all/project.view.all im Workspace trägt) und wer nicht
-  // (jedes Mitglied ohne eigene Zeile hier, z. B. member2).
+  // The only private project in the seed: NOT automatically enrolled for
+  // all workspace members (see lib/project-membership.ts).
+  // This makes it possible to directly test who can see it (members + whoever
+  // carries project.admin.all/project.view.all in the workspace) and who
+  // can't (every member without their own row here, e.g. member2).
   {
     id: "p4",
     workspaceId: WS,
@@ -907,18 +907,18 @@ const ISSUES = [
   },
 ];
 
-// ─── ID-Mapping ───────────────────────────────────────────────────────────────
+// ─── ID Mapping ───────────────────────────────────────────────────────────────
 //
-// Die obigen Datensätze referenzieren sich gegenseitig über kurze, lesbare
-// Handles ("u1", "p1", "l1", "i1", "c1", "t1"). Diese sind NUR seed-interne
-// Schlüssel — in die DB schreiben wir echte, nicht-erratbare IDs, die mit
-// derselben uid()-Funktion erzeugt werden wie in den Server Actions
-// (lib/utils/id.ts → Präfix + crypto.randomUUID()). Das verhindert, dass die
-// DB vorhersagbare/aufzählbare IDs enthält (IDOR-Schutz).
+// The records above reference each other via short, readable handles
+// ("u1", "p1", "l1", "i1", "c1", "t1"). These are seed-internal keys ONLY —
+// we write real, non-guessable IDs to the DB, generated with the same
+// uid() function used in the server actions
+// (lib/utils/id.ts → prefix + crypto.randomUUID()). This prevents the
+// DB from containing predictable/enumerable IDs (IDOR protection).
 //
-// Semantische IDs bleiben bewusst stabil, weil sie im Code als Werte genutzt
-// werden: Status.id ("backlog"…), IssueType.id ("feature"…), Priority.id (0…4),
-// der Workspace-Slug und die Role-Keys.
+// Semantic IDs deliberately stay stable because they're used as values in
+// the code: Status.id ("backlog"…), IssueType.id ("feature"…), Priority.id (0…4),
+// the workspace slug, and the role keys.
 
 const realUserId = new Map(USERS.map((u) => [u.id, uid("u")]));
 const realProjectId = new Map(PROJECTS.map((p) => [p.id, uid("p")]));
@@ -929,7 +929,7 @@ const realCommentId = new Map(
   ISSUES.flatMap((i) => i.comments.map((c) => [c.id, uid("c")] as const)),
 );
 
-// Lookups, die hart fehlschlagen statt eine kaputte Referenz zu schreiben.
+// Lookups that fail hard instead of writing a broken reference.
 const ref = <K>(map: Map<K, string>, key: K, what: string): string => {
   const id = map.get(key);
   if (!id) throw new Error(`Seed: ${what} "${String(key)}" nicht gemappt`);
@@ -941,11 +941,11 @@ const ref = <K>(map: Map<K, string>, key: K, what: string): string => {
 async function main() {
   console.log("🌱  Seeding database…");
 
-  // Sauber aufräumen: Mit zufälligen IDs ist Upsert-nach-id nicht mehr
-  // idempotent, ein erneuter Lauf würde sonst Duplikate erzeugen. In
-  // FK-sicherer Reihenfolge löschen (Kinder vor Eltern).
-  // Das Protokoll hat keine Fremdschlüssel (siehe `prisma/schema.prisma`) und
-  // fiele beim Aufräumen sonst durch jedes Raster.
+  // Clean sweep: with random IDs, upsert-by-id is no longer
+  // idempotent — a repeat run would otherwise create duplicates. Delete in
+  // FK-safe order (children before parents).
+  // The audit log has no foreign keys (see `prisma/schema.prisma`) and
+  // would otherwise slip through every net during cleanup.
   await db.auditLog.deleteMany();
   await db.comment.deleteMany();
   await db.issue.deleteMany();
@@ -954,9 +954,9 @@ async function main() {
   await db.projectMember.deleteMany();
   await db.team.deleteMany();
   await db.label.deleteMany();
-  // Mitgliedschaften vor den Rollen: `WorkspaceMember.roleId` steht auf
-  // `Restrict` (eine Rolle, die noch jemand trägt, lässt sich nicht löschen).
-  // Andersherum bricht der Lauf ab, sobald die Datenbank nicht leer ist.
+  // Memberships before roles: `WorkspaceMember.roleId` is set to
+  // `Restrict` (a role that someone still holds cannot be deleted).
+  // The other way around, the run fails as soon as the database isn't empty.
   await db.workspaceMember.deleteMany();
   await db.rolePermission.deleteMany();
   await db.role.deleteMany();
@@ -1011,8 +1011,8 @@ async function main() {
   }
   console.log(`   ✓ ${ISSUE_TYPES.length} issue types`);
 
-  // Die System-Rollen liegen genau einmal in der Datenbank und werden von
-  // allen Mandanten geteilt — nichts wird pro Workspace kopiert.
+  // System roles exist exactly once in the database and are shared by
+  // all tenants — nothing is copied per workspace.
   await provisionSystemRbac(db);
   console.log("   ✓ RBAC permissions & shared system roles");
 
@@ -1049,12 +1049,12 @@ async function main() {
     },
     data: { deactivatedAt: new Date() },
   });
-  // Kein Passwort mehr. Ein Passkey lässt sich für eine schon existierende
-  // Adresse nur mit aktiver Sitzung registrieren (next-auth verweigert das
-  // sonst, `AccountNotLinked`) — für diese Seed-Konten bleibt also nur der
-  // Magic-Link-Weg, und der braucht lokal konfiguriertes SMTP (Mailpit o. ä.,
-  // siehe example.env). Ohne SMTP kommt aktuell niemand in ein Seed-Konto
-  // hinein — bewusst in Kauf genommen, es sind Testdaten.
+  // No more password. A passkey can only be registered for an already
+  // existing address with an active session (next-auth refuses otherwise,
+  // `AccountNotLinked`) — so for these seed accounts, only the
+  // magic-link path remains, and that requires locally configured SMTP (Mailpit
+  // or similar, see example.env). Without SMTP, nobody can currently get
+  // into a seed account — accepted deliberately, since it's test data.
   console.log(
     `   ✓ ${USERS.length} users (Login nur per Magic Link — SMTP nötig, siehe example.env)`,
   );
@@ -1096,22 +1096,22 @@ async function main() {
       },
     });
     if (visibility === "public") {
-      // Wer im Workspace ist, ist in dessen öffentlichen Projekten — ohne
-      // eigene Projektrolle, die Rechte kommen aus dem Workspace.
+      // Whoever is in the workspace is in its public projects — without
+      // their own project role; permissions come from the workspace.
       await enrollWorkspaceMembers(db, { id, workspaceId: p.workspaceId });
     }
-    // Private Projekte (aktuell nur "Vault") bekommen ihre Mitglieder weiter
-    // unten ausdrücklich einzeln — genau das ist der Punkt an privat.
+    // Private projects (currently only "Vault") get their members added
+    // explicitly, one by one, further below — that's exactly the point of being private.
   }
   console.log(`   ✓ ${PROJECTS.length} projects`);
 
-  // ── Vault (p4, privat): nur wer ausdrücklich eingeladen ist ────────────────
+  // ── Vault (p4, private): only whoever is explicitly invited ────────────────
   const vaultId = ref(realProjectId, "p4", "vault project");
   const vaultMembers: Array<{ userId: string; roleKey: string }> = [
-    { userId: "u1", roleKey: "project_admin" }, // owner, zugleich Ersteller
-    { userId: "u5", roleKey: "project_admin" }, // admin, ausdrücklich hinzugefügt
-    { userId: "u2", roleKey: "contributor" }, // member1, arbeitet mit
-    { userId: "u19", roleKey: "project_guest" }, // projectguest1: NUR hier Mitglied
+    { userId: "u1", roleKey: "project_admin" }, // owner, also the creator
+    { userId: "u5", roleKey: "project_admin" }, // admin, explicitly added
+    { userId: "u2", roleKey: "contributor" }, // member1, working on it
+    { userId: "u19", roleKey: "project_guest" }, // projectguest1: member ONLY here
   ];
   for (const vm of vaultMembers) {
     await db.projectMember.upsert({
@@ -1133,14 +1133,14 @@ async function main() {
     `   ✓ vault: ${vaultMembers.length} ausdrücklich eingeladene Mitglieder`,
   );
 
-  // ── Verschiedene Manager für verschiedene Projekte ─────────────────────────
+  // ── Different managers for different projects ─────────────────────────────
   //
-  // `manager` trägt weder project.admin.all noch project.view.all (siehe
-  // lib/rbac/roles.ts) — anders als Owner/Admin/Project Lead hängt der Zugriff
-  // hier also wirklich an der einzelnen ProjectMember-Zeile.
-  // enrollWorkspaceMembers hat beide oben in alle drei öffentlichen Projekte
-  // als project_admin eingetragen; hier wird das auf je ein Projekt verengt,
-  // damit sich testen lässt, ob ein Manager wirklich nur "sein" Projekt sieht.
+  // `manager` carries neither project.admin.all nor project.view.all (see
+  // lib/rbac/roles.ts) — unlike Owner/Admin/Project Lead, access here really
+  // does hinge on the individual ProjectMember row.
+  // enrollWorkspaceMembers entered both of them above into all three public
+  // projects as project_admin; here that gets narrowed down to one project each,
+  // so it can be tested whether a manager really only sees "their" project.
   const web = ref(realProjectId, "p1", "web app project");
   const mobile = ref(realProjectId, "p2", "mobile project");
   const platform = ref(realProjectId, "p3", "platform project");
@@ -1160,13 +1160,13 @@ async function main() {
   });
   console.log("   ✓ manager1 → nur Web App, manager2 → nur Mobile");
 
-  // ── Blocked: mit und ohne Wirkung ──────────────────────────────────────────
+  // ── Blocked: with and without effect ────────────────────────────────────────
   //
-  // member3 hat sonst nirgends einen Generalschlüssel — für sie sperrt
-  // "blocked" das Projekt wirklich. project_lead2 dagegen trägt
-  // project.admin.all im Workspace; die Prüfung in lib/permissions.ts greift
-  // dort, bevor die Projektrolle überhaupt geladen wird, "blocked" bleibt also
-  // wirkungslos. Beides lässt sich am selben Datensatz nebeneinander zeigen.
+  // member3 has no master key anywhere else — for her, "blocked" really does
+  // lock the project. project_lead2, on the other hand, carries
+  // project.admin.all in the workspace; the check in lib/permissions.ts kicks
+  // in there before the project role is even loaded, so "blocked" ends up
+  // having no effect. Both can be shown side by side on the same dataset.
   const blockedRoleId = systemRoleId("PROJECT", "blocked");
   await db.projectMember.update({
     where: {
@@ -1257,8 +1257,8 @@ async function main() {
         title: issue.title,
         status: issue.status,
         priority: issue.priority,
-        // Der Seed bleibt in Markdown geschrieben — das liest sich beim Pflegen
-        // deutlich besser als ProseMirror-JSON. Umgewandelt wird beim Einspielen.
+        // The seed stays written in Markdown — that's much easier to
+        // maintain than ProseMirror JSON. It gets converted at seeding time.
         description: fromMarkdown(
           issue.desc,
         ) as unknown as Prisma.InputJsonValue,
@@ -1267,9 +1267,10 @@ async function main() {
         labels: issue.labels.map((l) => ref(realLabelId, l, "issue label")),
         created: issue.created,
         updated: issue.updated,
-        // Dieselbe Näherung wie im Backfill der Migration: für alles, was hier
-        // schon erledigt ist, ist der letzte Stand der Abschluss. Ohne die
-        // Spalte stünde das Projekt-Dashboard nach `db:reset` ohne Durchsatz da.
+        // Same approximation as in the migration's backfill: for everything
+        // that's already done here, the last update counts as the
+        // completion. Without the column, the project dashboard would show no
+        // throughput after `db:reset`.
         closedAt: isClosedStatus(issue.status) ? issue.updated : null,
         assigneeId: issue.assignee
           ? ref(realUserId, issue.assignee, "assignee")

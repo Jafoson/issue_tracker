@@ -28,7 +28,7 @@
   outline: none;
 }
 
-/* ── Ausprägung: gerahmtes Feld (Regelfall) ── */
+/* ── Appearance: bordered field (default) ── */
 .boxed {
   height: var(--control-h);
   background: var(--surface-container-lowest);
@@ -39,9 +39,9 @@
 
   &::placeholder { color: var(--on-surface-variant); }
 
-  /* `color-mix` statt eines Tokens: `--accent-soft` stand hier, ist aber
-     nirgends definiert — die Zeile wurde verworfen und der Ring blieb aus.
-     Der Fehlerzustand darunter macht es seit jeher so. */
+  /* `color-mix` instead of a token: `--accent-soft` used to be here, but is
+     defined nowhere — the line was dropped and the ring was lost. The error
+     state below has always done it this way. */
   &:focus {
     border-color: var(--tertiary);
   }
@@ -67,19 +67,19 @@
   &::-ms-clear { display: none; }
 }
 
-/* ── Ausprägung: Titelfeld eines Anlege-Dialogs ── */
+/* ── Appearance: title field of a creation dialog ── */
 .title {
-  /* Durchsichtig statt gar keiner: der Fokusrahmen unten braucht etwas zum
-     Einfärben, und ohne Rahmen sprünge das Feld beim Fokussieren um zwei
-     Pixel. */
+  /* Transparent instead of none at all: the focus border below needs
+     something to tint, and without a border the field would jump by two
+     pixels when focused. */
   border: 1px solid transparent;
   background: none;
-  /* Wie die Überschrift des Datensatzes, der gerade entsteht. */
+  /* Like the heading of the record currently being created. */
   font-size: var(--text-xl);
   font-weight: 600;
   line-height: var(--leading-tight);
-  /* Dasselbe Polster wie die Beschreibung darunter — sonst stünden die beiden
-     im Dialog um acht Pixel versetzt. */
+  /* Same padding as the description below — otherwise the two would sit
+     offset by eight pixels within the dialog. */
   padding: 5px 8px;
   transition: background .12s, border-color .12s, box-shadow .12s;
 
@@ -88,16 +88,16 @@
     font-weight: 400;
   }
 
-  /* Beim Überfahren dieselbe Zustandsfläche wie bei Titel und Beschreibung der
-     Detailansicht. Dort entsteht sie als Ebene im `::before`; ein `<input>`
-     trägt aber keine Pseudo-Elemente, deshalb hier direkt als Farbe —
-     `color-mix` ergibt denselben Ton wie eine Ebene mit acht Prozent. */
+  /* Same hover surface as the title and description in the detail view.
+     There it's created as a layer in `::before`; but an `<input>` can't
+     carry pseudo-elements, so it's a direct color here instead — `color-mix`
+     produces the same tone as a layer at eight percent. */
   &:hover {
     background: color-mix(in oklab, var(--on-surface) 8%, transparent);
   }
 
-  /* Beim Fokus derselbe Ring wie bei jedem anderen `Input` — dort ist er die
-     vertraute Rückmeldung, und ein eigener wäre hier nur verwirrend. */
+  /* Same ring on focus as every other `Input` — there it's the familiar
+     feedback, and a custom one here would only be confusing. */
   &:focus {
     background: var(--surface-container-low);
     border-color: var(--tertiary);
@@ -119,12 +119,12 @@
   .iconRight button { width: 22px; height: 22px; }
 }
 
-/* ── Ausprägung: gerahmtes Feld mit festem Vorsatz ──
+/* ── Appearance: bordered field with a fixed prefix ──
 
-   Derselbe Kasten wie `.boxed`, nur eine Ebene höher: der Rahmen sitzt auf der
-   Hülle, damit Vorsatz und Eingabe darin nebeneinander stehen. Der Zustand
-   kommt entsprechend von innen — `:focus-within` statt `:focus`, und der Fehler
-   über das `<input>`, das ihn trägt. */
+   The same box as `.boxed`, just one level higher: the border sits on the
+   wrapper so prefix and input line up side by side inside it. The state
+   accordingly comes from within — `:focus-within` instead of `:focus`, and
+   the error via the `<input>` that carries it. */
 .framed {
   height: var(--control-h);
   background: var(--surface-container-lowest);
@@ -133,9 +133,10 @@
   cursor: text;
   transition: border-color 0.12s, box-shadow 0.12s;
 
-  /* Das Polster liegt bewusst *in* den Kindern (`.prefix` links, `.bare`
-     rechts) statt am Rahmen: beide führen bei einem Klick in die Eingabe, der
-     Rahmen selbst täte nichts. Am Rahmen wäre der Rand des Feldes tot. */
+  /* The padding deliberately lives *inside* the children (`.prefix` on the
+     left, `.bare` on the right) rather than on the border: both direct a
+     click into the input, whereas the border itself would do nothing. On
+     the border, the edge of the field would be dead space. */
 
   &:focus-within { border-color: var(--tertiary); }
 
@@ -144,13 +145,13 @@
     &:focus-within { box-shadow: 0 0 0 3px color-mix(in oklab, var(--error) 18%, transparent); }
   }
 
-  /* Die Marke rechts liegt über dem Feld — dann endet die Eingabe davor. */
+  /* The marker on the right overlays the field — the input ends before it. */
   &:has(> .iconRight) .input.bare { padding-right: 34px; }
 }
 
-/* Der Vorsatz gehört zum Wert, ist aber nichts, was man ändern könnte:
-   zurückgenommen in der Farbe, nicht markierbar — und ohne eigenen Abstand,
-   damit `@` und Name als ein Wort gelesen werden. */
+/* The prefix belongs to the value but isn't something you could edit:
+   muted in color, not selectable — and without its own spacing, so `@` and
+   the name read as one word. */
 .prefix {
   flex: none;
   padding-left: 11px;
@@ -160,9 +161,9 @@
   user-select: none;
 }
 
-/* Das Feld im Rahmen: alles, was den Kasten ausmacht, liegt eine Ebene höher.
-   Steht nach `.sm`, weil `.sm .input` dieselbe Spezifität hat — bei Gleichstand
-   entscheidet die Reihenfolge. */
+/* The field inside the border: everything that makes up the box lives one
+   level higher. Placed after `.sm` because `.sm .input` has the same
+   specificity — when tied, source order decides. */
 .input.bare {
   flex: 1;
   min-width: 0;

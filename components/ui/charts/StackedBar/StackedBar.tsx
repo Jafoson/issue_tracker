@@ -11,30 +11,30 @@ export interface StackSegment {
 
 interface Props {
   segments: StackSegment[];
-  /** Name der Verteilung für Screenreader und für die Tabellenansicht. */
+  /** Name of the distribution for screen readers and for the table view. */
   label: string;
-  /** Überschrift der Wertespalte in der Tabellenansicht. */
+  /** Heading of the value column in the table view. */
   valueLabel: string;
   asTable?: boolean;
 }
 
 /**
- * Ein Balken, in dem alle Teile zusammen das Ganze ergeben — für eine
- * Verteilung über wenige benannte Abschnitte.
+ * A bar where all the parts together make up the whole — for a distribution
+ * across a few named segments.
  *
- * **Ein Balken statt eines Kreises.** Beide beantworten dieselbe Frage, aber der
- * Balken beantwortet sie besser: Längen lassen sich vergleichen, Winkel nicht.
- * Und er ist waagerecht schmal, wo ein Kreis quadratisch Platz braucht — auf
- * einem Dashboard, das mehrere Karten nebeneinander stellt, entscheidet das.
+ * **A bar instead of a pie.** Both answer the same question, but the bar
+ * answers it better: lengths can be compared, angles can't. And it's
+ * horizontally narrow where a pie needs square space — on a dashboard that
+ * places several cards side by side, that matters.
  *
- * Unter dem Balken steht die Legende **mit den Zahlen**, nicht nur mit den
- * Namen. Ein Abschnitt kann so schmal werden, dass man ihn nicht mehr trifft;
- * die Zahl daneben ist dann der einzige Weg an den Wert, und sie ist es für
- * jeden, der mit der Tastatur oder einem Screenreader liest.
+ * Below the bar sits the legend **with the numbers**, not just the names. A
+ * segment can become so narrow that it's no longer clickable; the number
+ * next to it is then the only way to get at the value, and it's the only
+ * way for anyone reading with a keyboard or a screen reader.
  *
- * Abschnitte mit dem Wert null bekommen kein Stück Balken — wohl aber eine
- * Zeile in der Legende. Dass ein Status leer ist, ist eine Auskunft, und sie
- * verschwände sonst.
+ * Segments with a value of zero don't get a piece of bar — but they do get
+ * a row in the legend. That a status is empty is information, and it would
+ * otherwise disappear.
  */
 export function StackedBar({
   segments,
@@ -68,9 +68,9 @@ export function StackedBar({
 
   return (
     <div className={styles.wrap}>
-      {/* Der Balken selbst sagt nichts, was die Legende darunter nicht sagt —
-          deshalb ist er für Screenreader nicht vorhanden. Zweimal dieselbe
-          Verteilung vorzulesen hilft niemandem. */}
+      {/* The bar itself says nothing the legend below doesn't already say —
+          that's why it's hidden from screen readers. Reading out the same
+          distribution twice helps nobody. */}
       <div className={styles.bar} aria-hidden="true">
         {total === 0 ? (
           <span className={styles.empty} />
@@ -82,9 +82,9 @@ export function StackedBar({
                 key={segment.id}
                 className={styles.segment}
                 style={{
-                  // `flex-grow` statt Prozentbreiten: die 2px-Lücken zwischen
-                  // den Stücken gingen sonst von 100 % ab, und der Balken
-                  // liefe rechts über seine Spur hinaus.
+                  // `flex-grow` instead of percentage widths: the 2px gaps
+                  // between segments would otherwise eat into the 100%, and
+                  // the bar would overflow its track on the right.
                   flexGrow: segment.value,
                   background: segment.color,
                 }}

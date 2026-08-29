@@ -7,39 +7,39 @@ import styles from "./editableText.module.scss";
 
 interface EditableTextProps {
   value: string;
-  /** Läuft beim Verlassen des Feldes — und nur, wenn sich etwas geändert hat. */
+  /** Runs when the field is left — and only if something changed. */
   onCommit: (value: string) => void;
-  /** Barrierefreier Name: das Feld sieht aus wie Text, hat also kein Label. */
+  /** Accessible name: the field looks like text, so it has no visible label. */
   label: string;
   placeholder?: string;
   /**
-   * Einzeiler: Enter schickt ab statt umzubrechen, und ein leerer Wert wird
-   * verworfen — für Felder, die nicht leer sein dürfen (z.B. ein Titel).
+   * Single line: Enter submits instead of wrapping, and an empty value is
+   * discarded — for fields that must not be empty (e.g. a title).
    */
   singleLine?: boolean;
   /**
-   * Beim Einblenden gleich schreibbereit. Für Felder, die erst auf Zuruf
-   * erscheinen (Bearbeiten-Knopf) — wer eines aufklappt, will nicht erst
-   * hineinklicken.
+   * Ready to type as soon as it appears. For fields that only show up on
+   * demand (an edit button) — whoever expands one doesn't want to have to
+   * click into it first.
    */
   autoFocus?: boolean;
-  /** Beschriftungen der beiden Knöpfe — bitte lokalisiert übergeben. */
+  /** Labels for the two buttons — please pass these localized. */
   saveLabel?: string;
   cancelLabel?: string;
-  /** Typografie des umgebenden Texts — Feld und Zwilling erben sie. */
+  /** Typography of the surrounding text — the field and its twin inherit it. */
   className?: string;
-  /** Nur lesen: kein Fokus, keine Knöpfe, `onCommit` wird nie aufgerufen. */
+  /** Read-only: no focus, no buttons, `onCommit` is never called. */
   readOnly?: boolean;
 }
 
 /**
- * Text, der aussieht wie Text und sich anfassen lässt wie ein Feld: kein
- * Bearbeiten-Modus, kein Speichern-Zwang. Übernommen wird beim Verlassen des
- * Feldes, mit Enter (bzw. ⌘/Strg + Enter mehrzeilig) oder über den Haken;
- * verworfen mit Escape oder dem Kreuz.
+ * Text that looks like text and behaves like a field to the touch: no edit
+ * mode, no forced save. Committed when the field is left, with Enter (or
+ * Cmd/Ctrl+Enter when multi-line), or via the checkmark; discarded with
+ * Escape or the cross.
  *
- * Die Höhe wächst über einen unsichtbaren Zwilling im selben Grid mit — reine
- * CSS-Lösung, damit niemand Zeilenhöhen in JavaScript nachrechnen muss.
+ * Height grows via an invisible twin in the same grid — a pure CSS solution
+ * so nobody has to recompute line heights in JavaScript.
  */
 export function EditableText({
   value,
@@ -57,15 +57,16 @@ export function EditableText({
   const [draft, setDraft] = useState(value);
   const [source, setSource] = useState(value);
   const [isEditing, setIsEditing] = useState(false);
-  // Verwerfen läuft immer über `blur()`, und das feuert synchron — ohne die
-  // Notiz würde der Weg im Blur-Handler als Übernehmen enden.
+  // Discarding always goes through `blur()`, and that fires synchronously —
+  // without this flag, the path through the blur handler would end up being
+  // treated as a commit.
   const isCanceling = useRef(false);
 
-  // Ein neuer Wert von außen gewinnt (gespeichert oder von jemand anderem
-  // geändert). Angleich beim Rendern statt per Effekt: React verwirft den
-  // angefangenen Durchlauf und rendert direkt mit dem neuen Stand weiter.
-  // Während getippt wird bleibt er außen vor — sonst überschreibt eine gerade
-  // eintreffende Antwort die nächsten Tastenanschläge.
+  // A new value from outside wins (saved, or changed by someone else).
+  // Reconciled during render rather than via an effect: React discards the
+  // in-progress render and continues directly with the new state. It's
+  // ignored while typing — otherwise a response arriving mid-edit would
+  // overwrite the next keystrokes.
   if (!isEditing && source !== value) {
     setSource(value);
     setDraft(value);
@@ -77,9 +78,9 @@ export function EditableText({
   };
 
   /**
-   * Der Fokus lässt sich nur am Element selbst setzen — dafür gibt es keinen
-   * Weg im Rendern. Der Cursor landet am Ende statt alles zu markieren:
-   * ergänzen ist der häufigere Fall als ersetzen.
+   * Focus can only be set on the element itself — there's no way to do this
+   * through rendering. The cursor lands at the end instead of selecting
+   * everything: appending is the more common case than replacing.
    */
   useEffect(() => {
     if (!autoFocus) return;
@@ -90,9 +91,9 @@ export function EditableText({
   }, [autoFocus]);
 
   /**
-   * Escape darf hier nicht bis zum Modal durchschlagen, sonst schließt sich
-   * beim Verwerfen gleich das ganze Panel. Am `window` mit Capture, damit es
-   * vor dem Handler des ModalContext (auf `document`) liegt.
+   * Escape must not bubble up to the modal here, or discarding would close
+   * the whole panel along with it. Attached to `window` with capture so it
+   * runs before the ModalContext handler (on `document`).
    */
   useEffect(() => {
     if (!isEditing) return;
@@ -123,16 +124,16 @@ export function EditableText({
   };
 
   /**
-   * Beide Knöpfe arbeiten über denselben Weg wie Tastatur und Klick daneben:
-   * `blur()` löst das Übernehmen aus. Das unterdrückte Mousedown hält den Fokus
-   * so lange im Feld, bis der Klick durch ist — sonst wären die Knöpfe schon
-   * weg, bevor sie etwas auslösen könnten.
+   * Both buttons work via the same path as the keyboard and clicking
+   * elsewhere: `blur()` triggers the commit. The suppressed mousedown keeps
+   * focus in the field until the click completes — otherwise the buttons
+   * would already be gone before they could trigger anything.
    */
   const keepFocus = (e: React.MouseEvent) => e.preventDefault();
 
-  // Nur Anzeige: keine Textarea, kein Fokus, kein Cursor beim Klicken — ein
-  // `readonly`-Attribut allein ließe das Feld weiterhin fokussierbar und
-  // markierbar aussehen, als könnte man doch hinein.
+  // Display only: no textarea, no focus, no cursor on click — a `readonly`
+  // attribute alone would still leave the field looking focusable and
+  // selectable, as if it could still be entered.
   if (readOnly) {
     return (
       <div className={[styles.wrap, className].filter(Boolean).join(" ")}>

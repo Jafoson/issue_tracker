@@ -6,10 +6,10 @@ mock.module("@/lib/db", () => ({
     project: { update: mock() },
     user: { findUnique: mock() },
     auditLog: { create: mock(async () => ({})) },
-    // Nicht Gegenstand dieser Datei — `moveIssue`/`updateIssue` schlagen dafür
-    // Namen nach, wenn sich Status/Priorität/Typ/Labels ändern (grobes
-    // Protokoll, `recordIssueAudit` & Co.). `null` ist ein gültiges Ergebnis
-    // (unbekannte Id), die Zeile fällt dann auf die rohe Id zurück.
+    // Not the subject of this file — `moveIssue`/`updateIssue` look up names
+    // for these when status/priority/type/labels change (audit trail,
+    // `recordIssueAudit` & co.). `null` is a valid result (unknown id), in
+    // which case the row falls back to the raw id.
     status: { findUnique: mock(async () => null) },
     priority: { findUnique: mock(async () => null) },
     issueType: { findUnique: mock(async () => null) },
@@ -32,12 +32,12 @@ import { db } from "@/lib/db";
 const mockFindUnique = db.issue.findUnique as ReturnType<typeof mock>;
 const mockUpdate = db.issue.update as ReturnType<typeof mock>;
 
-/** Was an `db.issue.update` gereicht wurde. */
+/** What was passed to `db.issue.update`. */
 function written() {
   return mockUpdate.mock.calls[0]?.[0]?.data as Record<string, unknown>;
 }
 
-/** Der Stand einer Aufgabe, wie `issueContext` ihn liest. */
+/** The state of an issue, as `issueContext` reads it. */
 function issue(status: string, closedAt: Date | null) {
   return {
     projectId: "p1",
@@ -56,11 +56,10 @@ function issue(status: string, closedAt: Date | null) {
 
 const EARLIER = new Date("2026-01-05T10:00:00Z");
 
-// `Issue.closedAt` ist die Grundlage von Durchsatz und Durchlaufzeit im
-// Projekt-Dashboard. Anders als `updated` darf die Spalte sich nicht bei jeder
-// späteren Änderung mitverschieben — und genau das ist die Sorte Fehler, die
-// niemandem auffällt: das Diagramm zeigt weiter Säulen, nur an den falschen
-// Tagen.
+// `Issue.closedAt` is the basis for throughput and cycle time in the
+// project dashboard. Unlike `updated`, this column must not drift along
+// with every later change — and that's exactly the kind of bug nobody
+// notices: the chart keeps showing bars, just on the wrong days.
 
 describe("Abschließen", () => {
   beforeEach(() => {
@@ -84,8 +83,8 @@ describe("Abschließen", () => {
   });
 
   it("nimmt das Datum wieder weg, wenn die Aufgabe erneut aufgemacht wird", async () => {
-    // Ohne diesen Fall zählte das Dashboard sie für immer zum Durchsatz jenes
-    // Tages, an dem sie einmal fertig war.
+    // Without this case, the dashboard would count it toward the throughput
+    // of the day it was once finished, forever.
     mockFindUnique.mockResolvedValue(issue("done", EARLIER));
     await moveIssue("i1", "in_progress");
 
@@ -93,7 +92,7 @@ describe("Abschließen", () => {
   });
 
   it("lässt das ursprüngliche Datum stehen, wenn Erledigt zu Verworfen wird", async () => {
-    // Geschlossen wurde damals, umbenannt wurde nur, wie.
+    // It was closed back then; only how it's labeled has changed.
     mockFindUnique.mockResolvedValue(issue("done", EARLIER));
     await moveIssue("i1", "canceled");
 

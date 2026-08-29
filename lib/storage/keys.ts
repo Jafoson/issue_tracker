@@ -1,12 +1,12 @@
-// Pur, ohne `server-only` — Schlüsselschema ist reine Stringlogik.
+// Pure, no `server-only` — the key scheme is plain string logic.
 
 export type AvatarKind = "user" | "workspace" | "project";
 
 /**
- * Zufälliger Suffix pro Upload statt eines festen Namens: "Ersetzen" heißt
- * dadurch immer "neuer Key hochladen, alten danach best-effort löschen",
- * nie ein In-Place-Überschreiben — das vermeidet Cache-Altlasten bei
- * signierten URLs, die den alten Inhalt noch eine Weile ausliefern könnten.
+ * A random suffix per upload instead of a fixed name: "replace" therefore
+ * always means "upload a new key, then delete the old one best-effort",
+ * never an in-place overwrite — this avoids stale caches on signed URLs
+ * that might keep serving the old content for a while.
  */
 export function avatarObjectKey(
   kind: AvatarKind,
@@ -25,10 +25,11 @@ export function isOwnAvatarKey(
 }
 
 /**
- * Endung aus dem Originalnamen ableiten — anders als bei Avataren gibt es für
- * Anhänge keine MIME-Allowlist (jeder Dateityp ist erlaubt), also auch keine
- * MIME→Endung-Tabelle. Nur druckbare, unverfängliche Zeichen; ohne brauchbare
- * Endung ein neutraler Fallback statt eines leeren Suffix.
+ * Derives the extension from the original file name — unlike avatars,
+ * attachments have no MIME allowlist (every file type is permitted), so
+ * also no MIME→extension table. Only printable, harmless characters; a
+ * neutral fallback instead of an empty suffix when there's no usable
+ * extension.
  */
 export function sanitizeAttachmentExt(fileName: string): string {
   const dot = fileName.lastIndexOf(".");
@@ -41,9 +42,9 @@ export function sanitizeAttachmentExt(fileName: string): string {
 }
 
 /**
- * Zufälliger Suffix pro Upload, wie bei Avataren — "Ersetzen" heißt auch hier
- * immer "neuer Key, alter wird best-effort gelöscht", nie ein In-Place-
- * Überschreiben.
+ * A random suffix per upload, same as for avatars — "replace" here too
+ * always means "new key, old one gets deleted best-effort", never an
+ * in-place overwrite.
  */
 export function attachmentObjectKey(issueId: string, ext: string): string {
   return `attachments/${issueId}/${crypto.randomUUID()}.${ext}`;

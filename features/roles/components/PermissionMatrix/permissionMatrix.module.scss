@@ -1,14 +1,15 @@
-/* Maße und Farben sind die der Tabelle aus `components/ui/layout/Table` in ihrer
-   Karten-Variante — dieselbe Kopfhöhe, dieselben Bänder, dieselbe Hover-Fläche.
-   Nachgebaut statt benutzt, weil eine Matrix zwei Kopfrichtungen braucht: eine
-   Zelle bedeutet nichts ohne ihre Zeile *und* ihre Spalte, und das trägt nur
-   eine echte `<table>` mit `scope`-Bezügen. Die Werte stehen deshalb hier — wer
-   sie in `table.module.scss` ändert, muss hier nachziehen. */
+/* Measurements and colors are those of the table from
+   `components/ui/layout/Table` in its card variant — same header height,
+   same bands, same hover surface. Rebuilt instead of reused because a
+   matrix needs headers in two directions: a cell means nothing without its
+   row *and* its column, and only a real `<table>` with `scope` references
+   can carry that. The values live here as a result — whoever changes them
+   in `table.module.scss` has to update them here too. */
 .matrix {
   --matrix-pad: 14px;
-  /* Etwas höher als die 38px der Listen-Kopfzeile: hier steht ein Eigenname, der
-     auf zwei Zeilen umbrechen darf. Feste Höhe, weil die Abschnittsbänder
-     darunter genau an diesem Maß kleben. */
+  /* Slightly taller than the list header's 38px: this holds a proper name
+     that's allowed to wrap onto two lines. Fixed height, because the
+     section bands below stick to exactly this measurement. */
   --matrix-head-h: 42px;
   --matrix-surface: var(--background);
   --matrix-band: var(--surface-container-low);
@@ -20,7 +21,7 @@
   gap: 10px;
 }
 
-/* ---------- Werkzeugleiste ---------- */
+/* ---------- Toolbar ---------- */
 
 .toolbar {
   display: flex;
@@ -35,10 +36,11 @@
   max-width: 100%;
 }
 
-/* Steht zwischen Suchfeld und Legende: erst wonach man sucht, dann wie man es
-   ändert, dann was die Zeichen bedeuten. `flex: 1 1 320px` hält den Satz auf
-   einer Zeile, solange er dort hinpasst — darunter rutscht er als Ganzes in
-   die nächste, statt sich zu einer dreizeiligen Spalte zu stauchen. */
+/* Sits between the search field and the legend: first what you're
+   searching for, then how you change it, then what the symbols mean.
+   `flex: 1 1 320px` keeps the sentence on one line as long as it fits
+   there — below that it wraps as a whole onto the next line instead of
+   squeezing into a three-line column. */
 .hint {
   flex: 1 1 320px;
   min-width: 0;
@@ -47,8 +49,8 @@
   color: var(--on-surface-variant);
 }
 
-/* `margin-left: auto` statt `space-between`: bricht die Leiste um, rutscht die
-   Legende unter das Suchfeld und nicht an dessen Kante. */
+/* `margin-left: auto` instead of `space-between`: when the bar wraps, the
+   legend slides under the search field instead of hugging its edge. */
 .legend {
   display: flex;
   align-items: center;
@@ -81,9 +83,9 @@
   }
 }
 
-/* Steht in der Karte statt an ihrer Stelle: die Suche filtert Zeilen, sie nimmt
-   nicht die Tabelle weg. Bliebe der Rahmen dabei nicht stehen, spränge die
-   halbe Seite bei jedem Tastendruck, der nichts trifft. */
+/* Sits inside the card instead of replacing it: search filters rows, it
+   doesn't remove the table. If the frame didn't stay put, half the page
+   would jump around on every keystroke that hits nothing. */
 .noMatch {
   margin: auto;
   padding: 48px 16px;
@@ -92,18 +94,18 @@
   color: var(--on-surface-variant);
 }
 
-/* ---------- Die Karte ---------- */
+/* ---------- The card ---------- */
 
-/* Zwei Kästen statt einem: der äußere rundet und beschneidet, der innere
-   scrollt.
+/* Two boxes instead of one: the outer one rounds and clips, the inner one
+   scrolls.
 
-   Beides in einem Element ergibt eckige Ecken, sobald etwas zu scrollen ist.
-   Die Rollbalken liegen in der Polsterbox des Elements, das sie bewegt — sein
-   eigener Radius beschneidet sie nicht. Diese Matrix hat beide: senkrecht
-   immer, waagerecht sobald die Spalten breiter sind als die Karte. Zwei
-   weiße Balken, die stumpf in die Ecke laufen, und von der Rundung bleibt
-   nichts übrig. Eine Ebene darüber beschnitten, gehören die Balken zum
-   Inhalt und laufen mit der Rundung mit. */
+   Both in a single element produce square corners as soon as there's
+   something to scroll. Scrollbars live in the padding box of the element
+   that moves them — its own border-radius doesn't clip them. This matrix
+   has both: vertical always, horizontal as soon as the columns are wider
+   than the card. Two bars running flush into the corner, and nothing would
+   be left of the rounding. Clipped one level up instead, the bars belong to
+   the content and follow the rounding along with it. */
 .card {
   flex: 1;
   min-height: 0;
@@ -123,17 +125,17 @@
 
 .table {
   width: 100%;
-  /* Unter dieser Breite bleibt keine lesbare Spalte übrig — dann lieber quer
-     scrollen als alles stauchen. */
+  /* Below this width no readable column would be left — better to scroll
+     horizontally than to squeeze everything. */
   min-width: calc(300px + var(--role-cols) * 132px);
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
 }
 
-/* Die Rollenspalten stehen fest, die Beschreibung bekommt den Rest: unter
-   `table-layout: fixed` ist die einzige `auto`-Spalte die, die den Überschuss
-   aufnimmt. */
+/* The role columns are fixed, the description gets the rest: under
+   `table-layout: fixed`, the only `auto` column is the one that absorbs
+   the surplus. */
 .colPerm {
   width: auto;
 }
@@ -142,7 +144,7 @@
   width: 132px;
 }
 
-/* ---------- Kopfzeile ---------- */
+/* ---------- Header row ---------- */
 
 .corner,
 .roleHead {
@@ -156,13 +158,13 @@
   color: var(--on-surface-variant);
 }
 
-/* Die Ecke beschriftet eine Spalte und liest sich wie eine Tabellenüberschrift.
-   Die Rollenköpfe daneben tragen dagegen Eigennamen — die bleiben, wie sie
-   geschrieben wurden. */
+/* The corner labels a column and reads like a table heading. The role
+   headers next to it, on the other hand, carry proper names — those stay
+   as written. */
 .corner {
   left: 0;
-  /* Über der Kopfzeile *und* über der ersten Spalte — die Ecke wird von beiden
-     überlaufen. */
+  /* Above the header row *and* above the first column — the corner is
+     overlapped by both. */
   z-index: 4;
   padding-left: var(--matrix-pad);
   text-align: left;
@@ -187,9 +189,9 @@
   min-width: 0;
 }
 
-/* Kein Chip im Spaltenkopf: „Project Admin (ohne Issues)" passt in keine Pille
-   dieser Breite, und `white-space: nowrap` schnitte ihn mitten im Wort ab. Der
-   Punkt trägt hier die Farbe, der Name darf umbrechen. */
+/* No chip in the column header: "Project Admin (without Issues)" doesn't
+   fit in any pill of this width, and `white-space: nowrap` would cut it off
+   mid-word. Here the dot carries the color, the name is allowed to wrap. */
 .roleDot {
   flex: none;
   width: 6px;
@@ -201,8 +203,8 @@
   min-width: 0;
   color: var(--on-surface);
   line-height: 1.2;
-  /* Zwei Zeilen reichen für jeden vernünftigen Rollennamen; der volle steht
-     im `title` des Kopfes. */
+  /* Two lines are enough for any reasonable role name; the full one is in
+     the header's `title`. */
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -216,7 +218,7 @@
   color: var(--outline);
 }
 
-/* ---------- Abschnitte ---------- */
+/* ---------- Sections ---------- */
 
 .groupHead {
   position: sticky;
@@ -232,30 +234,30 @@
   text-align: left;
 }
 
-/* Das erste Band schließt oben an die Kopfzeile an — deren untere Linie ist
-   schon da, eine zweite ergäbe einen doppelten Strich. */
+/* The first band butts up against the header row above — its bottom line
+   is already there, a second one would produce a doubled line. */
 tbody tr:first-child .groupHead {
   border-top: none;
 }
 
-/* Nicht die Zelle festhalten, sondern ihren Text: die Zelle ist so breit wie
-   die Tabelle, gepinnt stünde sie rechts über. Der Titel dagegen soll auch
-   sichtbar bleiben, wenn quer gescrollt wird. */
+/* Pin the text, not the cell: the cell is as wide as the table, pinned it
+   would stick out past the right edge. The title, however, should stay
+   visible even when scrolling horizontally. */
 .groupHeadText {
   position: sticky;
   left: var(--matrix-pad);
   display: inline-block;
 }
 
-/* ---------- Zeilen ---------- */
+/* ---------- Rows ---------- */
 
 .permHead,
 .cell {
   transition: background .1s;
 }
 
-/* Deckend gemischt statt halbtransparent: die erste Spalte klebt und muss
-   verdecken, was unter ihr durchscrollt. */
+/* Mixed opaque instead of semi-transparent: the first column is sticky and
+   has to cover up whatever scrolls underneath it. */
 .row:hover .permHead,
 .row:hover .cell {
   background: color-mix(in srgb, var(--on-surface) 12%, var(--matrix-surface));
@@ -268,8 +270,8 @@ tbody tr:first-child .groupHead {
   min-height: var(--row-h);
   padding: 8px var(--matrix-pad);
   background: var(--matrix-surface);
-  /* Die Kante der klebenden Spalte — ohne sie liefen die Zellen beim Querscrollen
-     unter ihr hervor, ohne dass man sähe, wo sie endet. */
+  /* The edge of the sticky column — without it, cells would slide out from
+     underneath it during horizontal scroll without any visible boundary. */
   box-shadow: 1px 0 0 0 var(--outline-variant);
   text-align: left;
   font-weight: 400;
@@ -290,7 +292,7 @@ tbody tr:first-child .groupHead {
   color: var(--on-surface-variant);
 }
 
-/* ---------- Zellen ---------- */
+/* ---------- Cells ---------- */
 
 .cell {
   padding: 0;
@@ -304,19 +306,20 @@ tbody tr:first-child .groupHead {
   }
 }
 
-/* Eine Linie zwischen den Zeilen — anders als in einer Liste hilft sie hier:
-   gelesen wird quer über sechs Spalten, und ohne Spur verliert man die Zeile.
-   Oben statt unten, damit die letzte Zeile ohne Abschlussstrich bleibt. */
+/* A line between the rows — unlike in a list, it actually helps here:
+   reading happens across six columns, and without a trace you lose track
+   of the row. On top instead of the bottom, so the last row stays without
+   a closing line. */
 .row + .row :is(.permHead, .cell) {
   border-top: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
 }
 
-/* Das Kästchen trägt die Bedeutung: leer heißt „nicht gesetzt", grün erlaubt,
-   rot verbietet. Gleiche Form für Knopf und reine Anzeige, damit eine gesperrte
-   Spalte nicht wie eine andere Art Wert aussieht.
+/* The checkbox carries the meaning: empty means "not set", green allows,
+   red denies. Same shape for the button and the plain display, so a locked
+   column doesn't look like a different kind of value.
 
-   `inline-grid`, damit die Zelle es selbst mittig setzt: `text-align` und
-   `vertical-align` einer Tabellenzelle greifen nur auf Inline-Inhalt. */
+   `inline-grid` so the cell itself centers it: a table cell's `text-align`
+   and `vertical-align` only apply to inline content. */
 .mark {
   position: relative;
   display: inline-grid;
@@ -360,23 +363,23 @@ button.mark {
   }
 }
 
-/* Gesperrte Spalten (geteilte Rolle oder fehlendes Recht) sind schwächer
-   gezeichnet, bleiben aber lesbar — sie erklären, was eine Standardrolle kann. */
+/* Locked columns (shared role or missing permission) are drawn fainter but
+   stay readable — they explain what a default role can do. */
 .cell[data-locked] .mark {
   border-style: dashed;
   opacity: .7;
 }
 
-/* ---------- Offene Änderungen ---------- */
+/* ---------- Pending changes ---------- */
 
-/* Was noch nicht geschrieben ist, muss man in der Fläche wiederfinden: nach
-   zwanzig Klicks weiß niemand mehr, welche zwölf Zellen davon seine waren.
-   Die Marke liegt auf der Zelle statt auf dem Kästchen — der Zustand gehört
-   dem Kästchen (grün/rot), die Herkunft der Zelle. */
+/* What hasn't been written yet needs to be findable again in the grid:
+   after twenty clicks nobody remembers which twelve cells were theirs. The
+   marker sits on the cell instead of the checkbox — the state belongs to
+   the checkbox (green/red), the origin to the cell. */
 .cell[data-changed] {
-  /* Bezugsrahmen für den Punkt. `relative` auf einer Tabellenzelle ist erlaubt
-     und hat hier keine Nebenwirkung: die Zelle rückt nicht, sie bekommt nur
-     einen Ursprung. */
+  /* Positioning context for the dot. `relative` on a table cell is allowed
+     and has no side effect here: the cell doesn't shift, it just gets an
+     origin point. */
   position: relative;
   background: color-mix(in srgb, var(--primary) 10%, var(--matrix-surface));
 
@@ -396,9 +399,9 @@ button.mark {
   background: color-mix(in srgb, var(--primary) 18%, var(--matrix-surface));
 }
 
-/* Die Leiste kommt und geht mit der ersten und letzten offenen Änderung. Sie
-   liegt außerhalb der scrollenden Karte: was zu speichern ist, darf nicht
-   wegscrollen können. */
+/* The bar appears and disappears with the first and last pending change. It
+   sits outside the scrolling card: what needs to be saved must not be able
+   to scroll out of view. */
 .pending {
   flex: none;
   display: flex;
@@ -415,8 +418,8 @@ button.mark {
   color: var(--primary);
 }
 
-/* Schiebt die beiden Knöpfe ans andere Ende — und bleibt selbst lesbar, wenn
-   der Platz eng wird. */
+/* Pushes the two buttons to the other end — and stays readable itself when
+   space gets tight. */
 .pendingText {
   flex: 1;
   min-width: 0;

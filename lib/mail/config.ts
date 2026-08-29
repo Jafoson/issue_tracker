@@ -1,11 +1,12 @@
 import "server-only";
 
-// ─── SMTP-Konfiguration ───────────────────────────────────────────────────────
+// ─── SMTP configuration ──────────────────────────────────────────────────────
 //
-// Ausschließlich über die Umgebung gesteuert — es gibt keine Einstellungsseite
-// dafür und soll auch keine geben: Zugangsdaten für ein Mailkonto gehören nicht
-// in die Datenbank. Ohne `SMTP_HOST` bleibt der Mailversand aus; die App läuft
-// dann mit reinen In-App-Benachrichtigungen weiter, wie schon vor dieser Datei.
+// Controlled exclusively through the environment — there's no settings page
+// for it, and there shouldn't be: credentials for a mail account don't
+// belong in the database. Without `SMTP_HOST`, mail sending stays off; the
+// app then keeps running with plain in-app notifications only, same as
+// before this file existed.
 
 export interface MailConfig {
   host: string;
@@ -13,14 +14,14 @@ export interface MailConfig {
   secure: boolean;
   user?: string;
   pass?: string;
-  /** Absenderadresse, wie sie im `From`-Header steht. */
+  /** Sender address, as it appears in the `From` header. */
   from: string;
 }
 
 /**
- * Liest die SMTP-Konfiguration aus der Umgebung — bei jedem Aufruf neu, nicht
- * gecacht: einzelne Tests setzen `process.env` gezielt für einen Fall und
- * erwarten, dass die nächste Prüfung das auch sieht.
+ * Reads the SMTP configuration from the environment — freshly on every
+ * call, not cached: individual tests set `process.env` deliberately for one
+ * case and expect the next check to see it too.
  */
 export function mailConfig(): MailConfig | null {
   const host = process.env.SMTP_HOST;

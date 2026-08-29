@@ -1,6 +1,6 @@
 .root {
   display: inline-flex;
-  /* Gleiche Höhe wie ein Input daneben; die Items füllen sie aus. */
+  /* Same height as an Input next to it; the items fill it. */
   height: var(--control-h);
   align-items: stretch;
   background: var(--surface-container-low);
@@ -11,16 +11,16 @@
 }
 
 .item {
-  /* Ohne diese drei Zeilen lagen Zeichen und Wort im Inline-Fluss und richteten
-     sich an der Schriftlinie aus statt an der Mitte: ein SVG sitzt dort auf der
-     Grundlinie, und der Platz, den darunter sonst die Unterlängen einnehmen,
-     schob es sichtbar nach oben. Ein Knopf ist eine Zeile aus Zeichen und Text,
-     also wird er auch hier ausgelegt wie einer (`atoms/Button`). */
+  /* Without these three lines, icon and word sat in inline flow and aligned
+     to the font baseline instead of the center: an SVG there sits on the
+     baseline, and the space descenders normally occupy below it visibly
+     pushed it upward. A button is a row of icon and text, so it's laid out
+     here the same way (`atoms/Button`). */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Vorher standen Zeichen und Wort ohne Zwischenraum aneinander — der einzige
-     Abstand kam vom Leerraum, den es im JSX gar nicht gibt. */
+  /* Previously icon and word sat flush against each other with no gap — the
+     only spacing came from whitespace that doesn't even exist in the JSX. */
   gap: 6px;
   padding: 0 12px;
   border-radius: calc(var(--radius-sm) - 2px);
@@ -34,8 +34,8 @@
   transition: background 0.12s, color 0.12s;
   position: relative;
 
-  /* Nachgeben darf allein der Text. Ein gestauchtes Zeichen ist ein verzerrtes
-     Zeichen — dieselbe Regel und derselbe Grund wie bei den Knöpfen. */
+  /* Only the text may give way. A squeezed icon is a distorted icon — same
+     rule and same reason as with the buttons. */
   & > svg {
     flex: none;
   }
@@ -59,15 +59,15 @@
   }
 
 
-  /* icon-only: quadratisch — die Breite folgt der Höhe der Zeile. Mittig steht
-     das Zeichen schon durch `.item`; hier bleibt nur die Form. */
+  /* icon-only: square — the width follows the row's height. The icon is
+     already centered by `.item`; only the shape remains here. */
   &.iconOnly {
     flex: none;
     aspect-ratio: 1;
     padding: 0;
   }
 
-  /* variant primary (default): Accent-Farbe */
+  /* variant primary (default): accent color */
   &.active {
     background: var(--primary);
     color: var(--on-primary);
@@ -79,7 +79,7 @@
     }
   }
 
-  /* variant surface: invertierte Surface-Farbe */
+  /* variant surface: inverted surface color */
   &.active.activeSurface {
     background: var(--on-surface);
     color: var(--surface);

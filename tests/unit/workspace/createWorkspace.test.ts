@@ -29,9 +29,9 @@ mock.module("@/lib/workspace-defaults", () => ({
   DEFAULT_ISSUE_TYPES: [{ id: "type-1" }],
 }));
 
-// createWorkspace provisioniert nichts mehr — die Default-Rollen sind geteilt
-// und liegen bereits in der Datenbank. Der Mock bleibt, damit der Test das auch
-// belegt statt es nur anzunehmen.
+// createWorkspace no longer provisions anything — the default roles are shared
+// and already exist in the database. The mock stays so the test proves this
+// instead of merely assuming it.
 mock.module("@/lib/rbac-provision", () => ({
   provisionSystemRbac: mockProvisionRbac,
 }));
@@ -60,8 +60,9 @@ function resetTxMocks() {
       m.mockResolvedValue({});
     }
   }
-  // Der Ersteller ist nach `workspaceMember.create` das einzige Mitglied — genau
-  // das liest die Aufnahme ins Projekt aus. Als Owner wird er Project Admin.
+  // After `workspaceMember.create`, the creator is the only member — that is
+  // exactly what enrollment into the project reads out. As owner, they become
+  // Project Admin.
   mockTx.workspaceMember.findMany.mockResolvedValue([
     {
       userId: "user-1",
@@ -211,8 +212,8 @@ describe("createWorkspace()", () => {
         expect.objectContaining({
           data: expect.objectContaining({
             userId: "user-1",
-            // Die Owner-Rolle ist eine geteilte System-Rolle — nichts wird
-            // mehr je Workspace kopiert.
+            // The owner role is a shared system role — nothing is copied
+            // per workspace anymore.
             roleId: "sys:WORKSPACE:owner",
             pending: false,
           }),

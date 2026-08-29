@@ -1,5 +1,5 @@
-/* Adresszeile für einen Link. Fläche und Rundung wie beim `Popover` und beim
-   Kalenderblatt — sie schwebt aus demselben Grund über der Seite. */
+/* Address bar for a link. Surface and rounding match `Popover` and the
+   date picker — it floats over the page for the same reason. */
 
 .form {
   display: flex;
@@ -20,7 +20,7 @@
   gap: 4px;
 }
 
-/* Die zweite Zeile — der Name — steht abgesetzt unter der Adresse. */
+/* The second row — the name — sits set apart below the address. */
 .row + .row {
   padding-top: 4px;
   border-top: 1px solid var(--outline-variant);
@@ -67,9 +67,9 @@
   }
 }
 
-/* Lokal, obwohl `pop` auch global steht: CSS-Module benennen Keyframe-Namen
-   um, auch wenn sie hier nicht definiert sind — die Referenz zeigte sonst auf
-   einen Namen, den es nirgends gibt. */
+/* Local, even though `pop` also exists globally: CSS modules rename keyframe
+   names even when referenced without being defined here — otherwise the
+   reference would point to a name that doesn't exist anywhere. */
 @keyframes pop {
   from { opacity: .2; transform: translateY(-4px) scale(.985); }
 }

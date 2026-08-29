@@ -1,14 +1,14 @@
 import "server-only";
 
 /**
- * Schema und Host der Anwendung, ohne abschließenden Schrägstrich.
+ * Scheme and host of the application, without a trailing slash.
  *
- * Die Basis kommt aus der Umgebung, nicht aus dem Request: Adressen, die damit
- * entstehen, werden kopiert und woanders geöffnet — ein relativer Pfad taugt
- * dafür nicht, und hinter einem Proxy ist der Host des Requests nicht der, unter
- * dem die App erreichbar ist. `AUTH_URL` ist gesetzt, weil Auth.js sie ohnehin
- * braucht; `NEXTAUTH_URL` und der lokale Fallback stehen daneben, damit die
- * Funktion nirgends leer ausgeht.
+ * The base comes from the environment, not from the request: URLs built
+ * with it get copied and opened elsewhere — a relative path won't do for
+ * that, and behind a proxy the request's host isn't the one the app is
+ * actually reachable at. `AUTH_URL` is used because Auth.js needs it anyway;
+ * `NEXTAUTH_URL` and the local fallback sit alongside it so the function
+ * never comes up empty.
  */
 export function appBaseUrl(): string {
   return (
@@ -18,7 +18,7 @@ export function appBaseUrl(): string {
   ).replace(/\/+$/, "");
 }
 
-/** Eine absolute Adresse aus einem Pfad der App (`/…`). */
+/** An absolute URL built from an app path (`/…`). */
 export function appUrl(path: string): string {
   return `${appBaseUrl()}${path}`;
 }

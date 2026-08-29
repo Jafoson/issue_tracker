@@ -30,12 +30,12 @@
   &.hasTrailing { padding-right: 8px; }
 }
 
-/* ── Größen ── */
+/* ── Sizes ── */
 
-.md { /* Regelfall — Maße stehen oben in `.chip`. */ }
+.md { /* Default — dimensions live above in `.chip`. */ }
 
-/* Größer als der Regelfall: mehr Höhe, mehr Polster, größere Schrift — für
-   einen Chip, der für sich steht statt in einer dichten Reihe. */
+/* Larger than the default: more height, more padding, bigger font — for
+   a chip that stands on its own rather than in a dense row. */
 .lg {
   height: 40px;
   gap: 8px;
@@ -47,33 +47,34 @@
   &.hasTrailing { padding-right: 12px; }
 }
 
-/* Im Fließtext: keine feste Höhe, alles in `em`, damit der Chip mit dem Text
-   ringsum wächst und die Zeile nicht auseinanderdrückt. Wird von den
-   Erwähnungs-, Issue- und Datums-Chips im Rich Text benutzt. */
+/* In running text: no fixed height, everything in `em`, so the chip scales
+   with the surrounding text and doesn't stretch the line apart. Used by the
+   mention, issue, and date chips in rich text. */
 .inline {
-  /* Der entscheidende Unterschied zum `md`-Chip: **kein** `inline-flex`.
-     Ein Flex-Kasten bildet eine eigene Box, deren Höhe die Zeile aufspreizt —
-     der Chip stand dadurch immer höher da als der Text daneben, egal wie klein
-     man Polster und Zeilenhöhe drehte. Ein `inline`-Element hat keine eigene
-     Höhe: sein senkrechtes Polster legt sich über die Zeile, ohne sie zu
-     verschieben, und die Grundlinie ist von selbst die des Fließtexts. */
+  /* The decisive difference from the `md` chip: **no** `inline-flex`.
+     A flex box forms its own box whose height stretches the line — the chip
+     always ended up taller than the text next to it, no matter how small you
+     turned padding and line height. An `inline` element has no height of its
+     own: its vertical padding overlays the line without displacing it, and
+     the baseline naturally matches the surrounding text's. */
   display: inline;
   height: auto;
   padding: .1em .55em;
   border-radius: var(--radius-pill);
   font-size: .95em;
-  /* Normalgewicht, anders als beim `md`-Chip (500): der steht für sich, dieser
-     hier steht mitten im Satz. Die Betonung leisten Fläche und Rundung — kommt
-     Fettung dazu, springt die Erwähnung aus der Zeile heraus. */
+  /* Normal weight, unlike the `md` chip (500): that one stands on its own,
+     this one sits in the middle of a sentence. Emphasis comes from the fill
+     and rounding — adding bold on top would make the mention jump out of the
+     line. */
   font-weight: 400;
-  /* Anders als ein Bedienelement ist das hier Text: wer den Absatz markiert,
-     muss die Erwähnung mitkopieren können. */
+  /* Unlike a control, this is text: selecting the paragraph must also select
+     the mention along with it. */
   user-select: text;
 
   &.hasIcon { padding-left: .4em; }
   &.hasTrailing { padding-right: .4em; }
 
-  /* Die Slots geben ihr Flex-Verhalten mit auf — sie sitzen jetzt im Textfluss. */
+  /* The slots give up their flex behavior along with it — they now sit in the text flow. */
   .icon {
     display: inline;
     margin-right: .3em;
@@ -85,14 +86,14 @@
   }
 }
 
-/* Die Fläche des Fließtext-Chips kommt nicht von der Variante, sondern von
-   hier — und zwar zwei Stufen über dem Panel statt einer.
-   `--surface-container` (die Variante `elevated`) liegt nur vier RGB-Werte
-   über `--surface-container-low`, auf dem Beschreibung und Kommentare stehen;
-   im laufenden Text war davon nichts zu sehen.
+/* The fill of the inline-text chip doesn't come from the variant, but from
+   here — two steps above the panel instead of one. `--surface-container`
+   (the `elevated` variant) sits only four RGB values above
+   `--surface-container-low`, which description and comments are rendered
+   on; that difference was invisible in running text.
 
-   Zwei Klassen schlagen die eine der Variante — die Reihenfolge im Stylesheet
-   entscheidet hier also nicht mit. */
+   Two classes beat the variant's one — so the order in the stylesheet
+   doesn't matter here. */
 .chip.inline {
   background: var(--surface-container-highest);
   border-color: color-mix(in oklab, var(--outline) 45%, transparent);

@@ -1,11 +1,11 @@
-/* Werkzeugleiste über dem Schreibfeld. Sitzt in derselben Umrandung wie der
-   Text — deshalb kein eigener Rahmen, nur eine leichte Tönung und ein Haarstrich
-   nach unten. Der Hinweis auf das `/`-Menü steht nicht mehr hier, sondern im
-   Platzhalter des leeren Feldes. */
+/* Toolbar above the text field. Sits within the same border as the text —
+   hence no border of its own, just a light tint and a hairline below. The
+   hint about the `/` menu no longer lives here but in the empty field's
+   placeholder. */
 
 .toolbar {
-  /* Bleibt oben stehen, auch wenn der Modal-Körper darunter wegscrollt.
-     Möglich nur, weil `.editor` kein eigener Scroll-Container mehr ist. */
+  /* Stays pinned at the top even as the modal body scrolls underneath it.
+     Only possible because `.editor` is no longer its own scroll container. */
   position: sticky;
   top: 0;
   z-index: 1;
@@ -15,12 +15,13 @@
   align-items: center;
   gap: 2px;
   padding: 6px 8px;
-  /* Deckend, sonst schiene der Text beim Scrollen durch. Die oberen Ecken
-     rundet die Leiste selbst — `.editor` beschneidet nicht mehr. Ein Pixel
-     weniger als außen, sonst blitzt der Rahmen durch. */
+  /* Opaque, otherwise the text would show through while scrolling. The
+     toolbar rounds its own top corners — `.editor` no longer clips them.
+     One pixel less than the outer radius, otherwise the border flashes
+     through. */
   background: var(--surface-container);
   border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
-  /* Halbtransparent: die Kante soll das Feld gliedern, nicht zerschneiden. */
+  /* Semi-transparent: the edge should structure the field, not cut through it. */
   border-bottom: 1px solid color-mix(in oklab, var(--outline-variant) 60%, transparent);
 }
 
@@ -39,7 +40,7 @@
     color: var(--on-surface);
   }
 
-  /* Gesetzte Auszeichnung an der Cursorposition. */
+  /* Mark applied at the cursor position. */
   &[data-active] {
     background: color-mix(in oklab, var(--tertiary) 20%, transparent);
     color: var(--tertiary);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// lib/session.ts ist jetzt ein dünner Wrapper über Auth.js `auth()`.
+// lib/session.ts is now a thin wrapper over Auth.js `auth()`.
 mock.module("@/auth", () => ({
   auth: mock(),
 }));

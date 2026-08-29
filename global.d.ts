@@ -2,8 +2,8 @@ import type { DefaultSession } from "next-auth";
 import type { routing } from "@/i18n/routing";
 import type messages from "./messages/de.json";
 
-// Gibt next-intl die konkreten Typen: getypte Message-Keys bei t("…") und
-// useLocale() liefert die Locale-Union statt string.
+// Gives next-intl its concrete types: typed message keys for t("…"), and
+// useLocale() returns the locale union instead of string.
 declare module "next-intl" {
   interface AppConfig {
     Locale: (typeof routing.locales)[number];
@@ -11,9 +11,10 @@ declare module "next-intl" {
   }
 }
 
-// Auth.js: `id` und die Anzeigedaten auf der Session verfügbar machen (aus dem
-// JWT-Callback gespiegelt). Rollen und Rechte stehen bewusst NICHT im Token —
-// die löst `lib/permissions.ts` bei jeder Prüfung frisch aus der Datenbank auf.
+// Auth.js: expose `id` and the display data on the session (mirrored from
+// the jwt callback). Roles and permissions deliberately do NOT live in the
+// token — `lib/permissions.ts` resolves those fresh from the database on
+// every check.
 declare module "next-auth" {
   interface Session {
     user: {
@@ -23,7 +24,7 @@ declare module "next-auth" {
       lastName: string;
     } & DefaultSession["user"];
   }
-  // Was `authorize`/der Adapter zurückgeben und der jwt-Callback als `user` erhält.
+  // What `authorize`/the adapter return and the jwt callback receives as `user`.
   interface User {
     color?: string;
     firstName?: string;

@@ -15,21 +15,21 @@ export interface NavLinkProps {
   activeHref?: string;
   badge?: number;
   color?: string;
-  /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
+  /** Uploaded image instead of the color dot, e.g. a workspace avatar. */
   image?: string;
-  /** Form des Farbpunkts/Bildes bei `color`. Standard: rund. */
+  /** Shape of the color dot/image when using `color`. Default: circle. */
   shape?: AvatarShape;
   onClick?: () => void;
 }
 
 /**
- * Eine Zeile in einer Navigation — der gemeinsame Baustein der Seitenleiste und
- * der Einstellungsleisten daneben.
+ * A row in a navigation — the shared building block of the sidebar and the
+ * settings menus alongside it.
  *
- * Aussehen und Maße kommen vom Knopf (`components/ui/atoms/Button`), markiert
- * wird über `isNavActive` und damit nach derselben Regel wie überall sonst.
- * Zwei Ebenen derselben Navigation sollen sich nicht unterschiedlich anfühlen —
- * deshalb steht diese Zeile hier und nicht in der Seitenleiste.
+ * Appearance and size come from the button (`components/ui/atoms/Button`),
+ * and it's marked active via `isNavActive`, following the same rule as
+ * everywhere else. Two levels of the same navigation shouldn't feel
+ * different — that's why this row lives here and not in the sidebar.
  */
 
 export function NavLink({
@@ -49,10 +49,10 @@ export function NavLink({
     return isNavActive(pathname, href, activeHref);
   }
   function LeadingIcon() {
-    // Ohne eigenes Icon steht der Eintrag für eine benannte Entität (Projekt,
-    // Workspace, ...) statt für eine Route — dieselbe Bild-oder-Initialen-Logik
-    // wie überall sonst, wo Entitäten auftauchen (`Avatar`), statt eines
-    // undifferenzierten Farbpunkts.
+    // Without its own icon, the entry represents a named entity (project,
+    // workspace, ...) rather than a route — the same image-or-initials logic
+    // used everywhere else entities show up (`Avatar`), instead of an
+    // undifferentiated color dot.
     if (!icon && color) {
       return (
         <Avatar
@@ -78,7 +78,7 @@ export function NavLink({
       onClick={onClick}
     >
       <LeadingIcon />
-      {/* Der ganze Name bleibt im `title` — die Zeile kürzt ihn nur fürs Auge. */}
+      {/* The full name stays in `title` — the row only truncates it visually. */}
       <span className={navStyles.label} title={label}>
         {label}
       </span>

@@ -3,16 +3,16 @@ import { fromMarkdown } from "@/lib/richtext/fromMarkdown";
 import type { PMNode } from "@/lib/richtext/types";
 
 /**
- * Die Umwandlung, über die sowohl der Seed als auch die einmalige Migration
- * der Bestandsdaten laufen. Geprüft wird an denselben Konstrukten, die der
- * abgelöste Markdown-Editor erzeugen konnte — was Leute vorher geschrieben
- * haben, muss danach dastehen.
+ * The conversion that both the seed and the one-off migration of existing
+ * data run through. Tested against the same constructs the retired Markdown
+ * editor could produce — whatever people wrote before has to still be there
+ * afterwards.
  */
 
 const blocks = (source: string): PMNode[] => fromMarkdown(source).content ?? [];
 const first = (source: string): PMNode => blocks(source)[0];
 
-/** Sammelt den Text eines Teilbaums, ohne die Auszeichnungen. */
+/** Collects the text of a subtree, without the marks. */
 function text(node: PMNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(text).join("");
@@ -39,7 +39,7 @@ describe("fromMarkdown", () => {
       type: "heading",
       attrs: { level: 3 },
     });
-    // Ohne Leerzeichen ist es keine Überschrift, sondern Text.
+    // Without a space it's not a heading, just text.
     expect(first("#kein Titel")).toMatchObject({ type: "paragraph" });
   });
 
@@ -69,7 +69,7 @@ describe("fromMarkdown", () => {
   });
 
   test("macht aus einzelnen Umbrüchen harte Zeilenumbrüche", () => {
-    // Der alte Renderer hat sie über `pre-wrap` sichtbar gelassen.
+    // The old renderer made them visible via `pre-wrap`.
     const node = first("Erste Zeile\nZweite Zeile");
     expect(node.content?.some((n) => n.type === "hardBreak")).toBe(true);
     expect(blocks("Erste\n\nZweite")).toHaveLength(2);
@@ -134,7 +134,7 @@ describe("fromMarkdown", () => {
 
   test("lässt gefährliche Adressen als Text stehen", () => {
     const node = first("[klick](javascript:alert(1))");
-    // Kein Link-Mark, kein Bild — nur der ursprüngliche Text.
+    // No link mark, no image — just the original text.
     expect(node.content?.some((n) => (n.marks ?? []).length > 0)).toBe(false);
     expect(text(node)).toContain("klick");
   });
@@ -149,7 +149,7 @@ describe("fromMarkdown", () => {
   });
 
   test("erzeugt Absätze ohne leeres content-Array", () => {
-    // ProseMirror lehnt `content: []` ab — ein leerer Absatz hat gar kein Feld.
+    // ProseMirror rejects `content: []` — an empty paragraph has no field at all.
     const node = fromMarkdown("");
     expect(node.content?.[0]).not.toHaveProperty("content");
   });

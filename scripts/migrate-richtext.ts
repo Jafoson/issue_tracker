@@ -1,23 +1,23 @@
 /**
- * Wandelt die Bestandsdaten von Markdown nach ProseMirror-JSON um.
+ * Converts existing data from Markdown to ProseMirror JSON.
  *
- *   bun run scripts/migrate-richtext.ts     # vor `prisma migrate deploy`
+ *   bun run scripts/migrate-richtext.ts     # before `prisma migrate deploy`
  *
- * Läuft absichtlich über rohes SQL statt über den Prisma-Client: zum Zeitpunkt
- * des Aufrufs beschreibt das Schema die Spalten bereits als `Json`, in der
- * Datenbank stehen sie aber noch als `text`. Der generierte Client wäre sich
- * darüber uneinig — `$queryRaw` ist es nicht.
+ * Deliberately runs over raw SQL instead of the Prisma client: by the time
+ * this runs, the schema already describes the columns as `Json`, but in the
+ * database they're still `text`. The generated client would disagree about
+ * that — `$queryRaw` doesn't.
  *
- * Das Skript ist mehrfach ausführbar: was schon ein Dokument ist, wird
- * übersprungen. Es schreibt in dieselbe Spalte; den Typwechsel macht danach
- * `prisma/migrations/20260731120000_richtext_documents`.
+ * The script is safe to run more than once: whatever is already a document
+ * gets skipped. It writes into the same column; the type change afterwards is
+ * handled by `prisma/migrations/20260731120000_richtext_documents`.
  */
 
 import { db } from "@/lib/db";
 import { fromMarkdown } from "@/lib/richtext/fromMarkdown";
 import { toPlainText } from "@/lib/richtext/text";
 
-/** Schon umgewandelt? Dann liegt in der Spalte ein serialisiertes Dokument. */
+/** Already converted? Then the column holds a serialized document. */
 function isAlreadyDoc(value: string): boolean {
   if (!value.trimStart().startsWith("{")) return false;
   try {
@@ -31,8 +31,9 @@ async function convert(
   table: "Issue" | "Comment",
   column: "description" | "body",
 ) {
-  // `::text` erzwingt den Textwert — egal, ob die Spalte schon jsonb ist oder
-  // noch text. Damit läuft das Skript auch nach der Migration ohne Fehler.
+  // `::text` forces the text value — regardless of whether the column is
+  // already jsonb or still text. That way the script also runs without
+  // errors after the migration.
   const rows = await db.$queryRawUnsafe<
     { id: string; source: string | null }[]
   >(`SELECT "id", "${column}"::text AS source FROM "${table}"`);
@@ -57,7 +58,7 @@ async function convert(
   }
 
   console.log(
-    `${table}.${column}: ${converted} umgewandelt, ${skipped} bereits Dokument (${rows.length} gesamt)`,
+    `${table}.${column}: ${converted} converted, ${skipped} already a document (${rows.length} total)`,
   );
 }
 
@@ -65,8 +66,9 @@ async function main() {
   await convert("Issue", "description");
   await convert("Comment", "body");
 
-  // Den abgeleiteten Fließtext gibt es erst nach dem Typwechsel — die Spalten
-  // existieren vorher noch nicht. Deshalb hier nur, wenn schon migriert wurde.
+  // The derived plain-text column only exists after the type change — the
+  // columns don't exist yet before that. So only do this once already
+  // migrated.
   const [{ exists }] = await db.$queryRaw<{ exists: boolean }[]>`
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
@@ -76,17 +78,17 @@ async function main() {
 
   if (!exists) {
     console.log(
-      "\nFertig. Jetzt `bun prisma migrate deploy` — das setzt den Spaltentyp.",
+      "\nDone. Now run `bun prisma migrate deploy` — that sets the column type.",
     );
     return;
   }
 
   await backfillText("Issue", "description", "descriptionText");
   await backfillText("Comment", "body", "bodyText");
-  console.log("\nFertig.");
+  console.log("\nDone.");
 }
 
-/** Setzt die abgeleitete Textspalte über denselben Weg wie die Anwendung. */
+/** Sets the derived text column the same way the application does. */
 async function backfillText(
   table: "Issue" | "Comment",
   column: string,
@@ -103,7 +105,7 @@ async function backfillText(
       row.id,
     );
   }
-  console.log(`${table}.${target}: ${rows.length} Zeilen neu abgeleitet`);
+  console.log(`${table}.${target}: ${rows.length} rows re-derived`);
 }
 
 main()

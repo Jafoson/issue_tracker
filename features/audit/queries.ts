@@ -7,21 +7,21 @@ import { accessFor, currentUserId } from "@/lib/permissions";
 
 export interface ActivityView {
   entries: AuditEntry[];
-  /** Ob die volle, ungefilterte Liste zu sehen war — steuert z. B. Hinweise
-   * in der Oberfläche, dass nur eigene Einträge gezeigt werden. */
+  /** Whether the full, unfiltered list was visible — controls, e.g.,
+   * notices in the UI that only your own entries are being shown. */
   canViewAll: boolean;
-  /** Id des letzten Eintrags, ab der `loadMore*Activity` weiterlädt — `null`,
-   * wenn diese Seite bereits die letzte war. */
+  /** Id of the last entry that `loadMore*Activity` continues from —
+   * `null` if this page was already the last one. */
   nextCursor: string | null;
 }
 
 /**
- * Das Aktivitäts-Protokoll eines Projekts.
+ * A project's activity log.
  *
- * Ohne `audit.view` bekommt die Person nicht nichts, sondern einen
- * gefilterten Ausschnitt — was sie selbst getan hat oder was ihr passiert ist
- * (`selfOnly` in `lib/audit/index.ts`). Der Ausschnitt ist damit dieselbe
- * Abfrage für alle, nur mit einem zusätzlichen Filter, kein zweiter Pfad.
+ * Without `audit.view`, a person doesn't get nothing, but a filtered subset
+ * — what they themselves did or what happened to them (`selfOnly` in
+ * `lib/audit/index.ts`). The subset is thus the same query for everyone,
+ * just with an extra filter, not a second code path.
  */
 export const getProjectActivity = cache(
   async (
@@ -49,7 +49,7 @@ export const getProjectActivity = cache(
   },
 );
 
-/** Spiegelbild von `getProjectActivity` auf Workspace-Ebene. */
+/** Mirror image of `getProjectActivity` at the workspace level. */
 export const getWorkspaceActivity = cache(
   async (
     workspaceId: string,

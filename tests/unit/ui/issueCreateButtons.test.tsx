@@ -3,9 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 //
-// Geprüft wird, ob der Auslöser gezeichnet wird — nicht, was er öffnet. Das Modal
-// selbst ist deshalb ein Platzhalter: es zieht sonst die Server Action und damit
-// Prisma in den Test.
+// What's checked is whether the trigger renders — not what it opens. The
+// modal itself is therefore a stand-in: otherwise it would pull in the
+// Server Function, and with it Prisma, into the test.
 
 mock.module(
   "@/features/issues/components/CreateIssueModal/CreateIssueModal",
@@ -63,7 +63,7 @@ const PROJECTS = [
   },
 ];
 
-/** Composer-Daten, in denen genau die genannten Projekte anlegbar sind. */
+/** Composer data in which exactly the named projects allow creating issues. */
 function composer(...creatableProjectIds: string[]): IssueComposerData {
   return {
     workspaceId: "acme",
@@ -127,7 +127,7 @@ const groupHeader = (data: IssueComposerData) =>
     />,
   );
 
-/** Wie viele Auslöser trägt das Markup? Alle drei Stellen nutzen ein Plus-Icon. */
+/** How many triggers does the markup carry? All three spots use a plus icon. */
 const plusCount = (html: string) =>
   html.split('data-icon="lucide:plus"').length - 1;
 
@@ -147,8 +147,8 @@ describe("NewIssueButton (Seitenleiste)", () => {
     expect(html).toBe("");
   });
 
-  // Der Knopf legt das Projekt der Route vor. Darf dort nichts entstehen, nimmt
-  // er das erste erlaubte statt zu verschwinden.
+  // The button defaults to the route's project. If nothing may be created
+  // there, it falls back to the first allowed project instead of disappearing.
   it("erscheint auch, wenn nur ein anderes Projekt erlaubt ist", () => {
     const html = renderToStaticMarkup(
       <NewIssueButton data={composer("p-2")} />,
@@ -159,7 +159,7 @@ describe("NewIssueButton (Seitenleiste)", () => {
 
 describe("BoardColumn", () => {
   it("zeigt Plus im Kopf und die Zeile am Ende, wenn erlaubt", () => {
-    // Zwei Auslöser: das Plus im Spaltenkopf und die Karte darunter.
+    // Two triggers: the plus in the column header and the card below it.
     expect(plusCount(column(composer("p-1")))).toBe(2);
   });
 
@@ -168,7 +168,7 @@ describe("BoardColumn", () => {
   });
 
   it("prüft das Projekt der Spalte, nicht irgendeines", () => {
-    // p-2 ist erlaubt, die Spalte gehört aber zu p-1.
+    // p-2 is allowed, but the column belongs to p-1.
     expect(plusCount(column(composer("p-2")))).toBe(0);
   });
 

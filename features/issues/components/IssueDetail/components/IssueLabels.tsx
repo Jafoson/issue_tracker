@@ -19,17 +19,17 @@ interface IssueLabelsProps {
 }
 
 /**
- * Die Labels des Issues.
+ * The issue's labels.
  *
- * In der Spalte ein eigener Abschnitt unter der Beschreibung, in der
- * Attributspalte ein Block zwischen zwei Trennlinien. Beide Male stehen die
- * Chips unter ihrer Beschriftung statt daneben: mehrere brauchen die volle
- * Breite, sonst bricht schon das zweite um.
+ * In the main column, a section of its own below the description; in the
+ * attributes sidebar, a block between two dividers. In both places the
+ * chips sit below their label instead of next to it: several of them need
+ * the full width, otherwise even the second one would wrap.
  *
- * Nur der Weg zum Hinzufügen unterscheidet sich. In der Spalte schließt ein
- * gestrichelter Chip die Reihe ab — dort ist Platz, und ein Leerzustand in
- * Worten erübrigt sich damit. In der schmalen Attributspalte sitzt das Plus in
- * der Kopfzeile, wo es keine Chip-Breite kostet.
+ * Only the way to add one differs. In the main column, a dashed chip closes
+ * out the row — there's room there, and an empty state in words becomes
+ * unnecessary. In the narrow attributes sidebar, the plus sits in the
+ * header, where it costs no chip width.
  */
 export function IssueLabels({
   issue,
@@ -41,8 +41,8 @@ export function IssueLabels({
   const t = useTranslations();
   const { canEdit } = issue.access;
 
-  // Im Label-Picker neu angelegte Labels kennt die Server-Prop noch nicht —
-  // bis zum nächsten Refresh kommen sie von hier.
+  // Labels newly created in the label picker aren't known to the server
+  // prop yet — until the next refresh, they come from here.
   const [createdLabels, setCreatedLabels] = useState<Label[]>([]);
   const knownLabels = [
     ...labels,
@@ -90,10 +90,10 @@ export function IssueLabels({
       key={label.id}
       color={label.color}
       size="sm"
-      // Derselbe Weg wie über das Menü — `toggleLabel` nimmt es heraus, wenn
-      // es schon gesetzt ist. Ohne issue.update.*/.own kein Kreuz: `onRemove`
-      // fehlt dann ganz, statt auf einen Klick zu warten, der serverseitig
-      // ohnehin abgelehnt würde.
+      // Same path as via the menu — `toggleLabel` removes it since it's
+      // already set. Without issue.update.*/.own, no cross: `onRemove` is
+      // left out entirely instead of waiting for a click the server would
+      // reject anyway.
       onRemove={canEdit ? () => toggleLabel(label.id) : undefined}
       removeLabel={t("actions.removeLabel", { name: label.name })}
     >

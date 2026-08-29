@@ -7,9 +7,9 @@ import {
 import type { MailContent } from "@/lib/mail/templates/types";
 
 export interface IssueUpdateChange {
-  /** Anzeigename des geänderten Felds, z. B. "Priorität", "Titel", "Labels". */
+  /** Display name of the changed field, e.g. "Priority", "Title", "Labels". */
   field: string;
-  /** Fehlt er, gilt die Änderung als neu gesetzt statt geändert (z. B. Assignee von niemand). */
+  /** If missing, the change counts as newly set rather than changed (e.g. assignee from no one). */
   from?: string;
   to: string;
 }
@@ -18,22 +18,22 @@ export interface IssueUpdateEmailInput {
   to: string;
   actorLabel: string;
   issue: { identifier: string; title: string };
-  /** Mehrere Feldänderungen einer Bearbeitung in einer Mail, statt einer je
-   *  Feld — wer Titel, Priorität und Labels in einem Zug ändert, soll auch
-   *  nur eine Mail auslösen. */
+  /** Multiple field changes from one edit in a single email, instead of one
+   *  per field — whoever changes title, priority, and labels in one go
+   *  should also only trigger one email. */
   changes: IssueUpdateChange[];
   url: string;
   manageUrl?: string;
 }
 
 /**
- * Für Änderungen, die `notify()` heute nicht abdeckt (Titel, Priorität,
- * Labels, Typ — siehe `type NotificationEvent` in `features/account/types.ts`,
- * das kennt nur `assigned`/`mentioned`/`comment`/`status`/`invite`/`role`).
- * Noch ohne Versandpunkt: dafür bräuchte `notify()` einen neuen Anlass samt
- * `*InApp`/`*Email`-Spaltenpaar in `UserPreferences`, plus die Stelle in
- * `features/issues/actions.ts`, die die alten gegen die neuen Werte
- * vergleicht (wie `notifyStatusChange` es für den Status schon tut).
+ * For changes that `notify()` doesn't cover today (title, priority, labels,
+ * type — see `type NotificationEvent` in `features/account/types.ts`, which
+ * only knows `assigned`/`mentioned`/`comment`/`status`/`invite`/`role`).
+ * Still without a send point: for that, `notify()` would need a new event
+ * plus an `*InApp`/`*Email` column pair in `UserPreferences`, plus the spot
+ * in `features/issues/actions.ts` that compares the old against the new
+ * values (like `notifyStatusChange` already does for status).
  */
 export function issueUpdateEmail(
   input: IssueUpdateEmailInput,

@@ -27,9 +27,9 @@ mock.module("@/lib/permissions", () => ({
   PermissionError: class PermissionError extends Error {},
 }));
 
-// `@/lib/project-membership` wird auch von `teams.test.ts` im selben Prozess
-// komplett gemockt (geteilter Modul-Cache, siehe CLAUDE.md) — hier deshalb
-// selbst mocken, statt auf die echte Implementierung zu vertrauen.
+// `@/lib/project-membership` is also mocked completely by `teams.test.ts` in
+// the same process (shared module cache, see CLAUDE.md) — so it's mocked
+// here too, instead of relying on the real implementation.
 const mockDropProjectMemberships = mock();
 
 mock.module("@/lib/project-membership", () => ({
@@ -41,10 +41,10 @@ mock.module("@/lib/project-membership", () => ({
 
 mock.module("next/cache", () => ({ revalidatePath: mock() }));
 
-// Kein Mock für `@/lib/mail`: ohne `SMTP_HOST` (siehe tests/setup.ts) endet
-// `sendMemberRemovedEmail` beim `isMailConfigured()`-Check, bevor sie die
-// (hier ohnehin ungemockte) Datenbank anfasst — derselbe Weg wie bei
-// `sendInvitationEmail` in den Einladungs-Tests.
+// No mock for `@/lib/mail`: without `SMTP_HOST` (see tests/setup.ts),
+// `sendMemberRemovedEmail` returns at the `isMailConfigured()` check before
+// it touches the database (unmocked here anyway) — the same path as
+// `sendInvitationEmail` takes in the invitation tests.
 import { removeMember } from "@/features/workspaces/actions";
 
 const WS = "acme";

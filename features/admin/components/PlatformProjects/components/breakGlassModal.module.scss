@@ -15,8 +15,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Die drei Bedingungen des Zugriffs, bevor er stattfindet. Als Liste und nicht
-   als Fließtext: sie sind einzeln wahr und sollen einzeln gelesen werden. */
+/* The three conditions of the access, before it happens. As a list and not
+   running text: each is true on its own and should be read on its own. */
 .terms {
   display: flex;
   flex-direction: column;
@@ -39,8 +39,8 @@
   }
 
   svg {
-    /* Auf die Höhe der ersten Zeile gesetzt, damit das Zeichen neben dem Text
-       steht und nicht in der Mitte eines zweizeiligen Punktes schwebt. */
+    /* Set to the height of the first line, so the icon sits next to the
+       text instead of floating in the middle of a two-line item. */
     margin-top: 2px;
     color: var(--amber);
   }

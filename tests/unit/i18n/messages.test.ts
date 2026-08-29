@@ -2,16 +2,16 @@ import { describe, expect, it } from "bun:test";
 import de from "@/messages/de.json";
 import en from "@/messages/en.json";
 
-// ─── Die Nachrichtendateien selbst ────────────────────────────────────────────
+// ─── The message files themselves ─────────────────────────────────────────────
 //
-// Diese Datei prüft keine Übersetzung, sondern ihre Form. Beides hier geprüfte
-// ist schon einmal schiefgegangen und fällt sonst erst im Browser auf — und dann
-// nicht an einer Stelle, sondern überall: `NextIntlClientProvider` steht im
-// Wurzel-Layout, ein kaputter Katalog nimmt die ganze App mit.
+// This file doesn't check translations, just their shape. Both things checked
+// here have gone wrong before and would otherwise only surface in the
+// browser — and then not in one place, but everywhere: `NextIntlClientProvider`
+// sits in the root layout, so a broken catalog takes down the whole app.
 
 type Messages = { [key: string]: string | Messages };
 
-/** Alle Schlüsselpfade einer Nachrichtendatei, flach. */
+/** All key paths of a message file, flattened. */
 function paths(node: Messages, prefix = ""): string[] {
   return Object.entries(node).flatMap(([key, value]) => {
     const here = prefix ? `${prefix}.${key}` : key;
@@ -19,7 +19,7 @@ function paths(node: Messages, prefix = ""): string[] {
   });
 }
 
-/** Alle Schlüssel*namen* — die einzelnen Stufen, nicht die Pfade. */
+/** All key *names* — the individual levels, not the paths. */
 function names(node: Messages): string[] {
   return Object.entries(node).flatMap(([key, value]) =>
     typeof value === "string" ? [key] : [key, ...names(value)],
@@ -34,10 +34,10 @@ const catalogs = {
 describe("Schlüsselnamen", () => {
   for (const [locale, messages] of Object.entries(catalogs)) {
     it(`enthält in ${locale} keinen Punkt im Namen`, () => {
-      // next-intl liest den Punkt als Verschachtelung und lehnt einen Katalog
-      // ab, der ihn im Namen trägt (`INVALID_KEY`). Wer einen Schlüssel wie
-      // `project.deleted` braucht, schreibt ihn flach (`projectDeleted`) und
-      // baut die Brücke im Code — siehe `ACTIONS` in `PlatformAudit`.
+      // next-intl reads the dot as nesting and rejects a catalog that
+      // carries one in a name (`INVALID_KEY`). Anyone who needs a key like
+      // `project.deleted` writes it flat (`projectDeleted`) and builds the
+      // bridge in code — see `ACTIONS` in `PlatformAudit`.
       const dotted = names(messages).filter((name) => name.includes("."));
       expect(dotted).toEqual([]);
     });
@@ -49,8 +49,8 @@ describe("Beide Sprachen", () => {
     const german = new Set(paths(catalogs.de));
     const english = new Set(paths(catalogs.en));
 
-    // Getrennt geprüft, damit die Fehlermeldung sagt, in welche Richtung es
-    // fehlt — „zwei Mengen sind ungleich" hilft beim Nachziehen nicht.
+    // Checked separately so the failure message says which direction is
+    // missing — "two sets are unequal" doesn't help when fixing it.
     expect([...german].filter((key) => !english.has(key))).toEqual([]);
     expect([...english].filter((key) => !german.has(key))).toEqual([]);
   });

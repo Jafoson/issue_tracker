@@ -34,7 +34,7 @@ export default async function ListPage({
     <>
       <Topbar count={issues.length} />
       <ListView issues={issues} projectId={project.id} composer={composer} />
-      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      {/* Opens the clicked issue as a side panel (`?issue=` in the URL). */}
       <IssuePeek data={composer} />
     </>
   );

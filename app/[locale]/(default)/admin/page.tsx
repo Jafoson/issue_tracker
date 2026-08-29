@@ -8,12 +8,12 @@ import { getAccess, PLATFORM } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Das Dashboard der Plattform.
+ * The platform dashboard.
  *
- * Der Zeitraum kommt aus der Adresse und nicht aus dem Zustand der Komponente:
- * so lässt er sich verschicken, überlebt das Neuladen, und die Auswertung bleibt
- * auf dem Server. Ein unbekannter Wert fällt auf 30 Tage zurück (`toRange`) —
- * eine Adresszeile ist Eingabe wie jede andere.
+ * The time range comes from the URL rather than component state: that way it
+ * can be shared, survives a reload, and the computation stays on the server.
+ * An unknown value falls back to 30 days (`toRange`) — a URL is input like
+ * any other.
  */
 export default async function AdminOverviewPage({
   searchParams,
@@ -27,14 +27,14 @@ export default async function AdminOverviewPage({
     getPlatformStats(),
     getDashboard(range),
     getAccess(PLATFORM),
-    // Der Hinweis oben wird server-seitig entschieden, nicht im Browser: sonst
-    // stünde er im ersten Bild und verschwände beim Hydrieren wieder.
+    // The notice above is decided server-side, not in the browser: otherwise
+    // it would appear in the first paint and then vanish again on hydration.
     getMyPreferences(),
   ]);
 
-  // Dieselbe Auswahl wie in der Seitenleiste (`ADMIN_NAV`): eine Kachel, die
-  // auf einen Bereich zeigt, den diese Rolle nicht öffnen darf, wäre ein Pfeil
-  // in eine 404. Support etwa sieht die Zahlen, verwaltet aber keine Konten.
+  // Same gating as the sidebar (`ADMIN_NAV`): a tile pointing at a section this
+  // role isn't allowed to open would be an arrow into a 404. Support, for
+  // instance, sees the numbers but doesn't manage accounts.
   return (
     <PlatformDashboard
       stats={stats}
@@ -42,8 +42,8 @@ export default async function AdminOverviewPage({
       noticeHidden={preferences.adminNoticeHidden}
       links={{
         users: access.has("user.manage") ? adminPath("users") : undefined,
-        // Ohne eigenes Recht — die Liste steht jedem offen, der den Bereich
-        // betreten darf (siehe `getAllWorkspaces`).
+        // No dedicated permission for this — the list is open to anyone
+        // allowed into the section (see `getAllWorkspaces`).
         workspaces: adminPath("workspaces"),
         projects: access.has("project.metadata.view")
           ? adminPath("projects")

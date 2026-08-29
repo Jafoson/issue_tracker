@@ -1,9 +1,9 @@
 /**
- * Trennt eine Liste von E-Mail-Adressen aus Freitext — Kommas, Semikolons,
- * Zeilenumbrüche und sonstige Leerräume zählen alle als Trenner, damit ein
- * eingefügter Adressblock aus einem Mailclient genauso funktioniert wie eine
- * Liste mit einer Adresse pro Zeile. Normalisiert (klein, getrimmt) und
- * dedupliziert, damit dieselbe Adresse nicht zweimal in der Liste steht.
+ * Splits a list of email addresses out of free text — commas, semicolons,
+ * line breaks, and other whitespace all count as separators, so a pasted
+ * address block from a mail client works just as well as a list with one
+ * address per line. Normalized (lowercased, trimmed) and deduplicated, so
+ * the same address doesn't appear twice in the list.
  */
 export function parseEmailList(text: string): string[] {
   const parts = text

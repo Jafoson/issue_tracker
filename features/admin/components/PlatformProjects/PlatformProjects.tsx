@@ -22,7 +22,7 @@ import { useTimeAgo } from "@/lib/utils/useTimeAgo";
 import { BreakGlassModal } from "./components/BreakGlassModal";
 import styles from "./platformProjects.module.scss";
 
-/** Ein Konto, dem sich ein verwaistes Projekt zuordnen lässt. */
+/** An account an orphaned project can be reassigned to. */
 export interface OwnerOption {
   id: string;
   name: string;
@@ -35,7 +35,7 @@ interface Props {
   canManage: boolean;
   canBreakGlass: boolean;
   nextCursor: string | null;
-  /** Lädt die nächste Seite ab einem Cursor (`loadMoreProjects`,
+  /** Loads the next page from a cursor (`loadMoreProjects`,
    * `features/admin/actions.ts`). */
   loadMore: (
     cursor: string,
@@ -43,19 +43,18 @@ interface Props {
 }
 
 /**
- * Alle Projekte der Plattform — ihre Hülle, nicht ihr Inhalt.
+ * All projects on the platform — their shell, not their content.
  *
- * Diese Liste zeigt auch private Projekte, und das ist der Punkt: eine
- * Plattformverwaltung muss wissen, *dass* es sie gibt, um verwaiste neu
- * zuzuordnen, Kosten zuzurechnen und aufzuräumen. Was darin steht, zeigt sie
- * nicht — es gibt in dieser Tabelle keine Zeile, keinen Link und keinen
- * Aufklapp-Pfeil, der zu Aufgaben oder Kommentaren führte. Die Spalte „Aufgaben"
- * ist eine Zahl und bleibt eine.
+ * This list also shows private projects, and that's the point: platform
+ * administration needs to know *that* they exist, in order to reassign
+ * orphans, attribute cost, and clean up. What's inside them, it does not
+ * show — there is no row, no link, and no expand arrow in this table that
+ * leads to issues or comments. The "issues" column is a number and stays one.
  *
- * Der einzige Weg hinein steht am Zeilenende und heißt, wonach er aussieht:
- * Notfall-Zugriff. Er verlangt eine Begründung, trägt den Handelnden sichtbar in
- * die Mitgliederliste ein und steht danach im Protokoll — siehe
- * `BreakGlassModal` und `features/admin/actions.ts`.
+ * The only way in sits at the end of the row and is named for what it is:
+ * break-glass access. It requires a reason, visibly adds the actor to the
+ * member list, and ends up in the audit log afterward — see
+ * `BreakGlassModal` and `features/admin/actions.ts`.
  */
 export function PlatformProjects({
   projects,
@@ -199,8 +198,8 @@ export function PlatformProjects({
       cell: (row) => <span className={styles.num}>{row.memberCount}</span>,
     },
     {
-      // Eine Zahl, kein Weg hinein. Sie sagt, wie viel in dem Projekt liegt —
-      // nicht, was.
+      // A number, not a way in. It says how much is in the project — not
+      // what.
       id: "issues",
       header: t("platform.colIssues"),
       width: "minmax(100px, max-content)",

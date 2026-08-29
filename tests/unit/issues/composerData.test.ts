@@ -45,7 +45,7 @@ mock.module("@/lib/permissions", () => ({
 
 import { getIssueComposerData } from "@/features/issues/editor-data";
 
-/** Erlaubt `issue.create` nur in den genannten Projekten. */
+/** Allows `issue.create` only in the given projects. */
 function allowIn(...projectIds: string[]) {
   mockHasPermission.mockImplementation(
     async (permission: string, ctx: { projectId?: string }) =>
@@ -84,8 +84,8 @@ describe("getIssueComposerData() — wo darf angelegt werden", () => {
     ]);
   });
 
-  // `projects` ist auch die Nachschlagetabelle für bestehende Issues (Prefix,
-  // Farbe). Wer sie kürzte, um Knöpfe zu verstecken, hätte Karten ohne Projekt.
+  // `projects` also serves as the lookup table for existing issues (prefix,
+  // color). Trimming it to hide buttons would leave cards without a project.
   it("kürzt die Projektliste selbst nicht", async () => {
     allowIn("p-1");
     const data = await getIssueComposerData();

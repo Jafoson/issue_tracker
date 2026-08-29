@@ -1,16 +1,17 @@
-/* Aussehen und Maße der Zeile kommen aus `components/ui/atoms/Button` — ein
-   Navigationseintrag ist ein Knopf, der ein Link ist. Hier steht nur, was eine
-   Navigationsleiste zusätzlich braucht: Sie ist schmal und ihre Beschriftungen
-   sind fremdbestimmt (Projektnamen, „Workspace Einstellungen"), also muss die
-   Zeile sagen, was nachgibt, wenn der Platz nicht reicht.
+/* Appearance and size of the row come from `components/ui/atoms/Button` — a
+   nav entry is a button that is a link. This file only holds what a nav
+   list additionally needs: it's narrow and its labels come from outside
+   (project names, "Workspace settings"), so the row must say what yields
+   when there isn't enough space.
 
-   Nachgeben darf allein der Text. Er ist auch verkürzt noch zu lesen und der
-   ganze Name steht im `title`; ein gestauchtes Icon dagegen wäre schlicht ein
-   verzerrtes Zeichen. Dass das Icon seine Größe behält, steht bei den Knöpfen
-   selbst (`button.module.scss`), denn dort gilt es überall. */
+   Only the text is allowed to yield. It's still readable truncated, and the
+   full name is in `title`; a squished icon, on the other hand, would simply
+   be a distorted symbol. That the icon keeps its size is handled by the
+   buttons themselves (`button.module.scss`), since that rule applies there
+   everywhere. */
 .label {
-  /* Ohne `min-width: 0` gilt für ein Flex-Element die Inhaltsbreite als
-     Untergrenze — es schrumpft nicht, und stattdessen weicht alles daneben. */
+  /* Without `min-width: 0`, a flex item's content width acts as a floor —
+     it won't shrink, and everything beside it gives way instead. */
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

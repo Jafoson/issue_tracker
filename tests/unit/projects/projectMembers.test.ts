@@ -19,15 +19,15 @@ const mockInviteLinkUpdateMany = mock();
 const mockInviteLinkCreate = mock();
 const mockTransaction = mock();
 
-// Der Tx-Client für den Einladungsweg mit neuem Account: dort entstehen Konto,
-// Workspace-Mitgliedschaft und die Projekt-Einträge zusammen.
+// The tx client for the new-account invite path: account, workspace
+// membership, and the project entries all get created together there.
 const mockTx = {
   user: { create: mock() },
   workspaceMember: { create: mock(), findUnique: mock() },
   project: { findMany: mock() },
   projectMember: { createMany: mock(), upsert: mock() },
-  // Der Einladungsweg mit neuem Account stellt einen Token aus — das Konto hat
-  // kein Passwort, ohne ihn käme niemand hinein.
+  // The new-account invite path issues a token — the account has no
+  // password, so without it nobody could get in.
   invitation: { deleteMany: mock(), create: mock() },
 };
 
@@ -68,8 +68,8 @@ mock.module("@/lib/permissions", () => ({
   currentUserId: mockCurrentUserId,
   accessFor: mockAccessFor,
   hasPermission: mock(),
-  // Reine Funktion — hier im Original nachgebildet, damit die Rangregel
-  // wirklich mitgetestet wird und nicht wegge­mockt ist.
+  // Pure function — reimplemented here from the original, so the ranking
+  // rule is actually exercised by the test instead of being mocked away.
   assignmentCeiling: (
     access: {
       roleKey: (l: string) => string | null;
@@ -104,10 +104,10 @@ const PROJECT = "p-1";
 const WS = "acme";
 const ACTOR = "u-actor";
 
-/** Die drei Mitglieder-Rechte zusammen — der Normalfall einer Verwaltungsrolle. */
+/** The three member permissions together — the normal case for a management role. */
 const MANAGE = ["member.invite", "member.remove", "member.role.update"];
 
-/** Ein Handelnder mit Rechten und einem Rang auf der Projekt-Ebene. */
+/** An actor with permissions and a rank at the project level. */
 function access(permissions: string[], projectRank: number | null) {
   return {
     has: (p: string) => permissions.includes(p),
@@ -119,7 +119,7 @@ function access(permissions: string[], projectRank: number | null) {
   };
 }
 
-/** Standardlage: darf verwalten, trägt selbst keine Projektrolle (Rang offen). */
+/** Default state: may manage, holds no project role themselves (rank open). */
 function reset() {
   for (const m of [
     mockProjectFindUnique,
@@ -154,8 +154,8 @@ function reset() {
     }
   }
   mockTx.user.create.mockResolvedValue({ id: "u-new" });
-  // Die neue Mitgliedschaft ist die Standardrolle — daraus wird eine
-  // Contributor-Rolle in den Projekten.
+  // The new membership is the default role — this becomes a Contributor
+  // role in the projects.
   mockTx.workspaceMember.findUnique.mockResolvedValue({
     role: {
       key: "member",
@@ -168,8 +168,8 @@ function reset() {
   );
 
   mockCurrentUserId.mockResolvedValue(ACTOR);
-  // Der Handelnde darf einladen; das Ziel ist ein normales Mitglied ohne
-  // Generalschlüssel — sonst ließe es sich hier gar nicht anfassen.
+  // The actor may invite; the target is a regular member without the
+  // master permission — otherwise it couldn't be touched here at all.
   mockCan.mockImplementation(
     async (_userId: string, permission: string) =>
       permission !== "project.admin.all",
@@ -178,8 +178,8 @@ function reset() {
   mockProjectFindUnique.mockResolvedValue({ workspaceId: WS });
   mockRoleFindFirst.mockResolvedValue({ id: "wsp:acme:contributor", rank: 3 });
   mockWorkspaceMemberFindMany.mockResolvedValue([{ userId: "u-1" }]);
-  // Standardmäßig noch niemand im Projekt — sonst bekäme eine frisch
-  // aufgenommene Person keine "invite"-Benachrichtigung.
+  // By default nobody is in the project yet — otherwise a freshly enrolled
+  // person wouldn't get an "invite" notification.
   mockProjectMemberFindMany.mockResolvedValue([]);
   mockProjectMemberCreateMany.mockResolvedValue({ count: 1 });
   mockProjectMemberCreate.mockResolvedValue({});
@@ -214,8 +214,8 @@ describe("addProjectMembers() — Zugriffsschutz", () => {
     expect(mockProjectMemberCreateMany).not.toHaveBeenCalled();
   });
 
-  // Die drei Mitglieder-Rechte sind einzeln vergebbar. Wer nur umrollen oder
-  // entfernen darf, nimmt niemanden neu auf.
+  // The three member permissions can be granted individually. Someone who
+  // may only re-role or remove members doesn't get to enroll anyone new.
   it("genügt member.role.update nicht zum Aufnehmen", async () => {
     mockAccessFor.mockResolvedValue(access(["member.role.update"], null));
     expect(await add()).toHaveProperty("error");
@@ -250,8 +250,8 @@ describe("addProjectMembers() — Rollen", () => {
   });
 
   it("lehnt Rollen ab, die es auf der Projekt-Ebene nicht gibt", async () => {
-    // Eine Workspace-Rolle wie "owner" findet sich hier nicht — Projekt- und
-    // Workspace-Rollen sind seit dem dreistufigen RBAC getrennte Töpfe.
+    // A workspace role like "owner" isn't found here — project and workspace
+    // roles have been separate pools since the three-tier RBAC.
     mockRoleFindFirst.mockResolvedValue(null);
     const result = await addProjectMembers({
       projectId: PROJECT,
@@ -364,7 +364,7 @@ describe("setProjectMemberRole()", () => {
       id: "wsp:acme:project_viewer",
       rank: 2,
     });
-    // Ziel ist Project Admin (Rang 4) — über dem Aufrufer.
+    // Target is Project Admin (rank 4) — above the caller.
     mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
 
     const result = await setProjectMemberRole(PROJECT, "u-1", "project_viewer");
@@ -394,8 +394,8 @@ describe("setProjectMemberRole()", () => {
   });
 
   it("stuft die Leitung des Workspace nicht herab", async () => {
-    // Wer den Generalschlüssel trägt, behält seine Rechte ohnehin — der Eintrag
-    // würde in der Tabelle nur etwas behaupten, was nicht gilt.
+    // Whoever holds the master permission keeps their access regardless —
+    // the row would only be asserting something in the table that isn't true.
     mockCan.mockResolvedValue(true);
     mockProjectMemberFindUnique.mockResolvedValue({ role: { rank: 4 } });
 
@@ -485,7 +485,7 @@ describe("inviteProjectMember()", () => {
     });
 
     expect(result).toEqual({ ok: true });
-    // Adresse normalisiert, kein neuer Account.
+    // Address normalized, no new account.
     expect(mockUserFindUnique).toHaveBeenCalledWith({
       where: { email: "ada@example.com" },
       select: { id: true, firstName: true, lastName: true, color: true },
@@ -515,7 +515,7 @@ describe("inviteProjectMember()", () => {
 
   it("verlangt member.invite im Workspace für eine unbekannte Adresse", async () => {
     mockUserFindUnique.mockResolvedValue(null);
-    // Projekt darf verwaltet werden, neue Accounts aber nicht.
+    // The project may be managed, but not new accounts.
     mockCan.mockImplementation(
       async (_userId: string, permission: string) =>
         permission !== "member.invite",
@@ -540,12 +540,12 @@ describe("inviteProjectMember()", () => {
       role: "contributor",
     });
 
-    // Das Konto hat kein Passwort — die Antwort trägt deshalb den Einladungslink.
+    // The account has no password — so the response carries the invite link.
     expect(result).toMatchObject({ ok: true });
     expect("inviteUrl" in result && result.inviteUrl).toContain("/invite/");
     expect(mockTx.invitation.create).toHaveBeenCalled();
     expect(mockTx.workspaceMember.create).toHaveBeenCalled();
-    // Die abgeleitete Rolle in jedem öffentlichen Projekt des Workspace …
+    // The derived role in every public project of the workspace …
     expect(mockTx.projectMember.createMany).toHaveBeenCalledWith({
       data: [
         {
@@ -561,7 +561,7 @@ describe("inviteProjectMember()", () => {
       ],
       skipDuplicates: true,
     });
-    // … und im einladenden Projekt die eingeladene Rolle.
+    // … and the invited role in the inviting project itself.
     expect(mockTx.projectMember.upsert).toHaveBeenCalledWith({
       where: { projectId_userId: { projectId: PROJECT, userId: "u-new" } },
       update: { roleId: "wsp:acme:contributor", origin: "manual" },
@@ -591,7 +591,7 @@ describe("inviteProjectMember()", () => {
     expect(mockTx.workspaceMember.create).not.toHaveBeenCalled();
     expect(mockTx.projectMember.createMany).not.toHaveBeenCalled();
     expect(mockTx.projectMember.upsert).toHaveBeenCalled();
-    // Auch ein Gast braucht seinen Einladungslink: das Konto ist neu.
+    // Even a guest needs their invite link: the account is new.
     expect(mockTx.invitation.create).toHaveBeenCalled();
   });
 });
@@ -663,8 +663,8 @@ describe("inviteProjectMembers()", () => {
       role: "contributor",
     });
 
-    // `can` wird für "member.invite" im Workspace genau einmal aufgerufen —
-    // nicht einmal pro neu angelegtem Konto.
+    // `can` is called for "member.invite" in the workspace exactly once —
+    // not once per newly created account.
     const workspaceInviteChecks = mockCan.mock.calls.filter(
       ([, permission]) => permission === "member.invite",
     );

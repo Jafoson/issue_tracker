@@ -14,8 +14,8 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Wie Leute in den Workspace kommen: der teilbare Link oben, offene
- * E-Mail-Einladungen darunter.
+ * How people get into the workspace: the shareable link on top, open
+ * email invitations below.
  */
 export default async function WorkspaceSettingsInvitationsPage({
   params,

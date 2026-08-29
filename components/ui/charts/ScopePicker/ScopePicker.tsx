@@ -9,22 +9,22 @@ import styles from "./scopePicker.module.scss";
 interface Props {
   value: DashboardScope;
   onChange: (scope: DashboardScope) => void;
-  /** Barrierefreier Name der Gruppe, z. B. „Umfang". */
+  /** Accessible name of the group, e.g. "Scope". */
   label: string;
-  /** Beschriftung je Umfang — die Übersetzung kommt von außen herein. */
+  /** Label per scope — the translation comes in from outside. */
   labelFor: (scope: DashboardScope) => string;
 }
 
 /**
- * Der Umfang eines Dashboards: „nur ich" oder „das ganze Projekt/Workspace".
+ * The scope of a dashboard: "just me" or "the whole project/workspace".
  *
- * Nach dem Vorbild von `RangePicker` (`components/ui/charts/RangePicker`) und
- * aus demselben Grund kein `SegmentedControl`: der Umfang ist eine Einstellung
- * *über* dem Inhalt, keine eigene Ansicht davon.
+ * Modeled on `RangePicker` (`components/ui/charts/RangePicker`) and for the
+ * same reason not a `SegmentedControl`: the scope is a setting *above* the
+ * content, not a view of it in its own right.
  *
- * Erscheint nur, wenn die Person `dashboard.view.all` trägt — wer sie nicht
- * hat, sieht ihr Dashboard ohnehin nur mit `scope: "mine"`, ohne dass es dafür
- * einen Umschalter bräuchte.
+ * Only appears when the person holds `dashboard.view.all` — someone without
+ * it only ever sees their dashboard with `scope: "mine"` anyway, with no
+ * need for a toggle.
  */
 export function ScopePicker({ value, onChange, label, labelFor }: Props) {
   return (

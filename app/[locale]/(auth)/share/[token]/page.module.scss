@@ -1,6 +1,6 @@
-/* Der Karten-Teil für den ungültigen Fall — dieselbe Bühne wie
-   `(auth)/invite/[token]` und `(auth)/join/[token]`, nur innerhalb der
-   hellen `ShareThemeShell` statt des app-weiten dunklen Vorgabe-Themes. */
+/* The card part for the invalid case — same stage as `(auth)/invite/[token]`
+   and `(auth)/join/[token]`, just within the light `ShareThemeShell` instead
+   of the app-wide dark default theme. */
 .invalidWrap {
   flex: 1;
   display: flex;
@@ -34,9 +34,10 @@
   color: var(--on-surface-variant);
 }
 
-/* Füllt die restliche Höhe unter der `nav` (die selbst `flex: none` in
-   `ShareThemeShell` ist) — `.bottom` schwimmt darin mit `margin-top: auto`
-   nach unten, statt bei kurzem Inhalt mitten auf der Seite zu stehen. */
+/* Fills the remaining height under the `nav` (which itself is `flex: none`
+   in `ShareThemeShell`) — `.bottom` floats down within it via
+   `margin-top: auto`, instead of sitting in the middle of the page when
+   content is short. */
 .main {
   flex: 1;
   display: flex;
@@ -61,7 +62,7 @@
   padding-top: 28px;
 }
 
-/* ── Banner: wer wann geteilt hat ─────────────────────────────────────────── */
+/* ── Banner: who shared it and when ───────────────────────────────────────── */
 
 .banner {
   display: flex;
@@ -93,7 +94,7 @@
   white-space: nowrap;
 }
 
-/* ── Zweispaltiges Layout ─────────────────────────────────────────────────── */
+/* ── Two-column layout ────────────────────────────────────────────────────── */
 
 .layout {
   display: grid;
@@ -193,7 +194,7 @@
   color: var(--on-surface);
 }
 
-/* ── Sidebar: Metadaten ───────────────────────────────────────────────────── */
+/* ── Sidebar: metadata ─────────────────────────────────────────────────────── */
 
 .sidebar {
   display: flex;
@@ -261,7 +262,7 @@
   gap: 6px;
 }
 
-/* ── CTA: "Mitdiskutieren?" ───────────────────────────────────────────────── */
+/* ── CTA: "Want to join the discussion?" ──────────────────────────────────── */
 
 .cta {
   display: flex;
@@ -300,7 +301,7 @@
   flex: none;
 }
 
-/* ── Fuß ──────────────────────────────────────────────────────────────────── */
+/* ── Footer ────────────────────────────────────────────────────────────────── */
 
 .footer {
   display: flex;

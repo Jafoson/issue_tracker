@@ -1,13 +1,13 @@
 /**
- * Was ein Link-Chip aus seiner Adresse ableitet.
+ * What a link chip derives from its URL.
  *
- * Beides läuft über `new URL(…)` statt über eigene Ausdrücke: der Parser des
- * Browsers normalisiert Groß-/Kleinschreibung, Zugangsdaten und Sonderzeichen
- * und wirft bei allem, was keine Adresse ist. Was er zurückgibt, ist damit
- * sicher genug, um es in ein `style`-Attribut zu schreiben.
+ * Both go through `new URL(…)` instead of custom expressions: the browser's
+ * parser normalizes case, credentials, and special characters, and throws
+ * on anything that isn't a URL. What it returns is therefore safe enough to
+ * write into a `style` attribute.
  */
 
-/** Nur diese beiden Schemata haben einen Host, von dem sich ein Icon holen ließe. */
+/** Only these two schemes have a host an icon could be fetched from. */
 const WEB = new Set(["http:", "https:"]);
 
 function parse(href: string): URL | null {
@@ -19,10 +19,10 @@ function parse(href: string): URL | null {
 }
 
 /**
- * Der Name, der im Chip steht, wenn keiner angegeben wurde.
+ * The name shown on the chip when none was given.
  *
- * `www.` fällt weg — es trägt keine Bedeutung und kostet nur Platz in einer
- * Zeile, die ohnehin schmal ist.
+ * `www.` is dropped — it carries no meaning and only costs space in a line
+ * that's already narrow.
  */
 export function hostOf(href: string): string {
   const url = parse(href);
@@ -32,13 +32,13 @@ export function hostOf(href: string): string {
 }
 
 /**
- * Die Adresse des Website-Icons — oder `null`.
+ * The URL of the website's icon — or `null`.
  *
- * Bewusst `/favicon.ico` der Seite selbst und kein Dienst wie der von Google:
- * ein solcher Dienst bekäme sonst jede verlinkte Adresse zu sehen. Der Preis
- * ist eine geringere Trefferquote — wer sein Icon nur über ein `<link rel>`
- * im Kopf der Seite angibt, hat keines unter diesem Pfad. Deshalb liegt
- * darunter ein Ersatzzeichen, siehe `richText.module.scss`.
+ * Deliberately the site's own `/favicon.ico` and not a service like
+ * Google's: such a service would otherwise get to see every linked URL.
+ * The price is a lower hit rate — whoever declares their icon only via a
+ * `<link rel>` in the page head has none at this path. That's why there's a
+ * fallback glyph underneath, see `richText.module.scss`.
  */
 export function faviconOf(href: string): string | null {
   const url = parse(href);
@@ -47,12 +47,12 @@ export function faviconOf(href: string): string | null {
 }
 
 /**
- * Das `style`-Attribut für das Icon — oder `undefined`, wenn es keines gibt.
+ * The `style` attribute for the icon — or `undefined` if there is none.
  *
- * Die Adresse kommt aus `URL.origin` und ist damit normalisiert; Anführungs-
- * zeichen und Klammern können darin nicht vorkommen. Zur Sicherheit werden sie
- * trotzdem kodiert: das Dokument liegt in der Datenbank, und was von dort
- * kommt, wird nie ungeprüft in ein Attribut geschrieben.
+ * The URL comes from `URL.origin` and is therefore normalized; quotes and
+ * parentheses can't occur in it. It's still encoded as a precaution: the
+ * document lives in the database, and whatever comes from there is never
+ * written unchecked into an attribute.
  */
 export function faviconStyle(href: string): string | undefined {
   const icon = faviconOf(href);

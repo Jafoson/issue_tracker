@@ -2,38 +2,38 @@ import type { ReactNode } from "react";
 import { Table, type TableColumn } from "@/components/ui/layout/Table/Table";
 import styles from "./settingsList.module.scss";
 
-/** Eine Einstellung als Zeile: worum es geht, was sie bedeutet, womit man sie ändert. */
+/** A setting as a row: what it's about, what it means, what you change it with. */
 export interface SettingsRow {
   id: string;
   label: string;
   desc?: ReactNode;
-  /** Das Bedienelement — bei genau einer Spalte (der Regelfall). */
+  /** The control — for exactly one column (the normal case). */
   control?: ReactNode;
-  /** Bei mehreren Spalten: je Spalten-Id ein Bedienelement. */
+  /** For multiple columns: one control per column id. */
   cells?: Record<string, ReactNode>;
 }
 
-/** Eine Spalte mit Bedienelementen, wenn eine nicht reicht. */
+/** A column of controls, for when one isn't enough. */
 export interface SettingsColumn {
   id: string;
   header: string;
-  /** Grid-Track. Vorgabe: `104px` — schmal genug, dass die Köpfe zählen. */
+  /** Grid track. Default: `104px` — narrow enough that the headers count. */
   width?: string;
 }
 
 interface Props {
   rows: SettingsRow[];
-  /** Überschrift über der Liste. Ohne sie steht die Liste für sich. */
+  /** Heading above the list. Without it, the list stands on its own. */
   title?: string;
-  /** Name der Liste für Screenreader. Vorgabe: `title`. */
+  /** Name of the list for screen readers. Default: `title`. */
   label?: string;
   /**
-   * Mehrere Bedienspalten statt einer — jede mit eigenem Kopf, die Zellen dann
-   * in `row.cells`. Ohne diese Prop trägt jede Zeile genau ein Bedienelement
-   * (`row.control`) und die Liste kommt ohne Kopfzeile aus.
+   * Multiple control columns instead of one — each with its own header,
+   * cells then coming from `row.cells`. Without this prop, each row carries
+   * exactly one control (`row.control`) and the list needs no header row.
    */
   columns?: SettingsColumn[];
-  /** Warnfarbe im Rahmen — für Zeilen, die sich nicht zurücknehmen lassen. */
+  /** Warning color in the border — for rows that can't be undone. */
   danger?: boolean;
   className?: string;
 }
@@ -50,19 +50,19 @@ const SETTING_COLUMN: TableColumn<SettingsRow> = {
 };
 
 /**
- * Eine Liste von Einstellungen: links, worum es geht (Beschriftung über
- * Erklärung), rechts, womit man es ändert.
+ * A list of settings: on the left, what it's about (label above
+ * explanation), on the right, what you change it with.
  *
- * Dasselbe Raster, das die Projekt- und Workspace-Einstellungen von Hand
- * aufbauen — hier einmal als Baustein, weil die eigenen Einstellungen fünf
- * Bereiche haben und fünf Kopien desselben Rasters fünf Gelegenheiten wären,
- * auseinanderzulaufen.
+ * The same grid that the project and workspace settings build by hand —
+ * here as a shared building block once, because the account settings have
+ * five sections and five copies of the same grid would be five
+ * opportunities to drift apart.
  *
- * Eine Einstellung ist keine Liste gleichartiger Datensätze, sondern ein
- * Formular. Deshalb weicht die Tabelle darunter in drei Werten von ihrer Vorgabe
- * ab (siehe `settingsList.module.scss`): die Zeile trägt zwei Textzeilen und
- * braucht Höhe, sie ist von der nächsten getrennt, und sie leuchtet nicht auf —
- * anzuklicken gibt es nur das Bedienelement rechts.
+ * A setting isn't a list of similar records, it's a form. That's why the
+ * table below deviates from its defaults in three values (see
+ * `settingsList.module.scss`): the row carries two lines of text and needs
+ * height, it's separated from the next one, and it doesn't light up on
+ * hover — only the control on the right is clickable.
  */
 export function SettingsList({
   rows,
@@ -83,8 +83,8 @@ export function SettingsList({
     : [
         {
           id: "control",
-          // Jedes Bedienelement in derselben Breite, damit die rechten Kanten
-          // eine Linie bilden.
+          // Every control at the same width, so the right edges form a
+          // straight line.
           width: "minmax(280px, max-content)",
           align: "end",
           cell: (row) => row.control ?? null,
@@ -121,12 +121,12 @@ export function SettingsList({
 }
 
 /**
- * Der scrollende Teil einer Einstellungsseite — alles unter der Kopfzeile.
+ * The scrolling part of a settings page — everything below the header.
  *
- * Steht hier statt in jedem Bereich noch einmal: die Kopfzeile (`PageHeader`)
- * bleibt oben, die Listen darunter scrollen, und der Abstand zwischen ihnen ist
- * überall derselbe. Fünf eigene Stylesheets für denselben Kasten wären fünf
- * Gelegenheiten, dass er woanders anders aussieht.
+ * Defined here instead of once per section: the header (`PageHeader`) stays
+ * on top, the lists below it scroll, and the spacing between them is the
+ * same everywhere. Five separate stylesheets for the same box would be five
+ * opportunities for it to look different somewhere else.
  */
 export function SettingsBody({
   children,

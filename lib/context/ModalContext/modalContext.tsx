@@ -14,52 +14,51 @@ import styles from "./modalContext.module.scss";
 export interface ModalRenderProps {
   close: () => void;
   /**
-   * Ändert die Optionen dieses Modals im laufenden Betrieb — Platzierung und
-   * Breite.
+   * Changes this modal's options while it's open — placement and width.
    *
-   * Gedacht für Inhalte, die zwischen zwei Darstellungen wechseln können, ohne
-   * neu geöffnet zu werden. Die Issue-Ansicht macht das nicht mehr über diesen
-   * Weg: sie hängt im Dock (`DockContext`) und hebt sich dort selbst an.
+   * Meant for content that can switch between two presentations without
+   * being reopened. The issue view no longer does that through this path:
+   * it lives in the dock (`DockContext`) and lifts itself there instead.
    */
   setOptions: (patch: Partial<ModalOptions>) => void;
 }
 
 /**
- * Wo das Modal sitzt: `center` als Dialog über der Seite, `right` als
- * Seitenpanel, das an der rechten Kante klebt und über die volle Höhe geht.
+ * Where the modal sits: `center` as a dialog over the page, `right` as a
+ * side panel that sticks to the right edge and runs the full height.
  */
 export type ModalPlacement = "center" | "right";
 
 export interface ModalOptions {
-  /** Panel-Breite, z.B. 600 oder "80vw". Default: Basisbreite des Inhalts. */
+  /** Panel width, e.g. 600 or "80vw". Default: content's base width. */
   width?: number | string;
-  /** Schließen per Backdrop-Klick / Escape erlauben. Default: true. */
+  /** Allow closing via backdrop click / Escape. Default: true. */
   dismissible?: boolean;
   /** Default: "center". */
   placement?: ModalPlacement;
   /**
-   * Hebt den Versatz von oben auf — das Modal steht dann genau in der Mitte.
+   * Removes the top offset — the modal then sits exactly centered.
    *
-   * Nur bei `placement: "center"` von Belang. Kleine Dialoge wirken mittig zu
-   * tief und sitzen deshalb standardmäßig etwas höher; große nutzen die Höhe
-   * besser aus, wenn der Versatz wegfällt.
+   * Only relevant with `placement: "center"`. Small dialogs look too low
+   * when centered and therefore sit a bit higher by default; large ones
+   * make better use of the height once the offset is removed.
    */
   centered?: boolean;
   /**
-   * Barrierefreier Name des Dialogs. Ohne ihn kündigt der Screenreader nur
-   * „Dialog“ an — bitte lokalisiert übergeben.
+   * Accessible name of the dialog. Without it the screen reader only
+   * announces "dialog" — please pass it localized.
    */
   label?: string;
   /**
-   * Läuft, sobald das Modal geschlossen wird — egal ob per Escape, Backdrop
-   * oder `close()`. Gedacht für Öffner, die neben dem Modal einen eigenen
-   * Zustand führen (z.B. einen URL-Parameter), der mitverschwinden muss.
-   * `closeModal(id, { silent: true })` überspringt den Aufruf.
+   * Runs as soon as the modal is closed — whether via Escape, backdrop, or
+   * `close()`. Meant for openers that keep their own state alongside the
+   * modal (e.g. a URL parameter) that needs to disappear along with it.
+   * `closeModal(id, { silent: true })` skips this call.
    */
   onClose?: () => void;
 }
 
-/** Aufräumen ohne Rückmeldung an den Öffner — siehe `ModalOptions.onClose`. */
+/** Clean up without notifying the opener — see `ModalOptions.onClose`. */
 interface CloseOptions {
   silent?: boolean;
 }
@@ -76,12 +75,12 @@ interface ModalEntry {
 }
 
 interface ModalValue {
-  /** Rendert `content` als Modal. `content` kann eine Render-Function sein, die `close` erhält. */
+  /** Renders `content` as a modal. `content` can be a render function that receives `close`. */
   openModal: (content: ModalContent, options?: ModalOptions) => string;
-  /** Schließt das Modal mit `id`, ohne `id` das oberste. */
+  /** Closes the modal with `id`, or the topmost one without an `id`. */
   closeModal: (id?: string, options?: CloseOptions) => void;
   closeAllModals: () => void;
-  /** Schreibt die Optionen eines offenen Modals fort — siehe `ModalRenderProps.setOptions`. */
+  /** Carries forward the options of an open modal — see `ModalRenderProps.setOptions`. */
   setModalOptions: (id: string, patch: Partial<ModalOptions>) => void;
 }
 
@@ -95,11 +94,12 @@ export function useModal() {
 }
 
 /**
- * Ob gerade ein Modal offen ist.
+ * Whether a modal is currently open.
  *
- * Für alles, was ebenfalls auf Escape hört und dabei zurücktreten muss: ein
- * Modal liegt immer oben, also gehört die Taste ihm. Das Dock-Panel nutzt das
- * — sonst schlösse Escape das Panel unter dem Dialog statt des Dialogs.
+ * For anything that also listens for Escape and needs to step back: a
+ * modal always sits on top, so the key belongs to it. The dock panel uses
+ * this — otherwise Escape would close the panel underneath the dialog
+ * instead of the dialog.
  */
 export function useHasOpenModal() {
   return (useContext(StackCtx)?.length ?? 0) > 0;
@@ -107,8 +107,9 @@ export function useHasOpenModal() {
 
 export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [stack, setStack] = useState<ModalEntry[]>([]);
-  // Spiegel des Stacks: `onClose`-Handler dürfen synchron weiterschließen, und
-  // dafür muss der aktuelle Stand schon vor dem nächsten Render feststehen.
+  // Mirror of the stack: `onClose` handlers are allowed to close further,
+  // synchronously, and for that the current state must already be settled
+  // before the next render.
   const stackRef = useRef<ModalEntry[]>(stack);
   const counter = useRef(0);
 
@@ -122,8 +123,9 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       const current = stackRef.current;
       const entry = id ? current.find((m) => m.id === id) : current.at(-1);
       if (!entry) return;
-      // Erst den Stack fortschreiben, dann melden: ein `onClose`, das seinerseits
-      // schließt (URL-Sync), findet den Eintrag dann nicht mehr vor.
+      // Update the stack first, then notify: an `onClose` that itself
+      // closes something (URL sync) would no longer find the entry
+      // otherwise.
       commit(current.filter((m) => m.id !== entry.id));
       if (!options?.silent) entry.options.onClose?.();
     },
@@ -161,7 +163,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     [commit],
   );
 
-  // Escape schließt nur das oberste (nicht explizit undismissible) Modal im Stack.
+  // Escape only closes the topmost (not explicitly non-dismissible) modal in the stack.
   useEffect(() => {
     if (stack.length === 0) return;
     const onKey = (e: KeyboardEvent) => {
@@ -185,20 +187,21 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Rendert den Modal-Stack. Muss genau einmal unterhalb des `ModalProvider`
- * platziert werden — und zwar an der Stelle im React-Baum, deren Contexts die
- * Modal-Inhalte sehen sollen (z.B. unterhalb des `NextIntlClientProvider`).
+ * Renders the modal stack. Must be placed exactly once below the
+ * `ModalProvider` — and specifically at the spot in the React tree whose
+ * contexts the modal content should see (e.g. below the
+ * `NextIntlClientProvider`).
  *
- * Grund: `createPortal` verschiebt nur den DOM-Knoten nach `document.body`, die
- * Context-Auflösung folgt weiter dem React-Baum. Würde der Provider den Stack
- * selbst rendern, hingen die Inhalte an seiner Position — oberhalb aller
- * Provider, die erst in tieferen Layouts gesetzt werden.
+ * Reason: `createPortal` only moves the DOM node to `document.body`;
+ * context resolution keeps following the React tree. If the provider
+ * rendered the stack itself, the content would hang off its position —
+ * above all the providers that only get set up in deeper layouts.
  */
 export function ModalOutlet() {
   const stack = useContext(StackCtx);
   const { closeModal, setModalOptions } = useModal();
 
-  // Auch der SSR-Guard für createPortal: serverseitig ist der Stack immer leer.
+  // Also the SSR guard for createPortal: on the server the stack is always empty.
   if (!stack || stack.length === 0) return null;
 
   return createPortal(
@@ -233,9 +236,9 @@ function ModalFrame({
   const cx = (...names: (string | false)[]) => names.filter(Boolean).join(" ");
 
   useEffect(() => {
-    // Nur einspringen, wenn der Inhalt nicht selbst schon fokussiert hat (z.B.
-    // per `autoFocus` auf dem Titelfeld) — sonst würde der Panel-Fokus die
-    // Eingabe direkt wieder wegnehmen.
+    // Only step in if the content hasn't already focused something itself
+    // (e.g. via `autoFocus` on the title field) — otherwise the panel focus
+    // would immediately steal it back from the input.
     const panel = panelRef.current;
     if (panel && !panel.contains(document.activeElement)) panel.focus();
 

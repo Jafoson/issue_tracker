@@ -10,17 +10,16 @@ import styles from "./page.module.scss";
 export const dynamic = "force-dynamic";
 
 /**
- * Einen Einladungslink einlösen.
+ * Redeem an invite link.
  *
- * Der Token im Pfad ist die Berechtigung — die Seite liegt deshalb in der
- * Route-Group `(auth)` und ist ohne Session erreichbar (`proxy.ts`).
+ * The token in the path is the authorization — that's why this page lives in
+ * the `(auth)` route group and is reachable without a session (`proxy.ts`).
  *
- * Drei Ausgänge: unbekannt/widerrufen/abgelaufen (eine Meldung für alle drei —
- * kein Orakel für gültige Tokens, wie bei `/invite/[token]`), eingeloggt
- * (Bestätigung "als X beitreten?"), oder ausgeloggt (Anmelden/Registrieren,
- * beide mit dem Token im `callbackUrl`, damit dieselbe Seite nach der
- * Anmeldung noch einmal aufgerufen wird und dann in den eingeloggten Zweig
- * fällt).
+ * Three outcomes: unknown/revoked/expired (one message for all three — no
+ * oracle for valid tokens, same as `/invite/[token]`), signed in
+ * (confirmation "join as X?"), or signed out (sign in/register, both with the
+ * token in `callbackUrl`, so the same page gets called again after signing
+ * in and then falls into the signed-in branch).
  */
 export default async function JoinPage({
   params,

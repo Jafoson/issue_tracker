@@ -1,10 +1,11 @@
-/* Die Seite scrollt nicht, die Matrix tut es. Kopfzeile und Rollenkarten stehen
-   fest, darunter füllt die Tabelle den Rest — dieselbe Aufteilung wie auf der
-   Mitgliederseite, nur dass dort die Karte mit der Seite scrollt.
+/* The page doesn't scroll, the matrix does. Header and role cards stay
+   fixed, below that the table fills the rest — the same layout as on the
+   members page, except there the card scrolls with the page.
 
-   Maße und Typografie der Kopfzeile sind die von `components/ui/layout/PageHeader`.
-   Nachgebaut statt benutzt, weil der Umschalter zwischen zwei Rollentöpfen den
-   Titel stellt und `PageHeader` ihn nicht weglassen kann. */
+   Header measurements and typography are those of
+   `components/ui/layout/PageHeader`. Rebuilt instead of reused because the
+   switcher between two role pools supplies the title and `PageHeader`
+   can't leave it out. */
 .wrap {
   flex: 1;
   min-height: 0;
@@ -12,9 +13,10 @@
   flex-direction: column;
 }
 
-/* Die Linien oben und unten stehen so auch über den anderen Verwaltungsseiten
-   (`components/ui/layout/PageHeader`): sie setzen die Kopfzeile vom Umschalter
-   darüber und von der Matrix darunter ab — die scrollt, die Kopfzeile nicht. */
+/* The lines top and bottom match the other management pages
+   (`components/ui/layout/PageHeader`): they separate the header from the
+   switcher above and the matrix below — the matrix scrolls, the header
+   doesn't. */
 .pageHeader {
   flex: none;
   display: flex;
@@ -25,10 +27,10 @@
   border-bottom: 1px solid var(--outline-variant);
 }
 
-/* Auf Seiten mit Umschalter steht die obere Linie schon über ihm
-   (`rolesPage.module.scss`). Eine zweite hier würde ihn einkasten, statt ihn in
-   dieselbe Kopfzeile zu stellen — er ist der Titel dieses Bereichs, keine
-   eigene Leiste darüber. */
+/* On pages with a switcher, the top line already sits above it
+   (`rolesPage.module.scss`). A second one here would box it in instead of
+   putting it in the same header — it *is* the title of this section, not a
+   separate bar above it. */
 .pageHeader.underSwitcher {
   padding-top: 10px;
   border-top: none;
@@ -48,7 +50,7 @@
 
 .subtitle {
   margin: 4px 0 0;
-  /* Lesbare Zeilenlänge — der Satz erklärt, er füllt nicht die Seite. */
+  /* Readable line length — the sentence explains, it doesn't fill the page. */
   max-width: 72ch;
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
@@ -63,9 +65,9 @@
   flex: none;
 }
 
-/* Der Abstand nach oben kam bisher aus dem Polster der Kopfzeile — jetzt liegt
-   dort eine Linie, und der Inhalt braucht ihn selbst. Dieselben 12px wie unter
-   den Kopfzeilen der übrigen Verwaltungsseiten. */
+/* The top spacing used to come from the header's own padding — now there's
+   a line there instead, and the content needs to supply it itself. Same
+   12px as below the headers of the other management pages. */
 .body {
   flex: 1;
   min-height: 0;
@@ -87,14 +89,14 @@
   font-size: var(--text-sm);
 }
 
-/* Name und Beschreibung nebeneinander, nicht untereinander: es sind zwei Zeilen
-   Text, kein Formular. Die Beschreibung bekommt den doppelten Anteil — sie ist
-   ein Satz, der Name ein Wort. Unter der Grundbreite bricht die Reihe um, statt
-   beide Felder unlesbar zu stauchen.
+/* Name and description side by side, not stacked: these are two lines of
+   text, not a form. The description gets double the share — it's a
+   sentence, the name is a word. Below the base width, the row wraps
+   instead of squeezing both fields into unreadability.
 
-   Angesprochen wird die Hülle des Feldes über ihre Stelle in der Reihe: `Input`
-   reicht sein `className` an das `<input>` durch, dort gesetzt bliebe die
-   Breite wirkungslos. */
+   The field's wrapper is targeted by its position in the row: `Input`
+   passes its `className` down to the `<input>`, where setting the width
+   would have no effect. */
 .createRow {
   display: flex;
   align-items: center;

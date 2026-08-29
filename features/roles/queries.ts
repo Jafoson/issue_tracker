@@ -11,12 +11,12 @@ import { accessFor, assignmentCeiling, currentUserId } from "@/lib/permissions";
 import { permissionDesc, permissionsFor } from "@/lib/rbac";
 
 /**
- * Alles, was ein Rollen-Editor braucht — die Rollen des Topfes, ihre Einträge,
- * die in diesem Scope möglichen Permissions und die Grenzen des Handelnden.
+ * Everything a role editor needs — the pool's roles, their entries, the
+ * permissions possible in this scope, and the actor's limits.
  *
- * Was jemand darf, entscheidet der Server: `manageable`, `grantable` und
- * `maxRank` kommen fertig heraus, damit die Oberfläche keine Rangregeln
- * nachbauen muss (und sie damit auch nicht falsch nachbauen kann).
+ * What someone is allowed to do is decided by the server: `manageable`,
+ * `grantable`, and `maxRank` come out ready-made, so the UI doesn't need to
+ * reimplement rank rules (and therefore can't get them wrong either).
  */
 export const getRoleManagerView = cache(
   async (target: RoleTarget): Promise<RoleManagerView> => {
@@ -40,8 +40,8 @@ export const getRoleManagerView = cache(
       },
     });
 
-    // Auf der Plattform ist der Topf die Plattform — der globale Zähler ist dort
-    // schon der richtige Ausschnitt.
+    // On the platform, the pool is the platform — the global counter is
+    // already the right slice there.
     const here =
       target.scope === "PLATFORM" ? null : await carriersInTarget(target);
 
@@ -61,8 +61,8 @@ export const getRoleManagerView = cache(
         system: r.system,
         local: r.projectId !== null,
         grants,
-        // System-Rollen sind für alle Mandanten dieselbe Zeile und deshalb
-        // gesperrt. Über den eigenen Rang greift ohnehin niemand hinaus.
+        // System roles are the same row for every tenant and are therefore
+        // locked. Nobody reaches above their own rank anyway.
         manageable: canManage && r.editable && r.rank <= maxRank,
         memberCount: here ? (here.get(r.id) ?? 0) : r._count.platformUsers,
         totalCarriers:
@@ -82,8 +82,8 @@ export const getRoleManagerView = cache(
       roles,
       permissions,
       canManage,
-      // Nur weitergeben, was man selbst hat. Sonst wäre jede Rollenverwaltung
-      // ein Weg zur Selbstbeförderung.
+      // Only pass on what you have yourself. Otherwise any role management
+      // would be a path to self-promotion.
       grantable: canManage
         ? permissionsFor(target.scope).filter((p) =>
             canGrantIn(access, target, p),
@@ -95,16 +95,16 @@ export const getRoleManagerView = cache(
 );
 
 /**
- * Wie viele Personen jede Rolle **in diesem Topf** tragen, `roleId` → Anzahl.
+ * How many people carry each role **in this pool**, `roleId` → count.
  *
- * Der Zähler aus `_count` kann das nicht leisten: er zählt eine Beziehung ganz
- * oder gar nicht, und dieselbe Rolle steht in mehreren Projekten. Eine geteilte
- * Standardrolle käme so auf die Summe aller Mandanten — eine Zahl, die auf
- * einer Projektseite niemandem etwas sagt.
+ * The counter from `_count` can't do this: it counts a relation wholesale or
+ * not at all, and the same role appears in multiple projects. A shared
+ * default role would then come out at the sum across every tenant — a
+ * number that means nothing to anyone on a single project's page.
  *
- * Deshalb eine eigene Abfrage über die Mitgliedstabelle des Topfes. Sie zählt
- * in der Datenbank statt Zeilen zu laden: es geht um die Menge, nicht um die
- * Namen.
+ * Hence a dedicated query over the pool's membership table. It counts in
+ * the database instead of loading rows: this is about the quantity, not the
+ * names.
  */
 async function carriersInTarget(
   target: Exclude<RoleTarget, { scope: "PLATFORM" }>,
@@ -118,9 +118,9 @@ async function carriersInTarget(
         })
       : await db.projectMember.groupBy({
           by: ["roleId"],
-          // Der Topf eines Projekts zählt nur dessen Mitglieder. Die
-          // Projektrollen des Workspace gelten dagegen in allen seinen
-          // Projekten — dort zählt jedes davon mit.
+          // A project's pool counts only its own members. The workspace's
+          // project roles, on the other hand, apply in all of its
+          // projects — there every one of them counts.
           where: target.projectId
             ? { projectId: target.projectId }
             : { project: { workspaceId: target.workspaceId } },

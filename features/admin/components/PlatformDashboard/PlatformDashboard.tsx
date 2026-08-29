@@ -33,29 +33,29 @@ interface Props {
 }
 
 /**
- * Das Plattform-Dashboard.
+ * The platform dashboard.
  *
- * ── Der Aufbau ──
+ * ── The structure ──
  *
- * Oben eine Reihe Bedienelemente, darunter alles, was sie betreffen — der
- * Zeitraum gilt für jede Zahl und jedes Diagramm auf dieser Seite, nicht je
- * Karte. Ein Dashboard, in dem zwei Karten verschiedene Wochen zeigen, ist keine
- * Übersicht, sondern eine Fehlerquelle.
+ * A row of controls at the top, below it everything they affect — the period
+ * applies to every number and every chart on this page, not per card. A
+ * dashboard where two cards show different weeks isn't an overview, it's a
+ * source of errors.
  *
- * Der Zeitraum steht in der Adresse (`?range=30d`) statt im Zustand dieser
- * Komponente. Damit ist er teilbar, überlebt das Neuladen, und die Zahlen kommen
- * frisch vom Server — eine Auswertung im Browser hieße, alle Zeitstempel dorthin
- * zu übertragen.
+ * The period lives in the address (`?range=30d`) instead of this component's
+ * state. That makes it shareable, survives a reload, and the numbers come
+ * fresh from the server — evaluating in the browser would mean transferring
+ * every timestamp there.
  *
- * Darunter drei Ebenen, von grob nach fein: die Kennzahlen des Zeitraums mit
- * ihrer Veränderung, dann der Verlauf, dann wo die Last liegt. Ganz am Ende, was
- * Aufmerksamkeit braucht — das steht zuletzt, weil es meistens leer ist.
+ * Below that, three tiers, from coarse to fine: the period's key figures with
+ * their change, then the trend over time, then where the load lies. At the
+ * very end, what needs attention — that comes last because it's usually empty.
  *
- * ── Was hier nicht steht ──
+ * ── What's deliberately not here ──
  *
- * Kein Titel einer Aufgabe, kein Kommentar, kein Projektinhalt. Das Dashboard
- * zählt und zeigt Verläufe; *woran* gearbeitet wurde, steht nicht darin und wird
- * dafür auch nicht geladen (`features/admin/queries.ts`).
+ * No issue title, no comment, no project content. The dashboard counts and
+ * shows trends; *what* was worked on doesn't appear in it and isn't loaded
+ * for it either (`features/admin/queries.ts`).
  */
 export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
   const t = useTranslations();
@@ -75,17 +75,17 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
   };
 
   const pickRange = (range: RangeKey) => {
-    // `replace` und nicht `push`: einen Zeitraum zu wechseln ist keine neue
-    // Station, durch die man sich zurückklicken will.
+    // `replace` and not `push`: switching a period isn't a new stop you'd
+    // want to click back through.
     startTransition(() => {
       router.replace(`${pathname}?range=${range}`);
     });
   };
 
-  // ── Die Achse beschriften ──
+  // ── Labeling the axis ──
   //
-  // Tage tragen Tag und Monat, Monate den Monatsnamen. Der Tooltip zeigt das
-  // volle Datum; an der Achse wäre es eine Wand aus Ziffern.
+  // Days carry day and month, months carry the month name. The tooltip shows
+  // the full date; on the axis it would be a wall of digits.
   const axisLabel = (iso: string) => {
     const date = new Date(`${iso}T00:00:00`);
     if (data.unit === "month") return format.dateTime(date, { month: "short" });
@@ -101,12 +101,12 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
       month: "short",
       year: "numeric",
     });
-    // Eine Woche ist ein Zeitraum, kein Tag — die Beschriftung sagt das.
+    // A week is a period, not a day — the label says so.
     return data.unit === "week" ? t("dashboard.weekOf", { date: day }) : day;
   };
 
-  // Beide Diagramme lesen dieselben Punkte und greifen sich über den Reihen-Key
-  // heraus, was sie brauchen — `date` bleibt liegen und stört nicht.
+  // Both charts read the same points and pick out what they need via the
+  // series key — `date` is left over and doesn't get in the way.
   const points: ChartPoint[] = data.points.map(({ date, ...values }) => ({
     key: date,
     label: fullLabel(date),
@@ -123,12 +123,12 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
     },
   ];
 
-  // Emphasis statt zweier gleichwertiger Farben: die gescheiterten Versuche sind
-  // der Punkt dieses Diagramms, die gelungenen sind der Rahmen, vor dem man sie
-  // liest. Deshalb trägt nur eine Reihe Farbe — die Warnfarbe, weil sie etwas
-  // bedeutet — und die andere das Grau der Zurücknahme. Zwei bunte Reihen
-  // stellten beide gleich laut nebeneinander und begrüben genau die eine, auf
-  // die es ankommt.
+  // Emphasis instead of two equally weighted colors: the failed attempts are
+  // the point of this chart, the successful ones are the backdrop against
+  // which you read them. That's why only one series carries color — the
+  // warning color, because it means something — and the other the gray of
+  // recession. Two colorful series would place both equally loud side by
+  // side and bury the one that actually matters.
   const loginSeries: ChartSeries[] = [
     { key: "logins", label: t("dashboard.logins"), color: "var(--outline)" },
     {
@@ -148,10 +148,9 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
     { key: "users", label: t("platform.users"), color: "var(--chart-3)" },
   ];
 
-  // Erst die Arbeit, dann die Hülle, in der sie stattfindet — und die Hülle von
-  // außen nach innen: Workspace, Projekt, Konto. Dieselbe Reihenfolge wie die
-  // Legende des Wachstums-Diagramms weiter unten, damit dieselben drei Dinge
-  // nicht zweimal anders sortiert dastehen.
+  // Work first, then the shell it happens in — and the shell from outside
+  // in: workspace, project, account. Same order as the growth chart's legend
+  // further down, so the same three things aren't sorted differently twice.
   const kpis = [
     {
       key: "issues",
@@ -249,7 +248,7 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
       />
 
       <div className={styles.body}>
-        {/* Eine Reihe, über allem, was sie betrifft. */}
+        {/* A single row, above everything it affects. */}
         <div className={styles.controls}>
           <RangePicker
             value={data.range}
@@ -291,9 +290,9 @@ export function PlatformDashboard({ stats, data, links, noticeHidden }: Props) {
           </section>
         )}
 
-        {/* Während neue Zahlen geladen werden, bleibt das alte Bild stehen und
-            tritt zurück. Ein Skelett an dieser Stelle wäre ein Sprung im
-            Layout und ein Blitzen bei jedem Klick. */}
+        {/* While new numbers are loading, the old view stays in place and
+            recedes. A skeleton here would be a layout jump and a flash on
+            every click. */}
         <div className={styles.content} data-loading={isPending || undefined}>
           <div className={styles.kpis}>
             {kpis.map((kpi) => {

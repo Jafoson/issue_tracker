@@ -1,6 +1,6 @@
-/* Dieselbe Kartenoptik wie `Table[variant=card]` darunter (Rahmen, Fläche,
-   Radius) — die Seite soll wie ein Stück wirken, auch wenn dieser Kopf ein
-   Formular ist und der Rest eine Tabelle. */
+/* Same card look as `Table[variant=card]` below it (border, surface,
+   radius) — the page should read as one piece, even though this header is
+   a form and the rest is a table. */
 .card {
   display: flex;
   flex-direction: column;
@@ -18,9 +18,9 @@
   align-items: center;
 }
 
-/* Schmaler als die Karte: eine einzelne Spalte Formularfelder liest sich bei
-   voller Breite schlechter, und der Avatar darüber bleibt so die optische
-   Mitte statt in der Breite unterzugehen. */
+/* Narrower than the card: a single column of form fields reads worse at
+   full width, and this way the avatar above stays the visual center instead
+   of getting lost in the width. */
 .fields {
   width: 100%;
   max-width: 560px;
@@ -29,8 +29,8 @@
   gap: 18px;
 }
 
-/* Für Bedienelemente ohne eigenes `label`-Prop (z. B. `ColorPicker`) —
-   dieselbe Beschriftung wie bei `Input`, nur außenherum gebaut. */
+/* For controls without their own `label` prop (e.g. `ColorPicker`) — the
+   same label style as `Input`, just built around it from outside. */
 .field {
   display: flex;
   flex-direction: column;

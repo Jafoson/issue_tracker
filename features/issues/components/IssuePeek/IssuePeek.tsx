@@ -10,12 +10,13 @@ import { DockPanel, useDock } from "@/lib/context";
 import { useSessionFlag } from "@/lib/utils/useSessionFlag";
 
 /**
- * Ob die Detailansicht zuletzt als großer Dialog stand statt als Seitenpanel.
+ * Whether the detail view was last shown as a large dialog instead of a
+ * side panel.
  *
- * Wer einmal umschaltet, meint in aller Regel nicht nur dieses eine Issue —
- * also gilt die Wahl bis zum Ende der Sitzung, auch über den Wechsel zwischen
- * Liste, Board und Posteingang hinweg (dabei wird diese Komponente jedes Mal
- * neu montiert). Beim nächsten Besuch fängt es wieder am Rand an.
+ * Once someone toggles this, they usually don't just mean this one issue —
+ * so the choice holds until the end of the session, even across switching
+ * between list, board, and inbox (this component gets remounted every
+ * time). On the next visit it starts back at the edge.
  */
 const EXPANDED_KEY = "issue-detail-expanded";
 
@@ -24,19 +25,19 @@ interface IssuePeekProps {
 }
 
 /**
- * Zeigt die Detailansicht als angedocktes Seitenpanel, sobald `?issue=` in der
- * URL steht — Liste, Board, Inbox und „Meine Aufgaben“ setzen den Parameter
- * beim Klick auf eine Zeile bzw. Karte.
+ * Shows the detail view as a docked side panel as soon as `?issue=` is in
+ * the URL — the list, board, inbox, and “My issues” set the parameter on a
+ * row or card click.
  *
- * Die URL ist dabei die einzige Quelle: das Panel folgt ihr, und wer es
- * schließt (Escape, Kreuz), räumt den Parameter weg. So bleibt jedes offene
- * Issue verlinkbar, ohne dass Öffner und Panel je einen zweiten Zustand
- * pflegen müssten.
+ * The URL is the single source of truth here: the panel follows it, and
+ * whoever closes it (Escape, the cross) removes the parameter. This keeps
+ * every open issue linkable, without opener and panel ever having to
+ * maintain a second piece of state.
  *
- * Gerendert wird nicht hier, sondern im Dock der App-Hülle (`DockOutlet`) —
- * dort steht das Panel neben dem Inhalt statt über ihm, und der Inhalt wird
- * entsprechend schmaler. Der Weg dorthin ist ein Portal; die Contexts folgen
- * weiter dieser Stelle im React-Baum.
+ * Rendering doesn't happen here, but in the app shell's dock (`DockOutlet`)
+ * — there the panel sits next to the content instead of over it, and the
+ * content narrows accordingly. The route there is a portal; the contexts
+ * still follow this spot in the React tree.
  */
 export function IssuePeek({ data }: IssuePeekProps) {
   const t = useTranslations();
@@ -48,9 +49,9 @@ export function IssuePeek({ data }: IssuePeekProps) {
   if (!issueRef || !node) return null;
 
   return createPortal(
-    // Ausgeklappt hebt sich das Panel selbst über die Seite — Hülle und Inhalt
-    // lesen denselben Wert, es gibt also keinen Moment, in dem das eine schon
-    // umgestellt ist und das andere noch nicht.
+    // Expanded, the panel raises itself above the page — the shell and the
+    // content read the same value, so there's no moment where one has
+    // already switched and the other hasn't.
     <DockPanel
       label={issueRef}
       overlay={isExpanded}

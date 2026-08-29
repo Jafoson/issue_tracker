@@ -7,21 +7,21 @@ import { toPlainDoc } from "@/lib/richtext/doc";
 import type { PMDoc } from "@/lib/richtext/types";
 
 /**
- * Die Falle, in die der Editor gelaufen ist:
+ * The trap the editor ran into:
  *
- * ProseMirror legt Knoten-Attribute mit `Object.create(null)` an, und
- * `toJSON()` gibt genau dieses Objekt heraus. React lehnt Objekte ohne
- * Prototyp beim Übergang zu einer Server Function ab (`isSimpleObject` prüft
- * die Prototypenkette) und schiebt statt der Daten eine temporäre Referenz
- * hinüber — serverseitig bricht dann jeder Zugriff darauf ab.
+ * ProseMirror creates node attributes with `Object.create(null)`, and
+ * `toJSON()` hands out exactly that object. React rejects objects without a
+ * prototype when crossing into a Server Function (`isSimpleObject` checks the
+ * prototype chain) and passes along a temporary reference instead of the
+ * data — every access to it then fails on the server side.
  *
- * Der Test geht durch das echte ProseMirror, nicht durch einen Nachbau: nur so
- * bleibt er gültig, wenn sich deren Interna ändern.
+ * The test goes through real ProseMirror, not a reimplementation: that's the
+ * only way it stays valid if ProseMirror's internals change.
  */
 
 const schema = getSchema([StarterKit, MentionChip] as never);
 
-/** Ein Dokument so, wie `editor.getJSON()` es liefert. */
+/** A document the way `editor.getJSON()` delivers it. */
 function fromEditor(): PMDoc {
   return PMNode.fromJSON(schema, {
     type: "doc",
@@ -41,7 +41,7 @@ function fromEditor(): PMDoc {
   }).toJSON() as PMDoc;
 }
 
-/** Alle `attrs` im Baum einsammeln. */
+/** Collect all `attrs` in the tree. */
 function allAttrs(doc: PMDoc): Record<string, unknown>[] {
   const found: Record<string, unknown>[] = [];
   const walk = (node: { attrs?: unknown; content?: unknown[] }) => {
@@ -56,7 +56,7 @@ describe("toPlainDoc", () => {
   test("ProseMirror liefert Attribute ohne Prototyp — die Annahme des Tests", () => {
     const attrs = allAttrs(fromEditor());
     expect(attrs.length).toBeGreaterThan(0);
-    // Genau das lehnt React beim Übergang zum Server ab.
+    // Exactly what React rejects when crossing over to the server.
     expect(attrs.every((a) => Object.getPrototypeOf(a) === null)).toBe(true);
   });
 
@@ -70,7 +70,7 @@ describe("toPlainDoc", () => {
 
   test("lässt den Inhalt dabei unangetastet", () => {
     const plain = toPlainDoc(fromEditor());
-    // Werte identisch — nur die Prototypen sind andere.
+    // Values identical — only the prototypes differ.
     expect(JSON.stringify(plain)).toBe(JSON.stringify(fromEditor()));
     expect(plain.content?.[0]).toMatchObject({
       type: "heading",

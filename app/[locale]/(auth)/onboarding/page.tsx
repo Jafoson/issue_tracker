@@ -18,8 +18,8 @@ export default async function OnboardingPage() {
   });
   if (!user) redirect("/login");
 
-  // Schon erledigt (z. B. Zurück-Button nach dem Absenden) — kein Grund, das
-  // Formular noch einmal zu zeigen.
+  // Already done (e.g. back button after submitting) — no reason to show
+  // the form again.
   if (user.onboardedAt) redirect("/");
 
   return (

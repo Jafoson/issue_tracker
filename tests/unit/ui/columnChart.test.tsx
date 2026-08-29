@@ -5,18 +5,18 @@ import {
   ColumnChart,
 } from "@/components/ui/charts/ColumnChart/ColumnChart";
 
-// Liegt in `tests/unit/ui` und nicht bei den übrigen Dashboard-Tests: hier wird
-// gerendert, und `react-dom/server` verträgt sich nicht mit dem `react`-Stub aus
-// `issues/getLabels.test.ts`. Das `test`-Script trennt beide Gruppen in eigene
-// Prozesse — Renderndes gehört in diese.
+// Lives in `tests/unit/ui` rather than with the rest of the dashboard tests:
+// this one renders, and `react-dom/server` doesn't get along with the `react`
+// stub from `issues/getLabels.test.ts`. The `test` script splits both groups
+// into their own processes — anything that renders belongs in this one.
 //
-// Zwei Zusagen des Diagramms, die man dem Bild nicht ansieht, solange sie
-// stimmen — und die beim nächsten Umbau still kaputtgehen können:
+// Two promises the chart makes that you can't see in the picture as long as
+// they hold — and that can silently break on the next redesign:
 //
-//   1. Die Achse beschriftet nicht jede Säule, und zwei Beschriftungen stehen
-//      nie nebeneinander. Bei dreißig Tagesspalten überschrieben sie sich sonst.
-//   2. Jede Zahl ist auch ohne Zeiger erreichbar. Der Tooltip darf ergänzen, er
-//      darf nicht der einzige Weg sein.
+//   1. The axis doesn't label every column, and two labels never sit next to
+//      each other. With thirty daily columns they'd otherwise overlap.
+//   2. Every number is reachable without a pointer. The tooltip may add to
+//      that, it may not be the only way.
 
 const SERIES = [
   { key: "issues", label: "Aufgaben", color: "var(--chart-1)" },
@@ -32,7 +32,7 @@ function days(count: number): ChartPoint[] {
   }));
 }
 
-/** Die Beschriftungen der Achse, in Reihenfolge — leere eingeschlossen. */
+/** The axis labels, in order — including empty ones. */
 function ticks(markup: string): string[] {
   const axis = markup.split('<div class="xAxis')[1] ?? "";
   return [...axis.matchAll(/<span class="tick[^"]*">([^<]*)<\/span>/g)].map(
@@ -58,15 +58,16 @@ describe("Achsenbeschriftung", () => {
   });
 
   it("stellt nie zwei Beschriftungen nebeneinander", () => {
-    // Der Fall, der es in die erste Fassung geschafft hatte: die reguläre Marke
-    // bei Index 28 und die immer gesetzte letzte bei 29.
+    // The case that made it into the first version: the regular tick at
+    // index 28 and the always-shown last one at 29.
     for (const count of [7, 12, 13, 30, 90]) {
       const markup = renderToStaticMarkup(
         <ColumnChart series={SERIES} points={days(count)} label="Test" />,
       );
       const all = ticks(markup);
-      // Bis acht Säulen trägt jede ihre Beschriftung — dort ist Nachbarschaft
-      // kein Zusammenstoß, sondern die Absicht: die Spalten sind breit genug.
+      // Up to eight columns, each one carries its own label — there,
+      // adjacency isn't a collision but the intent: the columns are wide
+      // enough.
       if (count <= 8) continue;
 
       const collisions = all.filter(
@@ -86,8 +87,8 @@ describe("Achsenbeschriftung", () => {
 
 describe("Jede Zahl ohne Zeiger erreichbar", () => {
   it("nennt in der Beschriftung jeder Säule alle Reihen", () => {
-    // Der Tastaturweg: Fokus auf einer Säule liest dasselbe vor, was der
-    // Tooltip zeigt.
+    // The keyboard path: focusing a column reads out the same thing the
+    // tooltip shows.
     const markup = renderToStaticMarkup(
       <ColumnChart series={SERIES} points={days(3)} label="Test" />,
     );
@@ -103,11 +104,11 @@ describe("Jede Zahl ohne Zeiger erreichbar", () => {
 
     expect(markup).toContain("<table");
     expect(markup).toContain("Verlauf");
-    // Eine Kopfzelle je Reihe, eine Zeile je Topf.
+    // One header cell per series, one row per bucket.
     expect(markup).toContain("Aufgaben");
     expect(markup).toContain("Kommentare");
     expect(markup).toContain("3. August 2026");
-    // Keine Säulen mehr, wenn die Tabelle steht.
+    // No more columns once the table is showing.
     expect(markup).not.toContain('aria-label="1. August 2026');
   });
 });

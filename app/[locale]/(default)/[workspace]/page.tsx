@@ -13,15 +13,14 @@ import { workspacePath, workspaceSettingsPath } from "@/lib/nav";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Übersicht des Workspace — der Steckbrief: was er ist, wer ihn trägt,
- * woraus er besteht. Sie ist die Wurzel des Workspace (`/<workspaceId>`) und
- * nicht `/<workspaceId>/overview`: anders als ein Projekt, dessen Wurzel schon
- * das Board ist, hat der Workspace keine eigene Startseite, der sie streitig
- * machen könnte.
+ * The workspace overview — its profile: what it is, who runs it, what it's
+ * made of. It's the workspace root (`/<workspaceId>`) and not
+ * `/<workspaceId>/overview`: unlike a project, whose root is already the
+ * board, the workspace has no dedicated landing page competing for that spot.
  *
- * Kennt keinen Zeitraum und deshalb kein `?range=` in der Adresse; die Zahlen
- * dazu holt `getWorkspaceDashboard` trotzdem mit, damit ein Wechsel zum
- * Dashboard keinen zweiten Serverlauf braucht.
+ * Has no time range and therefore no `?range=` in the URL; `getWorkspaceDashboard`
+ * still fetches the numbers for it, so switching to the dashboard doesn't need
+ * a second server round-trip.
  */
 export default async function WorkspaceOverviewPage({
   params,

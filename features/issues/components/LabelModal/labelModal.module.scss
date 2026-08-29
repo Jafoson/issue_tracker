@@ -16,8 +16,9 @@
   color: var(--on-surface);
 }
 
-/* Zeigt das Label so, wie es später am Issue hängt. Farbe und Name lassen sich
-   einzeln schwer beurteilen — nebeneinander in der endgültigen Form sofort. */
+/* Shows the label exactly as it will later appear on an issue. Color and
+   name are hard to judge separately — side by side in their final form,
+   it's immediate. */
 .preview {
   display: flex;
   align-items: center;

@@ -7,12 +7,12 @@ import {
 import { modKey } from "@/lib/a11y";
 
 /**
- * Die Suche im `/`-Menü. Sie muss die Beschriftung treffen — die steht in der
- * eingestellten Sprache — **und** die hinterlegten Suchbegriffe, damit man
- * einen Befehl auch unter seinem Namen in der anderen Sprache findet.
+ * The search inside the `/` menu. It has to match the label — which is in
+ * the configured language — **and** the stored keywords, so a command can
+ * also be found under its name in the other language.
  */
 
-/** Ein Ausschnitt aus der echten Liste, mit deutschen Beschriftungen. */
+/** A slice of the real list, with German labels. */
 const items: SlashCommandItem[] = [
   {
     id: "horizontalRule",
@@ -55,7 +55,7 @@ describe("filterSlashItems", () => {
   });
 
   test("findet über den englischen Begriff", () => {
-    // Genau der Punkt: die Beschriftung ist deutsch, gesucht wird englisch.
+    // That's exactly the point: the label is German, the search term is English.
     expect(ids("divider")).toContain("horizontalRule");
     expect(ids("quote")).toContain("blockquote");
     expect(ids("numbered")).toContain("orderedList");
@@ -68,14 +68,14 @@ describe("filterSlashItems", () => {
   });
 
   test("kommt ohne Umlaute aus", () => {
-    // Wer sucht, tippt selten Umlaute.
+    // People searching rarely type umlauts.
     expect(ids("uberschrift")).toContain("heading1");
     expect(ids("überschrift")).toContain("heading1");
   });
 
   test("stellt Treffer am Wortanfang nach vorn", () => {
-    // Bewusst so herum aufgeschrieben, dass der Treffer in der Wortmitte
-    // zuerst dasteht — die Sortierung muss ihn nach hinten schieben.
+    // Deliberately written so the mid-word match is listed first — the
+    // sorting has to push it back.
     const beide: SlashCommandItem[] = [
       { id: "mitte", label: "Nummerierte Liste", run: () => {} },
       { id: "anfang", label: "Liste", run: () => {} },
@@ -87,7 +87,7 @@ describe("filterSlashItems", () => {
   });
 
   test("behält innerhalb eines Rangs die vorgegebene Reihenfolge", () => {
-    // `sort` ist stabil — die Ordnung aus `slashItems` bleibt erhalten.
+    // `sort` is stable — the order from `slashItems` is preserved.
     const gleichrangig: SlashCommandItem[] = [
       { id: "eins", label: "Liste A", run: () => {} },
       { id: "zwei", label: "Liste B", run: () => {} },
@@ -107,9 +107,10 @@ describe("filterSlashItems", () => {
     const mitGruppe: SlashCommandItem[] = [
       { id: "table", label: "Tabelle", group: "Blöcke", run: () => {} },
     ];
-    // Ungefiltert bleibt die Gliederung stehen …
+    // Unfiltered, the grouping stays intact …
     expect(filterSlashItems(mitGruppe, "")[0].group).toBe("Blöcke");
-    // … beim Suchen fällt sie weg, sonst stünde derselbe Kopf mehrfach da.
+    // … when searching it's dropped, otherwise the same heading would appear
+    // multiple times.
     expect(filterSlashItems(mitGruppe, "tab")[0].group).toBeUndefined();
   });
 
@@ -128,7 +129,7 @@ describe("normalize", () => {
 
 describe("modKey", () => {
   test("nennt die Taste so, wie sie auf dem System heißt", () => {
-    // Der Test läuft ohne `navigator` — dort ist „Ctrl" die sichere Annahme.
+    // The test runs without `navigator` — "Ctrl" is the safe assumption there.
     expect(["⌘", "Strg", "Ctrl"]).toContain(modKey());
   });
 });

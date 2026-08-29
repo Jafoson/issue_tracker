@@ -11,10 +11,10 @@ interface Props {
 }
 
 /**
- * Das Protokoll der Plattform — dünner Wrapper um `AuditLog`
- * (`features/audit/components/AuditLog`), der nur die Plattform-Texte mitgibt.
- * Dieselbe Anzeige tragen die Aktivitäts-Seiten von Projekt und Workspace unter
- * den Einstellungen, mit ihren eigenen Titeln.
+ * The platform's audit log — a thin wrapper around `AuditLog`
+ * (`features/audit/components/AuditLog`) that only supplies the platform
+ * copy. The project's and workspace's activity pages under settings use the
+ * same display, with their own titles.
  */
 export function PlatformAudit({ entries, nextCursor }: Props) {
   const t = useTranslations();

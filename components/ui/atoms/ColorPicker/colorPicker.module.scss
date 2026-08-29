@@ -3,7 +3,7 @@
   flex-wrap: wrap;
   gap: 8px;
 
-  /* Kompaktes Raster für Popover-Breiten (Label-Picker & Co.) */
+  /* Compact grid for popover widths (label picker & co.) */
   &.sm {
     justify-content: center;
     gap: 6px;

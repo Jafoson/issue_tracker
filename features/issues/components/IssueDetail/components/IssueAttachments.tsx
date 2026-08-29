@@ -27,19 +27,19 @@ interface IssueAttachmentsProps {
   issueId: string;
   attachments: IssueAttachment[];
   readOnly?: boolean;
-  /** Holt das Issue neu — Uploads/Löschen laufen über eigene Server Actions,
-   *  das Panel hängt an keinem Server-Render (`useIssueDetail`). */
+  /** Refetches the issue — uploads/deletes go through their own server
+   *  actions, the panel isn't tied to any server render (`useIssueDetail`). */
   onRefresh: () => Promise<void>;
 }
 
-/** Vorschau einer einzelnen Kachel: echtes Bild bei einem Bild-Anhang — Upload
- *  oder Link mit erkanntem Bild-MIME-Type (siehe `guessImageMimeType`,
- *  `lib/richtext/imageMime.ts`) —, das Favicon der Seite bei einem sonstigen
- *  Link (dieselbe Herleitung wie beim Link-Chip im Editor,
- *  `lib/richtext/link.ts`), sonst ein Symbol nach Art der Datei. */
+/** Preview of a single tile: a real image for an image attachment — upload
+ *  or link with a recognized image MIME type (see `guessImageMimeType`,
+ *  `lib/richtext/imageMime.ts`) — the site's favicon for any other link
+ *  (the same derivation as for the link chip in the editor,
+ *  `lib/richtext/link.ts`), otherwise an icon based on the file type. */
 function TilePreview({ a }: { a: IssueAttachment }) {
   if (a.mimeType?.startsWith("image/") && a.url) {
-    // biome-ignore lint/performance/noImgElement: presignte bzw. externe Adresse, next/image kann sie nicht optimieren
+    // biome-ignore lint/performance/noImgElement: presigned or external URL, next/image can't optimize it
     return <img src={a.url} alt="" />;
   }
   const favicon = a.kind === "link" ? faviconOf(a.url ?? "") : null;
@@ -61,11 +61,12 @@ function TilePreview({ a }: { a: IssueAttachment }) {
 }
 
 /**
- * Menü hinter dem Hinzufügen-Knopf: Datei hochladen oder Link setzen — wie
- * der Bild-Dialog im Editor (`RichTextEditor.tsx`s `imagePicker`). Eigene
- * Komponente statt Zustand im Aufrufer, weil `Popover` seinen Inhalt beim
- * Schließen ganz aushängt (`if (!open) return null`) — jedes Öffnen beginnt
- * damit von selbst wieder bei der Auswahl, nie mitten im Link-Formular.
+ * Menu behind the add button: upload a file or add a link — like the image
+ * dialog in the editor (`RichTextEditor.tsx`'s `imagePicker`). A separate
+ * component instead of state in the caller, because `Popover` fully unmounts
+ * its content on close (`if (!open) return null`) — so every reopen
+ * naturally starts back at the choice screen, never mid-way through the
+ * link form.
  */
 function AddAttachmentMenu({
   onPickFile,
@@ -137,11 +138,11 @@ export function IssueAttachments({
   const canAdd = !readOnly;
   const isEmpty = attachments.length === 0;
 
-  /** Statt direkt zur (bei Uploads presignten, ablaufenden) Adresse zu
-   *  verlinken: eine Vorschau im Dialog, aus der heraus man gezielt
-   *  herunterladen kann. Nur `kind: "file"` bekommt den echten
-   *  Download-Knopf — bei einem Link-Anhang ist die Adresse fremder Inhalt,
-   *  kein eigener Upload, den man forciert herunterladen könnte. */
+  /** Instead of linking directly to the (for uploads, presigned and
+   *  expiring) URL: a preview in a dialog, from which a targeted download
+   *  is possible. Only `kind: "file"` gets the real download button — for a
+   *  link attachment the URL points to someone else's content, not an
+   *  upload of our own that could be forced to download. */
   const openPreview = (a: IssueAttachment) => {
     if (!a.url) return;
     const url = a.url;
@@ -181,8 +182,8 @@ export function IssueAttachments({
     }
   };
 
-  /** Mehrere fallen gelassene Dateien nacheinander — ein gleichzeitiger Start
-   *  brächte nur mehrere Ladeanzeigen ohne echten Vorteil. */
+  /** Several dropped files one after another — starting them concurrently
+   *  would only produce multiple loading indicators with no real benefit. */
   const uploadAll = async (files: FileList | File[]) => {
     for (const file of Array.from(files)) await upload(file);
   };
@@ -228,8 +229,8 @@ export function IssueAttachments({
     if (e.dataTransfer.files.length) uploadAll(e.dataTransfer.files);
   };
 
-  /** Derselbe Hinzufügen-Knopf für die leere Box und die Kachel-Übersicht —
-   *  nur die Beschriftung/Größe unterscheidet sich. */
+  /** The same add button for the empty box and the tile grid — only the
+   *  label/size differs. */
   const addTrigger = (variant: "empty" | "tile") => (
     <InlinePicker
       width={200}
@@ -274,11 +275,11 @@ export function IssueAttachments({
         <h3 className={styles.sectionTitle}>{t("attachments.title")}</h3>
       </header>
 
-      {/* Eine Box für beides: Drag&Drop-Ziel und Kachel-Übersicht zugleich —
-          ein fallen gelassener Anhang landet in genau der Fläche, die ihn
-          ohnehin schon zeigen würde. Leer ist sie selbst schon die
-          Aufforderung, statt nur eine Fehlanzeige zu zeigen. */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: Drag&Drop-Ziel — die eigentliche Bedienung sitzt in den Kacheln/Knöpfen darin */}
+      {/* One box for both purposes: drag-and-drop target and tile grid at
+          once — a dropped attachment lands in exactly the area that would
+          already be showing it. When empty, it already acts as the
+          call-to-action itself, rather than just showing an empty state. */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop target — actual interaction sits in the tiles/buttons within it */}
       <div
         className={styles.attachmentBox}
         data-drag-over={dragOver ? "" : undefined}
@@ -303,7 +304,7 @@ export function IssueAttachments({
             {canAdd && addTrigger("tile")}
 
             {attachments.map((a) => (
-              // biome-ignore lint/a11y/noStaticElementInteractions: `draggable` trägt nur den Ziehgriff — Klick/Öffnen bleibt beim Link/Kachel-Inhalt darin
+              // biome-ignore lint/a11y/noStaticElementInteractions: `draggable` only provides the drag handle — click/open stays with the link/tile content inside it
               <div
                 key={a.id}
                 className={styles.attachmentTile}
@@ -311,10 +312,10 @@ export function IssueAttachments({
                 onDragStart={
                   a.url
                     ? (e) => {
-                        // In den Editor gezogen (`RichTextEditor.tsx`s
-                        // `handleDrop`) landet die Kachel dort als
-                        // gewöhnlicher `attachment`-Knoten per Verweis —
-                        // kein erneuter Upload, dieselbe `Attachment`-Zeile.
+                        // Dragged into the editor (`RichTextEditor.tsx`'s
+                        // `handleDrop`), the tile ends up there as an
+                        // ordinary `attachment` node by reference — no
+                        // re-upload, the same `Attachment` row.
                         const payload: AttachmentDragPayload = {
                           id: a.id,
                           url: a.url as string,
@@ -377,9 +378,9 @@ export function IssueAttachments({
           hidden
           disabled={busy}
           onChange={(e) => {
-            // `Array.from` statt der `FileList` selbst: die ist an den
-            // Eingabewert gebunden — sobald `value` unten geleert wird,
-            // liest ein späterer Zugriff auf dieselbe Liste bereits leer.
+            // `Array.from` instead of the `FileList` itself: that one is
+            // bound to the input's value — once `value` is cleared below,
+            // a later access to the same list would already read empty.
             const files = Array.from(e.target.files ?? []);
             e.target.value = "";
             if (files.length) uploadAll(files);

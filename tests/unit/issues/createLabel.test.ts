@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 mock.module("@/lib/db", () => ({
   db: {
     label: { create: mock(), findUnique: mock() },
-    // Ein Projekt-Label leitet seinen Workspace aus dem Projekt ab, statt der
-    // Eingabe zu glauben.
+    // A project label derives its workspace from the project, instead of
+    // trusting the input.
     project: { findUnique: mock() },
   },
 }));
@@ -158,8 +158,8 @@ describe("createLabel()", () => {
       expect(result.projectId).toBe("proj-1");
     });
 
-    // Der Aufruf kommt aus dem Client und darf sich seinen Workspace nicht
-    // aussuchen: geprüft wird im Projekt, geschrieben wird deshalb auch dort.
+    // The call comes from the client and must not get to pick its own
+    // workspace: the check happens on the project, so the write does too.
     it("nimmt den Workspace aus dem Projekt, nicht aus der Eingabe", async () => {
       mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-echt" });
 

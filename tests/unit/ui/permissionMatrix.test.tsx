@@ -3,8 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 //
-// Geprüft wird das Raster: welche Spalte welchen Zustand zeigt und wo geklickt
-// werden darf. Übersetzungen und Icons sind dafür Rauschen.
+// What's checked is the grid: which column shows which state and where
+// clicking is allowed. Translations and icons are just noise for that.
 
 mock.module("@iconify/react", () => ({
   Icon: ({ icon }: { icon: string }) => <i data-icon={icon} />,
@@ -65,7 +65,7 @@ function render(
   );
 }
 
-/** Die Zelle einer Zeile — die Reihenfolge der `td` ist die der Rollen. */
+/** The cells of a row — the order of `td` elements matches the roles. */
 function cells(html: string, permissionKey: string): string[] {
   const row = html.split(`>${permissionKey}<`)[1];
   if (!row) throw new Error(`Zeile ${permissionKey} nicht gefunden`);
@@ -80,7 +80,7 @@ describe("PermissionMatrix", () => {
 
     expect(html).toContain("admin");
     expect(html).toContain("viewer");
-    // Kopfzeile: genau eine Spalte je Rolle.
+    // Header row: exactly one column per role.
     expect(html.split('class="roleHead"').length - 1).toBe(2);
   });
 
@@ -96,8 +96,8 @@ describe("PermissionMatrix", () => {
   });
 
   it("führt die Zelle als Schalter mit zwei Zuständen", () => {
-    // Es gibt kein drittes „ausdrücklich verboten" mehr: nicht aufgeführt ist
-    // bereits das Verbot, weil im Kontext nur diese eine Rolle zählt.
+    // There's no third "explicitly denied" state anymore: not being listed
+    // already is the denial, since in this context only this one role counts.
     const html = render([role({ id: "admin", grants: ["issue.create"] })]);
 
     const [granted] = cells(html, "issue.create");
@@ -108,7 +108,7 @@ describe("PermissionMatrix", () => {
   });
 
   it("sperrt den Schalter, wo der Handelnde das Recht selbst nicht hat", () => {
-    // Wegnehmen bleibt möglich — das vergrößert niemandes Rechte.
+    // Revoking stays possible — that never expands anyone's permissions.
     const html = render([role({ id: "admin", grants: ["issue.create"] })], {
       grantable: [],
     });
@@ -134,7 +134,7 @@ describe("PermissionMatrix", () => {
   it("bündelt die Zeilen nach dem Objekt des Keys", () => {
     const html = render([role({ id: "admin" })]);
 
-    // Ein Abschnitt für `issue.*`, einer für `comment.*` — nicht drei.
+    // One section for `issue.*`, one for `comment.*` — not three.
     expect(html.split('class="groupHead"').length - 1).toBe(2);
     expect(html.indexOf("roles.group.issue")).toBeLessThan(
       html.indexOf("roles.group.comment"),
@@ -177,13 +177,13 @@ describe("Offene Änderungen", () => {
     const [admin, viewer] = cells(html, "issue.create");
     expect(admin).toContain("data-changed");
     expect(viewer).not.toContain("data-changed");
-    // Der Zustand der Zelle bleibt daneben lesbar — offen heißt nicht unklar.
+    // The cell's state stays readable alongside it — pending doesn't mean unclear.
     expect(admin).toContain("data-granted");
   });
 
   it("zählt auch Änderungen an ausgeblendeten Spalten mit", () => {
-    // `changed` beschreibt den ganzen Stapel, `roles` nur die sichtbaren
-    // Spalten. Beim Speichern ginge die versteckte trotzdem mit.
+    // `changed` describes the whole batch, `roles` only the visible columns.
+    // On save, the hidden one would still go along with it.
     const html = render([role({ id: "admin" })], {
       changed: new Set([
         cellId("admin", "issue.create"),

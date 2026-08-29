@@ -6,10 +6,10 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Name, Benutzername, Farbe — und die Adresse, unter der man sich anmeldet.
+ * Name, username, color — and the address you sign in with.
  *
- * Wie überall lädt die Seite ihre Daten selbst. `null` heißt „nicht
- * eingeloggt"; das Layout darüber schützt sie nicht, es zeichnet nur die Leiste.
+ * As everywhere, the page loads its own data. `null` means "not signed in";
+ * the layout above it doesn't protect this page, it only draws the sidebar.
  */
 export default async function AccountPage({
   params,

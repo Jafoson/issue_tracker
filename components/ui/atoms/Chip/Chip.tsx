@@ -5,23 +5,23 @@ type ChipVariant = "text" | "elevated" | "outline";
 type ChipType = "assist" | "filter" | "input";
 
 /**
- * `md` ist der Regelfall: ein eigenständiges Bedienelement mit fester Höhe.
+ * `md` is the default: a standalone control with a fixed height.
  *
- * `inline` steht mitten im Fließtext — eine Erwähnung, ein verlinktes Issue,
- * ein Datum. Der Chip gibt dort seine feste Höhe auf und bemisst sich in `em`,
- * damit er die Zeile nicht auseinanderdrückt und mit dem Text ringsum
- * mitwächst.
+ * `inline` sits in the middle of running text — a mention, a linked issue,
+ * a date. There the chip gives up its fixed height and sizes itself in `em`,
+ * so it doesn't stretch the line apart and scales with the surrounding text.
  *
- * `lg` steht für sich, nicht in einer Reihe gleichartiger Kacheln — ein
- * einzelner wichtiger Link auf einem Steckbrief zum Beispiel, wo ein
- * `md`-Chip neben Name und Kopfkarte zu klein wirkte.
+ * `lg` stands on its own, not in a row of similar tiles — a single important
+ * link on a profile card, for example, where an `md` chip would look too
+ * small next to the name and header card.
  */
 type ChipSize = "md" | "lg" | "inline";
 
 interface ChipProps extends Omit<React.HTMLAttributes<HTMLElement>, "onClick"> {
   /**
-   * Das Wurzelelement. `span`, wo der Chip in einem Absatz steht — ein `div`
-   * wäre dort ungültiges HTML und der Browser bräche den Absatz auf.
+   * The root element. `span` where the chip sits inside a paragraph — a
+   * `div` there would be invalid HTML and the browser would break the
+   * paragraph apart.
    */
   as?: "div" | "span";
   variant?: ChipVariant;

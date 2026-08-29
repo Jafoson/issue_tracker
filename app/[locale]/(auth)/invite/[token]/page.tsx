@@ -38,20 +38,20 @@ function InvalidInviteCard({
 }
 
 /**
- * Eine Einladung annehmen.
+ * Accept an invitation.
  *
- * Der Token im Pfad ist die Berechtigung — die Seite liegt deshalb in der
- * Route-Group `(auth)` und ist ohne Session erreichbar (`proxy.ts`).
+ * The token in the path is the authorization — that's why this page lives in
+ * the `(auth)` route group and is reachable without a session (`proxy.ts`).
  *
- * Unbekannt, abgelaufen, schon benutzt: alle drei Fälle sehen gleich aus. Ein
- * Unterschied in der Meldung würde verraten, welche Tokens es gibt.
+ * Unknown, expired, already used: all three cases look the same. A difference
+ * in the message would reveal which tokens exist.
  *
- * Der eigentliche Beitritt läuft in zwei Schritten über dieselbe Seite: erst
- * ohne Session zeigt sie `AcceptInviteForm` (Magic Link oder Single Sign-On
- * für das eingeladene Konto — siehe dort, warum kein Passkey), die Anmeldung
- * führt hierher zurück — jetzt mit einer Session, die zum eingeladenen Konto
- * passt. Dieser zweite Aufruf ruft `acceptInvitation()` auf (Pending-Flip,
- * Projekt-Enrollment) und leitet in den Workspace weiter.
+ * Actually joining runs in two steps through the same page: first, without a
+ * session, it shows `AcceptInviteForm` (magic link or single sign-on for the
+ * invited account — see there for why no passkey); signing in leads back
+ * here — now with a session matching the invited account. This second call
+ * invokes `acceptInvitation()` (pending flip, project enrollment) and
+ * redirects into the workspace.
  */
 export default async function InvitePage({
   params,
@@ -66,12 +66,12 @@ export default async function InvitePage({
   ]);
 
   if (!invitation || invitation.hasPasskey) {
-    // `openInvitation` schließt eine schon angenommene Einladung aus — bevor
-    // die generische „ungültig"-Meldung greift: vielleicht hat genau die
-    // jetzt eingeloggte Person diese Einladung gerade eben selbst
-    // angenommen (Doppel-Aufruf durch Reacts Dev-Strict-Mode auf Server
-    // Components, erneuter Seitenaufruf, Zurück-Knopf) — dann ist es kein
-    // Fehler, sondern schon erledigt, siehe `acceptInvitation()`.
+    // `openInvitation` excludes an already-accepted invitation — before the
+    // generic "invalid" message kicks in: maybe the person now signed in just
+    // accepted this very invitation themselves a moment ago (a double call
+    // from React's dev Strict Mode on Server Components, reloading the page,
+    // the back button) — in that case it's not an error but already done,
+    // see `acceptInvitation()`.
     if (session) {
       const already = await db.invitation.findUnique({
         where: { token },
@@ -90,8 +90,8 @@ export default async function InvitePage({
         redirect({ href: `/${already.workspaceId}`, locale: locale as Locale });
       }
     }
-    // Ein Konto mit Passkey braucht keine Einladung mehr, sondern eine
-    // Anmeldung — für die Oberfläche derselbe Hinweis.
+    // An account with a passkey no longer needs an invitation, just a
+    // sign-in — the UI shows the same message either way.
     return (
       <InvalidInviteCard
         title={t("invite.invalidTitle")}
@@ -106,8 +106,8 @@ export default async function InvitePage({
     if ("redirectTo" in result) {
       redirect({ href: result.redirectTo, locale: locale as Locale });
     }
-    // Ein Fehler hier (z. B. Token inzwischen abgelaufen) — dieselbe generische
-    // Meldung wie ein ungültiger Token, statt den Grund preiszugeben.
+    // An error here (e.g. token expired in the meantime) — the same generic
+    // message as an invalid token, instead of revealing the reason.
     return (
       <InvalidInviteCard
         title={t("invite.invalidTitle")}

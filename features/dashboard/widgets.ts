@@ -1,11 +1,11 @@
-// ─── Die Bausteine des Projekt-Dashboards ────────────────────────────────────
+// ─── The project dashboard's widgets ────────────────────────────────────────
 //
-// Abhängigkeitsfrei: keine DB, kein `server-only`, kein React. Die Serverseite
-// braucht die Liste, um nur zu laden, was auch gezeigt wird; die Oberfläche
-// braucht sie, um zu zeichnen; der Anpassen-Dialog, um sie zur Auswahl zu
-// stellen. Drei Leser, eine Wahrheit — und Tests, die ohne Datenbank laufen.
+// Dependency-free: no DB, no `server-only`, no React. The server side needs
+// the list to only load what's actually shown; the UI needs it to render;
+// the customize dialog needs it to offer as choices. Three readers, one
+// source of truth — and tests that run without a database.
 
-/** Jeder Baustein, den das Dashboard kennt. */
+/** Every widget the dashboard knows about. */
 export const WIDGET_KEYS = [
   "stats",
   "status",
@@ -18,37 +18,37 @@ export const WIDGET_KEYS = [
 export type WidgetKey = (typeof WIDGET_KEYS)[number];
 
 /**
- * Wie breit ein Baustein steht.
+ * How wide a widget sits.
  *
- * `full` nimmt die ganze Zeile, `half` teilt sie sich mit einem Nachbarn. Die
- * Angabe steht hier und nicht im Stylesheet, weil sie zum Baustein gehört und
- * nicht zur Seite: verschiebt jemand die Reihenfolge, sollen die Breiten
- * mitwandern, ohne dass irgendwo eine zweite Liste nachgezogen werden muss.
+ * `full` takes the whole row, `half` shares it with a neighbor. This lives
+ * here and not in the stylesheet, because it belongs to the widget, not the
+ * page: if someone reorders the widgets, the widths should travel along
+ * without a second list needing to be updated anywhere.
  */
 export type WidgetSpan = "half" | "full";
 
 export interface WidgetDef {
   key: WidgetKey;
   span: WidgetSpan;
-  /** Zeichen im Anpassen-Dialog — dasselbe wie im Kopf des Bausteins. */
+  /** Icon in the customize dialog — the same one as in the widget's header. */
   icon: string;
   /**
-   * Bausteine, die sich nicht ausblenden lassen.
+   * Widgets that can't be hidden.
    *
-   * Genau einer: die Kennzahlenreihe. Ein Dashboard, auf dem weder eine Zahl
-   * noch ein Diagramm steht, ist kein eingerichtetes Dashboard, sondern eine
-   * leere Seite, von der aus niemand mehr zurückfindet — die Reihe bleibt der
-   * Anker, an dem die Anpassung immer noch zu erreichen ist.
+   * Exactly one: the key-figures row. A dashboard with neither a number nor
+   * a chart on it isn't a configured dashboard, it's an empty page nobody
+   * can find their way back from — the row stays the anchor from which
+   * customization can still be reached.
    */
   permanent?: boolean;
 }
 
 /**
- * Die Vorgabe: Reihenfolge und Breite, wenn niemand etwas verstellt hat.
+ * The default: order and width when nobody has changed anything.
  *
- * Von grob nach fein, wie im Plattform-Dashboard: erst der Zustand in Zahlen,
- * dann wie er sich verteilt und entwickelt, dann wo die Arbeit liegt — und
- * zuletzt die Liste, die auf einzelne Aufgaben zeigt.
+ * From coarse to fine, like the platform dashboard: first the state in
+ * numbers, then how it's distributed and developing, then where the work
+ * sits — and finally the list pointing to individual issues.
  */
 export const WIDGETS: WidgetDef[] = [
   { key: "stats", span: "full", icon: "lucide:layout-grid", permanent: true },
@@ -63,42 +63,42 @@ const BY_KEY = new Map(WIDGETS.map((widget) => [widget.key, widget]));
 
 export function widgetDef(key: WidgetKey): WidgetDef {
   const found = BY_KEY.get(key);
-  // Kann nicht vorkommen, solange `WidgetKey` aus `WIDGETS` stammt — und wäre,
-  // wenn doch, ein fehlender Eintrag und keine Kleinigkeit.
+  // Can't happen as long as `WidgetKey` derives from `WIDGETS` — and if it
+  // did, it would be a missing entry, not a minor issue.
   if (!found) throw new Error(`Unknown dashboard widget: ${key}`);
   return found;
 }
 
-/** Ist das ein Baustein, den es gibt? Filtert, was aus der Datenbank kommt. */
+/** Is this a widget that actually exists? Filters what comes from the database. */
 export function isWidgetKey(value: string): value is WidgetKey {
   return (WIDGET_KEYS as readonly string[]).includes(value);
 }
 
 export interface DashboardLayout {
-  /** Die sichtbaren Bausteine, in der Reihenfolge, in der sie stehen. */
+  /** The visible widgets, in the order they appear. */
   visible: WidgetKey[];
-  /** Die ausgeblendeten — für den Anpassen-Dialog, der sie zurückholen kann. */
+  /** The hidden ones — for the customize dialog, which can bring them back. */
   hidden: WidgetKey[];
 }
 
 /**
- * Die gespeicherte Einstellung zu einer Anordnung machen.
+ * Turn the stored setting into a layout.
  *
- * Beide Eingaben sind Wünsche, keine Wahrheit: sie stammen aus einer Zeile, die
- * älter sein kann als die Liste der Bausteine. Deshalb wird nichts von dort
- * geglaubt, sondern alles gegen `WIDGETS` geprüft.
+ * Both inputs are wishes, not truth: they come from a row that can be older
+ * than the list of widgets. So nothing from there is trusted blindly —
+ * everything is checked against `WIDGETS`.
  *
- * Zwei Regeln, die zusammen dafür sorgen, dass ein neu ergänzter Baustein auch
- * bei denen erscheint, die schon einmal etwas verschoben haben:
+ * Two rules that together ensure a newly added widget also appears for
+ * people who've already rearranged something:
  *
- *   1. `order` führt, ist aber nicht vollständig — was darin fehlt, kommt
- *      danach in der Reihenfolge der Vorgabe.
- *   2. Ausgeblendet ist nur, was ausdrücklich in `hidden` steht. Ein
- *      unbekannter Baustein ist neu, nicht abgewählt.
+ *   1. `order` leads, but isn't complete — whatever's missing from it comes
+ *      afterward, in the default order.
+ *   2. Only what's explicitly listed in `hidden` counts as hidden. An
+ *      unknown widget is new, not deselected.
  *
- * Der umgekehrte Weg — nur die sichtbaren speichern — wäre kürzer und hätte
- * genau diesen Fehler: ein später ergänzter Baustein stünde in keiner
- * gespeicherten Liste und bliebe für immer unsichtbar.
+ * The reverse approach — save only the visible ones — would be shorter and
+ * would have exactly this bug: a widget added later wouldn't appear in any
+ * saved list and would stay invisible forever.
  */
 export function resolveLayout(
   order: string[] = [],
@@ -106,8 +106,8 @@ export function resolveLayout(
 ): DashboardLayout {
   const hiddenSet = new Set(hidden.filter(isWidgetKey));
 
-  // Erst die gespeicherte Reihenfolge (ohne Unbekanntes und ohne Dubletten),
-  // dann alles, was die Vorgabe noch kennt.
+  // First the saved order (with no unknowns and no duplicates), then
+  // everything the default still knows about.
   const seen = new Set<WidgetKey>();
   const ordered: WidgetKey[] = [];
 
@@ -123,9 +123,9 @@ export function resolveLayout(
   }
 
   return {
-    // Was nicht ausgeblendet werden *darf*, bleibt sichtbar, auch wenn es in
-    // `hidden` steht — eine alte Zeile kann von einer Zeit stammen, in der das
-    // noch ging.
+    // Whatever *can't* be hidden stays visible, even if it's listed in
+    // `hidden` — an old row might date back to a time when that was still
+    // allowed.
     visible: ordered.filter(
       (key) => !hiddenSet.has(key) || widgetDef(key).permanent,
     ),
@@ -136,11 +136,11 @@ export function resolveLayout(
 }
 
 /**
- * Einen Baustein um einen Platz verschieben — die Bewegung des Anpassen-Dialogs.
+ * Move a widget by one spot — the customize dialog's move action.
  *
- * Verschoben wird innerhalb der sichtbaren Liste; am Rand passiert nichts. Rein
- * rechnerisch und ohne Zustand, damit der Dialog nur noch das Ergebnis
- * speichern muss.
+ * Movement happens within the visible list; nothing happens at the edge.
+ * Purely computational and stateless, so the dialog only has to save the
+ * result.
  */
 export function moveWidget(
   order: WidgetKey[],

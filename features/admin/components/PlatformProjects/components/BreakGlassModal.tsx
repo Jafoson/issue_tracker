@@ -18,20 +18,20 @@ interface Props {
   close: () => void;
 }
 
-/** Dieselbe Untergrenze wie in `breakGlassJoinProject` — hier nur zum Abblenden. */
+/** Same lower bound as in `breakGlassJoinProject` — here only for dimming the button. */
 const MIN_REASON = 10;
 
 /**
- * Der Notfall-Zugriff, als Dialog.
+ * Break-glass access, as a dialog.
  *
- * Er ist absichtlich unbequem. Der Dialog sagt vor der Handlung, was sie
- * bedeutet — nicht nachher als Bestätigung: dass die Mitgliedschaft im Projekt
- * für alle sichtbar ist, dass die Begründung mit dem eigenen Namen im Protokoll
- * steht, und dass sie stehen bleibt. Wer nur nachsehen wollte, hört hier auf;
- * wer wirklich muss, schreibt zwei Sätze und geht hinein.
+ * It's deliberately uncomfortable. The dialog states before the action what
+ * it means — not afterward as a confirmation: that the project membership is
+ * visible to everyone, that the reason ends up in the audit log next to your
+ * own name, and that it stays there. Anyone who just wanted to peek stops
+ * here; anyone who truly needs to writes two sentences and goes in.
  *
- * Die Begründung ist deshalb ein Pflichtfeld und kein Kommentarfeld: der Knopf
- * bleibt aus, bis etwas dasteht.
+ * The reason is therefore a required field and not a comment box: the button
+ * stays disabled until something is written.
  */
 export function BreakGlassModal({ project, close }: Props) {
   const t = useTranslations();

@@ -20,7 +20,7 @@ import { PALETTE } from "@/lib/utils";
 import { useSubmitShortcut } from "@/lib/utils/useSubmitShortcut";
 import styles from "./createProjectModal.module.scss";
 
-/** Der Prefix ist die Issue-Kennung (WEB-123) — max. 4 alphanumerische Zeichen. */
+/** The prefix is the issue identifier (WEB-123) — max. 4 alphanumeric characters. */
 function suggestPrefix(name: string) {
   return name
     .replace(/[^a-zA-Z0-9]/g, "")
@@ -49,7 +49,7 @@ export function CreateProjectModal({
   const [visibility, setVisibility] = useState<ProjectVisibility>("public");
   const [error, setError] = useState("");
 
-  // Solange der Prefix nicht von Hand angefasst wurde, folgt er dem Namen.
+  // As long as the prefix hasn't been touched by hand, it follows the name.
   const effectivePrefix = prefixTouched ? prefix : suggestPrefix(name);
 
   const submit = () => {
@@ -99,9 +99,9 @@ export function CreateProjectModal({
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* Der Satz, der später in der Projektübersicht neben dem Namen steht.
-            Freiwillig — wer ihn hier auslässt, trägt ihn in den Einstellungen
-            des Projekts nach. */}
+        {/* The sentence that later appears next to the name in the project
+            overview. Optional — whoever skips it here can add it later in
+            the project's settings. */}
         <Input
           label={t("fields.description")}
           placeholder={t("projects.descPlaceholder")}
@@ -130,8 +130,8 @@ export function CreateProjectModal({
           <ColorPicker value={color} onChange={setColor} />
         </div>
 
-        {/* Die Wahl fällt hier, weil sie entscheidet, wer eingetragen wird:
-            öffentlich nimmt den ganzen Workspace auf, privat nur dich. */}
+        {/* The choice is made here because it decides who gets enrolled:
+            public admits the whole workspace, private only you. */}
         <div className={styles.field}>
           <span className={styles.label}>
             {t("projectSettings.visibility")}

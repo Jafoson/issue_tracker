@@ -8,10 +8,10 @@ import { workspacePath } from "@/lib/nav";
 export const dynamic = "force-dynamic";
 
 /**
- * Stammdaten des Workspace, seine Zahlen und das Löschen.
+ * The workspace's core data, its stats, and deletion.
  *
- * Geprüft wird in `getWorkspaceSettingsView` und noch einmal in den Actions —
- * `null` heißt hier wie überall „gibt es für dich nicht".
+ * Checked in `getWorkspaceSettingsView` and again in the actions — `null`
+ * means, here as everywhere, "doesn't exist for you".
  */
 export default async function WorkspaceSettingsPage({
   params,
@@ -27,9 +27,9 @@ export default async function WorkspaceSettingsPage({
   return (
     <WorkspaceSettings
       {...view}
-      // Absolut, nicht als Pfad: die Adresse wird kopiert und woanders
-      // eingefügt. Zusammengesetzt wird sie hier, weil nur der Server weiß,
-      // unter welchem Host die App läuft (`AUTH_URL`).
+      // Absolute, not a path: the URL gets copied and pasted elsewhere.
+      // It's assembled here because only the server knows which host the app
+      // runs under (`AUTH_URL`).
       workspaceUrl={appUrl(workspacePath(workspace, ""))}
     />
   );

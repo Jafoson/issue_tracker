@@ -1,54 +1,56 @@
 import type { ProjectVisibility } from "@/features/projects/types";
 import type { Project, Role, User } from "@/types";
 
-// Die Ansichten der Workspace-Einstellungen. Jede ist das, was genau eine Seite
-// rendert: fertige Zeilen plus die Frage, was der Handelnde damit darf. Die
-// Rechte löst der Server auf — keine Komponente hier baut Regeln nach.
+// The workspace settings views. Each is exactly what one page renders:
+// ready-made rows plus the question of what the actor is allowed to do
+// with them. Permissions are resolved by the server — no component here
+// reimplements rules.
 
-/** Eine wichtige externe Adresse des Workspace — Dokumentation, Repository, Chat. */
+/** An important external address of the workspace — documentation, repository, chat. */
 export interface WorkspaceLinkRow {
   id: string;
   label: string;
   url: string;
 }
 
-/** Allgemein: Stammdaten des Workspace und was daran hängt. */
+/** General: the workspace's core data and what depends on it. */
 export interface WorkspaceSettingsView {
   workspace: {
     id: string;
     name: string;
     slug: string;
     color: string;
-    /** Wozu der Workspace da ist — leer, wenn es niemand gesagt hat. */
+    /** What the workspace is for — empty if nobody has said. */
     desc: string;
     avatarUrl: string | null;
     projectCount: number;
     memberCount: number;
     issueCount: number;
     links: WorkspaceLinkRow[];
-    /** E-Mail-Domains, über die neue Konten automatisch beitreten
+    /** Email domains that let new accounts join automatically
      * (`addWorkspaceDomain`/`removeWorkspaceDomain`). */
     domains: string[];
   };
-  /** `workspace.update` — Name, Farbe, Beschreibung und Links. */
+  /** `workspace.update` — name, color, description, and links. */
   canUpdate: boolean;
-  /** `workspace.delete` — den Workspace mit allem darin löschen. */
+  /** `workspace.delete` — delete the workspace along with everything in it. */
   canDelete: boolean;
 }
 
 /**
- * Ein Projekt mitsamt dem Workspace, in dem es liegt.
+ * A project along with the workspace it lives in.
  *
- * Braucht, wer Projekte über Workspace-Grenzen hinweg auflistet: der Name allein
- * sagt dann nicht mehr, welches gemeint ist, und ohne die Workspace-Id lässt
- * sich auch keine Adresse dafür bauen (`/<workspaceId>/project/<slug>/…`).
+ * Needed by anyone listing projects across workspace boundaries: the name
+ * alone no longer says which one is meant, and without the workspace id
+ * there's no way to build an address for it either
+ * (`/<workspaceId>/project/<slug>/…`).
  */
 export interface ProjectWithWorkspace extends Project {
   workspaceId: string;
   workspaceName: string;
 }
 
-/** Ein Projekt, wie die Übersicht des Workspace es zeigt. */
+/** A project as the workspace's overview shows it. */
 export interface WorkspaceProjectRow {
   id: string;
   name: string;
@@ -56,96 +58,98 @@ export interface WorkspaceProjectRow {
   prefix: string;
   color: string;
   avatarUrl: string | null;
-  /** Wofür das Projekt da ist — leer, wenn es niemand gesagt hat. */
+  /** What the project is for — empty if nobody has said. */
   desc: string;
   visibility: ProjectVisibility;
   issueCount: number;
   memberCount: number;
   /**
-   * Die ersten Mitglieder für den Avatar-Stapel — nicht die ganze Liste. Wie
-   * viele es insgesamt sind, sagt `memberCount`; die Gesichter beantworten die
-   * andere Frage („bin ich da drin, wer noch?"), und dafür reichen vier.
+   * The first few members for the avatar stack — not the entire list. How
+   * many there are in total is answered by `memberCount`; the faces answer
+   * the other question ("am I in it, and who else?"), and four are enough
+   * for that.
    */
   members: User[];
   /**
-   * `project.update` in genau diesem Projekt. Die Permission ist projektlokal,
-   * also entscheidet sie Zeile für Zeile — wer ein Projekt leitet, darf noch
-   * lange nicht alle ändern.
+   * `project.update` in exactly this project. The permission is
+   * project-local, so it decides row by row — leading a project by no
+   * means grants the right to change all of them.
    */
   canUpdate: boolean;
-  /** `project.delete` in genau diesem Projekt. */
+  /** `project.delete` in exactly this project. */
   canDelete: boolean;
 }
 
 export interface WorkspaceProjectsView {
-  /** Die eine Liste, wenn `seesAllProjects` nicht gilt — sonst leer, siehe
-   * `publicRows`/`privateRows`. */
+  /** The single list when `seesAllProjects` doesn't apply — empty
+   * otherwise, see `publicRows`/`privateRows`. */
   rows: WorkspaceProjectRow[];
-  /** Nur bei `seesAllProjects`: die offenen Projekte. */
+  /** Only with `seesAllProjects`: the public projects. */
   publicRows: WorkspaceProjectRow[];
-  /** Nur bei `seesAllProjects`: die privaten Projekte. */
+  /** Only with `seesAllProjects`: the private projects. */
   privateRows: WorkspaceProjectRow[];
-  /** `project.create` — ein neues Projekt im Workspace anlegen. */
+  /** `project.create` — create a new project in the workspace. */
   canCreate: boolean;
   /**
-   * Der Handelnde sieht jedes Projekt des Workspace — per Generalschlüssel
-   * (`project.view.all`, `project.admin.all`) oder als Support.
+   * The actor sees every project in the workspace — via a master key
+   * (`project.view.all`, `project.admin.all`) or as support.
    *
-   * Erst dann darf die Liste nach Sichtbarkeit gruppieren: sonst wäre „Privat"
-   * nicht die Menge der privaten Projekte, sondern nur die Auswahl, in der er
-   * zufällig Mitglied ist — eine Überschrift, die mehr verspricht als sie hält.
+   * Only then is the list allowed to group by visibility: otherwise
+   * "Private" wouldn't be the set of private projects, just the subset
+   * they happen to be a member of — a heading that promises more than it
+   * delivers.
    */
   seesAllProjects: boolean;
-  /** Cursor für `rows` (ohne `seesAllProjects`), sonst `null`. */
+  /** Cursor for `rows` (without `seesAllProjects`), `null` otherwise. */
   nextCursor: string | null;
-  /** Cursor für `publicRows`, sonst `null`. */
+  /** Cursor for `publicRows`, `null` otherwise. */
   publicNextCursor: string | null;
-  /** Cursor für `privateRows`, sonst `null`. */
+  /** Cursor for `privateRows`, `null` otherwise. */
   privateNextCursor: string | null;
 }
 
-/** Ein Label, wie die Verwaltungsseite des Workspace es zeigt. */
+/** A label as the workspace's management page shows it. */
 export interface WorkspaceLabelRow {
   id: string;
   name: string;
-  /** Steht so in den Filter-URLs (`?label=…`) und bleibt beim Umbenennen. */
+  /** Appears verbatim in filter URLs (`?label=…`) and stays put on rename. */
   slug: string;
   color: string;
-  /** An wie vielen Aufgaben des Workspace das Label hängt. */
+  /** How many tasks in the workspace the label is attached to. */
   issueCount: number;
   /**
-   * Nur bei Projekt-Labels gesetzt: Name des Projekts, dem es gehört. Die
-   * Workspace-Ansicht listet sie mit, ändern lassen sie sich dort, wo sie
-   * hingehören.
+   * Only set for project labels: the name of the project it belongs to.
+   * The workspace view lists them too, but they can only be changed where
+   * they belong.
    */
   projectName?: string;
-  /** Slug des besitzenden Projekts — für den Weg zu dessen Labels. */
+  /** Slug of the owning project — for the path to its labels. */
   projectSlug?: string;
-  /** In wie vielen Projekten dieses Workspace-Label ausgeblendet ist. */
+  /** In how many projects this workspace label is hidden. */
   hiddenIn: number;
 }
 
 export interface WorkspaceLabelsView {
-  /** Labels des Workspace: gelten in jedem Projekt. */
+  /** Labels owned by the workspace: apply in every project. */
   own: WorkspaceLabelRow[];
-  /** Labels, die einzelnen Projekten gehören — hier nur zur Übersicht. */
+  /** Labels owned by individual projects — listed here only for overview. */
   fromProjects: WorkspaceLabelRow[];
-  /** `label.create` im Workspace-Scope. */
+  /** `label.create` in workspace scope. */
   canCreate: boolean;
-  /** `label.update` im Workspace-Scope. */
+  /** `label.update` in workspace scope. */
   canUpdate: boolean;
-  /** `label.delete` im Workspace-Scope. */
+  /** `label.delete` in workspace scope. */
   canDelete: boolean;
-  /** Cursor für `own`, `null` wenn schon alles geladen ist. */
+  /** Cursor for `own`, `null` when everything is already loaded. */
   ownNextCursor: string | null;
-  /** Cursor für `fromProjects`, `null` wenn schon alles geladen ist. */
+  /** Cursor for `fromProjects`, `null` when everything is already loaded. */
   fromProjectsNextCursor: string | null;
 }
 
 /**
- * Ein Projekt, das an einem Team hängt — mit der Rolle, die das Team dort
- * verleiht. `role` ist `null`, wenn die Verknüpfung nur zur Gruppierung da
- * ist, ohne dass Mitglieder dadurch Zugriff bekommen.
+ * A project attached to a team — with the role the team grants there.
+ * `role` is `null` when the link exists purely for grouping, without
+ * members gaining access through it.
  */
 export interface TeamProjectRow {
   id: string;
@@ -154,78 +158,79 @@ export interface TeamProjectRow {
   role: { key: string; name: string; rank: number } | null;
 }
 
-/** Ein Team mit allem, was seine Zeile zeigt. */
+/** A team with everything its row shows. */
 export interface WorkspaceTeamRow {
   id: string;
   name: string;
-  /** Kurzzeichen, eindeutig im Workspace. */
+  /** Short code, unique within the workspace. */
   key: string;
   color: string;
   desc: string;
-  /** Die Person, die das Team führt. `null`, wenn ihr Konto weg ist. */
+  /** The person leading the team. `null` if their account is gone. */
   lead: User | null;
   members: User[];
   projects: TeamProjectRow[];
-  /** Offene Aufgaben in den Projekten dieses Teams. */
+  /** Open tasks across this team's projects. */
   openIssues: number;
 }
 
 export interface WorkspaceTeamsView {
   rows: WorkspaceTeamRow[];
-  /** Auswahl für den Dialog: Mitglieder des Workspace. */
+  /** Selection for the dialog: workspace members. */
   candidates: User[];
-  /** Auswahl für den Dialog: Projekte des Workspace. */
+  /** Selection for the dialog: workspace projects. */
   projects: { id: string; name: string; color: string }[];
   /**
-   * Rollen, die sich im Dialog einem Projekt zuweisen lassen — die
-   * Projektrollen des Workspace (system oder eigen), die in allen seinen
-   * Projekten gelten. Projektlokale Rollen einzelner Projekte stehen hier
-   * bewusst nicht: ein Team kann mehrere Projekte umfassen, eine Rolle, die
-   * nur in einem davon existiert, wäre in den anderen keine gültige Wahl.
+   * Roles assignable to a project in the dialog — the workspace's project
+   * roles (system or custom) that apply in all of its projects.
+   * Project-local roles of individual projects are deliberately excluded
+   * here: a team can span multiple projects, and a role that only exists
+   * in one of them wouldn't be a valid choice in the others.
    *
-   * Ob eine gewählte Rolle im konkreten Projekt tatsächlich vergeben werden
-   * darf, prüft `resolveTeamProjectRoles` beim Speichern serverseitig —
-   * diese Liste ist nur die Auswahl im Dialog, keine Zusage.
+   * Whether a chosen role can actually be assigned in the specific project
+   * is checked server-side by `resolveTeamProjectRoles` on save — this list
+   * is only the dialog's selection, not a guarantee.
    */
   assignableProjectRoles: { key: string; name: string; rank: number }[];
   /** `team.create` */
   canCreate: boolean;
-  /** `team.update` — Name, Kürzel, Farbe, Lead. */
+  /** `team.update` — name, short code, color, lead. */
   canUpdate: boolean;
   /** `team.delete` */
   canDelete: boolean;
-  /** `team.member.manage` — wer im Team ist. */
+  /** `team.member.manage` — who is in the team. */
   canManageMembers: boolean;
-  /** `team.project.manage` — welche Projekte zum Team gehören, mit welcher Rolle. */
+  /** `team.project.manage` — which projects belong to the team, with which role. */
   canManageProjects: boolean;
-  /** Id des letzten Teams dieser Seite, für `loadMoreWorkspaceTeams` — `null`,
-   * wenn `rows` schon alles ist. */
+  /** Id of the last team on this page, for `loadMoreWorkspaceTeams` —
+   * `null` if `rows` is already everything. */
   nextCursor: string | null;
 }
 
-/** Ein Mitglied des Workspace, wie seine Zeile es zeigt. */
+/** A workspace member as their row shows them. */
 export interface WorkspaceMemberRow {
   user: User;
-  /** Rollen-Key im Workspace. */
+  /** Role key in the workspace. */
   role: string;
   roleName: string;
   roleRank: number;
-  /** Die Einladung wurde noch nicht angenommen. */
+  /** The invitation has not been accepted yet. */
   pending: boolean;
-  /** Teams, in denen die Person steht — Name und Farbe genügen der Zeile. */
+  /** Teams the person is on — name and color are enough for the row. */
   teams: { id: string; name: string; color: string }[];
-  /** Das ist der gerade eingeloggte User. */
+  /** This is the currently logged-in user. */
   you: boolean;
   /**
-   * Rang, Selbstbezug und Owner-Schutz stehen nicht im Weg. Entschieden vom
-   * Server; welche Aktion erlaubt ist, sagen `canSetRole` und `canRemove`.
+   * Rank, self-reference, and owner protection don't stand in the way.
+   * Decided by the server; which action is allowed is answered by
+   * `canSetRole` and `canRemove`.
    */
   manageable: boolean;
 }
 
 export interface WorkspaceMembersView {
   rows: WorkspaceMemberRow[];
-  /** Rollen, die der aktuelle User vergeben darf. Leer ohne Verwaltungsrecht. */
+  /** Roles the current user is allowed to assign. Empty without management rights. */
   assignableRoles: Role[];
   /** `member.invite` */
   canInvite: boolean;
@@ -233,23 +238,23 @@ export interface WorkspaceMembersView {
   canSetRole: boolean;
   /** `member.remove` */
   canRemove: boolean;
-  /** Id des letzten Mitglieds dieser Seite, für `loadMoreWorkspaceMembers` —
-   * `null`, wenn `rows` schon alles ist. */
+  /** Id of the last member on this page, for `loadMoreWorkspaceMembers` —
+   * `null` if `rows` is already everything. */
   nextCursor: string | null;
 }
 
-/** Eine noch nicht angenommene Einladung, wie ihre Zeile sie zeigt. */
+/** A not-yet-accepted invitation as its row shows it. */
 export interface PendingInvitationRow {
   token: string;
   email: string;
-  /** Name des Schatten-Kontos — bis zur Annahme nur der lokale Teil der
-   * Adresse (siehe `inviteOneWorkspaceMember`), danach zeigt die Person
-   * ohnehin nicht mehr hier. */
+  /** Name of the shadow account — until accepted, just the local part of
+   * the address (see `inviteOneWorkspaceMember`); after that the person no
+   * longer appears here anyway. */
   firstName: string;
   lastName: string;
   roleName: string;
-  /** `null` bei Zeilen von vor der `invitedById`-Spalte oder wenn das
-   * einladende Konto seither gelöscht wurde. */
+  /** `null` for rows predating the `invitedById` column, or when the
+   * inviting account has since been deleted. */
   invitedByName: string | null;
   createdAt: Date;
   expires: Date;
@@ -258,14 +263,14 @@ export interface PendingInvitationRow {
 
 export interface PendingInvitationsView {
   rows: PendingInvitationRow[];
-  /** `member.invite` — dieselbe Berechtigung wie fürs Einladen selbst. */
+  /** `member.invite` — the same permission as for inviting itself. */
   canManage: boolean;
-  /** Token der letzten Zeile dieser Seite, für `loadMorePendingInvitations`
-   * — `null`, wenn `rows` schon alles ist. */
+  /** Token of the last row on this page, for `loadMorePendingInvitations`
+   * — `null` if `rows` is already everything. */
   nextCursor: string | null;
 }
 
-/** Der teilbare Einladungslink eines Scopes (Workspace oder Projekt). */
+/** The shareable invitation link of a scope (workspace or project). */
 export interface ActiveInviteLink {
   token: string;
   url: string;
@@ -275,9 +280,9 @@ export interface ActiveInviteLink {
 }
 
 export interface InviteLinkView {
-  /** `null`, wenn (noch) kein Link aktiv ist. */
+  /** `null` when no link is (yet) active. */
   activeLink: ActiveInviteLink | null;
-  /** Rollen, die der aktuelle User vergeben darf. */
+  /** Roles the current user is allowed to assign. */
   assignableRoles: Role[];
   canManage: boolean;
 }

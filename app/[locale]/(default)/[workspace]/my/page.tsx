@@ -11,9 +11,9 @@ import { getSession } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 /**
- * Die eigenen Aufgaben als Board — dieselbe Ansicht wie im Projekt, nur über
- * alle Projekte hinweg, in denen man zuständig ist. Ein neues Issue entsteht
- * hier nicht: dafür fehlt das Projekt, in das es gehörte (siehe `Board`).
+ * Your own issues as a board — the same view as in a project, just across
+ * all projects you're responsible for. No new issue gets created here: the
+ * project it would belong to is missing (see `Board`).
  */
 export default async function MyPage({
   params,
@@ -40,7 +40,7 @@ export default async function MyPage({
     <>
       <Topbar count={issues.length} />
       <Board issues={issues} statuses={statuses} composer={composer} />
-      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      {/* Opens the clicked issue as a side panel (`?issue=` in the URL). */}
       <IssuePeek data={composer} />
     </>
   );

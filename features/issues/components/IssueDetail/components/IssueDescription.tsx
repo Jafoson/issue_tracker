@@ -15,23 +15,24 @@ import styles from "../issueDetail.module.scss";
 interface IssueDescriptionProps {
   issueId: string;
   description: PMDoc;
-  /** Für die Vorschläge hinter `@` und `#` im Beschreibungstext. */
+  /** For the suggestions behind `@` and `#` in the description text. */
   data: IssueEditorData;
-  /** `!issue.access.canEdit` — ohne `issue.update.any`/`.own` nur Anzeige, kein Editor. */
+  /** `!issue.access.canEdit` — without `issue.update.any`/`.own`, display only, no editor. */
   readOnly?: boolean;
   onPatch: (patch: IssuePatch) => void;
   /**
-   * Holt das Issue neu — ein Anhang-Upload/-Löschen läuft über eigene Server
-   * Actions statt `onPatch`, das Panel hängt an keinem Server-Render und muss
-   * darüber vom neuen Stand erfahren (`useIssueDetail`).
+   * Refetches the issue — an attachment upload/delete goes through its own
+   * server actions instead of `onPatch`; the panel isn't tied to any server
+   * render and needs to learn about the new state this way
+   * (`useIssueDetail`).
    */
   onRefresh: () => Promise<void>;
 }
 
 /**
- * Die Beschreibung, direkt im Fluss bearbeitbar. Ihr Abschnittskopf bleibt
- * auch ohne Inhalt stehen — sonst gäbe es keinen Ort, an dem sie entstehen
- * könnte.
+ * The description, editable directly inline. Its section header stays
+ * visible even without content — otherwise there'd be no place for content
+ * to be created in the first place.
  */
 export function IssueDescription({
   issueId,
@@ -69,8 +70,8 @@ export function IssueDescription({
                 if (!attachment.url) {
                   return { error: t("editor.attachmentUploadFailed") };
                 }
-                // Nicht abwarten: der Knoten soll sofort erscheinen, die
-                // Anhänge-Sektion zieht kurz danach nach.
+                // Not awaited: the node should appear immediately, the
+                // attachments section catches up shortly after.
                 onRefresh();
                 return {
                   id: attachment.id,
@@ -104,8 +105,8 @@ export function IssueDescription({
                 if (!attachment.url) {
                   return { error: t("editor.attachmentUploadFailed") };
                 }
-                // Nicht abwarten: der Knoten soll sofort erscheinen, die
-                // Anhänge-Sektion zieht kurz danach nach.
+                // Not awaited: the node should appear immediately, the
+                // attachments section catches up shortly after.
                 onRefresh();
                 return {
                   id: attachment.id,

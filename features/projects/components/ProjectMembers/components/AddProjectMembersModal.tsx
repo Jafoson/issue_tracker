@@ -38,20 +38,20 @@ type BulkRow = Extract<BulkResult, { rows: unknown }>["rows"][number];
 interface AddProjectMembersModalProps {
   projectId: string;
   projectName: string;
-  /** Workspace-Mitglieder ohne eigenen Projekt-Eintrag. */
+  /** Workspace members without their own project entry. */
   candidates: User[];
-  /** Rollen, die der aktuelle User vergeben darf. */
+  /** Roles the current user is allowed to assign. */
   roles: Role[];
   defaultRole: string;
-  /** Ohne dieses Recht fehlt der E-Mail-Weg — neue Accounts sind tabu. */
+  /** Without this permission the email path is missing — new accounts are taboo. */
   canInvite: boolean;
   close: () => void;
 }
 
 /**
- * Zwei Wege ins Projekt: bestehende Workspace-Mitglieder auswählen oder eine
- * fremde Adresse einladen. Beide enden mit derselben Rolle, deshalb steht der
- * Rollen-Picker unter beiden Modi statt in jedem einzeln.
+ * Two ways into the project: pick existing workspace members or invite an
+ * outside address. Both end with the same role, so the role picker sits
+ * below both modes instead of being duplicated in each.
  */
 export function AddProjectMembersModal({
   projectId,
@@ -67,8 +67,8 @@ export function AddProjectMembersModal({
   const [isPending, startTransition] = useTransition();
 
   const [mode, setMode] = useState<Mode>(
-    // Sind alle schon im Projekt, wäre die Auswahlliste leer — dann startet der
-    // Dialog gleich beim Einladen.
+    // If everyone is already in the project, the selection list would be
+    // empty — in that case the dialog starts directly at inviting.
     candidates.length === 0 && canInvite ? "invite" : "workspace",
   );
   const [query, setQuery] = useState("");
@@ -76,9 +76,9 @@ export function AddProjectMembersModal({
   const [emailsText, setEmailsText] = useState("");
   const [role, setRole] = useState(defaultRole);
   const [error, setError] = useState("");
-  // Entsteht beim Einladen unbekannter Adressen: die Konten haben kein
-  // Passwort, der jeweilige Link ist der einzige Weg hinein. Eine ungültige
-  // oder schon vergebene Adresse blockiert die übrigen Zeilen nicht.
+  // Populated when inviting unknown addresses: those accounts have no
+  // password, and their link is the only way in. An invalid or already-taken
+  // address doesn't block the remaining rows.
   const [rows, setRows] = useState<BulkRow[] | null>(null);
 
   const roleName = roles.find((r) => r.id === role)?.name ?? role;
@@ -130,8 +130,8 @@ export function AddProjectMembersModal({
         return;
       }
       router.refresh();
-      // Neu entstandene Konten brauchen ihren Einladungslink — der Dialog
-      // bleibt offen, bis er kopiert werden konnte.
+      // Newly created accounts need their invitation link — the dialog
+      // stays open until it could be copied.
       setRows(result.rows);
     });
   };

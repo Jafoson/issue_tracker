@@ -10,21 +10,21 @@ import { clampAttachmentWidth, formatBytes } from "@/lib/richtext/attachments";
 import styles from "./attachmentView.module.scss";
 
 /**
- * Ein Anhang im Editor: Bild-Vorschau, Video-Player oder Datei-Karte, je nach
- * `mimeType` — dieselbe Verzweigung wie in `RichText.tsx`s `case "attachment"`,
- * hier nur zusätzlich mit einer Entfernen-Schaltfläche.
+ * An attachment in the editor: image preview, video player, or file card,
+ * depending on `mimeType` — the same branching as `RichText.tsx`'s
+ * `case "attachment"`, just with a remove button added on top here.
  *
- * Fehlt `url` (Anhang wurde gelöscht, aber der Knoten steht noch im
- * Dokument einer älteren Fassung), erscheint ein stiller Platzhalter statt
- * eines toten Bildes.
+ * If `url` is missing (the attachment was deleted, but the node still sits
+ * in the document of an older revision), a quiet placeholder appears
+ * instead of a dead image.
  */
-/** Die acht Griffe — vier Ecken, vier Kantenmitten —, jeder mit seiner Achse
- *  und Richtung. `@tiptap/core` bringt mit `ResizableNodeView` genau dieses
- *  Achtergriff-Schema bereits mit (`ResizableNodeViewDirection`); nachgebaut
- *  statt übernommen, weil diese Komponente React bleiben soll (Ecken/Kanten
- *  landen hier als JSX, nicht als von Tiptap selbst verwaltetes DOM) — die
- *  Übersetzungen für Anhang-Namen und die Verzweigung nach `mimeType` bräuchten
- *  sonst ein zweites, unabhängiges Vokabular. */
+/** The eight handles — four corners, four edge midpoints —, each with its
+ *  axis and direction. `@tiptap/core` already ships this exact eight-handle
+ *  scheme via `ResizableNodeView` (`ResizableNodeViewDirection`); rebuilt
+ *  instead of reused because this component is meant to stay React (corners
+ *  and edges land here as JSX, not as DOM managed by Tiptap itself) — the
+ *  translations for attachment names and the branching by `mimeType` would
+ *  otherwise need a second, independent vocabulary. */
 const HANDLES: {
   pos: string;
   axis: "x" | "y";
@@ -55,17 +55,17 @@ export function AttachmentView({
   const mediaRef = useRef<HTMLDivElement>(null);
 
   /**
-   * ProseMirrors eigene Koordinaten-zu-Position-Auflösung (`posFromCaret` in
-   * `prosemirror-view`) entscheidet bei einem Klick auf einen Atom-Knoten per
-   * Halbierung seines Rahmens: links der Mitte → davor, rechts der Mitte →
-   * dahinter — gedacht für schmale Inline-Symbole. Bei einem 300px+ breiten,
-   * hohen Bild kollabiert diese Heuristik: liegt der Anhang nach einem
-   * Verschieben am Rand eines Absatzes (nur auf einer Seite Text), bleibt
-   * jeder Klick wirkungslos — keine Markierung, keine Ziehgriffe. Der
-   * offizielle Ausweg (siehe Tiptaps eigene Beispiele für große Node-Views,
-   * ebenso Atlassians ProseMirror-Editor für Medien-Embeds): die Markierung
-   * nicht dem Browser/ProseMirror-Klick-Heuristik überlassen, sondern hier
-   * direkt über die eigene, immer aktuelle Position (`getPos()`) setzen.
+   * ProseMirror's own coordinate-to-position resolution (`posFromCaret` in
+   * `prosemirror-view`) decides a click on an atom node by bisecting its
+   * bounding box: left of center → before it, right of center → after it —
+   * designed for narrow inline symbols. For a 300px+ wide, tall image this
+   * heuristic collapses: if the attachment ends up at the edge of a
+   * paragraph after being moved (text only on one side), every click becomes
+   * ineffective — no selection, no resize handles. The official workaround
+   * (see Tiptap's own examples for large node views, as well as Atlassian's
+   * ProseMirror editor for media embeds): don't leave selection to the
+   * browser/ProseMirror click heuristic, and instead set it here directly via
+   * the node's own, always-current position (`getPos()`).
    */
   const selectSelf = () => {
     const pos = getPos();
@@ -74,15 +74,15 @@ export function AttachmentView({
   };
 
   /**
-   * `@tiptap/react`s eigene `selected`-Prop verlässt sich auf eine intern
-   * gecachte Position (`currentPos`), die beim erneuten `update()` desselben
-   * Node-View-Objekts nicht immer nachgezogen wird, wenn ProseMirror dieselbe
-   * Node-Referenz weiterreicht — sichtbar genau in den Fällen, in denen
-   * `selectSelf()` oben eingreift (verschobener Anhang am Absatzrand): die
-   * echte Auswahl (`editor.state.selection`) ist danach eine korrekte
-   * `NodeSelection` auf dieser Position, die `selected`-Prop bleibt trotzdem
-   * `false`. Deshalb hier selbst geführt, immer anhand der frischen
-   * `getPos()` verglichen statt eines gecachten Werts.
+   * `@tiptap/react`'s own `selected` prop relies on an internally cached
+   * position (`currentPos`) that isn't always updated on a subsequent
+   * `update()` of the same node view object when ProseMirror passes along
+   * the same node reference — visible precisely in the cases where
+   * `selectSelf()` above kicks in (attachment moved to a paragraph edge):
+   * the actual selection (`editor.state.selection`) is then a correct
+   * `NodeSelection` at that position, yet the `selected` prop still stays
+   * `false`. So it's tracked here manually instead, always compared against
+   * the fresh `getPos()` rather than a cached value.
    */
   const [isSelected, setIsSelected] = useState(false);
   const getPosRef = useRef(getPos);
@@ -115,15 +115,15 @@ export function AttachmentView({
     | null;
 
   /**
-   * Zieht die Breite an einer Ecke oder Kantenmitte — Ecken und die
-   * Seitenkanten zählen die waagrechte Mausbewegung, oben/unten die
-   * senkrechte, umgerechnet über das Seitenverhältnis (`aspectRatio`), da nur
-   * die Breite tatsächlich gespeichert wird und die Höhe ihr per
-   * `height: auto` einfach folgt. Dieselbe Mechanik wie beim Vergrößern des
-   * Editors selbst (`richTextEditor.module.scss`s `resize: vertical`): erst
-   * während des Ziehens läuft die Breite nur über den DOM-Stil (kein
-   * Node-Update pro Pixel, das würde ProseMirrors Historie mit hunderten
-   * Schritten fluten), übernommen wird sie erst beim Loslassen.
+   * Drags the width from a corner or edge midpoint — corners and the side
+   * edges track horizontal mouse movement, top/bottom track vertical
+   * movement, converted via the aspect ratio (`aspectRatio`), since only the
+   * width is actually stored and the height simply follows it via
+   * `height: auto`. Same mechanism as resizing the editor itself
+   * (`richTextEditor.module.scss`'s `resize: vertical`): while dragging, the
+   * width only runs through the DOM style (no node update per pixel, which
+   * would flood ProseMirror's history with hundreds of steps), and it's only
+   * committed on release.
    */
   const startResize =
     (axis: "x" | "y", direction: 1 | -1) => (e: React.PointerEvent) => {
@@ -156,11 +156,10 @@ export function AttachmentView({
       window.addEventListener("pointerup", onUp);
     };
 
-  /** Nur solange der Anhang ausgewählt ist — wie in jedem gängigen Programm,
-   *  nicht erst beim Überfahren mit der Maus. Nur mit der Maus bedienbar,
-   *  wie der Ziehgriff einer Tabellenspalte (`richTextEditor.module.scss`s
-   *  `.column-resize-handle`) — dieselbe Ausnahme von Tastaturbedienung gilt
-   *  schon dort. */
+  /** Only while the attachment is selected — like in any common program,
+   *  not just on mouse hover. Mouse-only, like the resize handle of a table
+   *  column (`richTextEditor.module.scss`'s `.column-resize-handle`) — the
+   *  same exception from keyboard operability already applies there. */
   const resizeHandles =
     isSelected &&
     HANDLES.map((h) => (
@@ -224,7 +223,7 @@ export function AttachmentView({
         contentEditable={false}
         onClick={selectSelf}
       >
-        {/* biome-ignore lint/performance/noImgElement: presignte URL, next/image kann sie nicht optimieren */}
+        {/* biome-ignore lint/performance/noImgElement: presigned URL, next/image can't optimize it */}
         <img src={url} alt={name} className={styles.imagePreview} />
         {removeButton}
         {resizeHandles}
@@ -243,7 +242,7 @@ export function AttachmentView({
         contentEditable={false}
         onClick={selectSelf}
       >
-        {/* biome-ignore lint/a11y/useMediaCaption: hochgeladene Anhänge tragen keine Untertitel */}
+        {/* biome-ignore lint/a11y/useMediaCaption: uploaded attachments don't carry subtitles */}
         <video src={url} controls className={styles.videoPlayer} />
         <div className={styles.caption}>
           <span className={styles.name}>{name}</span>

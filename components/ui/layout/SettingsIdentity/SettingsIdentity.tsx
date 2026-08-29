@@ -2,24 +2,24 @@ import type { ReactNode } from "react";
 import styles from "./settingsIdentity.module.scss";
 
 interface Props {
-  /** Der Avatar/das Symbol samt Ändern-Knopf, zentriert über den Feldern. */
+  /** The avatar/icon along with the change button, centered above the fields. */
   avatar: ReactNode;
-  /** Die Felder darunter, einspaltig gestapelt — je Feld typischerweise ein
-   *  `Input` mit eigenem `label`, oder ein `.field`-Wrapper für Bedienelemente
-   *  ohne eigene Beschriftung (z. B. `ColorPicker`). */
+  /** The fields below, stacked in a single column — typically an `Input`
+   *  with its own `label` per field, or a `.field` wrapper for controls
+   *  without their own label (e.g. `ColorPicker`). */
   children: ReactNode;
 }
 
 /**
- * Der Kopf einer Einstellungsseite als Formular statt als Zeilen-Tabelle:
- * Symbol mittig oben, Felder einspaltig darunter, jedes mit seiner
- * Beschriftung direkt darüber statt einer Erklärung daneben.
+ * The header of a settings page as a form rather than a row table: icon
+ * centered on top, fields stacked in a single column below, each with its
+ * label directly above it rather than an explanation beside it.
  *
- * Für die Stammdaten von Workspace, Projekt und Konto — dort, wo eine Person
- * zuerst hinsieht, bevor sie zu den listenartigen Bereichen darunter (Links,
- * Sichtbarkeit, Gefahrenzone, ...) weitergeht. Diese bleiben bei der
- * Zeilen-Tabelle (`Table`/`SettingsList`): hier geht es um „wer/was ist das",
- * dort um „was gilt dafür".
+ * For the core data of workspace, project, and account — where a person
+ * looks first before moving on to the list-like sections below (links,
+ * visibility, danger zone, ...). Those stay with the row table
+ * (`Table`/`SettingsList`): this is about "who/what is this", those are
+ * about "what applies to it".
  */
 export function SettingsIdentity({ avatar, children }: Props) {
   return (

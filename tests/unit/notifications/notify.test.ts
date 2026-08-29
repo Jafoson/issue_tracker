@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// `notify()` ist der Schreibpunkt, den `features/issues/actions.ts`,
-// `features/workspaces/actions.ts` und `features/projects/actions.ts`
-// gemeinsam nutzen. Getestet wird hier nur er selbst — die Aufrufer mocken
-// `@/lib/db`, nicht `@/lib/notify` (siehe CLAUDE.md).
+// `notify()` is the single write point shared by `features/issues/actions.ts`,
+// `features/workspaces/actions.ts`, and `features/projects/actions.ts`. Only
+// it itself is tested here — the callers mock `@/lib/db`, not `@/lib/notify`
+// (see CLAUDE.md).
 
 const mockUserFindMany = mock();
 const mockPreferencesFindMany = mock();
@@ -25,10 +25,10 @@ mock.module("@/lib/db", () => ({
   },
 }));
 
-// Der Mailversand selbst ist Sache von `lib/mail` (eigene Tests unter
-// `tests/unit/mail`). Hier wird nur geprüft, *ob* und *für wen* `notify()`
-// ihn anstößt — deshalb wird das Modul komplett ersetzt statt SMTP-Variablen
-// in der Umgebung zu setzen.
+// Sending mail itself is `lib/mail`'s job (own tests under
+// `tests/unit/mail`). Here, only *whether* and *for whom* `notify()`
+// triggers it is checked — that's why the module is replaced entirely
+// instead of setting SMTP variables in the environment.
 const mockIsMailConfigured = mock();
 const mockSendMail = mock();
 const mockNotificationEmail = mock();
@@ -61,9 +61,9 @@ function reset() {
   ]);
   mockPreferencesFindMany.mockResolvedValue([]);
   mockNotificationCreateMany.mockResolvedValue({ count: 1 });
-  // Ohne SMTP-Konfiguration verschickt die App keine Mails — derselbe Default
-  // wie in jeder Umgebung ohne `SMTP_HOST`. Die Mail-Tests unten schalten das
-  // gezielt um.
+  // Without SMTP configuration, the app sends no mail — the same default as
+  // in any environment without `SMTP_HOST`. The mail tests below switch this
+  // on deliberately where needed.
   mockIsMailConfigured.mockReturnValue(false);
   mockWorkspaceFindUnique.mockResolvedValue({ name: "Acme" });
   mockProjectFindUnique.mockResolvedValue({
@@ -113,8 +113,8 @@ describe("notify()", () => {
   });
 
   it("gilt als eingeschaltet, solange niemand etwas eingestellt hat", async () => {
-    // Keine `UserPreferences`-Zeile — der Schema-Default für jede `*InApp`-
-    // Spalte ist `true`.
+    // No `UserPreferences` row — the schema default for every `*InApp`
+    // column is `true`.
     mockPreferencesFindMany.mockResolvedValue([]);
 
     await notify({ ...base, userId: "u-other", type: "role" });
@@ -188,7 +188,7 @@ describe("notify() — Mailversand", () => {
 
     await notify({ ...base, userId: "u-other", type: "comment" });
 
-    // In-App bleibt an (Default bzw. hier explizit true) — nur die Mail fällt weg.
+    // In-app stays on (default, or here explicitly true) — only the email is skipped.
     expect(mockNotificationCreateMany).toHaveBeenCalledTimes(1);
     expect(mockSendMail).not.toHaveBeenCalled();
   });

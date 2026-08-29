@@ -6,7 +6,7 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 
 export const dynamic = "force-dynamic";
 
-/** Konten fremder Anbieter, über die man sich anmelden kann. */
+/** Third-party accounts you can sign in with. */
 export default async function AccountConnectionsPage({
   params,
 }: {
@@ -15,9 +15,9 @@ export default async function AccountConnectionsPage({
   const { workspace } = await params;
   setCurrentWorkspaceId(workspace);
 
-  // Kein Anbieter eingerichtet → die Seite gibt es nicht, nicht nur den
-  // Reiter dazu (der schon im Layout verschwindet, aber die Adresse bliebe
-  // sonst erreichbar).
+  // No provider configured → the page doesn't exist, not just its tab (which
+  // already disappears in the layout, but the URL would otherwise still be
+  // reachable).
   if (enabledOAuthProviders.length === 0) notFound();
 
   const view = await getMyConnections();

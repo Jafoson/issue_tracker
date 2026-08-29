@@ -1,12 +1,13 @@
-/* Beim Schreiben ist die Umgebung kurz ein Formular. Zwei Dinge muss das Feld
-   sich dafür zurückholen, die ihm Karte und Zeile nehmen:
+/* While editing, the surroundings briefly become a form. The field has to
+   reclaim two things that the card and row take away from it:
 
-   `user-select` — die Board-Karte verbietet das Markieren, damit sich beim
-   Ziehen kein Text mitnimmt; im Feld muss es wieder gehen.
+   `user-select` — the board card disables text selection so dragging
+   doesn't pick up text along with it; inside the field it has to work
+   again.
 
-   Die Ebene — in der Liste liegt über jeder Zeile ein Link, der sie ganz
-   ausfüllt. Ohne eigene Stufe schluckte er jeden Klick ins Feld. Dieselbe
-   Ebene, auf der dort auch die Picker liegen. */
+   The stacking level — in the list, a link sits over every row and fills
+   it completely. Without its own level, that link would swallow every
+   click into the field. The same level the pickers there also occupy. */
 .field {
   position: relative;
   z-index: 2;

@@ -16,42 +16,41 @@ import {
 import styles from "./customizeDialog.module.scss";
 
 interface Props {
-  /** Sichtbare Bausteine in ihrer Reihenfolge. */
+  /** Visible widgets in their order. */
   order: WidgetKey[];
-  /** Abgewählte Bausteine — sie stehen unten und lassen sich zurückholen. */
+  /** Deselected widgets — they appear below and can be brought back. */
   hidden: WidgetKey[];
   close: () => void;
   /**
-   * Speichern und Zurücksetzen kommen als Funktionen herein statt der Dialog
-   * riefe die Server-Aktionen selbst: Projekt- und Workspace-Dashboard teilen
-   * sich diesen Dialog, kennen aber unterschiedliche Aktionen und Kontext-Ids
-   * (`saveDashboardLayout`/`saveWorkspaceDashboardLayout`) — der Dialog selbst
-   * muss den Unterschied nicht kennen.
+   * Save and reset come in as functions rather than the dialog calling the
+   * server actions itself: the project and workspace dashboards share this
+   * dialog, but use different actions and context ids
+   * (`saveDashboardLayout`/`saveWorkspaceDashboardLayout`) — the dialog
+   * itself doesn't need to know the difference.
    */
   onSave: (order: string[], hidden: string[]) => Promise<unknown>;
   onReset: () => Promise<unknown>;
 }
 
 /**
- * „Dashboard anpassen": welche Bausteine stehen da, und in welcher Reihenfolge.
+ * "Customize dashboard": which widgets appear, and in what order.
  *
- * ── Warum eine Liste und kein Ziehen im Raster ──
+ * ── Why a list and not dragging in a grid ──
  *
- * Die Kacheln direkt zu verschieben wäre die naheliegende Geste und die
- * schlechtere Lösung: ein Raster mit unterschiedlich breiten Kacheln hat keine
- * eindeutigen Ablageplätze, das Ziel springt beim Ziehen, und mit der Tastatur
- * ist es gar nicht zu bedienen. Die Liste hier hat für jeden Baustein zwei
- * Knöpfe, jeder Schritt ist eine Zeile weit, und alles daran funktioniert mit
- * Tabulator und Leertaste.
+ * Moving the tiles directly would be the obvious gesture and the worse
+ * solution: a grid with differently sized tiles has no unambiguous drop
+ * targets, the target jumps around while dragging, and it can't be operated
+ * with a keyboard at all. This list gives every widget two buttons, every
+ * step moves one row, and everything about it works with tab and space.
  *
- * ── Erst schließen, dann wirksam ──
+ * ── Close first, then take effect ──
  *
- * Anders als die Schalter in den Kontoeinstellungen schreibt dieser Dialog nicht
- * bei jedem Klick. Wer drei Bausteine umsortiert, macht drei Schritte auf **eine**
- * Absicht hin; drei Schreibvorgänge und drei Neuaufbauten der Seite darunter
- * wären dreimal dieselbe Wartezeit für ein Zwischenergebnis, das niemand sehen
- * wollte. Deshalb ein Stand im Zustand und ein „Speichern" am Ende — und ein
- * „Abbrechen", das es auch wirklich gibt.
+ * Unlike the toggles in account settings, this dialog doesn't write on every
+ * click. Anyone reordering three widgets is taking three steps toward
+ * **one** intention; three writes and three rebuilds of the page underneath
+ * would be the same wait, three times over, for an intermediate result
+ * nobody wanted to see. Hence a draft kept in state and one "save" at the
+ * end — and a "cancel" that actually exists.
  */
 export function CustomizeDialog({
   order: initialOrder,
@@ -63,11 +62,10 @@ export function CustomizeDialog({
   const t = useTranslations();
   const [pending, startTransition] = useTransition();
 
-  // Eine gemeinsame Reihenfolge über *alle* Bausteine, plus die Menge der
-  // abgewählten. Zwei getrennte Listen zu führen hieße, beim Ein- und
-  // Ausblenden jedes Mal eine Position erfinden zu müssen — so behält ein
-  // abgewählter Baustein seinen Platz und steht beim Zurückholen wieder dort,
-  // wo er war.
+  // One shared order across *all* widgets, plus the set of deselected ones.
+  // Keeping two separate lists would mean inventing a position every time
+  // something is shown or hidden — this way a deselected widget keeps its
+  // spot and reappears exactly there when brought back.
   const [order, setOrder] = useState<WidgetKey[]>([
     ...initialOrder,
     ...initialHidden,
@@ -143,10 +141,10 @@ export function CustomizeDialog({
                 <Icon icon={def.icon} width={15} className={styles.icon} />
                 <span className={styles.label}>{label}</span>
 
-                {/* Die Kennzahlenreihe bleibt — ohne sie führte von einem leeren
-                    Dashboard kein Weg zurück in diesen Dialog. Der Schalter
-                    steht trotzdem da, nur stumpf: eine fehlende Stelle wäre
-                    schwerer zu deuten als eine gesperrte. */}
+                {/* The key-figures row stays — without it, an empty dashboard
+                    would offer no way back into this dialog. The switch is
+                    still shown, just disabled: a missing control would be
+                    harder to interpret than a locked one. */}
                 <Switch
                   checked={on}
                   disabled={def.permanent}

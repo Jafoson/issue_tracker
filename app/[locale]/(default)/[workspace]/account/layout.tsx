@@ -23,17 +23,18 @@ import styles from "./account.module.scss";
 export const dynamic = "force-dynamic";
 
 /**
- * Rahmen der eigenen Einstellungen: links die Bereiche, rechts der offene.
+ * Frame of your own account settings: sections on the left, the open one on
+ * the right.
  *
- * Aufgebaut wie der Rahmen der Workspace- und der Projekteinstellungen — es ist
- * dieselbe zweite Ebene, nur gehört sie keinem Workspace, sondern dem, der sie
- * öffnet. Deshalb steht oben in der Leiste der eigene Name und nicht der des
- * Workspace: die Seitenleiste daneben zeigt Workspaces und Projekte, und ohne
- * diese Zeile bliebe offen, wessen Einstellungen hier stehen.
+ * Structured like the frame of the workspace and project settings — it's the
+ * same second level, only it doesn't belong to a workspace but to whoever
+ * opens it. That's why the header shows your own name rather than the
+ * workspace's: the sidebar next to it shows workspaces and projects, and
+ * without this line it would stay unclear whose settings these are.
  *
- * Gefiltert wird nichts. Rechte entscheiden hier über nichts — jeder sieht genau
- * sein eigenes Konto, und ein fremdes lässt sich über keine Adresse erreichen
- * (`features/account/queries.ts`).
+ * Nothing gets filtered here. Permissions decide nothing in this layout —
+ * everyone sees exactly their own account, and someone else's is unreachable
+ * through any URL (`features/account/queries.ts`).
  */
 export default async function AccountLayout({
   children,
@@ -48,9 +49,9 @@ export default async function AccountLayout({
   const [t, profile, projects, workspaceAccess] = await Promise.all([
     getTranslations(),
     getMyProfile(),
-    // Nur für den Umschalter, siehe Workspace-Layout: „Projekt" öffnet das erste
-    // sichtbare, und ohne eines (oder ohne Berechtigung darin) fällt das
-    // Segment weg (`visibleSettingsScope`).
+    // Only for the switcher, see the workspace layout: "Project" opens the
+    // first visible one, and without one (or without permission in it) the
+    // segment drops out (`visibleSettingsScope`).
     getWorkspaceProjects(),
     getAccess({ workspaceId: workspace }),
   ]);
@@ -79,9 +80,9 @@ export default async function AccountLayout({
     },
   );
 
-  // Kein Anbieter eingerichtet → keine Liste zum Zeigen. Der Reiter fällt
-  // ganz weg, statt leer dazustehen (siehe security/page.tsx für den
-  // passenden Fall in der Sicherheits-Ansicht).
+  // No provider configured → no list to show. The tab drops out entirely
+  // instead of standing there empty (see security/page.tsx for the matching
+  // case in the security view).
   const hasOAuthProviders = enabledOAuthProviders.length > 0;
 
   const items: SettingsNavItem[] = ACCOUNT_SETTINGS_NAV.filter(
@@ -94,7 +95,7 @@ export default async function AccountLayout({
 
   return (
     <div className={styles.shell}>
-      {/* Nur "Persönlich" übrig heißt: nichts zum Umschalten. */}
+      {/* Only "Personal" remaining means: nothing to switch between. */}
       {scope.length > 1 && (
         <SettingsHeader
           items={scope}

@@ -59,8 +59,8 @@ describe("disconnectAccount()", () => {
     expect(mockAccountDeleteMany).not.toHaveBeenCalled();
   });
 
-  // Die Oberfläche blendet den Knopf aus — eine Server Function ist trotzdem
-  // eine Adresse wie jede andere.
+  // The UI hides the button — but a server function is still an address
+  // like any other.
   it("lässt den letzten Weg herein nicht trennen", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [{ provider: "github" }],
@@ -113,8 +113,8 @@ describe("removePasskey()", () => {
     expect(mockAuthenticatorDelete).not.toHaveBeenCalled();
   });
 
-  // Kein verbundener Anbieter, nur dieser eine Passkey — ohne ihn käme
-  // niemand mehr herein.
+  // No connected provider, only this one passkey — without it no one
+  // could get in anymore.
   it("lässt den letzten Weg herein nicht entfernen", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [],

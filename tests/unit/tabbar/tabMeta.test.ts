@@ -10,8 +10,8 @@ import {
 import type { Translator } from "@/i18n/types";
 import type { Project } from "@/types";
 
-// Tab-URLs sind locale-agnostisch (next-intl usePathname) — erstes Segment ist
-// der Bereich (Workspace-ID oder "admin"), zweites die Sektion.
+// Tab URLs are locale-agnostic (next-intl usePathname) — the first segment is
+// the scope (workspace ID or "admin"), the second the section.
 const BASE = "/fuchsly";
 
 const projects: Project[] = [
@@ -94,8 +94,8 @@ describe("tabIcon()", () => {
   });
 
   it("nutzt das Übersichts-Icon für die Startseite eines Projekts", () => {
-    // Board und Übersicht trugen einmal dasselbe Zeichen — seit es beide gibt,
-    // muss man sie im Reiter auseinanderhalten können.
+    // Board and Overview once shared the same icon — now that both exist,
+    // you need to be able to tell them apart in the tab.
     expect(tabIcon(`${BASE}/project/fuchsly/overview`)).toBe(
       "lucide:layout-dashboard",
     );
@@ -125,8 +125,8 @@ describe("tabIcon()", () => {
   });
 
   it("fällt für unbekannte Unterseiten aufs Übersichts-Icon zurück", () => {
-    // Die Übersicht ist die Seite, auf der ein Projekt aufgeht — wer sonst
-    // nichts über eine Adresse weiß, weiß wenigstens, dass sie dorthin gehört.
+    // Overview is the page a project resolves to by default — even knowing
+    // nothing else about an address, you at least know it belongs there.
     expect(tabIcon(`${BASE}/project/fuchsly/gibtsnicht`)).toBe(
       "lucide:layout-dashboard",
     );
@@ -179,7 +179,7 @@ describe("tabMeta()", () => {
     );
     expect(meta.title).toBe("Fuchsly");
     expect(meta.color).toBe("#3b82f6");
-    // Projektfarbe vorhanden → kein Icon, sondern der Farbpunkt wird gezeigt.
+    // Project color present → no icon, the color dot is shown instead.
     expect(meta.icon).toBeNull();
   });
 
@@ -207,8 +207,8 @@ describe("tabMeta()", () => {
     );
   });
 
-  // Beide Bereiche liegen unter /settings. Trügen sie dasselbe Suffix, wären
-  // nebeneinander liegende Reiter nicht auseinanderzuhalten.
+  // Both sections live under /settings. If they carried the same suffix,
+  // tabs sitting next to each other couldn't be told apart.
   it("nennt den Bereich statt (Einstellungen), sobald es einen gibt", () => {
     expect(
       tabMeta(`${BASE}/project/fuchsly/settings/roles`, projects, t).title,
@@ -238,8 +238,8 @@ describe("tabMeta()", () => {
   });
 });
 
-// „Meine Aufgaben" haben dieselben zwei Ansichten wie ein Projekt. Ohne eigene
-// Behandlung hießen beide Reiter gleich und trügen dasselbe Zeichen.
+// "My issues" has the same two views as a project. Without special handling,
+// both tabs would be named the same and carry the same icon.
 describe("Meine Aufgaben", () => {
   it("lässt das Board unverändert", () => {
     const meta = tabMeta(`${BASE}/my?status=todo`, projects, t);
@@ -254,9 +254,9 @@ describe("Meine Aufgaben", () => {
   });
 });
 
-// Die eigenen Einstellungen liegen unter /<workspace>/account. Der Bereich
-// gehört keinem Workspace, hängt aber unter einem — ohne eigene Behandlung hießen
-// alle fünf Reiter „Konto" und trügen dasselbe Zeichen.
+// A user's own settings live under /<workspace>/account. The section
+// doesn't belong to any workspace, but hangs under one — without special
+// handling, all five tabs would be named "Account" and carry the same icon.
 describe("Konto-Routen", () => {
   it("nennt den Kopf 'Konto' und zeigt das Personen-Zeichen", () => {
     expect(tabTitle(`${BASE}/account`, projects, t)).toBe("Konto");

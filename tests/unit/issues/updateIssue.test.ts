@@ -59,8 +59,8 @@ const ACTOR = "u-actor";
 const ID = "i1";
 const EMPTY_DOC: PMDoc = { type: "doc", content: [] };
 
-/** Der Stand einer Aufgabe, wie `issueContext` ihn liest — Standardwerte, je
- * nach Test einzeln überschrieben. */
+/** The state of an issue, as `issueContext` reads it — default values,
+ * individually overridden per test. */
 function issue(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     key: 1,
@@ -101,9 +101,9 @@ function reset() {
   mockRequirePermission.mockResolvedValue(ACTOR);
   mockIssueFindUnique.mockResolvedValue(issue());
 
-  // Namen für Statuszeile/Prioritätszeile/Typzeile/Labelzeile — dieselben
-  // Nachschlagetabellen, gegen die `updateIssue` in echt fragt (`db.status`
-  // u. a. sind ein geteilter, workspace-unabhängiger Katalog).
+  // Names for the status/priority/type/label rows — the same lookup tables
+  // that `updateIssue` actually queries against (`db.status` & co. are a
+  // shared, workspace-independent catalog).
   mockStatusFindUnique.mockImplementation(
     async ({ where }: { where: { id: string } }) => STATUSES[where.id] ?? null,
   );

@@ -9,9 +9,9 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface WeeklyDigestHighlight {
   identifier: string;
   title: string;
-  /** Fertig aufgelöster Name, nicht der Statuskey — die Vorlage kennt die
-   *  Workspace-Konfiguration nicht (siehe `humanizeKey` in `templates/html.ts`
-   *  für dieselbe Einschränkung bei `notificationEmail`). */
+  /** Fully resolved name, not the status key — the template doesn't know
+   *  the workspace configuration (see `humanizeKey` in `templates/html.ts`
+   *  for the same limitation in `notificationEmail`). */
   statusLabel: string;
 }
 
@@ -19,17 +19,18 @@ export interface WeeklyDigestEmailInput {
   to: string;
   firstName: string;
   workspaceName: string;
-  /** Freitext, z. B. "13.–19. Januar". */
+  /** Free text, e.g. "Jan 13–19". */
   periodLabel: string;
   assignedOpenCount: number;
   completedCount: number;
   createdCount: number;
-  /** Kleine Auswahl, keine vollständige Liste — Reihenfolge und Auswahl
-   *  entscheidet der Aufrufer. */
+  /** A small selection, not a complete list — order and selection are
+   *  decided by the caller. */
   highlights: WeeklyDigestHighlight[];
   url: string;
-  /** Optional, weil es noch keine eigene `*Email`-Spalte für den Digest gibt
-   *  (siehe Docstring unten) — ohne Wert bleibt der Link im Fuß weg. */
+  /** Optional, because there's no dedicated `*Email` column for the digest
+   *  yet (see docstring below) — without a value, the link in the footer is
+   *  simply omitted. */
   manageUrl?: string;
 }
 
@@ -46,13 +47,12 @@ function statTile(value: string, label: string): string {
 }
 
 /**
- * Noch ohne Versandpunkt — es gibt weder einen wöchentlichen Job noch die
- * Abfrage, die `highlights`/die drei Zähler beisteuern würde, noch eine
- * `*Email`-Spalte in `UserPreferences`, an der ein Ein/Aus hinge (die
- * bestehenden sechs Anlässe in `features/account/types.ts` decken keinen
- * wiederkehrenden Digest ab). Auslastung pro Teammitglied und eine
- * „braucht Aufmerksamkeit“-Liste sind bewusst nicht modelliert — beides
- * bräuchte eine eigene Abfrage, die es heute nicht gibt.
+ * Still without a send point — there's neither a weekly job nor the query
+ * that would supply `highlights`/the three counters, nor a `*Email` column
+ * in `UserPreferences` for an on/off toggle to hang off (the existing six
+ * events in `features/account/types.ts` don't cover a recurring digest).
+ * Per-team-member workload and a "needs attention" list are deliberately
+ * not modeled — both would need their own query, which doesn't exist today.
  */
 export function weeklyDigestEmail(
   input: WeeklyDigestEmailInput,

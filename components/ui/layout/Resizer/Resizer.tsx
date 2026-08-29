@@ -4,35 +4,36 @@ import { useRef, useState } from "react";
 import styles from "./resizer.module.scss";
 
 interface ResizerProps {
-  /** Aktuelle Breite in px des Elements, das der Griff bemisst. */
+  /** Current width in px of the element the handle measures. */
   width: number;
   onChange: (width: number) => void;
   min: number;
   max: number;
-  /** Zurück auf diesen Wert per Doppelklick. Ohne Angabe passiert nichts. */
+  /** Reset to this value on double-click. Nothing happens without one. */
   reset?: number;
-  /** Schrittweite der Pfeiltasten. Default: 16. */
+  /** Step size for the arrow keys. Default: 16. */
   step?: number;
-  /** Für Screenreader — was hier breiter und schmaler wird. */
+  /** For screen readers — what gets wider and narrower here. */
   label: string;
-  /** Positionierung; die Optik bringt der Griff selbst mit. */
+  /** Positioning; the handle itself brings its own look. */
   className?: string;
 }
 
 /**
- * Ein Griff zum Ziehen einer Breite.
+ * A handle for dragging a width.
  *
- * Er sitzt **links** von dem, was er bemisst — nach links ziehen macht breiter.
- * Das passt zu allem, was an der rechten Kante hängt: das Seitenpanel am
- * Bildschirmrand, die Attributspalte an der Panelkante. Für die Gegenrichtung
- * ist er nicht gebaut, das gibt es hier nirgends.
+ * It sits **to the left** of what it measures — dragging left makes things
+ * wider. That fits everything anchored to the right edge: the side panel at
+ * the screen edge, the attribute column at the panel's edge. It isn't built
+ * for the opposite direction, since that doesn't occur anywhere here.
  *
- * Bedienbar ist er auch ohne Maus: fokussierbar, mit Wertebereich, Pfeiltasten
- * schrittweise, Home und End an die Grenzen — das WAI-ARIA-Muster
- * „Window Splitter".
+ * It's operable without a mouse too: focusable, with a value range, arrow
+ * keys step through it, Home and End jump to the limits — the WAI-ARIA
+ * "Window Splitter" pattern.
  *
- * Wo er sitzt, entscheidet die Umgebung über `className`. Der Griff bringt nur
- * Trefferfläche, Linie und Verhalten mit, weil das an jeder Kante gleich ist.
+ * Where it sits is decided by the surrounding context via `className`. The
+ * handle only brings hit area, line, and behavior, because those are the
+ * same at every edge.
  */
 export function Resizer({
   width,
@@ -45,14 +46,14 @@ export function Resizer({
   className,
 }: ResizerProps) {
   const [isDragging, setIsDragging] = useState(false);
-  /** Startpunkt des laufenden Zugs — kein State, es rendert nichts neu. */
+  /** Start point of the current drag — not state, it doesn't trigger a re-render. */
   const drag = useRef<{ x: number; width: number } | null>(null);
 
   const clamp = (value: number) => Math.min(max, Math.max(min, value));
 
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    // Der Zeiger gehört ab jetzt dem Griff. Ohne das rissen Bewegungen ab,
-    // sobald er über den Inhalt daneben wandert.
+    // The pointer belongs to the handle from now on. Without this, movement
+    // would break off as soon as it strays over the content next to it.
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { x: event.clientX, width };
     setIsDragging(true);
@@ -80,9 +81,9 @@ export function Resizer({
   };
 
   return (
-    // `data-resizing` liest eine globale Regel: solange gezogen wird, markiert
-    // das Dokument nichts und behält den Zeiger des Griffs.
-    // biome-ignore lint/a11y/useSemanticElements: `<hr>`, wie die Regel vorschlägt, ist ein thematischer Bruch im Text — hier steht der bedienbare Trenner des WAI-ARIA-Musters „Window Splitter", fokussierbar und mit Wertebereich.
+    // `data-resizing` is read by a global rule: while dragging, the document
+    // doesn't select anything and keeps the handle's cursor.
+    // biome-ignore lint/a11y/useSemanticElements: `<hr>`, as the rule suggests, is a thematic break in text — this is the operable divider of the WAI-ARIA "Window Splitter" pattern, focusable and with a value range.
     <div
       className={[styles.resizer, className].filter(Boolean).join(" ")}
       data-resizing={isDragging || undefined}

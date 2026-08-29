@@ -7,11 +7,12 @@ import {
 } from "@/lib/richtext/highlight";
 
 /**
- * Die Syntax-Hervorhebung. Geprüft wird an den Stellen, an denen sie mit dem
- * Rest verzahnt ist: der Sprachliste und der Zeilenaufteilung für die Nummern.
+ * Syntax highlighting. Tested at the points where it's interlocked with the
+ * rest of the system: the language list and the line-splitting for the
+ * line numbers.
  */
 
-/** Alle Klassen einer Zeile, der Einfachheit halber zusammengezogen. */
+/** All classes of a line, concatenated for simplicity. */
 const classesOf = (code: string, lang: string) =>
   highlightLines(code, lang)
     .flat()
@@ -21,7 +22,7 @@ const classesOf = (code: string, lang: string) =>
 
 describe("lowlight-Instanz", () => {
   test("kennt jede Sprache aus der Auswahlliste", () => {
-    // Sonst stünde eine Sprache im Menü, die nichts einfärbt.
+    // Otherwise a language would show up in the menu that highlights nothing.
     const fehlend = CODE_LANGUAGES.filter(
       (l) => !lowlight.registered(l.value),
     ).map((l) => l.value);
@@ -42,7 +43,7 @@ describe("highlightLines", () => {
   });
 
   test("findet die Sprache auch über eine andere Schreibweise", () => {
-    // `py` und `python` müssen dasselbe färben.
+    // `py` and `python` must highlight the same way.
     expect(classesOf("def f(): pass", "py")).toBe(
       classesOf("def f(): pass", "python"),
     );
@@ -64,8 +65,8 @@ describe("highlightLines", () => {
   });
 
   test("teilt ein Stück, das über einen Umbruch geht", () => {
-    // Ein Blockkommentar ist ein Token über mehrere Zeilen — beide Hälften
-    // müssen ihre Rolle behalten, sonst verliert die zweite ihre Farbe.
+    // A block comment is a single token spanning multiple lines — both
+    // halves need to keep their role, otherwise the second one loses its color.
     const lines = highlightLines("/* eins\n   zwei */", "ts");
     expect(lines).toHaveLength(2);
     expect(lines[0][0].className).toContain("hljs-comment");
@@ -73,7 +74,7 @@ describe("highlightLines", () => {
   });
 
   test("setzt den Text unverändert wieder zusammen", () => {
-    // Nichts darf beim Zerlegen verlorengehen.
+    // Nothing may get lost while splitting apart.
     const code = 'function f(x) {\n  return "a" + x; // hm\n}';
     const wieder = highlightLines(code, "ts")
       .map((line) => line.map((t) => t.text).join(""))
@@ -82,7 +83,7 @@ describe("highlightLines", () => {
   });
 
   test("lässt Text ohne Sprache in Ruhe", () => {
-    // Bewusst kein Raten: geraten sähe mal so und mal so aus.
+    // Deliberately no guessing: a guess would look different every time.
     expect(highlightLines("beliebiger text", null)).toEqual([
       [{ text: "beliebiger text" }],
     ]);
@@ -124,15 +125,16 @@ describe("detectLanguage", () => {
   });
 
   test("rät nicht bei zu wenig Text", () => {
-    // Drei Wörter passen auf ein Dutzend Sprachen.
+    // Three words fit a dozen languages.
     expect(detectLanguage("const a = 1")).toBeNull();
     expect(detectLanguage("x")).toBeNull();
     expect(detectLanguage("")).toBeNull();
   });
 
   test("lässt Prosa in Ruhe", () => {
-    // `highlight.js` kürt immer einen Sieger — hier mit einer Bewertung von 1,
-    // die unter der Schwelle bleibt. Ohne sie hieße jeder Fließtext „CSS".
+    // `highlight.js` always crowns a winner — here with a score of 1, which
+    // stays below the threshold. Without that, every plain prose text would
+    // be called "CSS".
     expect(
       detectLanguage(
         "Das ist einfach ein Satz.\nUnd noch einer dazu, ohne jeden Code darin.",
@@ -146,7 +148,7 @@ describe("detectLanguage", () => {
   });
 
   test("liefert nur Werte, die die Auswahlliste kennt", () => {
-    // Sonst stünde am Block eine Angabe, die das Menü nicht anzeigen kann.
+    // Otherwise the block would end up tagged with a value the menu can't display.
     const bekannt = CODE_LANGUAGES.map((l) => l.value);
     const proben = [
       "export const a = 1;\nexport const b = 2;\nconsole.log(a + b);",
@@ -156,14 +158,14 @@ describe("detectLanguage", () => {
     ];
     for (const code of proben) {
       const erkannt = detectLanguage(code);
-      // Entweder nichts — oder etwas, das die Liste kennt.
+      // Either nothing — or something the list knows.
       if (erkannt !== null) expect(bekannt).toContain(erkannt);
     }
   });
 
   test("verwirft einen schwachen Treffer, statt falsch zu beschriften", () => {
-    // Kurzes Python ohne auffällige Merkmale rät `highlight.js` als „css" mit
-    // Bewertung 4 — unter der Schwelle. Lieber schlicht als falsch.
+    // `highlight.js` guesses short Python without distinctive features as
+    // "css" with a score of 4 — below the threshold. Better plain than wrong.
     expect(
       detectLanguage("def add(a, b):\n    return a + b\n\nprint(add(1, 2))"),
     ).toBeNull();

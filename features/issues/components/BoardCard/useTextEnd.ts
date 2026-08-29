@@ -2,26 +2,26 @@
 
 import { useLayoutEffect, useState } from "react";
 
-/** Ende der letzten sichtbaren Zeile, in Pixeln vom Kasten des Textes aus. */
+/** End of the last visible line, in pixels from the text's bounding box. */
 export interface TextEnd {
   x: number;
   y: number;
 }
 
 /**
- * Misst, wo ein umbrechender Text aufhört — die Stelle, an der etwas anschließen
- * kann, das zu ihm gehört (hier: der Stift am Titel).
+ * Measures where a wrapping text ends — the spot where something that
+ * belongs to it can attach (here: the pencil icon next to the title).
  *
- * CSS kennt diesen Punkt nicht. Ein Nachbar richtet sich am *Kasten* des Textes
- * aus, steht also bei einer kurzen Schlusszeile weit hinter ihr; setzt man ihn
- * dagegen in den Textfluss, schneidet ihn die Zeilenbegrenzung
- * (`-webkit-line-clamp`) bei langen Titeln mit ab. Bleibt das Messen — die
- * einzige Ausnahme von "Aussehen gehört ins Stylesheet": das Ergebnis sind zwei
- * Zahlen, gesetzt wird damit weiterhin in CSS.
+ * CSS doesn't know this point. A sibling positioned relative to the text's
+ * *box* would sit far behind a short final line; positioning it inline in
+ * the text flow instead means the line clamp (`-webkit-line-clamp`) would
+ * cut it off along with long titles. That leaves measuring — the one
+ * exception to "appearance belongs in the stylesheet": the result is just
+ * two numbers, positioning still happens in CSS.
  *
- * Die von der Begrenzung abgeschnittenen Zeilen zählen nicht mit: sie liegen
- * unterhalb des Kastens. Gemessen wird also das Ende der letzten Zeile, die man
- * wirklich sieht — bei einem gekürzten Titel das der Zeile mit dem "…".
+ * Lines cut off by the clamp don't count: they lie below the box. So what's
+ * measured is the end of the last line that's actually visible — for a
+ * truncated title, that's the line with the "…".
  *
  * ```tsx
  * const { ref, end } = useTextEnd(title)
@@ -29,16 +29,16 @@ export interface TextEnd {
  * ```
  */
 export function useTextEnd(
-  /** Ändert sich der Text, stimmt die alte Messung nicht mehr. */
+  /** If the text changes, the old measurement no longer applies. */
   text: string,
 ) {
-  // Das Element als Zustand, nicht als Ref: nur so merkt der Effekt, wenn ein
-  // neuer Absatz gerendert wurde (nach dem Bearbeiten), und hängt seinen
-  // Beobachter an den neuen statt an den weggeworfenen.
+  // The element as state, not as a ref: only this way does the effect
+  // notice when a new paragraph was rendered (after editing) and attaches
+  // its observer to the new one instead of the discarded one.
   const [element, setElement] = useState<HTMLElement | null>(null);
   const [end, setEnd] = useState<TextEnd | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `text` wird im Effekt nicht gelesen, entscheidet aber über den Umbruch — ändert er sich, muss neu gemessen werden
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `text` isn't read inside the effect, but it determines the wrapping — if it changes, remeasuring is needed
   useLayoutEffect(() => {
     if (!element) return;
 
@@ -46,21 +46,21 @@ export function useTextEnd(
       const range = document.createRange();
       range.selectNodeContents(element);
       const box = element.getBoundingClientRect();
-      // Ein Rechteck je Zeile — das letzte, das noch im Kasten liegt, ist die
-      // letzte sichtbare Zeile.
+      // One rectangle per line — the last one still inside the box is the
+      // last visible line.
       const lines = Array.from(range.getClientRects()).filter(
         (line) => line.bottom <= box.bottom + 1,
       );
       const last = lines[lines.length - 1];
-      // Ohne Text (oder ohne Zeile) gibt es kein Ende — dann greift die Vorgabe
-      // im Stylesheet.
+      // Without text (or without a line) there is no end — the stylesheet's
+      // default then applies.
       setEnd(
         last ? { x: last.right - box.left, y: last.bottom - box.top } : null,
       );
     };
 
     measure();
-    // Wird die Spalte schmaler, bricht der Titel anders um.
+    // If the column gets narrower, the title wraps differently.
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();

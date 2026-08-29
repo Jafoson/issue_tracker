@@ -1,15 +1,15 @@
-/* Der Griff zum Ziehen einer Breite. Nur Trefferfläche, Linie und Zeiger —
-   wo er sitzt, bestimmt die Umgebung über eine eigene Klasse. */
+/* The handle for dragging a width. Only hit area, line, and cursor — where
+   it sits is decided by the surrounding context via its own class. */
 
 .resizer {
   flex: none;
   width: 9px;
   cursor: col-resize;
-  /* Sonst scrollt der Browser bei Berührung, statt ziehen zu lassen. */
+  /* Otherwise the browser scrolls on touch instead of allowing a drag. */
   touch-action: none;
 
-  /* Zu sehen ist er erst, wenn man ihn braucht: eine kräftige Linie, die sich
-     über die Kante darunter legt. */
+  /* It's only visible when needed: a solid line that overlays the edge
+     underneath it. */
   &::after {
     content: "";
     display: block;
@@ -27,8 +27,8 @@
     opacity: 1;
   }
 
-  /* Der Fokusring säße als schmaler Strich mitten im Inhalt — die Linie zeigt
-     den Fokus deutlicher und ohne fremde Kante. */
+  /* The focus ring would sit as a thin line in the middle of the content —
+     the line shows focus more clearly and without a stray edge. */
   &:focus-visible {
     outline: none;
   }

@@ -7,11 +7,11 @@ import { setCurrentWorkspaceId } from "@/lib/current-workspace";
 export const dynamic = "force-dynamic";
 
 /**
- * Die Mitglieder des Workspace — hier im Rahmen der Einstellungen.
+ * The workspace's members — here within the settings frame.
  *
- * Dieselbe Ansicht wie unter `/<workspace>/members`; geteilt wird die
- * Komponente, nicht die Route. Dadurch bringt jede Adresse den Rahmen mit, in
- * den sie gehört, und die Rechte prüft ohnehin die Abfrage.
+ * The same view as under `/<workspace>/members`; it's the component that's
+ * shared, not the route. That way each URL still brings the frame it belongs
+ * in, and the query checks permissions regardless.
  */
 export default async function WorkspaceSettingsMembersPage({
   params,

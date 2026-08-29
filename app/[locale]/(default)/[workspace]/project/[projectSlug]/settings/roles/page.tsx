@@ -9,11 +9,11 @@ import { getAccess } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Rollen, die nur in diesem einen Projekt existieren.
+ * Roles that exist only within this one project.
  *
- * Die Projektrollen des Workspace stehen hier bewusst nicht — die gehören dem
- * Workspace und werden unter dessen Einstellungen gepflegt. Zuweisbar sind
- * später beide Töpfe zusammen (siehe `getProjectMembersView`).
+ * The workspace's project roles are deliberately not shown here — they
+ * belong to the workspace and are maintained under its settings. Both
+ * buckets are assignable together later (see `getProjectMembersView`).
  */
 export default async function ProjectRolesPage({
   params,

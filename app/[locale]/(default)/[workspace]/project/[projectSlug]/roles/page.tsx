@@ -3,7 +3,7 @@ import { projectSettingsPath } from "@/lib/nav";
 
 export const dynamic = "force-dynamic";
 
-/** Wie `../members`: die Rollen eines Projekts liegen jetzt unter `settings`. */
+/** Like `../members`: a project's roles now live under `settings`. */
 export default async function ProjectRolesRedirect({
   params,
 }: {

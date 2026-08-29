@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ hostname: "www.gravatar.com" }],
   },
-  // Kein next.config-Workaround für den Turbopack+Bun-Externals-Bug nötig —
-  // siehe `scripts/fix-turbopack-bun-externals.ts` (läuft per `postinstall`).
+  // No next.config workaround needed for the Turbopack+Bun externals bug —
+  // see `scripts/fix-turbopack-bun-externals.ts` (runs via `postinstall`).
 };
 
 export default withNextIntl(nextConfig);

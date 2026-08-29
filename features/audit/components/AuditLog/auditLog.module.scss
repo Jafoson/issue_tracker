@@ -1,5 +1,5 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`) — der Rest
-   bleibt stehen (Kopfzeile, Filter). */
+/* Not the page that scrolls, but the table itself (`fill`) — the rest stays
+   put (header, filters). */
 .content {
   flex: 1;
   min-height: 0;
@@ -30,9 +30,9 @@
   color: var(--on-surface-variant);
 }
 
-/* Die Vorgänge, die auffallen sollen. Nur das Zeichen färbt sich: eine ganze
-   Zeile in Warnfarbe machte aus dem Protokoll eine Alarmliste, und dann sähe man
-   die einzelne Zeile nicht mehr, um die es geht. */
+/* The actions meant to stand out. Only the icon takes on color: a whole row
+   in the warning color would turn the log into an alarm list, and then you'd
+   no longer notice the one row that actually matters. */
 .action[data-loud] .icon {
   color: var(--amber);
 }
@@ -57,8 +57,8 @@
   white-space: nowrap;
 }
 
-/* Kürzel + Vorher/Nachher. Bricht um statt abzuschneiden — ein Pfeil ohne das,
-   was danach kommt, ist schlimmer als eine zweizeilige Tabellenzelle. */
+/* Reference + before/after. Wraps instead of truncating — an arrow without
+   what comes after it is worse than a two-line table cell. */
 .targetLabel {
   display: flex;
   flex-wrap: wrap;
@@ -68,11 +68,12 @@
   color: var(--on-surface-variant);
 }
 
-/* Dieselbe Optik wie das Projekt-Kürzel im Steckbrief (`.mono` in
-   `projectProfileView.module.scss`) — Monospace macht aus „MOB-1" ein
-   erkennbares Zeichen statt eines weiteren Wortes im Satz. Als Link (wenn
-   `workspaceSlug` bekannt ist) ohne Unterstreichung, mit Hover-Feedback statt
-   der sonst üblichen Link-Optik — es bleibt ein Kürzel, kein Fließtext-Link. */
+/* Same visual treatment as the project reference in the profile card
+   (`.mono` in `projectProfileView.module.scss`) — monospace turns "MOB-1"
+   into a recognizable token instead of just another word in the sentence.
+   As a link (when `workspaceSlug` is known) with no underline, using
+   hover feedback instead of the usual link styling — it stays a reference,
+   not a running-text link. */
 .ref {
   flex: none;
   padding: 1px 6px;
@@ -90,11 +91,11 @@ a.ref:hover {
   background: var(--surface-container-highest);
 }
 
-/* Verweist auf das Projekt, zu dem die Zeile gehört — als eigener Vorgang
-   (`project.created` u. Ä., dann der ganze Text) oder als Zusatz neben einer
-   Person (`project.member.*`, dann als Chip danach). Der Ordner-Icon macht auf
-   den ersten Blick klar, dass hier ein Projekt gemeint ist, nicht eine weitere
-   Person oder ein Issue. */
+/* Points to the project the row belongs to — either as its own action
+   (`project.created` and similar, where it's the whole text) or as an
+   addition next to a person (`project.member.*`, where it's a chip
+   afterward). The folder icon makes clear at a glance that this refers to a
+   project, not another person or an issue. */
 .projectRef {
   display: inline-flex;
   align-items: center;
@@ -136,9 +137,9 @@ a.projectRef:hover {
   font-weight: 550;
 }
 
-/* Entfernte Labels bleiben als Chip erkennbar (dieselbe Farbe wie das Label
-   selbst), aber durchgestrichen und zurückgenommen — dieselbe Sprache wie
-   `.changeBefore` bei Status/Priorität. */
+/* Removed labels stay recognizable as a chip (same color as the label
+   itself), but struck through and muted — the same visual language as
+   `.changeBefore` for status/priority. */
 .removedLabel {
   opacity: 0.6;
   text-decoration: line-through;
@@ -159,9 +160,9 @@ a.projectRef:hover {
   white-space: nowrap;
 }
 
-/* Die Begründung kann lang sein und steht trotzdem einzeilig: der ganze Text
-   hängt im `title`, und die Zeile bleibt eine Zeile. Eine Tabelle, in der eine
-   von zwölf Zeilen dreifach hoch ist, liest sich nicht mehr als Verlauf. */
+/* The reason can be long and still stays on one line: the full text hangs
+   off the `title` attribute, and the row stays a single row. A table where
+   one out of twelve rows is triple height no longer reads as a history. */
 .reason {
   display: block;
   max-width: 100%;

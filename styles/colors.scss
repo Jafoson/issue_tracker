@@ -11,32 +11,32 @@
   --blue: #3b7bd5;
   --purple: #a274d9;
 
-  /* ── Datenreihen der Diagramme ──────────────────────────────────────────────
+  /* ── Chart data series ──────────────────────────────────────────────────────
 
-     Eigene Tokens und nicht `--blue`/`--amber`/`--green`: eine Diagrammfarbe hat
-     eine Aufgabe, die eine Oberflächenfarbe nicht hat — zwei benachbarte Reihen
-     müssen auch für Rot-Grün-Blinde unterscheidbar bleiben. Die Reihenfolge der
-     Steckplätze ist dabei der Mechanismus, nicht Geschmack: sie wird der Reihe
-     nach vergeben und nie umsortiert, sonst wechselt beim Filtern die Farbe
-     unter dem Leser weg.
+     Dedicated tokens rather than `--blue`/`--amber`/`--green`: a chart color
+     has a job a surface color doesn't — two adjacent series must stay
+     distinguishable even for red-green color blindness. The order of the
+     slots is the mechanism here, not taste: they're assigned in sequence and
+     never reordered, otherwise the color would shift out from under the
+     reader while filtering.
 
-     Dieselben drei Werte in beiden Themes, und das ist geprüft, nicht geraten:
-     sie liegen im Helligkeitsband beider Modi, halten den Buntheits-Boden und
-     erreichen auf hellem wie dunklem Grund 3:1. Der schwächste Nachbarabstand
-     liegt bei ΔE 8,0 unter Protanopie (Ziel ≥ 8) und 17,0 bei normalem Sehen
-     (Boden ≥ 15). `--amber` und `--green` von oben fielen beide durch — im
-     dunklen Modus zu hell, auf hellem Grund unter 3:1; die Werte hier sind
-     dieselben Farbtöne, eine Stufe dunkler.
+     The same three values in both themes, and that's verified, not guessed:
+     they sit within the lightness band of both modes, hold the chroma floor,
+     and reach 3:1 on both light and dark backgrounds. The weakest
+     neighbor-distance is ΔE 8.0 under protanopia (target ≥ 8) and 17.0 for
+     normal vision (floor ≥ 15). `--amber` and `--green` from above both
+     failed — too light in dark mode, under 3:1 on a light background; the
+     values here are the same hues, one step darker.
 
-     Wer sie ändert, prüft sie neu — von Hand ist das nicht zu beurteilen. */
+     Whoever changes them re-verifies — this can't be judged by eye. */
   --chart-1: #3b7bd5;
   --chart-2: #b87e1c;
   --chart-3: #3f9a6d;
 }
 
-/* Die beiden Paletten stehen als Mixins da, weil „System" sie ein zweites Mal
-   braucht: einmal als Vorgabe, einmal unter der Medienabfrage. Zweimal derselbe
-   Block von Hand wäre zwei Wahrheiten, die auseinanderlaufen. */
+/* The two palettes exist as mixins because "system" needs each one a second
+   time: once as the default, once under the media query. Writing the same
+   block twice by hand would be two truths that drift apart. */
 @mixin dark {
   --primary: rgb(216 199 112);
   --surface-tint: rgb(216 199 112);
@@ -51,9 +51,9 @@
   --on-tertiary: rgb(0 55 50);
   --tertiary-container: rgb(0 80 73);
   --on-tertiary-container: rgb(158 242 229);
-  /* Hinweis und Warnung — die beiden Panel-Arten im Rich Text. Als eigene
-     Tokens statt aus `--tertiary`/`--amber` gemischt: „Hinweis" ist eine
-     Bedeutung, keine Farbe, und darf sich unabhängig vom Akzent entwickeln. */
+  /* Info and warning — the two panel types in rich text. Dedicated tokens
+     instead of mixed from `--tertiary`/`--amber`: "info" is a meaning, not a
+     color, and should be free to evolve independently of the accent. */
   --info: rgb(130 213 201);
   --warning: rgb(226 160 60);
   --error: rgb(255 180 171);
@@ -93,9 +93,9 @@
   --surface-container-high: rgb(42 42 34);
   --surface-container-highest: rgb(53 53 44);
 
-  /* Syntax-Hervorhebung. Eigene Tokens, weil die Rollen im Code — Schlüsselwort,
-     Zeichenkette, Kommentar — mit den Rollen der Oberfläche nichts zu tun haben.
-     Zugeordnet werden sie in styles/globals.scss. */
+  /* Syntax highlighting. Dedicated tokens, because the roles in code —
+     keyword, string, comment — have nothing to do with the UI's roles. They
+     get mapped in styles/globals.scss. */
   --code-keyword: rgb(198 160 246);
   --code-string: rgb(158 206 142);
   --code-comment: rgb(120 124 110);
@@ -124,8 +124,8 @@
   --on-tertiary: rgb(255 255 255);
   --tertiary-container: rgb(168 242 206);
   --on-tertiary-container: rgb(0 81 57);
-  /* Siehe dunkles Thema. Beide hier kräftiger, damit sie auf hellem Grund
-     als Rahmen und als Schriftton noch tragen. */
+  /* See the dark theme. Both stronger here, so they still carry as a border
+     and as a text tone on a light background. */
   --info: rgb(20 104 92);
   --warning: rgb(158 100 0);
   --error: rgb(186 26 26);
@@ -165,8 +165,8 @@
   --surface-container-high: rgb(228 234 228);
   --surface-container-highest: rgb(222 228 222);
 
-  /* Siehe dunkles Thema — hier durchweg dunkler, damit sie auf hellem Grund
-     tragen. */
+  /* See the dark theme — uniformly darker here, so they carry on a light
+     background. */
   --code-keyword: rgb(126 60 178);
   --code-string: rgb(28 116 62);
   --code-comment: rgb(122 126 112);
@@ -181,17 +181,17 @@
   color-scheme: light;
 }
 
-/* ── Die drei Werte von `data-theme` ──────────────────────────────────────────
+/* ── The three values of `data-theme` ─────────────────────────────────────────
 
-   Das Attribut steht am `<html>` und kommt server-seitig aus den Vorlieben des
-   Kontos (app/[locale]/layout.tsx) — es ist also schon im ersten Byte richtig,
-   ohne Skript und ohne Aufblitzen.
+   The attribute sits on `<html>` and comes server-side from the account's
+   preferences (app/[locale]/layout.tsx) — so it's already correct in the
+   first byte, with no script and no flash.
 
-   `system` ist deshalb keine dritte Palette, sondern ein Verweis auf das Gerät:
-   dunkel als Vorgabe, hell wenn der Browser es so meldet. Das kann CSS allein,
-   und nur CSS kann es rechtzeitig — ein `matchMedia` im JavaScript käme
-   frühestens nach dem ersten Bild und stellt sich zudem nicht von selbst um,
-   wenn jemand sein System abends auf dunkel schaltet. */
+   `system` is therefore not a third palette, but a reference to the device:
+   dark by default, light if the browser reports that. CSS alone can do this,
+   and only CSS can do it in time — a `matchMedia` in JavaScript would arrive
+   at the earliest after the first paint, and on top of that wouldn't switch
+   on its own if someone flips their system to dark in the evening. */
 [data-theme="dark"],
 [data-theme="system"] {
   @include dark;

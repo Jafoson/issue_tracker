@@ -16,13 +16,13 @@ function Shell({ children, isAdminRoute }: AppShellProps) {
         <TabBar isAdminRoute={isAdminRoute} />
         <div className={styles.content}>{children}</div>
       </div>
-      {/* Platz für ein angedocktes Panel (die Issue-Detailansicht). Als
-          Geschwister des Inhalts, nicht darüber: steht eines darin, wird der
-          Bereich links davon entsprechend schmaler. */}
+      {/* Space for a docked panel (the issue detail view). As a sibling of
+          the content, not on top of it: when a panel is present, the area
+          to its left shrinks accordingly. */}
       <DockOutlet />
-      {/* Rendert den Modal-Stack. Workspace-Daten reichen die Öffner als Props
-          herein — Modals brauchen hier nur noch die Provider aus dem
-          Root-Layout (Intl, Modal). */}
+      {/* Renders the modal stack. Workspace data passes the openers in as
+          props — modals only need the providers from the root layout
+          (Intl, Modal) here. */}
       <ModalOutlet />
     </div>
   );

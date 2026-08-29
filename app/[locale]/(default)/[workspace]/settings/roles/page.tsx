@@ -8,13 +8,12 @@ import { getAccess } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 /**
- * Rollen des Workspace — zwei Töpfe auf einer Seite, hier im Rahmen der
- * Einstellungen.
+ * Workspace roles — two buckets on one page, here within the settings frame.
  *
- * Oben die Workspace-Rollen selbst, darunter die Projektrollen, die in allen
- * Projekten dieses Workspace zuweisbar sind. Beide hängen an `role.manage` im
- * Workspace-Kontext: wer die Projektrollen des Workspace setzt, entscheidet über
- * alle seine Projekte auf einmal.
+ * The workspace roles themselves on top, below them the project roles
+ * assignable across all projects in this workspace. Both are gated on
+ * `role.manage` in the workspace context: whoever sets the workspace's
+ * project roles decides for all of its projects at once.
  */
 export default async function WorkspaceSettingsRolesPage({
   params,
@@ -28,7 +27,7 @@ export default async function WorkspaceSettingsRolesPage({
     getTranslations(),
     getAccess({ workspaceId: workspace }),
   ]);
-  // Ohne Einblick in die Rollen gibt es die Seite für diesen Benutzer nicht.
+  // Without insight into the roles, this page doesn't exist for this user.
   if (!access.has("role.manage")) notFound();
 
   return (

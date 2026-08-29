@@ -11,18 +11,18 @@ export interface IssueShareEmailInput {
   actorName: string;
   issueIdentifier: string;
   issueTitle: string;
-  /** Persönliche Nachricht der teilenden Person — optional. */
+  /** Personal message from the person sharing — optional. */
   text?: string;
-  /** Der öffentliche Lese-Link (`/share/[token]`), kein Login nötig. */
+  /** The public read-only link (`/share/[token]`), no login required. */
   url: string;
 }
 
 /**
- * Für `shareIssueByEmail` — anders als `notificationEmail` geht diese Mail an
- * eine beliebige Adresse, nicht an ein Konto im System. Der Link ist deshalb
- * der öffentliche `/share/[token]`-Weg, nicht die interne Issue-Seite, und es
- * gibt keinen „Benachrichtigungen verwalten“-Fuß — die Empfängerin hat gar
- * keine Einstellungen, die das steuern könnten.
+ * For `shareIssueByEmail` — unlike `notificationEmail`, this email goes to
+ * an arbitrary address, not to an account in the system. The link is
+ * therefore the public `/share/[token]` path, not the internal issue page,
+ * and there's no "manage notifications" footer — the recipient has no
+ * settings at all that could control that.
  */
 export function issueShareEmail(
   input: IssueShareEmailInput,

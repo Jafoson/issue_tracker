@@ -7,8 +7,8 @@ import {
   syncProjectTeamRoles,
 } from "@/lib/project-membership";
 
-// Die Helfer bekommen ihren Client als Argument — hier genügt ein Doppel mit
-// genau den Methoden, die sie anfassen.
+// The helpers receive their client as an argument — a double with exactly
+// the methods they touch is enough here.
 
 const workspaceMemberFindMany = mock();
 const workspaceMemberFindUnique = mock();
@@ -39,20 +39,20 @@ const db = fake as unknown as Db;
 
 const WS = "acme";
 
-/** Rollen-Einträge, wie die Datenbank sie liefert. */
+/** Role entries, as the database returns them. */
 const allow = (...keys: string[]) =>
   keys.map((permissionKey) => ({ permissionKey }));
 
 /**
- * Eine Workspace-Rolle, wie die Ableitung sie sieht. Der Key entscheidet bei den
- * System-Rollen, die Einträge nur bei selbst angelegten.
+ * A workspace role, as the derivation sees it. For system roles the key
+ * decides; for custom roles only the entries do.
  */
 const role = (key: string, ...keys: string[]) => ({
   key,
   permissions: allow(...keys),
 });
 
-/** Eine selbst angelegte Rolle — ihr Key steht in keiner Registry. */
+/** A custom role — its key appears in no registry. */
 const custom = (...keys: string[]) => role("eigene-rolle", ...keys);
 
 beforeEach(() => {
@@ -80,9 +80,9 @@ beforeEach(() => {
 });
 
 describe("projectRoleKeyFor()", () => {
-  // Bei den System-Rollen steht die Zuordnung ausdrücklich in lib/rbac/roles.ts.
-  // Sie zu erraten ginge nicht mehr: eine Workspace-Rolle sagt seit der Trennung
-  // der Ebenen nichts mehr darüber, was jemand in einem Projekt darf.
+  // For system roles the mapping is stated explicitly in lib/rbac/roles.ts.
+  // It can no longer be guessed: since the levels were separated, a workspace
+  // role no longer says anything about what someone may do in a project.
   it("folgt bei System-Rollen der erklärten Zuordnung", () => {
     expect(projectRoleKeyFor(role("owner"))).toBe("project_admin");
     expect(projectRoleKeyFor(role("admin"))).toBe("project_admin");
@@ -93,8 +93,8 @@ describe("projectRoleKeyFor()", () => {
   });
 
   it("übergeht bei System-Rollen die Einträge", () => {
-    // Der Key gewinnt: eine System-Rolle ist überall dieselbe Zeile, ihre
-    // Zuordnung soll nicht davon abhängen, was gerade in der Tabelle steht.
+    // The key wins: a system role is the same row everywhere, and its
+    // mapping should not depend on whatever happens to be in the table.
     expect(projectRoleKeyFor(role("viewer", "project.admin.all"))).toBe(
       "project_viewer",
     );
@@ -112,8 +112,8 @@ describe("projectRoleKeyFor()", () => {
   });
 
   it("macht aus jeder anderen eigenen Rolle einen Leser", () => {
-    // Nie `blocked`: einen Ausschluss spricht man aus, er ist kein Nebenprodukt
-    // einer schwachen Rolle.
+    // Never `blocked`: an exclusion is stated explicitly, it is not a
+    // byproduct of a weak role.
     expect(projectRoleKeyFor(custom("workspace.update"))).toBe(
       "project_viewer",
     );
@@ -202,7 +202,7 @@ describe("dropProjectMemberships()", () => {
 describe("syncProjectTeamRoles()", () => {
   const PROJECT = "p-1";
 
-  /** Eine Team-Projekt-Verknüpfung mit Rolle, wie die Datenbank sie liefert. */
+  /** A team-project link with a role, as the database returns it. */
   const grant = (
     teamId: string,
     roleId: string,
@@ -241,8 +241,8 @@ describe("syncProjectTeamRoles()", () => {
     });
   });
 
-  // Zwei Teams am selben Projekt, dieselbe Person in beiden — es gewinnt der
-  // höhere Rang, genau wie `assignmentCeiling` Ränge sonst auch vergleicht.
+  // Two teams on the same project, the same person in both — the higher
+  // rank wins, exactly how `assignmentCeiling` compares ranks elsewhere too.
   it("wählt bei mehreren Teams die ranghöchste Rolle", async () => {
     teamProjectFindMany.mockResolvedValue([
       grant("t-viewer", "role-viewer", 2, ["u-1"]),
@@ -259,8 +259,8 @@ describe("syncProjectTeamRoles()", () => {
     });
   });
 
-  // Die Zusage an den Projektleiter: eine Rolle, die er selbst gesetzt hat,
-  // ändert kein Team-Sync — weder um sie zu aktualisieren noch zu löschen.
+  // The promise made to the project lead: a role they set manually is never
+  // touched by the team sync — neither updated nor deleted.
   it("fasst eine manuell gesetzte Zeile nicht an", async () => {
     projectMemberFindMany.mockResolvedValue([
       { userId: "u-1", origin: "manual" },

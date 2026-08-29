@@ -1,6 +1,6 @@
 .card {
-  /* Padding und vertikaler Rhythmus liegen in Custom Properties: zwei Griffe
-     statt derselben Zahl an einem halben Dutzend Stellen. */
+  /* Padding and vertical rhythm live in custom properties: two handles
+     instead of the same number in half a dozen places. */
   --pad: 14px;
   --gap: 9px;
 
@@ -21,14 +21,14 @@
     background: var(--surface-container-high);
   }
 
-  /* Die Karte, deren Issue gerade im Panel steht. Nicht noch eine Graustufe,
-     sondern der Akzent: von „überfahren“ muss sie auf einen Blick zu
-     unterscheiden sein, und beide Zustände treffen sich zwangsläufig — der
-     zweite Klick, der das Panel schließt, geht auf ebendiese Karte.
+  /* The card whose issue is currently shown in the panel. Not just another
+     shade of gray, but the accent color: it must be distinguishable from
+     "hovered" at a glance, and the two states inevitably overlap — the
+     second click that closes the panel lands on this very card.
 
-     Der Ring verdoppelt den Rahmen, statt ihn zu verbreitern: ein Pixel Akzent
-     verschwindet auf dunklem Grund zwischen den Karten, eine 2px-Linie würde
-     den Inhalt um einen Pixel verschieben. */
+     The ring doubles the border instead of widening it: a one-pixel accent
+     would vanish against the dark background between cards, while a 2px
+     line would shift the content by a pixel. */
   &[data-active="true"] {
     border-color: var(--tertiary);
     background: var(--surface-container-high);
@@ -42,7 +42,7 @@
   transform: rotate(1deg);
 }
 
-/* Typ-Badge links, Assignee rechts — auch ohne Typ-Badge bleibt der Avatar rechts. */
+/* Type badge on the left, assignee on the right — the avatar stays on the right even without a type badge. */
 .header {
   display: flex;
   align-items: center;
@@ -55,18 +55,19 @@
   }
 }
 
-/* Woher die Aufgabe kommt — nur auf projektübergreifenden Brettern, sonst stünde
-   in jeder Karte dasselbe (siehe `showProject` in BoardCard). Sie steht als
-   Zeile über dem Typ: erst das Projekt, dann was die Aufgabe darin ist.
+/* Where the task comes from — only on cross-project boards, otherwise every
+   card would show the same thing (see `showProject` in BoardCard). It's a
+   line above the type: first the project, then what the task is within it.
 
-   Punkt in der Farbe des Projekts, der Name in gedämpfter Schrift — das gefüllte
-   Typ-Badge darunter soll das kräftigere Zeichen bleiben.
+   A dot in the project's color, the name in muted text — the filled type
+   badge below should remain the stronger visual signal.
 
-   Der negative Abstand holt die Zeile an das Badge heran: der Kartenrhythmus
-   (`--gap`) trennt eigenständige Blöcke, Projekt und Typ gehören aber zusammen.
+   The negative margin pulls the line closer to the badge: the card's
+   rhythm (`--gap`) separates independent blocks, but project and type
+   belong together.
 
-   `align-self` hält sie auf ihrer Textbreite, damit die Ellipse erst greift, wo
-   die Karte wirklich endet. */
+   `align-self` keeps it at its text width, so the ellipsis only kicks in
+   where the card actually ends. */
 .project {
   align-self: flex-start;
   max-width: 100%;
@@ -90,7 +91,7 @@
   border-radius: 50%;
 }
 
-/* Bezugsrahmen für den Stift, der über dem Titel liegt. */
+/* Positioning context for the pencil icon that overlays the title. */
 .titleRow {
   position: relative;
 }
@@ -109,17 +110,17 @@
   overflow: hidden;
 }
 
-/* Der Stift hängt am gemessenen Ende des Titels (`--title-end-*`, gesetzt von
-   `useTextEnd`) und liegt über ihm statt neben ihm — der Titel behält damit
-   seine volle Breite und seine drei Zeilen.
+/* The pencil icon is anchored to the title's measured end (`--title-end-*`,
+   set by `useTextEnd`) and overlays it rather than sitting next to it — the
+   title keeps its full width and its three lines this way.
 
-   `min()` entscheidet, was passiert, wenn die Zeile bis an den Rand reicht:
-   dann rutscht der Stift auf das Zeilenende und deckt es ab, statt aus der
-   Karte zu laufen. Seine Fläche ist der Kartengrund im Überfahren-Zustand — so
-   liegt er sauber auf dem Text auf, ohne dass Buchstaben durchscheinen.
+   `min()` decides what happens when the line reaches the edge: the pencil
+   then slides onto the line's end and covers it, instead of running out of
+   the card. Its background is the card's hover-state background — so it
+   sits cleanly on top of the text without letters showing through.
 
-   Die Höhe entspricht einer Textzeile (15px × 1.45): der Knopf deckt sich mit
-   der Zeile, an deren Ende er sitzt. */
+   The height matches one line of text (15px × 1.45): the button aligns
+   with the line at whose end it sits. */
 .editTitle {
   --edit-size: 22px;
 
@@ -153,17 +154,17 @@
   opacity: 1;
 }
 
-/* Ohne Zeigegerät gibt es kein Überfahren — dort steht der Stift immer da,
-   sonst wäre der Titel auf dem Tablet gar nicht zu ändern. */
+/* Without a pointing device there's no hover — the pencil is always shown
+   there, otherwise the title couldn't be edited at all on a tablet. */
 @media (hover: none) {
   .editTitle {
     opacity: 1;
   }
 }
 
-/* Der negative Einzug hebt die Polsterung des Feldes auf — so steht der Text an
-   derselben Stelle wie eben noch der Titel. Der Rest (Markieren, Zeiger, Ebene)
-   bringt `IssueTitleField` mit. */
+/* The negative margin cancels out the field's padding — so the text sits in
+   the same spot the title just occupied. The rest (selection, cursor,
+   layering) comes from `IssueTitleField` itself. */
 .titleEdit {
   margin-inline: -8px;
   font-size: var(--text-base);
@@ -172,16 +173,16 @@
   color: var(--on-surface);
 }
 
-/* Eine Zeile, mehr nicht: eine Karte soll gleich hoch bleiben, gleichgültig wie
-   viele Labels an ihrem Issue hängen — sonst tanzt beim Ziehen die ganze Spalte.
-   Was nicht mehr daneben passt, zählt der Chip am Ende zusammen; wie viele das
-   sind, misst `useRowFit`.
+/* One line, no more: a card should stay the same height regardless of how
+   many labels its issue carries — otherwise the whole column would jump
+   around while dragging. Whatever no longer fits is summed up by the chip
+   at the end; `useRowFit` measures how many that is.
 
-   `overflow` ist das Netz für den Augenblick vor der Hydration und für die Karte
-   ohne JavaScript: dann steht die Reihe ungekürzt da und wird beschnitten statt
-   umzubrechen. */
+   `overflow` is the safety net for the moment before hydration and for the
+   card without JavaScript: the row is then rendered unclipped and gets
+   truncated instead of wrapping. */
 .labels {
-  /* Anker für den Messfühler. */
+  /* Anchor for the probe element. */
   position: relative;
   display: flex;
   flex-wrap: nowrap;
@@ -189,16 +190,17 @@
   min-width: 0;
   overflow: hidden;
 
-  /* Nicht schrumpfen lassen: sonst misst der Messdurchgang gestauchte Chips und
-     rechnet mit Breiten, die es so nie gibt. */
+  /* Don't let them shrink: otherwise the measuring pass would measure
+     squeezed chips and calculate with widths that never actually occur. */
   > * {
     flex: none;
   }
 }
 
-/* Der Messfühler: der Zähler, solange noch offen ist, ob und mit welcher Zahl es
-   ihn braucht. Er hängt aus dem Fluss — die Reihe merkt nichts von ihm, seine
-   Maße bleiben aber messbar. Bei `display: none` wären sie es nicht. */
+/* The probe: the counter, while it's still undetermined whether and with
+   which number it's needed. It's taken out of flow — the row is unaffected
+   by it, but its dimensions remain measurable. With `display: none` they
+   wouldn't be. */
 .probe {
   position: absolute;
   inset-block-start: 0;
@@ -207,7 +209,7 @@
   pointer-events: none;
 }
 
-/* Meta-Zeile: Priorität + Identifier links, Zeit + Kommentare rechts. */
+/* Meta line: priority + identifier on the left, time + comments on the right. */
 .footer {
   display: flex;
   align-items: center;

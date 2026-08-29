@@ -11,21 +11,21 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { resolveAvatarUrl } from "@/lib/storage";
 
-// Alles hier gilt genau einer Person: der eingeloggten. Es gibt keinen Parameter
-// „welcher Benutzer" — wer fremde Konten läse, hätte damit eine Möglichkeit
-// geschaffen, die es nicht geben soll. `null` heißt wie überall „gibt es für
-// dich nicht", und die Seiten machen daraus ein 404.
+// Everything here applies to exactly one person: whoever is logged in. There is
+// no "which user" parameter — reading someone else's account would create a
+// possibility that shouldn't exist. As everywhere, `null` means "doesn't exist
+// for you", and the pages turn that into a 404.
 //
-// Über `cache()` pro Request dedupliziert, wie in `features/workspaces/queries`.
+// Deduplicated per request via `cache()`, as in `features/workspaces/queries`.
 
 /**
- * Alle bekannten OAuth-Anbieter — die Marken-Liste, aus der `getMyConnections`
- * die tatsächlich eingerichteten (`enabledOAuthProviders`) auswählt.
+ * All known OAuth providers — the brand list from which `getMyConnections`
+ * selects the ones actually set up (`enabledOAuthProviders`).
  *
- * Wer hier steht, muss nicht konfiguriert sein: die Zeile erscheint erst,
- * wenn `auth.config.ts` die zugehörigen Env-Vars gesetzt findet. Ist keiner
- * eingerichtet, gibt es weder eine Zeile noch den Reiter „Verbundene Konten"
- * überhaupt (siehe `account/layout.tsx` und `account/connections/page.tsx`).
+ * Being listed here doesn't mean it's configured: the row only appears once
+ * `auth.config.ts` finds the corresponding env vars set. If none are set up,
+ * there's neither a row nor the "Connected accounts" tab at all (see
+ * `account/layout.tsx` and `account/connections/page.tsx`).
  */
 export const OAUTH_PROVIDERS = [
   "github",
@@ -35,12 +35,12 @@ export const OAUTH_PROVIDERS = [
   "apple",
 ] as const;
 
-/** OIDC ist nicht Teil der festen Liste oben — sein Name kommt erst aus
- *  `AUTH_OIDC_NAME`, es gibt also nichts Sinnvolles anzuzeigen, solange er
- *  nicht konfiguriert ist. */
+/** OIDC isn't part of the fixed list above — its name only comes from
+ *  `AUTH_OIDC_NAME`, so there's nothing meaningful to display until it's
+ *  configured. */
 export const OIDC_PROVIDER_ID = "oidc";
 
-/** Was gilt, solange niemand etwas eingestellt hat. Dieselben Werte wie die
+/** What applies as long as nobody has set anything. Same values as the
  *  `@default`s in `prisma/schema.prisma`. */
 export const DEFAULT_PREFERENCES: Preferences = {
   theme: "dark",
@@ -64,12 +64,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
 };
 
 /**
- * Die eigenen Vorlieben — für jeden Eingeloggten, auch ohne Zeile in der
- * Tabelle.
+ * Your own preferences — for anyone logged in, even without a row in the
+ * table.
  *
- * Sie entsteht erst beim ersten Speichern. Wer nie etwas eingestellt hat,
- * bekommt hier die Vorgaben; die Oberfläche muss den Unterschied nicht kennen
- * und hat nie einen leeren Zustand darzustellen.
+ * The row only comes into existence on first save. Anyone who has never set
+ * anything gets the defaults here; the UI doesn't need to know the
+ * difference and never has to render an empty state.
  */
 export const getMyPreferences = cache(async (): Promise<Preferences> => {
   const session = await getSession();
@@ -80,9 +80,9 @@ export const getMyPreferences = cache(async (): Promise<Preferences> => {
   });
   if (!row) return DEFAULT_PREFERENCES;
 
-  // Alles, was keine Benachrichtigung ist, wird einzeln herausgenommen — was
-  // übrig bleibt, sind genau die Schalter aus `NotificationSettings`. Eine neue
-  // Spalte, die hier nicht steht, landete sonst stillschweigend darin.
+  // Everything that isn't a notification is pulled out individually — what
+  // remains is exactly the toggles from `NotificationSettings`. A new column
+  // not listed here would otherwise silently end up in there.
   const { userId: _userId, theme, adminNoticeHidden, ...notifications } = row;
   return {
     ...notifications,
@@ -91,7 +91,7 @@ export const getMyPreferences = cache(async (): Promise<Preferences> => {
   };
 });
 
-/** Stammdaten des eigenen Kontos. */
+/** Core data of your own account. */
 export const getMyProfile = cache(
   async (): Promise<AccountProfileView | null> => {
     const session = await getSession();
@@ -121,7 +121,7 @@ export const getMyProfile = cache(
   },
 );
 
-/** Womit man sich anmeldet: Passkeys, Adresse, fremde Anbieter. */
+/** What you sign in with: passkeys, address, third-party providers. */
 export const getMySecurity = cache(
   async (): Promise<AccountSecurityView | null> => {
     const session = await getSession();
@@ -158,7 +158,7 @@ export const getMySecurity = cache(
   },
 );
 
-/** Die fremden Anmeldewege dieses Kontos. */
+/** This account's third-party sign-in methods. */
 export const getMyConnections = cache(
   async (): Promise<AccountConnectionsView | null> => {
     const session = await getSession();

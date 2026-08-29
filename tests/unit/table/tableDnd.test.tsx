@@ -30,9 +30,10 @@ const groups: TableGroup<Row>[] = [
 ];
 
 /**
- * Die Bindung entsteht nur in einer Komponente — der Hook hält Zustand. Für die
- * Ausgangsansicht reicht `renderToStaticMarkup`: Ereignisse hängen ohnehin erst
- * im Browser daran, geprüft wird hier, was ohne sie im Markup steht.
+ * The wiring only comes together inside a component — the hook holds state.
+ * `renderToStaticMarkup` is enough for the initial view: event handlers only
+ * attach in the browser anyway, so what's checked here is what's in the
+ * markup without them.
  */
 const Sortable = (options?: Partial<TableDndOptions<Row>>) => {
   const Fixture = () => {
@@ -79,7 +80,7 @@ describe("Table mit dnd", () => {
     const markup = Sortable();
     expect(markup).toContain('aria-label="Alpha verschieben"');
     expect(markup).toContain('aria-label="Beta verschieben"');
-    // Aufgenommen wird erst per Tastatur — vorher ist kein Griff gedrückt.
+    // Picked up only via keyboard — no handle is pressed before that.
     expect(markup.match(/aria-pressed="false"/g)).toHaveLength(rows.length);
     expect(markup).not.toContain("data-grabbed");
   });
@@ -92,7 +93,7 @@ describe("Table mit dnd", () => {
     const markup = Sortable({ canDrag: (row) => row.id !== "b" });
     expect(markup).toContain('aria-label="Alpha verschieben"');
     expect(markup).not.toContain('aria-label="Beta verschieben"');
-    // Die Zeile bleibt Teil der Tabelle, sie ist nur nicht mehr ziehbar.
+    // The row stays part of the table, it just isn't draggable anymore.
     expect(markup).toContain("Beta");
     expect(markup.match(/draggable="true"/g)).toHaveLength(1);
   });

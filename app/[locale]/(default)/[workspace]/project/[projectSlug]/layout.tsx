@@ -1,7 +1,7 @@
 import styles from "./layout.module.scss";
 
-// Die Topbar rendert jede View selbst — nur sie kennt die Anzahl der gefilterten
-// Issues, die im Titel steht. Das Layout hält nur noch die Spalte zusammen.
+// Each view renders its own topbar — only it knows the count of filtered
+// issues shown in the title. This layout only holds the column together.
 export default function ProjectLayout({
   children,
 }: {

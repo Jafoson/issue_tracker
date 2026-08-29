@@ -19,16 +19,16 @@ import { detectLanguage } from "@/lib/richtext/highlight";
 import styles from "./codeBlockView.module.scss";
 
 /**
- * Der Codeblock im Editor: Kopfzeile mit Sprachwahl und Kopierknopf, daneben
- * die Zeilennummern.
+ * The code block in the editor: header with language selector and copy
+ * button, line numbers alongside.
  *
- * Als React-Ansicht (`NodeView`), weil im Kopf ein Menü sitzt — mit dem
- * schlichten `renderHTML` von Tiptap ginge das nicht.
+ * As a React view (`NodeView`), because a menu sits in the header — that
+ * wouldn't be possible with Tiptap's plain `renderHTML`.
  *
- * Die Nummern stehen bewusst **nicht** im bearbeitbaren Bereich: ProseMirror
- * verwaltet dessen Inhalt, jedes eingeschobene Element käme ihm in die Quere.
- * Sie liegen deshalb in einer eigenen Spalte daneben, deren Zeilenhöhe mit der
- * des Codes übereinstimmt.
+ * The numbers deliberately sit **outside** the editable area: ProseMirror
+ * manages its content, and any inserted element would get in its way. They
+ * therefore live in their own column next to it, whose line height matches
+ * that of the code.
  */
 export function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
   const t = useTranslations("editor");
@@ -37,13 +37,13 @@ export function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
   const lines = countLines(code);
 
   /**
-   * Erkennt die Sprache, solange keine gewählt ist — einmal, kurz nach dem
-   * Tippen oder Einfügen.
+   * Detects the language as long as none is chosen — once, shortly after
+   * typing or pasting.
    *
-   * Das Ergebnis wandert als Attribut in den Knoten. Danach ist `language`
-   * gesetzt und die Erkennung läuft nicht mehr: die Farben stehen fest,
-   * statt bei jedem Zeichen neu geraten zu werden. Wer im Menü etwas anderes
-   * wählt — auch „Plain" —, behält es.
+   * The result moves into the node as an attribute. After that, `language`
+   * is set and detection stops running: the colors stay fixed instead of
+   * being re-guessed on every character. Whoever picks something else in the
+   * menu — including "Plain" — keeps it.
    */
   useEffect(() => {
     if (language !== null) return;
@@ -90,19 +90,20 @@ export function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
       </div>
 
       <div className={styles.body}>
-        {/* Nur zum Ansehen — und außerhalb des bearbeitbaren Bereichs. */}
+        {/* Display only — and outside the editable area. */}
         <div
           className={styles.gutter}
           contentEditable={false}
           aria-hidden="true"
         >
           {Array.from({ length: lines }, (_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: die Zeilennummer *ist* der Index
+            // biome-ignore lint/suspicious/noArrayIndexKey: the line number *is* the index
             <span key={i}>{i + 1}</span>
           ))}
         </div>
-        {/* `<pre><code>` wie in der Anzeige. Der Typ steht ausdrücklich da:
-            `NodeViewContent` leitet ihn wegen `NoInfer` nicht aus `as` ab. */}
+        {/* `<pre><code>` like in the display path. The type is spelled out
+            explicitly: `NodeViewContent` doesn't infer it from `as` because
+            of `NoInfer`. */}
         <pre className={styles.code}>
           <NodeViewContent<"code"> as="code" />
         </pre>

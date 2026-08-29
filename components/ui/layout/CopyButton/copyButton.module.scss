@@ -1,9 +1,9 @@
-/* Nur der Übergang zur Bestätigung — Fläche, Größe und Zustände kommen vom
-   `Button`. */
+/* Only the transition to the confirmation state — surface, size, and states
+   come from `Button`. */
 
 .copy {
-  /* Der Knopf wächst um das Wort. Ohne Übergang springt die Kopfzeile des
-     Codeblocks in der Breite. */
+  /* The button grows to fit the word. Without a transition, the code block's
+     header would jump in width. */
   transition: color .14s ease;
   white-space: nowrap;
 
@@ -11,7 +11,7 @@
     color: var(--tertiary);
   }
 
-  /* Das Wort blendet sich ein, statt aufzuploppen. */
+  /* The word fades in instead of popping in abruptly. */
   > span:last-child {
     animation: copyConfirm .16s ease;
   }

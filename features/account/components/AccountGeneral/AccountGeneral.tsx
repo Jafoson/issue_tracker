@@ -29,13 +29,14 @@ interface Props {
 }
 
 /**
- * Der Benutzername entsteht so, wie er gespeichert wird.
+ * The username comes into being the same way it's stored.
  *
- * `updateProfile` prüft gegen `^[a-z0-9][a-z0-9-]{1,29}$` und antwortet sonst
- * mit einem Fehler oben auf der Seite — weit weg vom Feld und erst nach dem
- * Speichern. Wer stattdessen gar nichts Unerlaubtes eintippen kann, bekommt die
- * Regel im Moment der Eingabe zu sehen: Großbuchstaben werden klein, Leer- und
- * Trennzeichen zu Bindestrichen, alles Übrige fällt weg.
+ * `updateProfile` validates against `^[a-z0-9][a-z0-9-]{1,29}$` and otherwise
+ * responds with an error at the top of the page — far from the field and only
+ * after saving. Instead, if it's never possible to type anything disallowed
+ * in the first place, the rule becomes visible the moment you type:
+ * uppercase becomes lowercase, spaces and separators become hyphens,
+ * everything else is dropped.
  */
 const toHandle = (raw: string) =>
   raw
@@ -45,16 +46,16 @@ const toHandle = (raw: string) =>
     .slice(0, 30);
 
 /**
- * Wer man ist: Name, Benutzername, Farbe — und die Adresse, unter der man sich
- * anmeldet.
+ * Who you are: name, username, color — and the address you sign in with.
  *
- * Vier Felder, ein Speichern-Knopf im Seitenkopf. Wer seinen Namen ändert, sieht
- * meist auch den Rest durch; vier eigene Knöpfe wären vier Runden zum Server für
- * einen Vorgang, den man als einen empfindet.
+ * Four fields, one save button in the page header. Anyone changing their name
+ * usually reviews the rest too; four separate buttons would mean four round
+ * trips to the server for something that feels like a single action.
  *
- * Die E-Mail-Adresse steht dabei nur da: sie ist der Anmeldename, und ohne
- * Mailversand gäbe es keinen Weg, eine neue zu bestätigen. Die Zeile sagt das
- * und verweist auf „Sicherheit", wo alles Übrige zur Anmeldung steht.
+ * The email address is just displayed there: it's the sign-in name, and
+ * without mail sending there'd be no way to verify a new one. The row states
+ * that and points to "Security", where everything else about signing in
+ * lives.
  */
 export function AccountGeneral({ profile }: Props) {
   const t = useTranslations();
@@ -74,7 +75,7 @@ export function AccountGeneral({ profile }: Props) {
     handle.trim() !== profile.handle ||
     color !== profile.color;
 
-  // Benutzername und Vorname sind Pflicht, Nachname optional
+  // Username and first name are required, last name optional
   // (`features/onboarding`).
   const complete = Boolean(handle.trim() && firstName.trim());
 
@@ -118,8 +119,8 @@ export function AccountGeneral({ profile }: Props) {
         description={t("account.generalDesc")}
         actions={
           <>
-            {/* Verschwindet, sobald wieder etwas geändert wird — die
-                Bestätigung gehört zum abgeschlossenen Vorgang. */}
+            {/* Disappears as soon as something changes again — the
+                confirmation belongs to the completed action. */}
             {saved && !dirty && (
               <span className={styles.saved}>
                 <Icon icon="lucide:check" width={14} />
@@ -187,8 +188,8 @@ export function AccountGeneral({ profile }: Props) {
             label={t("account.handle")}
             value={handle}
             disabled={isPending}
-            // Kein Symbol, sondern ein Vorsatz: das `@` steht unmittelbar vor
-            // dem Namen und wird mit ihm als ein Wort gelesen.
+            // Not a symbol, but a prefix: the `@` sits immediately before
+            // the name and is read together with it as one word.
             prefix="@"
             autoComplete="username"
             autoCapitalize="none"

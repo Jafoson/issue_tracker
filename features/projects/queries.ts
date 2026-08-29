@@ -6,9 +6,9 @@ import type {
   ProjectMembersView,
   ProjectSettingsView,
 } from "@/features/projects/types";
-// Dieselbe Form wie auf Workspace-Ebene — geteilt statt dupliziert, die
-// Übersichts-Tabelle (`PendingInvitations`) kennt ohnehin nur die Zeile, kein
-// Workspace oder Projekt.
+// Same shape as at the workspace level — shared instead of duplicated, the
+// overview table (`PendingInvitations`) knows only the row anyway, not a
+// workspace or project.
 import type {
   InviteLinkView,
   PendingInvitationRow,
@@ -28,9 +28,9 @@ import { DEFAULT_PROJECT_ROLE_KEY, PROJECT_ADMIN_ROLE_KEY } from "@/lib/rbac";
 import { resolveAvatarUrl } from "@/lib/storage";
 import type { Role, User } from "@/types";
 
-// ── Übersicht ─────────────────────────────────────────────────────────────────
+// ── Overview ─────────────────────────────────────────────────────────────────
 
-/** Ein Projekt, wie die Übersichtsseite es zeigt: wer, was, wofür. */
+/** A project as the overview page shows it: who, what, for what purpose. */
 export interface ProjectOverviewRow {
   id: string;
   name: string;
@@ -38,36 +38,35 @@ export interface ProjectOverviewRow {
   prefix: string;
   color: string;
   avatarUrl: string | null;
-  /** Leer, wenn niemand einen Satz dazu geschrieben hat. */
+  /** Empty if nobody has written a sentence about it. */
   desc: string;
   /**
-   * Wer das Projekt leitet — die erste Person mit der Projektrolle
-   * „Project Admin". `null`, wenn es keine gibt.
+   * Who leads the project — the first person with the "Project Admin"
+   * project role. `null` if there is none.
    */
   lead: User | null;
-  /** Weitere Leitende neben `lead`; die Spalte zeigt sie als „+n". */
+  /** Additional leads besides `lead`; the column shows them as "+n". */
   moreLeads: number;
 }
 
 export interface ProjectOverviewView {
   rows: ProjectOverviewRow[];
-  /** `project.create` — ob der Knopf im Seitenkopf erscheint. */
+  /** `project.create` — whether the button appears in the page header. */
   canCreate: boolean;
-  /** Id des letzten Projekts dieser Seite, für `loadMoreProjectsOverview` —
-   * `null`, wenn `rows` schon alles ist. */
+  /** Id of the last project on this page, for `loadMoreProjectsOverview` —
+   * `null` if `rows` is already everything. */
   nextCursor: string | null;
 }
 
 /**
- * Die Projekte, die der Handelnde sehen darf — zum Nachschlagen, nicht zum
- * Verwalten.
+ * The projects the actor is allowed to see — for browsing, not for managing.
  *
- * Bewusst eine andere Ansicht als `getWorkspaceProjectsView` in den
- * Einstellungen: die trennt nach Sichtbarkeit und zählt Mitglieder und
- * Aufgaben, weil dort verwaltet wird. Hier steht in einer einzigen Liste, was
- * jemand sucht, der ein Projekt betreten will — Name, wofür es da ist, wer es
- * leitet, unter welchem Kürzel seine Aufgaben laufen. Ob es privat ist, hat die
- * Sichtbarkeitsregel schon beantwortet: was hier steht, darf man sehen.
+ * Deliberately a different view than `getWorkspaceProjectsView` in settings:
+ * that one separates by visibility and counts members and tasks, because
+ * that's where management happens. Here, a single list holds what someone
+ * looking to enter a project needs — name, what it's for, who leads it,
+ * under which prefix its tasks run. Whether it's private has already been
+ * answered by the visibility rule: whatever appears here is fine to see.
  */
 export const getProjectsOverview = cache(
   async (
@@ -79,8 +78,8 @@ export const getProjectsOverview = cache(
     const access = await accessFor(userId, { workspaceId });
     const canCreate = access.has("project.create");
 
-    // Dieselbe Sichtbarkeitsregel wie überall — die Übersicht ist nur eine
-    // andere Darstellung der Liste aus `getProjects`.
+    // Same visibility rule as everywhere else — the overview is just a
+    // different presentation of the list from `getProjects`.
     const visible = await visibleProjectIds(workspaceId);
     if (visible.size === 0) return { rows: [], canCreate, nextCursor: null };
 
@@ -96,9 +95,9 @@ export const getProjectsOverview = cache(
         color: true,
         avatarKey: true,
         desc: true,
-        // Die Leitung des Projekts. Ein paar mehr als die eine gezeigte, damit
-        // „+n" stimmt; wer ein Projekt mit mehr als sechs Leitenden hat, hat
-        // eine andere Frage als diese Spalte.
+        // The project's leadership. A few more than the one shown, so "+n"
+        // is accurate; a project with more than six leads has a different
+        // problem than this column.
         members: {
           where: { role: { key: PROJECT_ADMIN_ROLE_KEY } },
           select: {
@@ -159,15 +158,15 @@ export const getProjectsOverview = cache(
   },
 );
 
-// ── Einstellungen ─────────────────────────────────────────────────────────────
+// ── Settings ─────────────────────────────────────────────────────────────────
 
 /**
- * Das Projekt, wie seine Einstellungsseite es braucht — samt der Frage, was der
- * Handelnde damit darf.
+ * The project as its settings page needs it — including what the actor is
+ * allowed to do with it.
  *
- * `null` heißt „gibt es für dich nicht": entweder existiert das Projekt nicht,
- * oder es ist nicht sichtbar. Die Seite macht daraus ein 404, und damit verrät
- * sie nicht, welcher der beiden Fälle vorliegt.
+ * `null` means "doesn't exist for you": either the project doesn't exist, or
+ * it isn't visible. The page turns this into a 404, so it doesn't reveal
+ * which of the two cases applies.
  */
 export const getProjectSettingsView = cache(
   async (projectId: string): Promise<ProjectSettingsView | null> => {
@@ -209,7 +208,7 @@ export const getProjectSettingsView = cache(
   },
 );
 
-// ── Mitglieder ────────────────────────────────────────────────────────────────
+// ── Members ──────────────────────────────────────────────────────────────────
 
 type UserRow = {
   id: string;
@@ -240,16 +239,16 @@ const byName = [
 ];
 
 /**
- * Wer Zugriff auf ein Projekt hat — und woher dieser Zugriff kommt.
+ * Who has access to a project — and where that access comes from.
  *
- * Die Liste ist `ProjectMember`: jede Zeile eine Person mit ihrer Projektrolle,
- * und die entscheidet hier (`lib/permissions.ts`). Dazu kommen nur die, die sich
- * per Projektrolle gar nicht herabstufen lassen — Owner und Admins des Workspace
- * sehen jedes Projekt, auch ohne Eintrag darin. Sie stehen mit ihrer
- * Workspace-Rolle in der Liste (`source: "workspace"`).
+ * The list is `ProjectMember`: each row a person with their project role,
+ * and that decides here (`lib/permissions.ts`). Added on top are only those
+ * who can't be downgraded via a project role at all — workspace owners and
+ * admins see every project, even without an entry in it. They appear in the
+ * list with their workspace role (`source: "workspace"`).
  *
- * Die Seite bekommt fertige Zeilen inklusive `manageable` — welche Rolle wen
- * anfassen darf, entscheidet der Server, nicht der Client.
+ * The page receives finished rows including `manageable` — which role gets
+ * to touch whom is decided by the server, not the client.
  */
 const memberRoleSelect = {
   select: { id: true, key: true, name: true, rank: true },
@@ -271,9 +270,9 @@ export const getProjectMembersView = cache(
     const actorId = await currentUserId();
     const access = await accessFor(actorId, { projectId });
 
-    // Die Liste nennt Namen und E-Mail-Adressen. Wer das Projekt nicht sehen
-    // darf, bekommt dasselbe wie bei einem Projekt, das es nicht gibt — die
-    // Seite macht daraus ein 404.
+    // The list names names and email addresses. Anyone not allowed to see
+    // the project gets the same result as for a project that doesn't exist —
+    // the page turns this into a 404.
     if (!access.has("project.view")) return null;
 
     const [projectMembers, workspaceMembers, projectRoles, viewAllRoles] =
@@ -292,8 +291,8 @@ export const getProjectMembersView = cache(
           include: { user: true, role: memberRoleSelect },
           orderBy: byName,
         }),
-        // Zuweisbar sind die Projektrollen des Workspace plus die
-        // projektlokalen Rollen genau dieses Projekts.
+        // Assignable are the workspace's project roles plus the
+        // project-local roles of exactly this project.
         db.role.findMany({
           where: {
             scope: "PROJECT",
@@ -305,8 +304,8 @@ export const getProjectMembersView = cache(
           },
           orderBy: { rank: "desc" },
         }),
-        // Welche Workspace-Rollen ihre Träger in jedem Projekt durchgreifen
-        // lassen. Ersetzt die frühere Abfrage auf die Namen "owner" und "admin".
+        // Which workspace roles let their holders reach through into every
+        // project. Replaces the earlier query on the names "owner" and "admin".
         db.role.findMany({
           where: {
             scope: "WORKSPACE",
@@ -317,8 +316,8 @@ export const getProjectMembersView = cache(
         }),
       ]);
 
-    // Drei Rechte, drei Bedeutungen — die Oberfläche zeigt genau das, was die
-    // dazugehörige Action auch durchlässt (`requireMemberManage`).
+    // Three permissions, three meanings — the UI shows exactly what the
+    // corresponding action also allows through (`requireMemberManage`).
     const canAdd = access.has("member.invite");
     const canSetRole = access.has("member.role.update");
     const canRemove = access.has("member.remove");
@@ -328,9 +327,9 @@ export const getProjectMembersView = cache(
       : Number.NEGATIVE_INFINITY;
 
     const viewAll = new Set(viewAllRoles.map((r) => r.id));
-    // Wer über seine Workspace-Rolle in jedem Projekt durchgreift, lässt sich
-    // per Projektrolle nicht herabstufen — der Resolver entscheidet für ihn
-    // schon vor der Projektrolle (Regel 3 in lib/permissions.ts).
+    // Anyone reaching through into every project via their workspace role
+    // can't be downgraded via a project role — the resolver decides for
+    // them before the project role even applies (rule 3 in lib/permissions.ts).
     const privileged = new Set(
       workspaceMembers
         .filter((m) => viewAll.has(m.roleId))
@@ -351,12 +350,12 @@ export const getProjectMembersView = cache(
         originTeam: pm.originTeam ?? undefined,
         pending: pendingOf.get(pm.userId) ?? false,
         you: pm.userId === actorId,
-        // Niemand ändert ein Mitglied, das über ihm steht — und die eigene Rolle
-        // schon gar nicht über diese Tabelle. Die Leitung des Workspace bleibt
-        // außen vor: an ihren Rechten würde die Änderung nichts ändern.
+        // Nobody changes a member ranked above them — and their own role
+        // certainly not through this table. The workspace leadership stays
+        // excluded: the change wouldn't affect their rights anyway.
         //
-        // Das sagt nur, dass die Zeile anfassbar ist. Welche der drei Aktionen
-        // erlaubt ist, sagen `canSetRole` und `canRemove`.
+        // This only says the row is touchable. Which of the three actions is
+        // actually allowed is said by `canSetRole` and `canRemove`.
         manageable:
           anyManage &&
           pm.userId !== actorId &&
@@ -372,14 +371,14 @@ export const getProjectMembersView = cache(
       if (hasOwnEntry.has(wm.userId)) continue;
 
       const user = await toUser(wm.user, wm.pending);
-      // Wer ohnehin in jedem Projekt alles darf, braucht keinen Projekt-Eintrag
-      // — der wäre nur eine leere Geste.
+      // Whoever already has full access to every project anyway doesn't need
+      // a project entry — it would just be an empty gesture.
       const isPrivileged = privileged.has(wm.userId);
       if (!isPrivileged) candidates.push(user);
 
       if (wm.pending) continue;
-      // Ohne Projektrolle gibt es keinen Zugriff — außer für die, die den
-      // Generalschlüssel tragen. Nur sie stehen hier ohne eigenen Eintrag.
+      // Without a project role there's no access — except for those who
+      // hold the master key. Only they appear here without their own entry.
       if (!isPrivileged) continue;
 
       rows.push({
@@ -390,9 +389,9 @@ export const getProjectMembersView = cache(
         source: "workspace",
         pending: false,
         you: wm.userId === actorId,
-        // Hier steht nur, wer ohnehin in jedem Projekt alles darf — an dieser
-        // Zeile gibt es nichts zu verwalten. Ein Projekt-Eintrag würde ihre
-        // Rechte nicht ändern, ein Entzug erst recht nicht.
+        // Only people who already have full access to every project appear
+        // here — there's nothing to manage on this row. A project entry
+        // wouldn't change their rights, and neither would revoking one.
         manageable: false,
       });
     }
@@ -413,11 +412,11 @@ export const getProjectMembersView = cache(
       assignableRoles.at(-1)?.id ??
       "";
 
-    // Kein DB-Cursor: `rows` entsteht aus zwei vollständig gelesenen Quellen
-    // im Speicher (oben), nicht aus einer Abfrage mit eigenem `take`/`cursor`.
-    // Die Seite selbst bleibt trotzdem billig — bei „ein paar Dutzend
-    // Mitgliedern" kostet das erneute Zusammensetzen beim Nachladen nichts,
-    // was eine echte DB-Pagination hier rechtfertigen würde.
+    // Not a DB cursor: `rows` is assembled in memory from two fully-read
+    // sources (above), not from a query with its own `take`/`cursor`. The
+    // page itself stays cheap regardless — for "a few dozen members" the
+    // reassembly on each load-more costs nothing that would justify real DB
+    // pagination here.
     const offset = cursor ? Number.parseInt(cursor, 10) : 0;
     const page = rows.slice(offset, offset + limit);
 
@@ -436,10 +435,10 @@ export const getProjectMembersView = cache(
 );
 
 /**
- * Offene Einladungen eines Projekts — nur die projektgebundenen (Gäste ohne
- * Workspace-Mitgliedschaft eingeschlossen). Das Workspace-Äquivalent
- * (`getPendingWorkspaceInvitationsView`) filtert `projectId: null` und lässt
- * diese hier bewusst aus — dieselbe Trennung wie beim Audit-Log.
+ * Pending invitations for a project — only the project-bound ones (guests
+ * without workspace membership included). The workspace equivalent
+ * (`getPendingWorkspaceInvitationsView`) filters on `projectId: null` and
+ * deliberately excludes these — the same separation as in the audit log.
  */
 export const getPendingProjectInvitationsView = cache(
   async (
@@ -477,8 +476,8 @@ export const getPendingProjectInvitationsView = cache(
 
     const rows: PendingInvitationRow[] = invitations.map((inv) => ({
       token: inv.token,
-      // Siehe workspaces/queries.ts: das Schatten-Konto einer Einladung hat
-      // immer die eingeladene Adresse, der Fallback ist reine Typsicherheit.
+      // See workspaces/queries.ts: an invitation's shadow account always has
+      // the invited address, the fallback is purely for type safety.
       email: inv.user.email ?? "",
       firstName: inv.user.firstName,
       lastName: inv.user.lastName,
@@ -502,9 +501,8 @@ export const getPendingProjectInvitationsView = cache(
   },
 );
 
-/** Der teilbare Einladungslink eines Projekts, samt der Rollen, die zur
- *  Neuerstellung zur Auswahl stehen. Projekt-Äquivalent zu
- *  `getWorkspaceInviteLinkView`. */
+/** A project's shareable invitation link, along with the roles available
+ *  for a new link. The project equivalent of `getWorkspaceInviteLinkView`. */
 export const getProjectInviteLinkView = cache(
   async (projectId: string): Promise<InviteLinkView | null> => {
     const access = await accessFor(await currentUserId(), { projectId });
@@ -564,16 +562,17 @@ export const getProjectInviteLinkView = cache(
   },
 );
 
-// ── Labels ────────────────────────────────────────────────────────────────────
+// ── Labels ───────────────────────────────────────────────────────────────────
 
 /**
- * Die Labels, die in einem Projekt gelten — getrennt nach denen, die ihm
- * gehören, und denen, die es vom Workspace erbt.
+ * The labels that apply in a project — separated into the ones it owns and
+ * the ones it inherits from the workspace.
  *
- * Die Trennung ist keine Kosmetik: die drei `label.*`-Rechte werden hier im
- * Projekt-Scope aufgelöst und reichen deshalb nur für die eigenen. Ein
- * Workspace-Label steht mit in der Liste, weil es an jedem Issue dieses
- * Projekts auftauchen kann — anfassen lässt es sich nur dort, wo es hingehört.
+ * The separation isn't cosmetic: the three `label.*` permissions are
+ * resolved here in project scope and therefore only cover the project's own
+ * labels. A workspace label still appears in the list because it can show
+ * up on any issue in this project — but it can only be touched where it
+ * actually belongs.
  */
 export const getProjectLabelsView = cache(
   async (
@@ -606,9 +605,9 @@ export const getProjectLabelsView = cache(
           ? { cursor: { id: inheritedCursor }, skip: 1 }
           : {}),
       }),
-      // `Issue.labels` ist ein ID-Array ohne Fremdschlüssel — zählen lässt es
-      // sich nur, indem man die Arrays dieses Projekts einmal durchgeht. Es
-      // wird bewusst nur diese eine Spalte geladen.
+      // `Issue.labels` is an ID array without a foreign key — the only way
+      // to count usage is to go through this project's arrays once.
+      // Deliberately loads only this one column.
       db.issue.findMany({ where: { projectId }, select: { labels: true } }),
       db.projectHiddenLabel.findMany({
         where: { projectId },

@@ -36,26 +36,27 @@ import styles from "./listView.module.scss";
 interface ListViewProps {
   issues: IssueDetail[];
   /**
-   * Das Projekt, in dem eine neue Aufgabe entsteht. Ohne eines — etwa bei den
-   * eigenen Aufgaben quer durch alle Projekte — fehlt das „+“ im Gruppenkopf,
-   * und stattdessen sagt eine Spalte je Zeile, aus welchem Projekt sie kommt.
+   * The project a new task is created in. Without one — for instance for
+   * “my issues” spanning all projects — the “+” in the group header is
+   * left out, and instead a column per row states which project it comes
+   * from.
    */
   projectId?: string;
   /**
-   * Ein Bündel für alles: die Zellen lösen darüber Projekt, Zuständige, Labels,
-   * Typen, Status und Prioritäten auf, die Gruppenköpfe speisen damit ihren
-   * Composer. Dieselbe Prop wie beim Board.
+   * One bundle for everything: the cells use it to resolve project,
+   * assignee, labels, types, status, and priorities; the group headers feed
+   * their composer from it. The same prop as on the board.
    */
   composer: IssueComposerData;
-  /** Was statt der leeren Tabelle steht. Vorgabe: „Keine Aufgaben“. */
+  /** What's shown instead of the empty table. Default: “No tasks”. */
   emptyTitle?: string;
 }
 
 /**
- * Issues als Tabelle, nach Status gruppiert. Zeile öffnet das Issue, die
- * Picker in Priorität, Status und Zuständigkeit ändern es direkt in der Liste.
- * Ziehen sortiert um — innerhalb einer Gruppe und über deren Grenze hinweg,
- * womit sich der Status ändert. Dieselbe Rangrechnung wie auf dem Board.
+ * Issues as a table, grouped by status. A row opens the issue, the pickers
+ * in priority, status, and assignee change it directly from the list.
+ * Dragging reorders — within a group and across its boundary, which
+ * changes the status. Same rank calculation as on the board.
  */
 export function ListView({
   issues,

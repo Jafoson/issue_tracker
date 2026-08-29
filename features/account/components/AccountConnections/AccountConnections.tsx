@@ -16,8 +16,8 @@ import { signInWithOAuth } from "@/features/auth/actions";
 import { useRouter } from "@/i18n/navigation";
 import styles from "./accountConnections.module.scss";
 
-/** Zeichen und Name der Anbieter — beides gehört zur Marke, nicht in die
- *  Übersetzungsdateien. */
+/** Icon and name of the providers — both belong to the brand, not in the
+ *  translation files. */
 const PROVIDERS: Record<string, { icon: string; name: string }> = {
   github: { icon: "lucide:github", name: "GitHub" },
   google: { icon: "logos:google-icon", name: "Google" },
@@ -27,17 +27,16 @@ const PROVIDERS: Record<string, { icon: string; name: string }> = {
 };
 
 /**
- * Die fremden Anmeldewege dieses Kontos.
+ * This account's third-party sign-in methods.
  *
- * Jede Zeile ist ein Anbieter und hat genau einen Zustand: verbunden oder nicht.
- * Verbinden heißt sich dort anmelden — Auth.js hängt den Weg an das Konto, in
- * dem man gerade steckt, ein eigener Vorgang wäre es nicht.
+ * Each row is a provider and has exactly one state: connected or not.
+ * Connecting means signing in there — Auth.js attaches the method to whatever
+ * account you're currently in, it isn't a separate flow of its own.
  *
- * Der letzte Weg lässt sich nicht lösen. Wer keinen Passkey hat und nur ein
- * verbundenes Konto, käme danach nicht mehr herein. Der Knopf fehlt dann und
- * die Zeile sagt, warum — verboten wird es aber im Server
- * (`disconnectAccount`), denn eine ausgeblendete Schaltfläche ist keine
- * Sperre.
+ * The last method can't be disconnected. Anyone without a passkey and only
+ * one connected account would be locked out afterward. The button is then
+ * missing and the row explains why — but the actual enforcement happens on
+ * the server (`disconnectAccount`), since a hidden button is not a lock.
  */
 export function AccountConnections({
   accounts,
@@ -64,7 +63,7 @@ export function AccountConnections({
   const rows: SettingsRow[] = accounts.map((account) => {
     const meta = PROVIDERS[account.provider];
     const name = account.label ?? meta?.name ?? account.provider;
-    // Der letzte Weg hinein bleibt, wo er ist.
+    // The last way in stays where it is.
     const isLastWayIn = account.connected && !hasPasskey && connectedCount <= 1;
 
     return {

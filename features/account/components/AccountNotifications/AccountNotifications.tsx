@@ -24,17 +24,17 @@ interface Props {
 }
 
 /**
- * Wovon man erfahren will — und auf welchem Weg.
+ * What you want to hear about — and through which channel.
  *
- * Fünf Anlässe, zwei Kanäle: die Zeile sagt, was passiert ist, die Spalte, wo es
- * ankommt. Als Matrix und nicht als zehn einzelne Zeilen, weil die Frage „und
- * auch per Mail?" zu jedem Anlass dieselbe ist — nebeneinander ist sie mit einem
- * Blick zu beantworten.
+ * Five occasions, two channels: the row says what happened, the column
+ * where it arrives. As a matrix and not as ten individual rows, because
+ * the question "and by email too?" is the same for every occasion — side by
+ * side, it can be answered at a glance.
  *
- * Jeder Schalter gilt sofort und für sich. Der Zustand bleibt hier im Browser,
- * die Aktion schreibt im Hintergrund: ein Schalter, der erst nach der Antwort
- * des Servers umspringt, fühlt sich klemmend an. Geht das Schreiben schief,
- * springt er zurück und die Seite sagt warum.
+ * Every toggle applies immediately and independently. The state stays here
+ * in the browser, the action writes in the background: a toggle that only
+ * flips after the server responds feels sluggish. If the write fails, it
+ * snaps back and the page says why.
  */
 export function AccountNotifications({ settings }: Props) {
   const t = useTranslations();
@@ -62,8 +62,8 @@ export function AccountNotifications({ settings }: Props) {
       <Switch
         checked={values[key]}
         onChange={(next) => toggle(key, next)}
-        // Der Kopf der Spalte sagt den Kanal, die Zeile den Anlass — für einen
-        // Screenreader steht beides nur zusammen am Schalter selbst.
+        // The column header states the channel, the row the occasion — for a
+        // screen reader, both only exist together on the toggle itself.
         label={`${t(`account.event.${event}`)} — ${t(`account.channel.${channel}`)}`}
         labelHidden
       />

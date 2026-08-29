@@ -23,35 +23,36 @@ import { useTextEnd } from "./useTextEnd";
 interface BoardCardProps {
   issue: IssueDetail;
   /**
-   * Das Projekt der Spalte — nur als Rückfallebene für das Kürzel im Fuß. Zuerst
-   * zählt immer das Projekt am Issue selbst; in einer projektübergreifenden
-   * Ansicht gibt es hier gar keines.
+   * The column's project — only a fallback for the key in the footer. The
+   * project on the issue itself always takes priority; in a cross-project
+   * view there is none here at all.
    */
   projectId?: string;
   /**
-   * Nennt das Projekt in der Kopfzeile. Auf dem Brett eines Projekts stünde in
-   * jeder Karte dasselbe — dort sagt das Kürzel im Fuß genug.
+   * Names the project in the header row. On a single project's board every
+   * card would show the same thing — there, the key in the footer says
+   * enough.
    */
   showProject?: boolean;
   lookups: IssueLookups;
   isDragging?: boolean;
   /**
-   * Ob dieses Issue gerade im Seitenpanel steht. Die Karte bleibt dann
-   * markiert — sonst wäre nach dem Klick nicht mehr zu sehen, wovon das Panel
-   * eigentlich spricht.
+   * Whether this issue is currently shown in the side panel. The card stays
+   * marked in that case — otherwise, after the click, there'd be no way to
+   * tell what the panel is actually showing.
    */
   isActive?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
-  /** Der gewöhnliche Klick: Panel über dem Board. */
+  /** The ordinary click: panel over the board. */
   onOpen?: () => void;
   /**
-   * Strg/Cmd- und Mittelklick: die Vollseite in einem neuen Tab.
+   * Ctrl/Cmd click and middle click: the full page in a new tab.
    *
-   * Die Karte ist kein Link — sie ist ziehbar, und ein Anker darüber würde
-   * beim Ziehen den Link mitnehmen statt die Karte. Also fragt sie die Taste
-   * selbst ab, statt es dem Browser zu überlassen.
+   * The card isn't a link — it's draggable, and an anchor over it would
+   * hijack the link during a drag instead of dragging the card. So it reads
+   * the key itself instead of leaving it to the browser.
    */
   onOpenInNewTab?: () => void;
 }
@@ -74,9 +75,9 @@ export function BoardCard({
   const { patch } = useIssuePatch(issue.id);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Der Server zieht erst nach dem Schreiben nach. Bis dahin zeigt die Karte,
-  // was gerade eingetippt wurde — sonst blitzte der alte Titel wieder auf.
-  // Sobald von außen ein neuer Titel eintrifft, gilt wieder der.
+  // The server only catches up after the write. Until then the card shows
+  // what was just typed — otherwise the old title would briefly flash back
+  // up. As soon as a new title arrives from outside, that one takes over again.
   const [written, setWritten] = useState<string | null>(null);
   const [known, setKnown] = useState(issue.title);
   if (issue.title !== known) {
@@ -85,13 +86,13 @@ export function BoardCard({
   }
   const title = written ?? issue.title;
 
-  // Wo der Titel aufhört — daran hängt der Stift.
+  // Where the title ends — the pencil icon is anchored to that.
   const { ref: titleRef, end: textEnd } = useTextEnd(title);
 
-  // Ein Klick daneben beendet das Schreiben — dabei soll er nicht auch noch die
-  // Karte öffnen. Bis `mousedown` durch ist, hat der Fokus das Feld noch nicht
-  // verlassen; hier steht also, ob gerade geschrieben wurde. Jedes `mousedown`
-  // setzt den Merker neu, damit kein alter Stand einen späteren Klick schluckt.
+  // A click elsewhere ends editing — but it shouldn't also open the card.
+  // Until `mousedown` completes, focus hasn't yet left the field; this
+  // tracks whether editing was in progress. Every `mousedown` resets the
+  // flag so no stale state swallows a later click.
   const wasEditing = useRef(false);
 
   const project = projects.find((p) => p.id === issue.project) ??
@@ -111,9 +112,9 @@ export function BoardCard({
     .map((lid) => labels.find((x) => x.id === lid) ?? null)
     .filter((l): l is LabelType => l !== null);
 
-  // Die Labels bleiben auf einer Zeile — was nicht mehr danebenpasst, steht als
-  // Zahl am Ende. Eine feste Obergrenze täte es nicht: ob drei Labels passen,
-  // hängt an ihren Namen und an der Breite der Spalte, die sich ziehen lässt.
+  // The labels stay on one line — whatever no longer fits shows as a number
+  // at the end. A fixed cap wouldn't do: whether three labels fit depends
+  // on their names and on the column's width, which is resizable.
   const { ref: labelRow, fit } = useRowFit(
     issueLabels.length,
     issueLabels.map((l) => l.name).join("|"),
@@ -127,14 +128,14 @@ export function BoardCard({
       className={`${styles.card}${isDragging ? ` ${styles.dragging}` : ""}`}
       role="button"
       tabIndex={0}
-      // Dieselbe Sprache wie die Zeilen der Liste (`Table`): der Zustand steht
-      // im Attribut, das Aussehen im Stylesheet.
+      // Same convention as the list's rows (`Table`): state lives in the
+      // attribute, appearance in the stylesheet.
       data-active={isActive || undefined}
       aria-current={isActive || undefined}
-      // Beim Schreiben nicht: ein ziehbarer Vorfahr nimmt dem Feld sonst das
-      // Markieren mit der Maus weg. Ohne issue.update.any/.own auch nicht —
-      // Ziehen ändert den Status (`moveIssue`/`reorderIssue`), den der Server
-      // ohne diese Rechte ablehnt.
+      // Not while editing: a draggable ancestor would otherwise steal mouse
+      // text selection from the field. Not without issue.update.any/.own
+      // either — dragging changes the status (`moveIssue`/`reorderIssue`),
+      // which the server rejects without those permissions.
       draggable={!isEditing && issue.access.canEdit}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -150,8 +151,8 @@ export function BoardCard({
         if (isBrowserClick(e)) onOpenInNewTab?.();
         else onOpen?.();
       }}
-      // Die mittlere Maustaste meldet sich nicht über `onClick`. Ohne
-      // `preventDefault` schaltet sie außerdem den Auto-Scroll ein.
+      // The middle mouse button doesn't fire `onClick`. Without
+      // `preventDefault` it would also trigger auto-scroll.
       onAuxClick={(e) => {
         if (e.button !== 1) return;
         e.preventDefault();
@@ -159,8 +160,8 @@ export function BoardCard({
       }}
       onKeyDown={onActivate(() => onOpen?.())}
     >
-      {/* Woher die Aufgabe kommt, steht über allem anderen — eine eigene Zeile,
-        bevor Typ und Titel sagen, was sie ist. */}
+      {/* Where the task comes from is shown above everything else — its own
+        line, before type and title say what it is. */}
       {showProject && (
         <span className={styles.project} title={project.name}>
           <span
@@ -171,9 +172,9 @@ export function BoardCard({
         </span>
       )}
 
-      {/* Kopfzeile: Typ-Badge + Assignee. Der Avatar ist zugleich der Auslöser
-        für die Zuweisung — sie zu ändern, ist der häufigste Griff an einer
-        Karte, und dafür soll sie sich nicht erst öffnen müssen. */}
+      {/* Header row: type badge + assignee. The avatar is also the trigger
+        for reassignment — changing it is the most frequent action on a
+        card, and it shouldn't require opening the card first. */}
       <div className={styles.header}>
         {typeLabel && typeColor && (
           <Label color={typeColor} filled hasIcon size="xs">
@@ -195,13 +196,13 @@ export function BoardCard({
           onDone={() => setIsEditing(false)}
         />
       ) : (
-        // Der Stift liegt über dem Titel und wird an dessen gemessenes Ende
-        // gesetzt: hinter das letzte Wort, und wo dort kein Platz mehr ist, auf
-        // das Zeilenende. Im Textfluss stehen kann er nicht — die Begrenzung auf
-        // drei Zeilen schnitte ihn bei langen Titeln mit ab.
+        // The pencil icon overlays the title and is positioned at its
+        // measured end: right after the last word, or at the line end where
+        // there's no room left. It can't sit inline in the text flow — the
+        // three-line clamp would cut it off along with long titles.
         //
-        // Ohne issue.update.any/.own bleibt der Stift ganz weg: der Server
-        // lehnt den Patch ohnehin ab (`updateIssue`).
+        // Without issue.update.any/.own the pencil is left out entirely:
+        // the server would reject the patch anyway (`updateIssue`).
         <div className={styles.titleRow}>
           <p className={styles.title} ref={titleRef}>
             {title}
@@ -238,9 +239,9 @@ export function BoardCard({
               {l.name}
             </Label>
           ))}
-          {/* Im Messdurchgang (`fit === null`) steht der Zähler mit der größten
-              möglichen Zahl da, damit seine Breite in die Rechnung eingeht —
-              gesehen wird er dabei nicht. */}
+          {/* During the measuring pass (`fit === null`) the counter shows the
+              largest possible number, so its width is factored into the
+              calculation — it isn't actually seen during that pass. */}
           {(fit === null || restLabels > 0) && (
             <Label
               size="xs"
@@ -260,7 +261,7 @@ export function BoardCard({
         </div>
       )}
 
-      {/* Meta: Priorität + Identifier | Zeit + Kommentare */}
+      {/* Meta: priority + identifier | time + comments */}
       <div className={styles.footer}>
         <PriorityIcon priority={issue.priority} size={14} />
         <span className={styles.id}>{identifier}</span>

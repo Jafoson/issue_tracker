@@ -21,7 +21,7 @@ import { fullName } from "@/lib/utils/string";
 import styles from "./projectProfileView.module.scss";
 
 interface Props {
-  /** Name, Farbe und Id stehen in der Kopfkarte bzw. brauchen den Label-Dialog. */
+  /** Name, color, and id are used in the header card, or needed by the label dialog. */
   project: {
     id: string;
     name: string;
@@ -31,53 +31,55 @@ interface Props {
   workspaceId: string;
   profile: ProjectProfile;
   stats: DashboardStats;
-  /** Adressen der Nachbarbereiche — die Kachelreihe unten verlinkt sie. */
+  /** Addresses of the neighboring areas — the tile row below links to them. */
   links: {
     board: string;
     list: string;
     members: string;
     settings: string;
-    /** Die Teamverwaltung liegt eine Ebene höher — Teams gehören dem Workspace. */
+    /** Team management lives one level up — teams belong to the workspace. */
     teams: string;
-    /** Die volle, filterbare Liste — die Karte unten zeigt nur einen Ausschnitt. */
+    /** The full, filterable list — the card below shows only an excerpt. */
     activity: string;
   };
-  /** Ausschnitt des Aktivitäts-Protokolls — ohne `audit.view` schon auf die
-   * eigenen Einträge gefiltert (`getProjectActivity`). */
+  /** Excerpt of the activity log — without `audit.view` already filtered to
+   * your own entries (`getProjectActivity`). */
   activity: ActivityView;
 }
 
 interface CardProps {
   title: string;
-  /** Zahl neben der Überschrift, wo die Karte eine Liste zeigt. */
+  /** Number next to the heading, where the card shows a list. */
   count?: number;
   /**
-   * Nichts drin. Die Karte wechselt dann von der gefüllten in die gestrichelte
-   * Form — sie sagt „hier ist Platz" statt „hier fehlt etwas". Ein grauer Satz
-   * in einem ansonsten normalen Kasten liest sich wie ein Ladefehler.
+   * Nothing inside. The card then switches from the filled to the dashed
+   * form — it says "there's room here" instead of "something's missing
+   * here". A gray sentence in an otherwise normal box reads like a loading
+   * error.
    */
   empty?: boolean;
-  /** Gestrichelter Rahmen unabhängig vom Inhalt — für Listen-Cards, die immer
-   * so aussehen sollen, nicht nur wenn sie leer sind (wie im Workspace-Steckbrief). */
+  /** Dashed border regardless of content — for list cards that should
+   * always look this way, not only when empty (as in the workspace
+   * profile card). */
   dashed?: boolean;
   /**
-   * Für die Mitgliederkarte: der Inhalt scrollt in sich selbst, statt die
-   * Karte (und mit ihr die ganze Seite) beliebig in die Länge zu ziehen — bei
-   * vielen Mitgliedern bleiben Titel und „Alle Mitglieder" so erreichbar, ohne
-   * dass man sich erst an ihnen vorbeischrollen muss.
+   * For the members card: the content scrolls within itself instead of
+   * stretching the card (and with it the whole page) arbitrarily long — with
+   * many members, the title and "all members" stay reachable this way,
+   * without having to scroll past them first.
    */
   scrollBody?: boolean;
   /**
-   * Für die Aktivitäts-Karte: sie nimmt sich den Platz, der nach Kopfkarte,
-   * Eckdaten und Teams/Labels in `.main` noch übrig ist, statt mit ihrem
-   * Inhalt zu wachsen — genau die Rolle, die `align-items: stretch` in
-   * `.side` für die Mitgliederkarte schon automatisch übernimmt. `.main` ist
-   * aber eine Flex-Spalte ohne fremdbestimmte Höhe, deshalb hier ausdrücklich.
-   * Ergibt nur zusammen mit `scrollBody` Sinn: sonst wüchse die Karte selbst
-   * immer weiter mit ihrem Inhalt.
+   * For the activity card: it claims whatever space is left over in `.main`
+   * after the header card, key facts, and teams/labels, instead of growing
+   * with its content — exactly the role `align-items: stretch` in `.side`
+   * already handles automatically for the members card. But `.main` is a
+   * flex column with no externally determined height, hence explicit here.
+   * Only makes sense together with `scrollBody`: otherwise the card itself
+   * would just keep growing with its content.
    */
   grow?: boolean;
-  /** Knopf oben rechts neben Titel und Zahl, z. B. zum Anlegen oder Verwalten. */
+  /** Button top-right next to title and count, e.g. to create or manage. */
   action?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
@@ -116,10 +118,11 @@ function Card({
       data-scroll={scrollBody || undefined}
       data-grow={grow || undefined}
     >
-      {/* Scrollt als Ganzes (Kopf, Liste, Fuß) statt nur die Zeilen dazwischen
-          — sonst deckt der Scrollbalken nicht die ganze Höhe der Karte ab.
-          Kopf und Fuß bleiben trotzdem stehen: `position: sticky`, siehe
-          `.card[data-scroll] .cardHead`/`.cardLink` im Stylesheet. */}
+      {/* Scrolls as a whole (header, list, footer) instead of just the rows
+          in between — otherwise the scrollbar wouldn't cover the card's
+          full height. Header and footer still stay in place:
+          `position: sticky`, see `.card[data-scroll] .cardHead`/`.cardLink`
+          in the stylesheet. */}
       {scrollBody ? (
         <div className={styles.cardScroll}>{content}</div>
       ) : (
@@ -130,31 +133,31 @@ function Card({
 }
 
 /**
- * Der Steckbrief des Projekts: was es ist, wem es gehört, woraus es besteht.
+ * The project's profile card: what it is, who owns it, what it consists of.
  *
- * Die Gegenansicht zum Dashboard, und bewusst eine andere Art von Auskunft.
- * Das Dashboard beantwortet „wie läuft es gerade" und ändert sich stündlich;
- * hier steht, was auch nächsten Monat noch gilt — Zweck, Kürzel, Leitung,
- * Zugriff. Deshalb trägt diese Ansicht auch keinen Zeitraum: ein Kürzel hat
- * keine 30 Tage.
+ * The counterpart view to the dashboard, and deliberately a different kind
+ * of information. The dashboard answers "how's it doing right now" and
+ * changes hourly; this shows what still holds next month too — purpose,
+ * prefix, leadership, access. That's why this view has no time period
+ * either: a prefix doesn't have 30 days.
  *
- * ── Vier Ebenen, vier Darstellungen ──
+ * ── Four tiers, four presentations ──
  *
- * Sechs gleich aussehende Kästen untereinander sind keine Übersicht, sondern
- * eine Liste, in der alles gleich wichtig aussieht. Die Seite staffelt deshalb:
+ * Six identical-looking boxes stacked up aren't an overview, they're a list
+ * where everything looks equally important. So the page tiers instead:
  *
- *   1. Wer bin ich: die **Kopfkarte** mit dem Zeichen des Projekts, seinem Namen
- *      und seinem Zweck — größerer Radius, mehr Polster, der Einstieg.
- *   2. Die Eckdaten als **eine umrandete Leiste** mit Trennstrichen. Vier
- *      einzelne Kästen wären vier Dinge; es ist aber eine Zeile Stammdaten.
- *   3. Wer und Womit als **gefüllte Karten**, die sich die Breite teilen. Was
- *      leer ist, wird gestrichelt statt gefüllt.
- *   4. Die Wege hinaus als **umrandete Kacheln** ganz unten — sie führen weg von
- *      dieser Seite und gehören deshalb ans Ende, nicht dazwischen.
+ *   1. Who am I: the **header card** with the project's icon, its name, and
+ *      its purpose — larger radius, more padding, the entry point.
+ *   2. The key facts as **one bordered strip** with dividers. Four separate
+ *      boxes would be four things; but it's one row of metadata.
+ *   3. Who and what as **filled cards** sharing the width. Whatever's empty
+ *      turns dashed instead of filled.
+ *   4. The ways out as **bordered tiles** at the very bottom — they lead
+ *      away from this page and therefore belong at the end, not in between.
  *
- * Sie ist nicht anpassbar. Ein Steckbrief mit abschaltbaren Feldern wäre kein
- * Steckbrief mehr — man schlägt ihn gerade deshalb nach, weil immer dasselbe
- * darin steht.
+ * It isn't customizable. A profile card with toggleable fields wouldn't be
+ * a profile card anymore — you look one up precisely because it always
+ * contains the same thing.
  */
 export function ProjectProfileView({
   project,
@@ -192,7 +195,7 @@ export function ProjectProfileView({
       key: "prefix",
       icon: "lucide:hash",
       label: t("fields.prefix"),
-      // Das Kürzel in der Schrift, in der es auch an den Aufgaben steht.
+      // The prefix in the same font it also appears in on the issues.
       value: <code className={styles.mono}>{profile.prefix}</code>,
     },
     {
@@ -208,8 +211,8 @@ export function ProjectProfileView({
       icon: "lucide:calendar",
       label: t("fields.created"),
       value: created,
-      // Wer es angelegt hat, steht klein darunter statt im selben Satz: das
-      // Datum ist die Auskunft, der Name die Fußnote dazu.
+      // Who created it appears small underneath instead of in the same
+      // sentence: the date is the information, the name its footnote.
       meta: profile.createdBy ? fullName(profile.createdBy) : undefined,
     },
     {
@@ -221,14 +224,13 @@ export function ProjectProfileView({
     },
   ];
 
-  // Zeichen und Beschriftung sind dieselben wie in der Seitenleiste
-  // (`PROJECT_NAV`) — ein Bereich soll nicht davon abhängen, durch welche Tür
-  // man ihn betritt. Die Adressen baut die Seite, weil nur sie den Workspace
-  // kennt.
+  // Icon and label are the same as in the sidebar (`PROJECT_NAV`) — an
+  // area shouldn't depend on which door you enter through. The page builds
+  // the addresses, because only it knows the workspace.
   //
-  // Ohne canViewSettings bliebe die Kachel sonst die einzige Tür zu den
-  // Einstellungen, obwohl derselbe Tab in der Seitenleiste (`PROJECT_NAV`)
-  // längst ausgeblendet ist.
+  // Without canViewSettings, this tile would otherwise remain the only door
+  // to settings, even though the same tab in the sidebar (`PROJECT_NAV`) is
+  // already hidden.
   const shortcuts = (
     [
       { key: "board", icon: "lucide:square-kanban", href: links.board },
@@ -238,26 +240,27 @@ export function ProjectProfileView({
     ] as const
   ).filter((s) => s.key !== "settings" || profile.canViewSettings);
 
-  // Zwei Arten, eine Rolle zu zeigen — die Gruppen kommen fertig sortiert vom
-  // Server, hier wird nur getrennt, wer einzeln genannt wird und wer in der
-  // Liste steht.
+  // Two ways to show a role — the groups arrive pre-sorted from the
+  // server, here they're just split into who's called out individually and
+  // who appears in the list.
   const named = profile.roles.filter((role) => role.distinguished);
   const rest = profile.roles.filter((role) => !role.distinguished);
 
   return (
     <div className={styles.page}>
-      {/* Alles, was das Projekt selbst beschreibt, steht in einer Spalte —
-          erst wer es ist, dann seine Eckdaten, dann womit gearbeitet wird. Die
-          Mitglieder stehen daneben (`.side`) und lesen sich als eigene Spalte;
-          im Dokument kommen sie danach, damit Auge und Vorleser dieselbe
-          Reihenfolge bekommen. */}
+      {/* Everything that describes the project itself sits in one column —
+          first who it is, then its key facts, then what it's worked with.
+          The members sit next to it (`.side`) and read as their own column;
+          in the document they come after, so the eye and a screen reader
+          get the same order. */}
       <div className={styles.main}>
-        {/* ── 1. Wer bin ich ── */}
+        {/* ── 1. Who am I ── */}
         <header className={styles.hero}>
-          {/* Dasselbe Zeichen, mit dem die App das Projekt überall meint — nur
-            groß. `Avatar` bringt Form, Rundung und die Schriftfarbe mit, die
-            zur Projektfarbe passt; nachgebaut wäre das eine zweite Rechnung,
-            die bei einer hellen Farbe still falsch würde. */}
+          {/* The same icon the app uses to represent the project everywhere
+            — just large. `Avatar` brings shape, rounding, and the text
+            color that matches the project color; rebuilding that would be
+            a second calculation that would silently go wrong for a light
+            color. */}
           <Avatar
             avatar={{
               name: project.name,
@@ -274,11 +277,11 @@ export function ProjectProfileView({
               <p className={styles.desc}>{profile.desc}</p>
             ) : (
               profile.canUpdate && (
-                // Nur der Platzhalter, kein zweiter Weg zum Ändern: der steht
-                // als „Bearbeiten" schon am rechten Rand derselben Karte. Ohne
-                // dieses Recht gibt es dort keinen Knopf — der Platzhalter
-                // lädt dann zu nichts ein und bleibt weg, es steht nur der
-                // Name.
+                // Only the placeholder, no second way to change it: that
+                // already exists as "edit" at the right edge of the same
+                // card. Without this permission there's no button there —
+                // the placeholder would then invite an action that doesn't
+                // exist, so it's left out and only the name is shown.
                 <p className={styles.descEmpty}>
                   {t("dashboard.noDescription")}
                 </p>
@@ -286,9 +289,9 @@ export function ProjectProfileView({
             )}
           </div>
 
-          {/* Ein Link und kein Knopf: die Einstellungen haben eine eigene
-              Adresse, und ein Link lässt sich in einem neuen Reiter öffnen.
-              Aussehen wie ein Knopf, Verhalten wie ein Link. */}
+          {/* A link, not a button: settings has its own address, and a
+              link can be opened in a new tab. Looks like a button, behaves
+              like a link. */}
           {profile.canUpdate && (
             <Link href={links.settings} className={styles.heroEdit}>
               <Icon icon="lucide:pencil" width={14} />
@@ -297,7 +300,7 @@ export function ProjectProfileView({
           )}
         </header>
 
-        {/* ── 2. Die Eckdaten ── */}
+        {/* ── 2. The key facts ── */}
         <dl className={styles.facts}>
           {facts.map((fact) => (
             <div key={fact.key} className={styles.fact}>
@@ -315,7 +318,7 @@ export function ProjectProfileView({
           ))}
         </dl>
 
-        {/* ── 3. Wer, und womit ── */}
+        {/* ── 3. Who, and with what ── */}
         <div className={styles.columns}>
           <Card
             title={t("nav.teams")}
@@ -323,9 +326,9 @@ export function ProjectProfileView({
             empty={profile.teams.length === 0}
             dashed
             action={
-              // Teams gehören dem Workspace — verwaltet werden sie also dort,
-              // nicht im Projekt. Der Pfeil sagt das: er führt hinaus, ist
-              // aber kein Anlegen-Knopf wie bei Labels.
+              // Teams belong to the workspace — they're managed there, not
+              // in the project. The arrow reflects that: it leads away,
+              // but it isn't a create button like the one for labels.
               profile.canManageTeams && (
                 <Link
                   href={links.teams}
@@ -388,11 +391,11 @@ export function ProjectProfileView({
               <ul className={styles.rows}>
                 {profile.labels.map((label) => (
                   <li key={label.id}>
-                    {/* Ein Klick filtert das Board auf genau dieses Label —
-                        dieselbe Sprache wie überall: die URL trägt den Slug,
-                        nicht die Id (`lib/filter-slugs.ts`). Derselbe
-                        Unterschied wie in den Label-Einstellungen (eigen/
-                        geteilt) steht weiterhin im Titel-Tooltip. */}
+                    {/* A click filters the board to exactly this label —
+                        the same convention as everywhere: the URL carries
+                        the slug, not the id (`lib/filter-slugs.ts`). The
+                        same own/shared distinction as in the label settings
+                        still appears in the title tooltip. */}
                     <Link
                       href={`${links.board}?label=${label.slug}`}
                       className={`${styles.row} ${styles.rowLink}`}
@@ -421,10 +424,10 @@ export function ProjectProfileView({
           </Card>
         </div>
 
-        {/* ── Aktivität ── Wer hat wann was getan: Mitglieder, Issues, Labels.
-            Immer sichtbar, aber ohne `audit.view` schon serverseitig auf die
-            eigenen Einträge gefiltert (`getProjectActivity`) — kein
-            Berechtigungs-Gate hier, nur ein anderer Ausschnitt. */}
+        {/* ── Activity ── Who did what and when: members, issues, labels.
+            Always visible, but without `audit.view` already filtered
+            server-side to your own entries (`getProjectActivity`) — no
+            permission gate here, just a different excerpt. */}
         <Card
           title={t("nav.activity")}
           count={activity.entries.length}
@@ -452,7 +455,7 @@ export function ProjectProfileView({
         </Card>
       </div>
 
-      {/* Die Mitglieder als eigene Spalte rechts. */}
+      {/* Members as their own column on the right. */}
       <aside className={styles.side}>
         <Card
           title={t("nav.members")}
@@ -472,11 +475,12 @@ export function ProjectProfileView({
             t("dashboard.noMembers")
           ) : (
             <>
-              {/* Wer mehr trägt als die Mitarbeit, steht einzeln: Zeichen,
-                  Name, Adresse — und das Chip mit dem Namen seiner Rolle. Es
-                  steht neben dem Namen und nicht am rechten Kartenrand: es sagt
-                  etwas über *diese* Person, und über eine halbe Kartenbreite
-                  Abstand hinweg wäre der Bezug erst zu suchen. */}
+              {/* Anyone carrying more than just contributor status appears
+                  individually: avatar, name, address — and the chip with
+                  their role's name. It sits next to the name and not at
+                  the right edge of the card: it says something about
+                  *this* person, and across half a card's width of distance
+                  the connection would have to be searched for. */}
               {named.length > 0 && (
                 <ul className={styles.people}>
                   {named.flatMap((role) =>
@@ -506,10 +510,10 @@ export function ProjectProfileView({
                 </ul>
               )}
 
-              {/* Alle übrigen je Rolle als senkrechte Liste. Die Überschrift
-                  trägt den Rollennamen und macht das Chip je Zeile überflüssig —
-                  zehnmal „Contributor" untereinander wäre eine Spalte aus
-                  demselben Wort. */}
+              {/* All remaining ones per role as a vertical list. The
+                  heading carries the role name and makes a chip per row
+                  unnecessary — ten instances of "Contributor" stacked up
+                  would be a column of the same word. */}
               {rest.map((role) => (
                 <div key={role.key} className={styles.roleBlock}>
                   <span className={styles.subLabel}>
@@ -533,7 +537,7 @@ export function ProjectProfileView({
         </Card>
       </aside>
 
-      {/* ── 4. Die Wege hinaus ── */}
+      {/* ── 4. The ways out ── */}
       <nav className={styles.next} aria-label={t("dashboard.goOn")}>
         <span className={styles.subLabel}>{t("dashboard.goOn")}</span>
         <ul className={styles.tiles}>

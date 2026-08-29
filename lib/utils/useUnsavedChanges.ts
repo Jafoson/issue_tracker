@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 /**
- * Hält den Benutzer auf der Seite, solange etwas Ungespeichertes offen ist.
+ * Keeps the user on the page as long as something unsaved is open.
  *
  * ```tsx
  * const confirm = useConfirm()
@@ -13,30 +13,29 @@ import { useEffect, useRef } from "react";
  * )
  * ```
  *
- * Drei Wege führen von einer Seite weg, und jeder verlangt seine eigene Bremse:
+ * Three paths lead away from a page, and each needs its own brake:
  *
- *   1. **Das Dokument verlassen** — neu laden, Tab schließen, fremde Adresse.
- *      Dafür gibt es nur `beforeunload`; der Text des Dialogs gehört dem
- *      Browser, `confirmLeave` kommt hier nicht zum Zug.
- *   2. **Ein Link in der Anwendung.** Der Klick wird in der Capture-Phase
- *      abgefangen, bevor der Router ihn sieht; erst nach einem Ja navigiert der
- *      Router selbst.
- *   3. **Zurück und Vorwärts.** Ein Rückwärtsschritt lässt sich nicht
- *      aufhalten, nur beantworten — deshalb liegt ab der ersten Änderung eine
- *      Kopie des aktuellen Eintrags auf dem Verlaufsstapel. Der erste
- *      Rückwärtsschritt verbraucht die Kopie und landet wieder hier; erst nach
- *      einem Ja geht es wirklich zurück.
+ *   1. **Leaving the document** — reload, close the tab, an external URL.
+ *      Only `beforeunload` exists for this; the dialog's text belongs to
+ *      the browser, `confirmLeave` never gets a say here.
+ *   2. **A link within the app.** The click is intercepted in the capture
+ *      phase, before the router sees it; only after a yes does the router
+ *      itself navigate.
+ *   3. **Back and forward.** A back step can't be stopped, only answered
+ *      after the fact — that's why, from the first change on, a copy of
+ *      the current entry sits on the history stack. The first back step
+ *      consumes the copy and lands right back here; only after a yes does
+ *      it actually go back.
  *
- * Die Kopie bleibt nach dem Speichern liegen — sie wieder abzuräumen hieße, den
- * Verlauf zu bewegen, und das ist von hier aus nicht sicher von einer echten
- * Navigation zu unterscheiden. Der Preis ist ein Rückwärtsschritt, der einmal
- * nichts tut; ihn zu sparen wäre den Preis nicht wert, versehentlich eine
- * fremde Navigation rückgängig zu machen.
+ * The copy is left in place after saving — cleaning it up again would mean
+ * moving the history, and from here that can't reliably be told apart from
+ * a real navigation. The price is one back step that does nothing once;
+ * saving that step wouldn't be worth the risk of accidentally undoing
+ * someone else's navigation.
  *
- * `confirmLeave` beantwortet „wirklich verlassen?" mit `true`/`false`. Die
- * ungespeicherten Änderungen selbst räumt der Aufrufer nicht auf: die Seite
- * verschwindet ohnehin, und beim nächsten Aufruf steht wieder der Stand des
- * Servers da.
+ * `confirmLeave` answers "really leave?" with `true`/`false`. The caller
+ * doesn't clean up the unsaved changes itself: the page disappears anyway,
+ * and the next visit shows the server's state again.
  */
 export function useUnsavedChanges(
   dirty: boolean,
@@ -44,19 +43,20 @@ export function useUnsavedChanges(
 ) {
   const router = useRouter();
 
-  // Die Listener hängen über die ganze Lebensdauer und lesen den Stand hier
-  // heraus — sonst hinge an jeder einzelnen Änderung ein Ab- und Anmelden.
+  // The listeners are attached for the whole lifetime and read the current
+  // state out of here — otherwise every single change would need its own
+  // unregister-and-reregister.
   const state = useRef({ dirty, confirmLeave });
   useEffect(() => {
     state.current = { dirty, confirmLeave };
   });
 
-  // Gesetzt, während wir selbst den Verlauf bewegen (Punkt 3). Eine schon
-  // beantwortete Frage darf nicht ein zweites Mal gestellt werden — weder von
-  // uns noch vom Browser.
+  // Set while we're moving the history ourselves (point 3). A question
+  // that's already been answered must not be asked a second time — neither
+  // by us nor by the browser.
   const leaving = useRef(false);
 
-  // ── 1. Das Dokument verlassen ──────────────────────────────────────────────
+  // ── 1. Leaving the document ────────────────────────────────────────────────
   useEffect(() => {
     if (!dirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -67,12 +67,12 @@ export function useUnsavedChanges(
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  // ── 2. Links in der Anwendung ──────────────────────────────────────────────
+  // ── 2. Links within the app ─────────────────────────────────────────────────
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
       if (!state.current.dirty) return;
-      // Mittelklick, ⌘/Strg/Umschalt/Alt: der Browser öffnet dann einen neuen
-      // Tab oder ein neues Fenster — diese Seite bleibt stehen.
+      // Middle click, ⌘/Ctrl/Shift/Alt: the browser then opens a new tab
+      // or a new window — this page stays as it is.
       if (event.button !== 0 || event.defaultPrevented) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
         return;
@@ -85,15 +85,16 @@ export function useUnsavedChanges(
       if (anchor.hasAttribute("download")) return;
 
       const url = new URL(anchor.href, location.href);
-      // Fremde Herkunft heißt: das Dokument wird verlassen, und dafür ist schon
-      // `beforeunload` zuständig. Dieselbe Adresse ist keine Navigation.
+      // A different origin means: the document is being left, and
+      // `beforeunload` already handles that. The same URL isn't a
+      // navigation at all.
       if (url.origin !== location.origin) return;
       if (url.href === location.href) return;
 
       event.preventDefault();
-      // Auch die übrigen Zuhörer auf dem Dokument sollen den Klick nicht mehr
-      // sehen: die Navigation ist abgesagt, nicht verschoben. Erst nach der
-      // Antwort geht es weiter — und dann über den Router.
+      // The other listeners on the document shouldn't see this click
+      // either: the navigation is cancelled, not deferred. Only after the
+      // answer does it proceed — and then through the router.
       event.stopImmediatePropagation();
 
       void state.current.confirmLeave().then((leave) => {
@@ -105,11 +106,11 @@ export function useUnsavedChanges(
     return () => document.removeEventListener("click", onClick, true);
   }, [router]);
 
-  // ── 3. Zurück und Vorwärts ─────────────────────────────────────────────────
+  // ── 3. Back and forward ──────────────────────────────────────────────────────
 
-  // Die Kopie wird einmal je Aufenthalt gelegt, nicht bei jedem Wechsel von
-  // „sauber" zu „geändert" — sonst wüchse der Verlauf mit jedem Klick in der
-  // Matrix um einen toten Eintrag.
+  // The copy is placed once per visit, not on every switch from "clean" to
+  // "changed" — otherwise the history would grow a dead entry with every
+  // click in the matrix.
   const copied = useRef(false);
 
   useEffect(() => {
@@ -120,7 +121,7 @@ export function useUnsavedChanges(
 
   useEffect(() => {
     const onPopState = () => {
-      // Der Schritt kommt von uns selbst — die Frage ist längst beantwortet.
+      // This step came from us — the question has long since been answered.
       if (leaving.current) {
         leaving.current = false;
         return;
@@ -128,9 +129,9 @@ export function useUnsavedChanges(
       if (!state.current.dirty) return;
 
       void state.current.confirmLeave().then((leave) => {
-        // Die Kopie ist mit dem Rückwärtsschritt verbraucht: entweder geht es
-        // jetzt eine Stelle weiter zurück — dort liegt die Seite, die der
-        // Benutzer wollte — oder eine neue Kopie tritt an ihre Stelle.
+        // The copy is consumed by the back step: either it now goes one
+        // step further back — where the page the user actually wanted
+        // lives — or a new copy takes its place.
         if (leave) {
           leaving.current = true;
           history.back();

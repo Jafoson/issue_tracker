@@ -33,8 +33,8 @@ const columns: TableColumn<Row>[] = [
     sortValue: (row) => row.lead,
     cell: (row) => <span>{row.lead}</span>,
   },
-  // Ohne `sortValue` bleibt der Kopf ein Titel — die Gegenprobe zu allem
-  // darüber.
+  // Without `sortValue`, the header stays a plain title — the control case
+  // for everything above.
   { id: "actions", header: "", cell: () => null },
 ];
 
@@ -45,10 +45,10 @@ const rows: Row[] = [
 ];
 
 /**
- * Der Hook hält Zustand, entsteht also nur in einer Komponente. Geprüft wird die
- * Ausgangsansicht: die Reihenfolge im Markup und was der Kopf über sie sagt.
- * Klicks hängen erst im Browser daran — die Stufen dahinter prüft
- * `nextSortState` direkt.
+ * The hook holds state, so it only comes together inside a component. What's
+ * checked is the initial view: the order in the markup and what the header
+ * says about it. Click handlers only attach in the browser — the states
+ * behind them are checked directly via `nextSortState`.
  */
 const render = (options?: TableSortOptions, withSort = true) => {
   const Fixture = () => {
@@ -65,7 +65,7 @@ const render = (options?: TableSortOptions, withSort = true) => {
   return renderToStaticMarkup(<Fixture />);
 };
 
-/** Die Namen in der Reihenfolge, in der sie in der Tabelle stehen. */
+/** The names in the order they appear in the table. */
 const order = (markup: string) =>
   [...markup.matchAll(/>(Alpha|Beta|Gamma)</g)].map((match) => match[1]);
 
@@ -84,7 +84,7 @@ describe("Table ohne sort", () => {
 describe("Table mit sort", () => {
   test("macht nur Spalten mit sortValue anklickbar", () => {
     const markup = render();
-    // Drei sortierbare Spalten, die Aktionsspalte bleibt außen vor.
+    // Three sortable columns, the actions column stays out of it.
     expect(markup.match(/<button/g)).toHaveLength(3);
     expect(markup.match(/aria-sort="none"/g)).toHaveLength(3);
   });
@@ -115,7 +115,7 @@ describe("Sortieren", () => {
   });
 
   test("ordnet Zahlen der Größe nach, nicht als Text", () => {
-    // Als Text stünde 10 vor 2.
+    // As text, 10 would sort before 2.
     expect(order(render({ columnId: "issues" }))).toEqual([
       "Alpha",
       "Gamma",
@@ -124,15 +124,15 @@ describe("Sortieren", () => {
   });
 
   test("hält gleiche Werte in ihrer Grundordnung", () => {
-    // Alpha und Gamma haben beide zwei Aufgaben und stehen in der Reihenfolge,
-    // in der sie hereinkamen.
+    // Alpha and Gamma both have two issues and appear in the order they
+    // came in.
     const sorted = order(render({ columnId: "issues" }));
     expect(sorted.indexOf("Alpha")).toBeLessThan(sorted.indexOf("Gamma"));
   });
 
   test("stellt Leeres ans Ende — in beide Richtungen", () => {
-    // Alpha hat keinen Lead: „nichts" ist kein kleiner Wert, sondern ein
-    // fehlender, und gehört deshalb nie an den Anfang.
+    // Alpha has no lead: "nothing" isn't a small value, it's a missing one,
+    // and therefore never belongs at the start.
     expect(order(render({ columnId: "lead" })).at(-1)).toBe("Alpha");
     expect(order(render({ columnId: "lead", direction: "desc" })).at(-1)).toBe(
       "Alpha",

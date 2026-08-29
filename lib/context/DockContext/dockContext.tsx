@@ -5,29 +5,29 @@ import { useHasOpenModal } from "../ModalContext/modalContext";
 import styles from "./dockContext.module.scss";
 
 /**
- * Das Dock ist der Platz für ein Panel, das **neben** der Seite steht statt
- * über ihr: die Issue-Detailansicht an der rechten Kante.
+ * The dock is the place for a panel that sits **next to** the page instead
+ * of over it: the issue detail view at the right edge.
  *
- * Der Unterschied zum Modal ist keiner der Optik, sondern des Layouts. Das
- * Modal liegt in einem Portal auf `document.body` und deckt zu, was darunter
- * liegt. Das Dock ist ein echtes Element der App-Hülle — die Seite daneben
- * bekommt entsprechend weniger Breite und ordnet sich neu. Deshalb gibt es
- * hier auch keinen Backdrop: es gibt kein „außerhalb", auf das man klicken
- * könnte, und ein Klick in die Seite bleibt ein Klick in die Seite.
+ * The difference from a modal isn't visual, it's layout. The modal lives in
+ * a portal on `document.body` and covers whatever's underneath. The dock is
+ * a real element of the app shell — the page next to it shrinks accordingly
+ * and reflows. That's also why there's no backdrop here: there's no
+ * "outside" to click on, and a click into the page stays a click into the
+ * page.
  *
- * Damit ein Panel, das tief in einer Seite entsteht (`IssuePeek` hängt am
- * URL-Parameter), oben in der Hülle landet, reicht das Dock nur den Knoten
- * heraus. Portiert wird von der aufrufenden Seite aus — so folgen die Contexts
- * weiter dem React-Baum, in dem das Panel gedanklich steht.
+ * So that a panel created deep inside a page (`IssuePeek` hangs off the URL
+ * parameter) can land at the top of the shell, the dock only hands out the
+ * node. Portalling happens from the calling page — that way the contexts
+ * keep following the React tree the panel conceptually belongs to.
  */
 interface DockValue {
-  /** Ziel für `createPortal`. Bis der Outlet montiert ist: `null`. */
+  /** Target for `createPortal`. `null` until the outlet is mounted. */
   node: HTMLElement | null;
 }
 
 const Ctx = createContext<DockValue | null>(null);
 
-/** Nur der Outlet meldet den Knoten an — kein Grund, ihn breiter zu streuen. */
+/** Only the outlet reports the node — no reason to spread it more widely. */
 const SetNodeCtx = createContext<((node: HTMLElement | null) => void) | null>(
   null,
 );
@@ -49,9 +49,9 @@ export function DockProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Der Platz des Docks in der App-Hülle. Gehört als Geschwister neben den
- * Inhaltsbereich, damit dieser schmaler wird, sobald ein Panel darin steht.
- * Solange keines da ist, ist das Element leer und nimmt keine Breite ein.
+ * The dock's place in the app shell. Sits as a sibling next to the content
+ * area, so the latter narrows as soon as a panel is inside it. As long as
+ * none is there, the element is empty and takes up no width.
  */
 export function DockOutlet() {
   const setNode = useContext(SetNodeCtx);
@@ -59,37 +59,36 @@ export function DockOutlet() {
 }
 
 interface DockPanelProps {
-  /** Barrierefreier Name des Bereichs — bitte lokalisiert übergeben. */
+  /** Accessible name of the region — please pass it localized. */
   label: string;
   /**
-   * Hebt das Panel von der Kante in die Mitte, über die ganze Seite. Es ist
-   * dann `position: fixed` und beansprucht im Dock keinen Platz mehr — der
-   * Inhalt daneben bekommt seine Breite zurück, ohne dass jemand sie ihm
-   * zurückgeben müsste.
+   * Lifts the panel from the edge into the center, across the whole page.
+   * It's then `position: fixed` and no longer takes up space in the dock —
+   * the content next to it gets its width back without anyone having to
+   * give it back.
    */
   overlay?: boolean;
-  /** Beschriftung des Backdrops. Nur im Overlay-Zustand von Belang. */
+  /** Label of the backdrop. Only relevant in the overlay state. */
   closeLabel?: string;
   onClose: () => void;
   children: React.ReactNode;
 }
 
 /**
- * Die Hülle eines Panels im Dock — in zwei Ausprägungen, je nachdem, wo es
- * steht.
+ * The shell of a panel in the dock — in two forms, depending on where it
+ * sits.
  *
- * An der Kante ist es kein Dialog: es sperrt nichts aus, deshalb nur ein
- * benannter Bereich (`role="region"`), den man verlassen kann, ohne ihn zu
- * schließen. Ein Klick in die Seite daneben ist ein Klick in die Seite.
+ * At the edge it isn't a dialog: it locks nothing out, so it's just a named
+ * region (`role="region"`) that can be left without being closed. A click
+ * into the page next to it is a click into the page.
  *
- * In der Mitte ist es einer, und dann gelten dessen Regeln vollständig:
- * `role="dialog"` mit `aria-modal`, ein Backdrop, der zudeckt, und ein Klick
- * darauf schließt. Wer ausklappt, erwartet ein Modal — und ein Modal, das man
- * nicht wegklicken kann, fühlt sich kaputt an.
+ * In the center it is one, and then its rules apply in full: `role="dialog"`
+ * with `aria-modal`, a backdrop that covers, and a click on it closes. Whoever
+ * expands it expects a modal — and a modal you can't click away feels broken.
  *
- * In beiden Fällen wandert der Fokus beim Öffnen hinein und beim Schließen
- * dorthin zurück, wo er herkam — sonst stünde man nach dem Schließen am Anfang
- * der Seite. Und Escape schließt.
+ * In both cases, focus moves into it on open and back to where it came from
+ * on close — otherwise you'd end up at the top of the page after closing.
+ * And Escape closes it.
  */
 export function DockPanel({
   label,
@@ -103,7 +102,7 @@ export function DockPanel({
 
   useEffect(() => {
     const panel = ref.current;
-    // Vor dem Fokuswechsel merken, wohin er zurück soll.
+    // Remember where focus should return to, before it moves.
     const trigger = document.activeElement;
     if (panel && !panel.contains(document.activeElement)) panel.focus();
     return () => {
@@ -112,10 +111,11 @@ export function DockPanel({
   }, []);
 
   /**
-   * Escape schließt das Panel — aber nur, wenn es das Oberste ist. Liegt ein
-   * Modal darüber, gehört die Taste ihm. Auf `document` mit Capture, damit
-   * Felder und Menüs im Panel sie vorher am `window` abfangen können (so
-   * verwirft Escape erst die laufende Eingabe, nicht gleich das Ganze).
+   * Escape closes the panel — but only if it's the topmost one. If a modal
+   * sits above it, the key belongs to that modal. Attached to `document`
+   * with capture, so fields and menus inside the panel can intercept it at
+   * the `window` level first (that way Escape discards the current input
+   * first, not the whole thing right away).
    */
   useEffect(() => {
     if (hasOpenModal) return;
@@ -129,23 +129,24 @@ export function DockPanel({
   }, [hasOpenModal, onClose]);
 
   /**
-   * Was der Bereich für die Vorlesesoftware ist, hängt am Zustand. Rolle und
-   * Name stehen zusammen in einem Objekt, weil sie nur gemeinsam gelten:
-   * `aria-modal` gehört zur Dialogrolle, und ein `region` ohne Namen wäre
-   * gar keine.
+   * What the region is for screen readers depends on the state. Role and
+   * name live together in one object because they only make sense
+   * together: `aria-modal` belongs to the dialog role, and a `region`
+   * without a name wouldn't be one at all.
    */
   const semantics = overlay
     ? ({ role: "dialog", "aria-modal": true, "aria-label": label } as const)
     : ({ role: "region", "aria-label": label } as const);
 
-  // Die Hülle steht in beiden Zuständen, nur ihre Rolle im Layout wechselt.
-  // Ohne sie wanderte das Panel beim Ausklappen an eine andere Stelle im Baum
-  // — React baute es dann neu auf, und die Ansicht lüde von vorn.
+  // The shell is present in both states, only its role in the layout
+  // changes. Without it, the panel would move to a different spot in the
+  // tree when expanding — React would then rebuild it from scratch, and the
+  // view would reload from the beginning.
   return (
     <div className={overlay ? styles.overlay : styles.layer}>
-      {/* Der Backdrop ist ein Knopf und keine Fläche mit `onClick`: so ist das
-          Schließen auch ohne Maus erreichbar, und es ist derselbe Aufbau wie
-          im Modal-Stack (`ModalFrame`). */}
+      {/* The backdrop is a button, not a div with `onClick`: this way
+          closing is reachable without a mouse too, and it's the same
+          structure as in the modal stack (`ModalFrame`). */}
       {overlay && (
         <button
           type="button"
@@ -154,9 +155,9 @@ export function DockPanel({
           onClick={onClose}
         />
       )}
-      {/* `tabindex="-1"` macht den Bereich nicht bedienbar, sondern nur
-          programmatisch fokussierbar — der Fokus muss beim Öffnen irgendwo
-          landen. */}
+      {/* `tabindex="-1"` doesn't make the region interactive, only
+          programmatically focusable — focus has to land somewhere on
+          open. */}
       <div ref={ref} className={styles.panel} tabIndex={-1} {...semantics}>
         {children}
       </div>

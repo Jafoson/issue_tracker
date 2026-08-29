@@ -8,11 +8,11 @@ import { Link } from "@/i18n/navigation";
 import styles from "./passkeyNudge.module.scss";
 
 /**
- * Erinnert an einen fehlenden Passkey — pro Sitzung wegklickbar, nicht
- * dauerhaft: der Zustand lebt nur in `useState`, keine Präferenz in der
- * Datenbank. Ein voller Neuladen (oder die nächste Anmeldung) zeigt ihn
- * wieder, solange kein Passkey hinterlegt ist — genau das aktive, aber nicht
- * erzwingende Einfordern, das für diese App gewünscht ist.
+ * Reminds about a missing passkey — dismissible per session, not
+ * permanently: the state lives only in `useState`, no preference in the
+ * database. A full reload (or the next sign-in) shows it again as long as no
+ * passkey is registered — exactly the active but non-forcing nudge this app
+ * wants.
  */
 export function PasskeyNudge({ securityHref }: { securityHref: string }) {
   const t = useTranslations();

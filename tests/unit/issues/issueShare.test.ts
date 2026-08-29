@@ -402,7 +402,7 @@ describe("getIssueByShareToken()", () => {
       id: "c1",
       author: { firstName: "Ada", lastName: "Lovelace" },
     });
-    // Keine Bearbeitungs- oder Zugriffsfelder in der öffentlichen Projektion.
+    // No editing or access-control fields in the public projection.
     expect(result).not.toHaveProperty("access");
   });
 

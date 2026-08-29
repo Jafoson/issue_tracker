@@ -8,37 +8,38 @@ import styles from "./roleCards.module.scss";
 
 interface Props {
   roles: RoleView[];
-  /** Wie viele Permissions es in diesem Scope überhaupt gibt. */
+  /** How many permissions exist at all in this scope. */
   total: number;
   /**
-   * Woraufhin die Trägerzahl gezählt wurde, als fertiger Satz für den Tooltip.
-   * Die Karte zählt nicht selbst — sie sagt nur dazu, worüber.
+   * What the carrier count was tallied against, as a ready-made sentence
+   * for the tooltip. The card doesn't count itself — it just says what over.
    */
   carriersHint: string;
-  /** Rollen, deren Spalte gerade nicht in der Matrix steht. */
+  /** Roles whose column is currently not shown in the matrix. */
   hidden: ReadonlySet<string>;
-  /** Rolle, deren Stammdaten gerade bearbeitet werden. */
+  /** Role whose core data is currently being edited. */
   editingId: string | null;
   onToggle: (roleId: string) => void;
   onEdit: (roleId: string | null) => void;
 }
 
 /**
- * Der Überblick über der Matrix: eine Karte je Rolle — und zugleich der
- * Schalter für ihre Spalte.
+ * The overview above the matrix: one card per role — and at the same time
+ * the toggle for its column.
  *
- * Die Matrix zeigt jede einzelne Entscheidung, aber keine Beschreibung — dafür
- * ist eine Spalte zu schmal. Beides nebeneinander zu legen wäre Wiederholung;
- * hier steht deshalb, *wofür* eine Rolle gedacht ist, dort, was sie konkret darf.
+ * The matrix shows every single decision but no description — a column is
+ * too narrow for that. Putting both side by side would be repetition; so
+ * here is *what* a role is meant for, there what it specifically allows.
  *
- * Ein Klick auf die Karte nimmt die Spalte aus der Matrix und holt sie zurück,
- * wie die Legende eines Diagramms ihre Reihen schaltet. Die Karte bleibt dabei
- * stehen — ausgeblendet ist sie gestrichelt und blass, und sie ist der einzige
- * Weg zurück. Das Bearbeiten hängt am Stift daneben: es betrifft nur die
- * wenigsten Rollen, während sich ausblenden lässt, was immer im Weg steht.
+ * Clicking a card removes the column from the matrix and brings it back,
+ * like a chart's legend toggling its series. The card itself stays put —
+ * hidden, it's dashed and faded, and it's the only way back. Editing hangs
+ * off the pencil icon next to it: it concerns only the fewest roles, while
+ * hiding works for whatever happens to be in the way.
  *
- * Eine Zeile, die quer scrollt statt umzubrechen: so wächst der Überblick in
- * dieselbe Richtung wie die Spalten darunter, und die Höhe bleibt planbar.
+ * A row that scrolls horizontally instead of wrapping: this way the
+ * overview grows in the same direction as the columns below it, and the
+ * height stays predictable.
  */
 export function RoleCards({
   roles,
@@ -68,18 +69,18 @@ export function RoleCards({
             <button
               type="button"
               className={styles.face}
-              // Gedrückt heißt „steht in der Matrix" — der Schalter meint die
-              // Spalte, nicht die Rolle.
+              // Pressed means "is in the matrix" — the toggle refers to the
+              // column, not the role.
               aria-pressed={!off}
               title={off ? t("roles.showColumn") : t("roles.hideColumn")}
               onClick={() => onToggle(role.id)}
             >
               <span className={styles.top}>
-                {/* Kein Zeichen für „geteilt": dass eine Standardrolle nicht
-                    bearbeitet werden kann, sagt schon der ausgegraute Chip und
-                    das Schloss daneben. Projektlokal bleibt: das ist keine
-                    Sperre, sondern die Herkunft einer Rolle, die es nur hier
-                    gibt. */}
+                {/* No marker for "shared": that a default role can't be
+                    edited is already said by the grayed-out chip and the
+                    lock next to it. Project-local stays: that isn't a
+                    restriction, it's the origin of a role that only exists
+                    here. */}
                 <RoleChip
                   name={role.name}
                   rank={role.rank}
@@ -109,8 +110,8 @@ export function RoleCards({
               </span>
             </button>
 
-            {/* Stift und Schloss teilen sich die Ecke — es gibt immer nur eins
-                von beiden. */}
+            {/* Pencil and lock share the corner — there's always only one
+                of the two. */}
             {role.manageable ? (
               <button
                 type="button"

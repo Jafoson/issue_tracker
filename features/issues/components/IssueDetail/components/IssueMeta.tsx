@@ -16,7 +16,7 @@ interface IssueMetaProps {
   layout: IssueDetailLayout;
 }
 
-/** Beschriftete Zeile: Name links, Wert rechts. */
+/** Labeled row: name on the left, value on the right. */
 function Row({
   label,
   children,
@@ -33,12 +33,13 @@ function Row({
 }
 
 /**
- * Herkunft und Zeitstempel des Issues. Nur Anzeige — Projekt und Ersteller
- * stehen fest, die Zeiten schreibt der Server.
+ * The issue's origin and timestamps. Display only — the project and
+ * reporter are fixed, and the server writes the timestamps.
  *
- * In der Spalte bekommt der Block deshalb einen eigenen Abschnittskopf und
- * steht unten, nach allem, was man tatsächlich anfasst. In der Attributspalte
- * schließt er sie ohne Überschrift ab — dort trennt schon die Linie darüber.
+ * In the main column, this block therefore gets its own section header and
+ * sits at the bottom, after everything you can actually interact with. In
+ * the attributes sidebar it closes things out without a heading — the
+ * divider above it already separates it.
  */
 export function IssueMeta({ issue, data, layout }: IssueMetaProps) {
   const { members, projects } = data;

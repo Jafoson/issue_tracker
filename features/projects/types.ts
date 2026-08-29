@@ -1,13 +1,13 @@
 import type { Role, User } from "@/types";
 
 /**
- * Wer beim Anlegen und beim Beitritt automatisch aufgenommen wird. Über den
- * Zugriff entscheidet allein `ProjectMember` — deshalb nimmt ein Wechsel auf
- * `private` niemandem etwas, er hält nur den Automatismus an.
+ * Who gets automatically enrolled on creation and on join. Access is decided
+ * solely by `ProjectMember` — so switching to `private` doesn't take anything
+ * away from anyone, it only stops the automatic enrollment.
  */
 export type ProjectVisibility = "public" | "private";
 
-/** Alles, was die Einstellungsseite eines Projekts rendert. */
+/** Everything the settings page of a project renders. */
 export interface ProjectSettingsView {
   project: {
     id: string;
@@ -16,132 +16,135 @@ export interface ProjectSettingsView {
     prefix: string;
     color: string;
     avatarUrl: string | null;
-    /** Leer, wenn niemand einen Satz dazu geschrieben hat. */
+    /** Empty if nobody has written a sentence about it. */
     desc: string;
     visibility: ProjectVisibility;
     issueCount: number;
     memberCount: number;
   };
-  /** `project.update` — Name, Kürzel, Farbe, Sichtbarkeit. */
+  /** `project.update` — name, prefix, color, visibility. */
   canUpdate: boolean;
-  /** `project.delete` — das Projekt mit allen Issues löschen. */
+  /** `project.delete` — delete the project along with all issues. */
   canDelete: boolean;
 }
 
 /**
- * Woher die Rolle stammt, mit der jemand im Projekt steht:
- * `project` = eigene Projektrolle aus `ProjectMember`, der Normalfall.
- * `workspace` = ohne Projekt-Eintrag drin, weil die Workspace-Rolle jedes Projekt
- * sieht (Owner, Admin) — die einzige verbliebene Quelle neben der Projektrolle.
+ * Where the role someone holds in the project comes from:
+ * `project` = their own project role from `ProjectMember`, the normal case.
+ * `workspace` = no project entry, because their workspace role sees through
+ * every project (Owner, Admin) — the only remaining source besides the
+ * project role.
  */
 export type ProjectAccessSource = "project" | "workspace";
 
 export interface ProjectMemberRow {
   user: User;
-  /** Rollen-Key, der in diesem Projekt tatsächlich gilt. */
+  /** Role key that actually applies in this project. */
   role: string;
-  /** Aufgelöster Anzeigename der Rolle — die UI braucht keine Lookup-Tabelle. */
+  /** Resolved display name of the role — the UI needs no lookup table. */
   roleName: string;
-  /** Rang der Rolle, für die Einfärbung. Kommt aus der Datenbank. */
+  /** Rank of the role, for coloring. Comes from the database. */
   roleRank: number;
   source: ProjectAccessSource;
   /**
-   * Nur bei `source: "project"`: ob die Rolle von einem Projektleiter gesetzt
-   * wurde oder von einem Team übernommen ist (`ProjectMember.origin`). Eine
-   * `team`-Zeile lässt sich wie jede andere ändern — das Setzen macht sie
-   * dauerhaft `manual`, siehe `setProjectMemberRole`.
+   * Only for `source: "project"`: whether the role was set by a project
+   * lead or was taken over from a team (`ProjectMember.origin`). A `team`
+   * row can be changed like any other — setting it makes it permanently
+   * `manual`, see `setProjectMemberRole`.
    */
   origin?: "manual" | "team";
-  /** Nur bei `origin: "team"`: welches Team die Rolle zuletzt begründet hat. */
+  /** Only for `origin: "team"`: which team most recently justified the role. */
   originTeam?: { id: string; name: string; color: string };
-  /** Die Workspace-Einladung wurde noch nicht angenommen. */
+  /** The workspace invitation has not been accepted yet. */
   pending: boolean;
-  /** Das ist der gerade eingeloggte User — die Zeile markiert sich selbst. */
+  /** This is the currently logged-in user — the row marks itself. */
   you: boolean;
   /**
-   * Der aktuelle User darf diese Zeile anfassen: Rang, Selbstbezug und die
-   * Leitung des Workspace stehen nicht im Weg. Wird serverseitig entschieden —
-   * die Rangfolge der Rollen gehört nicht in den Client.
+   * Whether the current user is allowed to touch this row: rank, self-
+   * reference, and the workspace leadership don't stand in the way. Decided
+   * server-side — the ranking of roles doesn't belong on the client.
    *
-   * Ob die konkrete Aktion erlaubt ist, sagen `canSetRole` und `canRemove` der
-   * Ansicht: die drei `member.*`-Rechte sind getrennt vergebbar, also darf die
-   * Oberfläche sie nicht in einem Flag zusammenwerfen.
+   * Whether the specific action is allowed is answered by the view's
+   * `canSetRole` and `canRemove`: the three `member.*` permissions are
+   * grantable separately, so the UI must not collapse them into one flag.
    */
   manageable: boolean;
 }
 
-/** Alles, was die Mitglieder-Seite eines Projekts rendert. */
+/** Everything the members page of a project renders. */
 export interface ProjectMembersView {
   rows: ProjectMemberRow[];
   /**
-   * Workspace-Mitglieder ohne eigenen Projekt-Eintrag — die Vorschlagsliste im
-   * Hinzufügen-Dialog. Enthält auch die, die (noch) gar keinen Zugriff auf das
-   * Projekt haben und deshalb in `rows` fehlen. Leer ohne `member.invite`: ohne
-   * das Recht gibt es niemanden hinzuzufügen, also auch nichts vorzuschlagen.
+   * Workspace members without their own project entry — the suggestion list
+   * in the add dialog. Also includes people who don't (yet) have any access
+   * to the project and are therefore missing from `rows`. Empty without
+   * `member.invite`: without that permission there is nobody to add, so
+   * nothing to suggest either.
    */
   candidates: User[];
-  /** Rollen, die der aktuelle User vergeben darf. Leer ohne Verwaltungsrecht. */
+  /** Roles the current user is allowed to assign. Empty without management rights. */
   assignableRoles: Role[];
-  /** Vorauswahl im Hinzufügen-Dialog. */
+  /** Preselection in the add dialog. */
   defaultRole: string;
-  /** `member.invite` — Mitglieder ins Projekt aufnehmen oder einladen. */
+  /** `member.invite` — add or invite members into the project. */
   canAdd: boolean;
-  /** `member.role.update` — die Projektrolle eines Mitglieds ändern. */
+  /** `member.role.update` — change a member's project role. */
   canSetRole: boolean;
-  /** `member.remove` — jemanden aus dem Projekt nehmen. */
+  /** `member.remove` — remove someone from the project. */
   canRemove: boolean;
-  /** Darf per E-Mail einladen. Hängt am selben Recht wie `canAdd`. */
+  /** Allowed to invite by email. Tied to the same permission as `canAdd`. */
   canInvite: boolean;
   /**
-   * Offset in die zusammengesetzte Liste (Projekt- und geerbte
-   * Workspace-Mitglieder), als String — `null`, wenn `rows` schon alles ist.
-   * Kein Datenbank-Cursor: die Liste entsteht aus zwei vollständig gelesenen
-   * Quellen im Speicher (`getProjectMembersView`), nicht aus einer einzigen
-   * Abfrage, die sich an einer Id fortsetzen ließe.
+   * Offset into the combined list (project and inherited workspace members),
+   * as a string — `null` if `rows` is already everything. Not a database
+   * cursor: the list is assembled in memory from two fully-read sources
+   * (`getProjectMembersView`), not from a single query that could resume at
+   * an id.
    */
   nextCursor: string | null;
 }
 
-/** Ein Label, wie die Verwaltungsseite eines Projekts es zeigt. */
+/** A label as the management page of a project shows it. */
 export interface ProjectLabelRow {
   id: string;
   name: string;
-  /** Steht so in den Filter-URLs (`?label=…`) und bleibt beim Umbenennen. */
+  /** Appears verbatim in filter URLs (`?label=…`) and stays put on rename. */
   slug: string;
   color: string;
   /**
-   * Wie oft das Label in **diesem** Projekt an einem Issue hängt. Ein
-   * Workspace-Label kann anderswo weiterlaufen — die Zahl sagt nur, was ein
-   * Löschen hier sichtbar verändern würde.
+   * How often the label is attached to an issue in **this** project. A
+   * workspace label may still be in use elsewhere — this number only says
+   * what deleting it here would visibly change.
    */
   issueCount: number;
   /**
-   * In diesem Projekt ausgeblendet — es steht dann an keiner Aufgabe mehr zur
-   * Auswahl. Nur für geerbte Labels von Belang; die eigenen löscht man.
+   * Hidden in this project — it then no longer appears as an option on any
+   * task. Only relevant for inherited labels; the project's own ones get
+   * deleted instead.
    */
   hidden: boolean;
 }
 
-/** Alles, was die Label-Seite eines Projekts rendert. */
+/** Everything the labels page of a project renders. */
 export interface ProjectLabelsView {
-  /** Labels, die dem Projekt gehören. Nur sie lassen sich hier bearbeiten. */
+  /** Labels owned by the project. Only these can be edited here. */
   own: ProjectLabelRow[];
   /**
-   * Workspace-Labels: gelten in jedem Projekt und lassen sich hier weder
-   * umbenennen noch löschen — eine Umbenennung schlüge sonst in fremden
-   * Projekten durch. Was dieses Projekt entscheiden darf, ist, ob es sie
-   * überhaupt anbietet (`ProjectLabelRow.hidden`).
+   * Workspace labels: apply in every project and can be neither renamed nor
+   * deleted here — a rename would otherwise bleed into other projects. What
+   * this project gets to decide is whether it offers them at all
+   * (`ProjectLabelRow.hidden`).
    */
   inherited: ProjectLabelRow[];
-  /** `label.create` im Projekt-Scope. */
+  /** `label.create` in project scope. */
   canCreate: boolean;
-  /** `label.update` im Projekt-Scope — bearbeitet die eigenen Labels und
-   * entscheidet über das Ausblenden der geerbten. */
+  /** `label.update` in project scope — edits the project's own labels and
+   * decides whether to hide inherited ones. */
   canUpdate: boolean;
-  /** `label.delete` im Projekt-Scope. */
+  /** `label.delete` in project scope. */
   canDelete: boolean;
-  /** Cursor für `own`, `null` wenn schon alles geladen ist. */
+  /** Cursor for `own`, `null` when everything is already loaded. */
   ownNextCursor: string | null;
-  /** Cursor für `inherited`, `null` wenn schon alles geladen ist. */
+  /** Cursor for `inherited`, `null` when everything is already loaded. */
   inheritedNextCursor: string | null;
 }

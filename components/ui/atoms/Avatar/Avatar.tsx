@@ -5,16 +5,16 @@ import { initials, personInitials } from "@/lib/utils/string";
 import type { User } from "@/types";
 import styles from "./avatar.module.scss";
 
-// Zwei Varianten: benannte Entitäten (Workspace, ...) mit einem einzelnen `name`,
-// und Personen (User) mit getrennten `firstName`/`lastName` für korrekte Initialen.
+// Two variants: named entities (workspace, ...) with a single `name`,
+// and people (User) with separate `firstName`/`lastName` for correct initials.
 export type PersonAvatarData = {
   firstName: string;
   lastName: string;
   color: string;
   image?: string;
-  /** Fürs Initialen-Kürzel, wenn Vor- und Nachname (beide optional) leer
-   *  sind — der Benutzername ist der einzige Wert, der bei jeder Person
-   *  garantiert existiert. */
+  /** For the initials abbreviation when first and last name (both optional)
+   *  are empty — the handle is the only value guaranteed to exist for
+   *  every person. */
   handle?: string;
 };
 
@@ -28,22 +28,22 @@ interface AvatarProps {
   avatar: AvatarData | null;
   size?: number;
   /**
-   * Schriftgröße der Initialen. Zahl = px, String = beliebiger CSS-Wert.
-   * Ohne Angabe skaliert sie proportional zu `size`.
+   * Font size of the initials. Number = px, string = arbitrary CSS value.
+   * When omitted, it scales proportionally to `size`.
    */
   fontSize?: number | string;
   /**
-   * Rund oder abgerundetes Quadrat. Standard: Personen rund,
-   * benannte Entitäten (Workspace, Team, ...) quadratisch.
+   * Round or rounded square. Default: people are round,
+   * named entities (workspace, team, ...) are square.
    */
   shape?: AvatarShape;
   ring?: boolean;
   /**
-   * Ohne `avatar` statt nichts einen Platzhalter rendern — gestrichelter Ring
-   * mit Personen-Icon, der die leere Zuweisung sichtbar macht.
+   * Render a placeholder instead of nothing when `avatar` is absent —
+   * a dashed ring with a person icon that makes the empty assignment visible.
    */
   placeholder?: boolean;
-  /** Barrierefreier Name des Platzhalters, z. B. "Nicht zugewiesen". */
+  /** Accessible name of the placeholder, e.g. "Unassigned". */
   placeholderLabel?: string;
   className?: string;
 }
@@ -116,7 +116,7 @@ export function Avatar({
         {
           "--avatar-size": `${size}px`,
           "--avatar-bg": color,
-          // Heller Text auf dunklem Grund und umgekehrt.
+          // Light text on a dark background and vice versa.
           "--avatar-fg": `oklch(from ${color} clamp(0.05, calc((0.60 - l) * 999), 0.95) 0 h)`,
           ...(fontSize !== undefined && {
             "--avatar-font-size": toCssLength(fontSize),

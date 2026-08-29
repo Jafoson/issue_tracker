@@ -1,8 +1,8 @@
 import { describe, expect, it, mock } from "bun:test";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 
-// Edge-`auth`-Wrapper simulieren: setzt req.auth anhand eines Test-Cookies
-// `authed=1` und delegiert dann an den übergebenen Handler.
+// Simulate the edge `auth` wrapper: sets req.auth based on a test cookie
+// `authed=1` and then delegates to the given handler.
 mock.module("@/auth.edge", () => ({
   auth:
     (handler: (req: unknown) => unknown) =>
@@ -15,9 +15,9 @@ mock.module("@/auth.edge", () => ({
     },
 }));
 
-// proxy.ts ruft `auth(...)` bereits zur Import-Zeit auf → dynamisch NACH dem
-// mock.module importieren, damit der Mock greift. Der auth-Wrapper hat eine
-// Middleware-Signatur; im Test rufen wir ihn als einfache (req)=>Response-Fn auf.
+// proxy.ts already calls `auth(...)` at import time → import it dynamically
+// AFTER the mock.module call, so the mock takes effect. The auth wrapper has
+// a middleware signature; in the test we call it as a simple (req)=>Response fn.
 const proxyModule = await import("@/proxy");
 const proxy = proxyModule.default as unknown as (
   req: unknown,
@@ -64,9 +64,9 @@ describe("proxy() – Auth-Gate", () => {
       expect(location).not.toContain("callbackUrl");
     });
 
-    // Der Token im Pfad ist die Berechtigung, und wer eine Einladung annimmt, hat
-    // noch kein Passwort — ein Auth-Gate davor wäre eine Tür, hinter der der
-    // Schlüssel liegt.
+    // The token in the path is the authorization, and whoever accepts an
+    // invitation doesn't have a password yet — an auth gate in front of it
+    // would be a door with the key locked behind it.
     it("lässt /invite/<token> ohne Session passieren", async () => {
       const response = await proxy(makeRequest("/de/invite/abc123"));
       const location = response.headers.get("Location") ?? "";

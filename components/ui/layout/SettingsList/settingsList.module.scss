@@ -1,6 +1,6 @@
-/* Der scrollende Teil der Seite: die Kopfzeile bleibt oben, die Listen darunter
-   laufen durch. `min-height: 0`, sonst wächst der Inhalt die Spalte auf und die
-   ganze Seite scrollt statt nur dieser Bereich. */
+/* The scrolling part of the page: the header stays on top, the lists below
+   it run through. `min-height: 0`, otherwise the content would grow the
+   column and the whole page would scroll instead of just this area. */
 .body {
   flex: 1;
   min-height: 0;
@@ -11,12 +11,11 @@
   gap: 20px;
 }
 
-/* Drei Werte weichen von der Vorgabe der Tabelle ab. Eine Einstellung ist keine
-   Liste gleichartiger Datensätze, sondern ein Formular: die Zeile trägt zwei
-   Textzeilen und ein Bedienelement, also braucht sie Höhe; sie ist von der
-   nächsten getrennt, weil hier jede Zeile für sich steht; und sie leuchtet nicht
-   auf, wenn der Zeiger sie überfährt — anzuklicken gibt es nur das Bedienelement
-   rechts. */
+/* Three values deviate from the table's defaults. A setting isn't a list of
+   similar records, it's a form: the row carries two lines of text and a
+   control, so it needs height; it's separated from the next one because
+   each row stands on its own here; and it doesn't light up when the
+   pointer passes over it — only the control on the right is clickable. */
 .table {
   --table-row-height: 62px;
   --table-divider: var(--outline-variant);
@@ -36,15 +35,15 @@
   color: var(--on-surface);
 }
 
-/* Was sich nicht zurücknehmen lässt, trägt die Warnfarbe schon in der
-   Überschrift und im Rahmen — bevor jemand klickt, nicht danach. */
+/* Whatever can't be undone carries the warning color already in the
+   heading and the border — before anyone clicks, not after. */
 .dangerTitle {
   color: var(--error);
 }
 
-/* Doppelt benannt, um die Spezifität zu heben: der Rahmen kommt aus
-   `table.module.scss`, und bei gleicher Spezifität entschiede die Reihenfolge
-   der Stylesheets. */
+/* Named twice to raise specificity: the border comes from
+   `table.module.scss`, and at equal specificity the stylesheet load order
+   would decide. */
 .danger.danger {
   --table-surface: var(--surface);
 

@@ -14,17 +14,17 @@ import {
   workspaceRoleId,
 } from "@/lib/rbac";
 
-// Ein Rollen-Topf beantwortet drei Fragen, die immer zusammengehören: welche
-// Rollen zählen dazu, wer darf sie verwalten, und in welchem Kontext werden die
-// Rechte des Handelnden gemessen. Sie hier gebündelt zu halten verhindert, dass
-// eine Aktion die Rollen des einen und die Prüfung des anderen Topfes erwischt.
+// A role pool answers three questions that always belong together: which
+// roles count toward it, who's allowed to manage them, and in what context
+// the actor's own rights are measured. Keeping them bundled here prevents an
+// action from picking up one pool's roles but another pool's check.
 
 /**
- * Alle Rollen, die in diesem Topf gelten — die geteilten System-Rollen des
- * Scopes plus die eigenen des Workspace bzw. Projekts.
+ * All the roles that apply in this pool — the shared system roles of the
+ * scope plus the workspace's or project's own.
  *
- * Die System-Rollen haben keinen Eigentümer und gehören deshalb zu jedem Topf
- * ihres Scopes. Genau das ersetzt die früheren Kopien je Workspace.
+ * The system roles have no owner and therefore belong to every pool of
+ * their scope. This is exactly what replaces the former per-workspace copies.
  */
 export function rolesInTarget(target: RoleTarget): Prisma.RoleWhereInput {
   if (target.scope === "PLATFORM") {
@@ -36,8 +36,8 @@ export function rolesInTarget(target: RoleTarget): Prisma.RoleWhereInput {
       OR: [{ system: true }, { workspaceId: target.workspaceId }],
     };
   }
-  // Im Projekt sind auch die Projektrollen des Workspace zuweisbar; die
-  // projektlokalen kommen nur bei einem konkreten Projekt hinzu.
+  // In a project, the workspace's project roles are also assignable; the
+  // project-local ones are added only for a specific project.
   return {
     scope: "PROJECT",
     OR: [
@@ -48,7 +48,7 @@ export function rolesInTarget(target: RoleTarget): Prisma.RoleWhereInput {
   };
 }
 
-/** Die Eigentümerspalten, die eine neue Rolle in diesem Topf bekommt. */
+/** The owner columns a new role in this pool gets. */
 export function ownerColumns(target: RoleTarget): {
   workspaceId: string | null;
   projectId: string | null;
@@ -62,7 +62,7 @@ export function ownerColumns(target: RoleTarget): {
   return { workspaceId: target.workspaceId, projectId: target.projectId };
 }
 
-/** Deterministische Id einer neuen Rolle in diesem Topf. */
+/** Deterministic id of a new role in this pool. */
 export function targetRoleId(target: RoleTarget, key: string): string {
   if (target.scope === "PLATFORM") return platformRoleId(key);
   if (target.scope === "WORKSPACE") {
@@ -74,12 +74,13 @@ export function targetRoleId(target: RoleTarget, key: string): string {
 }
 
 /**
- * Wer diesen Topf verwalten darf — und in welchem Kontext seine eigenen Rechte
- * gemessen werden.
+ * Who's allowed to manage this pool — and in what context their own rights
+ * are measured.
  *
- * Die Projektrollen des Workspace hängen bewusst am Workspace-Kontext: sie
- * gelten in allen seinen Projekten, das ist keine Projektsache mehr. Nur die
- * projektlokalen Rollen fallen unter den Projekt-Kontext.
+ * The workspace's project roles are deliberately tied to the workspace
+ * context: they apply in all of its projects, which is no longer a
+ * project-level matter. Only project-local roles fall under the project
+ * context.
  */
 export function targetGuard(target: RoleTarget): {
   permission: Permission;
@@ -94,18 +95,19 @@ export function targetGuard(target: RoleTarget): {
 }
 
 /**
- * Darf der Handelnde diese Permission in einer Rolle dieses Topfes per ALLOW
- * vergeben? Niemand verteilt, was er selbst nicht hat — sonst wäre jede
- * Rollenverwaltung ein Weg zur Selbstbeförderung.
+ * Is the actor allowed to grant this permission via ALLOW in a role of this
+ * pool? Nobody hands out what they don't hold themselves — otherwise any
+ * role management would be a path to self-promotion.
  *
- * Der Sonderfall ist derselbe, den `targetGuard` oben schon macht: eine
- * workspaceweite Projektrolle wird im **Workspace**-Kontext verwaltet, trägt
- * aber **Projekt**-Permissions. Seit im Workspace-Kontext keine Projektrechte
- * mehr stehen, ginge dort sonst gar nichts mehr zu erlauben. Gemessen wird der
- * Handelnde deshalb an dem Schlüssel, der ihm alle Projekte öffnet.
+ * The special case is the same one `targetGuard` above already makes: a
+ * workspace-wide project role is managed in the **workspace** context but
+ * carries **project** permissions. Since the workspace context no longer
+ * holds any project rights, nothing there could ever be granted otherwise.
+ * The actor is therefore measured against the key that opens every project
+ * for them.
  *
- * Für eine projektlokale Rolle greift das nicht: dort wurde er im Projekt selbst
- * gemessen, und die Frage lässt sich unmittelbar beantworten.
+ * This doesn't apply to a project-local role: there the actor was already
+ * measured in the project itself, and the question can be answered directly.
  */
 export function canGrantIn(
   access: Access,
@@ -117,7 +119,7 @@ export function canGrantIn(
   return access.has(permission);
 }
 
-/** Der Topf, zu dem eine geladene Rollen-Zeile gehört. */
+/** The pool a loaded role row belongs to. */
 export function targetOfRole(role: {
   scope: "PLATFORM" | "WORKSPACE" | "PROJECT";
   workspaceId: string | null;

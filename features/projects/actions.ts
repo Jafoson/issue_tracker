@@ -53,11 +53,11 @@ import { generateHandle, pickUserColor } from "@/lib/user-defaults";
 import { uid } from "@/lib/utils/id";
 
 /**
- * `inviteUrl` steht nur beim Einladen einer unbekannten Adresse da: dann entsteht
- * ein Konto ohne Passwort, und der Link ist der einzige Weg hinein. `mailSent`
- * sagt der Oberfläche, ob die Einladung zusätzlich per Mail rausging (SMTP
- * konfiguriert) — ohne das ist der Link der einzige Weg, und die Meldung muss
- * das auch so sagen.
+ * `inviteUrl` is only present when inviting an unknown address: that creates
+ * an account without a password, and the link is the only way in. `mailSent`
+ * tells the UI whether the invitation also went out by mail (SMTP
+ * configured) — without that, the link is the only way in, and the message
+ * needs to say so accordingly.
  */
 type ProjectResult =
   | { ok: true; inviteUrl?: string; mailSent?: boolean }
@@ -107,7 +107,7 @@ async function uniqueSlug(workspaceId: string, base: string): Promise<string> {
 export async function createProject(data: {
   workspaceId: string;
   name: string;
-  /** Ein Satz dazu, wozu es da ist. Freiwillig — leer ist ein gültiger Wert. */
+  /** A sentence about what it's for. Optional — empty is a valid value. */
   desc?: string;
   prefix?: string;
   color: string;
@@ -148,18 +148,18 @@ export async function createProject(data: {
         prefix,
         color: data.color,
         visibility,
-        // Wer es angelegt hat, bleibt vermerkt. Nicht als Recht — Zugriff kommt
-        // allein aus `ProjectMember` — sondern als Zuständigkeit: verschwindet
-        // dieses Konto, erkennt die Plattformverwaltung das Projekt als
-        // verwaist (`features/admin/queries.ts`).
+        // Who created it stays on record. Not as a permission — access comes
+        // solely from `ProjectMember` — but as an ownership marker: if this
+        // account disappears, platform administration recognizes the project
+        // as orphaned (`features/admin/queries.ts`).
         createdById: session.userId,
       },
     });
 
     const project = { id, workspaceId: data.workspaceId };
-    // Ein öffentliches Projekt nimmt alle auf, die im Workspace sind — der
-    // Eintrag hält das fest, auch für den Ersteller. In ein privates kommt nur
-    // er selbst; alle weiteren werden ausdrücklich aufgenommen.
+    // A public project enrolls everyone who is in the workspace — the entry
+    // records that, including for the creator. A private one only gets them;
+    // everyone else is enrolled explicitly.
     if (visibility === "private") {
       await enrollMember(tx, project, session.userId);
     } else {
@@ -179,9 +179,9 @@ export async function createProject(data: {
   return { ok: true };
 }
 
-// ─── Projekt ändern und löschen ───────────────────────────────────────────────
+// ─── Update and delete project ─────────────────────────────────────────────
 
-/** Prüft ein Projektrecht und liefert den Workspace des Projekts mit. */
+/** Checks a project permission and also returns the project's workspace. */
 async function requireProjectManage(
   projectId: string,
   permission: "project.update" | "project.delete",
@@ -221,16 +221,15 @@ async function requireProjectManage(
 }
 
 /**
- * Name, Kürzel, Farbe und Sichtbarkeit eines Projekts.
+ * Name, prefix, color, and visibility of a project.
  *
- * Der Slug bleibt, wie er ist: er steht in jeder geteilten Adresse, und ein
- * umbenanntes Projekt soll keine toten Links hinterlassen.
+ * The slug stays as it is: it appears in every shared address, and a renamed
+ * project shouldn't leave dead links behind.
  *
- * Auf `public` umzuschalten nimmt alle Workspace-Mitglieder auf — das ist, was
- * öffentlich heißt. Der Weg zurück nimmt niemandem etwas: wer drin ist, bleibt
- * drin, nur neue Mitglieder kommen nicht mehr von selbst dazu. Jemanden
- * hinauszunehmen ist eine eigene Handlung (`removeProjectMember`), kein
- * Nebeneffekt eines Schalters.
+ * Switching to `public` enrolls all workspace members — that's what public
+ * means. Switching back takes nothing away from anyone: whoever is in stays
+ * in, only new members no longer join automatically. Removing someone is a
+ * separate action (`removeProjectMember`), not a side effect of a toggle.
  */
 export async function updateProject(
   projectId: string,
@@ -256,9 +255,9 @@ export async function updateProject(
       .slice(0, 4);
     if (!prefix) return { error: "The identifier cannot be empty." };
 
-    // Beim Anlegen hängt `uniquePrefix` stillschweigend eine Ziffer an. Hier
-    // wäre das falsch: wer ein Kürzel ausdrücklich eingibt, soll erfahren, dass
-    // es vergeben ist, statt ein anderes zu bekommen.
+    // On creation, `uniquePrefix` silently appends a digit. Here that would
+    // be wrong: someone who explicitly enters a prefix should be told it's
+    // taken instead of quietly getting a different one.
     const taken = await db.project.findUnique({
       where: { workspaceId_prefix: { workspaceId: guard.workspaceId, prefix } },
       select: { id: true },
@@ -273,7 +272,7 @@ export async function updateProject(
     where: { id: projectId },
     data: {
       ...(name !== undefined ? { name } : {}),
-      // Anders als der Name darf sie leer werden — wer sie löscht, meint das.
+      // Unlike the name, this is allowed to become empty — whoever clears it means it.
       ...(data.desc !== undefined ? { desc: data.desc.trim() } : {}),
       ...(prefix !== undefined ? { prefix } : {}),
       ...(data.color !== undefined ? { color: data.color } : {}),
@@ -286,9 +285,9 @@ export async function updateProject(
     await enrollWorkspaceMembers(db, project);
   }
 
-  // Eigener Vorgang statt eines allgemeinen "project.updated": nur die
-  // Sichtbarkeit ist im Workspace-Aktivitäts-Feed von Belang (`whereFor` in
-  // `lib/audit/index.ts`), Name/Farbe/Kürzel sind reine Projekt-Kosmetik.
+  // A distinct action instead of a generic "project.updated": only visibility
+  // matters in the workspace activity feed (`whereFor` in
+  // `lib/audit/index.ts`), name/color/prefix are pure project cosmetics.
   if (data.visibility !== undefined && guard.visibility !== data.visibility) {
     await recordAudit({
       action: "project.visibility.changed",
@@ -310,8 +309,8 @@ type UploadUrlResult =
   | { ok: true; key: string; uploadUrl: string }
   | { error: string };
 
-/** Erster Schritt des Projekt-Avatar-Uploads: presigned PUT-URL, direkt gegen
- *  S3, nach demselben Muster wie `requestWorkspaceAvatarUploadUrl`. */
+/** First step of the project avatar upload: presigned PUT URL, directly
+ *  against S3, following the same pattern as `requestWorkspaceAvatarUploadUrl`. */
 export async function requestProjectAvatarUploadUrl(
   projectId: string,
   input: { contentType: string; contentLength: number },
@@ -377,17 +376,17 @@ export async function removeProjectAvatar(
 }
 
 /**
- * Löscht ein Projekt mit allem, was daran hängt.
+ * Deletes a project along with everything attached to it.
  *
- * Die Issues gehen zuerst: ihr Fremdschlüssel steht auf `Restrict`, das Projekt
- * ließe sich sonst gar nicht löschen. Kommentare, Projektmitglieder, Labels und
- * projektlokale Rollen kaskadieren von selbst.
+ * The issues go first: their foreign key is set to `Restrict`, so the
+ * project couldn't be deleted otherwise. Comments, project members, labels,
+ * and project-local roles cascade on their own.
  */
 export async function deleteProject(projectId: string): Promise<ProjectResult> {
   const guard = await requireProjectManage(projectId, "project.delete");
   if ("error" in guard) return guard;
 
-  // Vor dem Löschen gelesen — danach ließe sich nicht mehr sagen, was weg ist.
+  // Read before deletion — afterward there'd be no way to say what's gone.
   const doomed = await db.project.findUnique({
     where: { id: projectId },
     select: {
@@ -422,30 +421,31 @@ export async function deleteProject(projectId: string): Promise<ProjectResult> {
   return { ok: true };
 }
 
-// ─── Projektmitglieder ────────────────────────────────────────────────────────
+// ─── Project members ────────────────────────────────────────────────────────
 //
-// Diese Aktionen geben Fehler zurück statt zu werfen: sie hängen an Formularen
-// und Tabellenzeilen, die die Ursache direkt anzeigen sollen. Die Prüfungen
-// spiegeln `setMemberRole` auf Workspace-Ebene — niemand vergibt eine Rolle
-// über der eigenen und niemand fasst ein höher gestelltes Mitglied an.
+// These actions return errors instead of throwing: they're wired up to forms
+// and table rows that are meant to display the cause directly. The checks
+// mirror `setMemberRole` at the workspace level — nobody assigns a role above
+// their own, and nobody touches a member ranked higher than themselves.
 //
-// Jeder im Projekt hat eine Zeile in `ProjectMember` und damit eine Projektrolle
-// (siehe `lib/project-membership.ts`). Diese Aktionen sind die Verwaltung dieser
-// Rolle — sie gilt nur hier und lässt den Workspace unberührt.
+// Everyone in the project has a row in `ProjectMember` and thus a project
+// role (see `lib/project-membership.ts`). These actions manage that role —
+// it applies only here and leaves the workspace untouched.
 
 interface MemberGuard {
   workspaceId: string;
   projectId: string;
   actorId: string;
-  /** Höchster Projektrang, den der Handelnde vergeben darf. */
+  /** Highest project rank the actor is allowed to assign. */
   actorRank: number;
 }
 
 /**
- * Die drei Mitglieder-Rechte sind getrennt vergebbar, also prüft jede Aktion ihr
- * eigenes: aufnehmen (`member.invite`), umrollen (`member.role.update`),
- * entfernen (`member.remove`). Ein Recht auf eines davon ist keines auf die
- * anderen — der Workspace-Pfad in `features/issues/actions.ts` hält es genauso.
+ * The three member permissions are grantable separately, so each action
+ * checks its own: enroll (`member.invite`), re-role (`member.role.update`),
+ * remove (`member.remove`). Permission for one of these is not permission
+ * for the others — the workspace path in `features/issues/actions.ts` follows
+ * the same rule.
  */
 type MemberPermission =
   | "member.invite"
@@ -478,11 +478,11 @@ async function requireMemberManage(
 }
 
 /**
- * Die Rolle auflösen, die in diesem Projekt vergeben werden soll.
+ * Resolve the role that is to be assigned in this project.
  *
- * Zuweisbar sind die Projektrollen des Workspace (gelten in allen seinen
- * Projekten) und die projektlokalen Rollen genau dieses Projekts. Über dem
- * eigenen Rang vergibt niemand etwas.
+ * Assignable are the workspace's project roles (apply to all its projects)
+ * and the project-local roles of exactly this project. Nobody assigns
+ * anything above their own rank.
  */
 async function resolveAssignable(
   guard: MemberGuard,
@@ -501,9 +501,9 @@ async function resolveAssignable(
       ],
     },
     select: { id: true, rank: true, name: true },
-    // Die spezifischste Rolle gewinnt, falls mehrere denselben Key tragen:
-    // projektlokal vor workspaceweit vor geteilt. `nulls: "last"` ist nötig,
-    // weil Postgres bei DESC sonst NULL voranstellt.
+    // The most specific role wins if several share the same key:
+    // project-local before workspace-wide before shared/system. `nulls: "last"`
+    // is needed because Postgres would otherwise put NULL first on DESC.
     orderBy: [
       { projectId: { sort: "desc", nulls: "last" } },
       { workspaceId: { sort: "desc", nulls: "last" } },
@@ -517,11 +517,11 @@ async function resolveAssignable(
 }
 
 /**
- * Wer den Generalschlüssel des Workspace trägt (Owner, Admin, Project Lead),
- * lässt sich per Projektrolle nicht herabstufen — der Resolver entscheidet für
- * ihn, bevor die Projektrolle überhaupt geladen wird (Regel 3 in
- * lib/permissions.ts). Die Zeile hier zu ändern hieße nur, in der Tabelle etwas
- * zu behaupten, was nicht gilt.
+ * Whoever holds the workspace's master key (Owner, Admin, Project Lead)
+ * cannot be downgraded via a project role — the resolver decides for them
+ * before the project role is even loaded (rule 3 in lib/permissions.ts).
+ * Changing this row would only assert something in the table that doesn't
+ * actually hold.
  */
 async function notDowngradable(
   guard: MemberGuard,
@@ -530,7 +530,7 @@ async function notDowngradable(
   return can(userId, "project.admin.all", { workspaceId: guard.workspaceId });
 }
 
-/** Nimmt bestehende Workspace-Mitglieder mit einer eigenen Projektrolle auf. */
+/** Enrolls existing workspace members with their own project role. */
 export async function addProjectMembers(data: {
   projectId: string;
   userIds: string[];
@@ -545,8 +545,9 @@ export async function addProjectMembers(data: {
   const userIds = [...new Set(data.userIds)];
   if (userIds.length === 0) return { error: "Pick at least one member." };
 
-  // Nur wer schon im Workspace ist, lässt sich direkt übernehmen. Alle anderen
-  // gehen über `inviteProjectMember` — dort entsteht auch der Account.
+  // Only someone already in the workspace can be added directly. Everyone
+  // else goes through `inviteProjectMember` — that's also where the account
+  // gets created.
   const members = await db.workspaceMember.findMany({
     where: { workspaceId: guard.workspaceId, userId: { in: userIds } },
     select: { userId: true },
@@ -554,8 +555,8 @@ export async function addProjectMembers(data: {
   if (members.length !== userIds.length)
     return { error: "Some of those people are not in this workspace." };
 
-  // Wer schon im Projekt ist, bekäme sonst fälschlich eine "invite"-
-  // Benachrichtigung für eine Aufnahme, die gar keine ist.
+  // Anyone already in the project would otherwise incorrectly get an "invite"
+  // notification for an enrollment that isn't one.
   const already = await db.projectMember.findMany({
     where: { projectId: data.projectId, userId: { in: userIds } },
     select: { userId: true },
@@ -568,12 +569,12 @@ export async function addProjectMembers(data: {
       projectId: data.projectId,
       userId,
       roleId: role.id,
-      // Ausdrücklich von einem Projektleiter vergeben — ein Team-Sync fasst
-      // diese Zeile danach nicht mehr an (`origin`, siehe schema.prisma).
+      // Explicitly assigned by a project lead — a team sync no longer touches
+      // this row afterward (`origin`, see schema.prisma).
       origin: "manual",
     })),
-    // Wer schon eine Rolle in diesem Projekt hat, behält sie — ein Doppelklick
-    // soll sie nicht überschreiben. Zum Ändern gibt es `setProjectMemberRole`.
+    // Anyone who already has a role in this project keeps it — a double-click
+    // shouldn't overwrite it. Use `setProjectMemberRole` to change it.
     skipDuplicates: true,
   });
 
@@ -588,9 +589,9 @@ export async function addProjectMembers(data: {
     })),
   );
 
-  // Erscheint dank gesetzter `workspaceId` **und** `projectId` sowohl im
-  // Projekt- als auch im Workspace-Aktivitäts-Feed — genau die Frage „wer hat
-  // wen in welches Projekt aufgenommen".
+  // Thanks to both `workspaceId` **and** `projectId` being set, this appears
+  // in both the project's and the workspace's activity feed — exactly the
+  // question "who added whom to which project."
   const addedUsers = await db.user.findMany({
     where: { id: { in: newlyAdded } },
     select: { id: true, firstName: true, lastName: true, color: true },
@@ -623,8 +624,8 @@ export async function setProjectMemberRole(
   const guard = await requireMemberManage(projectId, "member.role.update");
   if ("error" in guard) return guard;
 
-  // Die eigene Rolle ändert niemand über diese Tabelle — sonst wäre der
-  // Rangvergleich unten eine Prüfung gegen sich selbst.
+  // Nobody changes their own role through this table — otherwise the rank
+  // comparison below would be a check against oneself.
   if (userId === guard.actorId)
     return { error: "You cannot change your own role here." };
 
@@ -645,9 +646,9 @@ export async function setProjectMemberRole(
 
   await db.projectMember.update({
     where: { projectId_userId: { projectId, userId } },
-    // `origin: "manual"` auch dann, wenn die Zeile vorher `team` war — ein
-    // Projektleiter, der hier ausdrücklich eine Rolle setzt, überschreibt die
-    // Team-Zuordnung dauerhaft, nicht nur bis zum nächsten Team-Sync.
+    // `origin: "manual"` even if the row was previously `team` — a project
+    // lead explicitly setting a role here overrides the team assignment
+    // permanently, not just until the next team sync.
     data: { roleId: role.id, origin: "manual" },
   });
 
@@ -685,13 +686,13 @@ export async function setProjectMemberRole(
 }
 
 /**
- * Nimmt jemanden aus dem Projekt.
+ * Removes someone from the project.
  *
- * Damit ist der Zugriff weg, nicht nur eine Sonderrolle: über das Projekt
- * entscheidet allein diese Tabelle. Die Workspace-Mitgliedschaft bleibt — wer
- * wieder mitarbeiten soll, wird neu aufgenommen. Owner und Admins des Workspace
- * lassen sich so nicht aussperren, ihre Rechte hängen nicht am Projekt-Eintrag
- * (`keepsProjectRights` in lib/permissions.ts).
+ * This takes away access, not just a special role: this table is the sole
+ * decider for the project. Workspace membership stays intact — whoever
+ * should collaborate again gets re-enrolled. Workspace owners and admins
+ * can't be locked out this way, since their rights don't depend on the
+ * project entry (`keepsProjectRights` in lib/permissions.ts).
  */
 export async function removeProjectMember(
   projectId: string,
@@ -700,8 +701,8 @@ export async function removeProjectMember(
   const guard = await requireMemberManage(projectId, "member.remove");
   if ("error" in guard) return guard;
 
-  // Sich selbst nimmt man nicht heraus: das wäre der Verlust des eigenen
-  // Zugriffs mit einem Klick, und ohne Weg zurück.
+  // You don't remove yourself: that would mean losing your own access with a
+  // single click, and with no way back.
   if (userId === guard.actorId)
     return { error: "You cannot remove yourself from the project." };
 
@@ -724,8 +725,8 @@ export async function removeProjectMember(
     where: { projectId_userId: { projectId, userId } },
   });
 
-  // Kein `notify()` — die Workspace-Mitgliedschaft bleibt bestehen, aber es
-  // gibt keinen `NotificationEvent` für „aus dem Projekt entfernt“, nur die Mail.
+  // No `notify()` — workspace membership stays intact, but there's no
+  // `NotificationEvent` for “removed from the project,” only the email.
   await sendMemberRemovedEmail({
     userId,
     workspaceId: guard.workspaceId,
@@ -750,8 +751,8 @@ export async function removeProjectMember(
   return { ok: true };
 }
 
-/** Obergrenze pro Aufruf — der einzige verfügbare Schutz, solange es im Repo
- *  kein Rate-Limiting gibt (weder hier noch anderswo). */
+/** Upper limit per call — the only safeguard available as long as this repo
+ *  has no rate limiting (neither here nor anywhere else). */
 const MAX_BULK_PROJECT_INVITES = 50;
 
 type BulkProjectInviteRow = { email: string; result: ProjectResult };
@@ -760,8 +761,8 @@ type BulkProjectInviteResult =
   | { error: string };
 
 /**
- * Lädt jemanden per E-Mail ins Projekt ein. Dünner Wrapper um
- * `inviteProjectMembers` für eine einzelne Adresse.
+ * Invites someone into the project by email. Thin wrapper around
+ * `inviteProjectMembers` for a single address.
  */
 export async function inviteProjectMember(data: {
   projectId: string;
@@ -774,16 +775,16 @@ export async function inviteProjectMember(data: {
     role: data.role,
   });
   if ("error" in result) return result;
-  // `emails: [data.email]` liefert genau eine Zeile.
+  // `emails: [data.email]` yields exactly one row.
   return (result.rows[0] as BulkProjectInviteRow).result;
 }
 
 /**
- * Lädt mehrere Adressen auf einmal ins Projekt ein.
+ * Invites multiple addresses into the project at once.
  *
- * Rollenauflösung und die Workspace-seitige `member.invite`-Prüfung (nötig für
- * den Neukonto-Zweig, siehe `inviteOneProjectMember`) laufen einmal vor der
- * Schleife statt pro Adresse — dieselbe Begründung wie bei
+ * Role resolution and the workspace-side `member.invite` check (needed for
+ * the new-account branch, see `inviteOneProjectMember`) run once before the
+ * loop instead of per address — the same reasoning as in
  * `inviteWorkspaceMembers`.
  */
 export async function inviteProjectMembers(data: {
@@ -804,8 +805,8 @@ export async function inviteProjectMembers(data: {
       error: `You can invite at most ${MAX_BULK_PROJECT_INVITES} people at once.`,
     };
 
-  // Nur für den Neukonto-Zweig relevant, aber unabhängig von der jeweiligen
-  // E-Mail — einmal geprüft statt pro Adresse.
+  // Only relevant for the new-account branch, but independent of the
+  // specific email — checked once instead of per address.
   const canInviteToWorkspace = await can(guard.actorId, "member.invite", {
     workspaceId: guard.workspaceId,
   });
@@ -830,20 +831,20 @@ export async function inviteProjectMembers(data: {
 }
 
 /**
- * Eine einzelne Adresse ins Projekt einladen — der Rumpf, den
- * `inviteProjectMembers` pro E-Mail wiederholt. Rolle und Berechtigung sind
- * hier schon geklärt.
+ * Invite a single address into the project — the body that
+ * `inviteProjectMembers` repeats per email. Role and permission are already
+ * resolved by this point.
  *
- * Existiert der Account schon, reicht `member.invite` im Projekt — es entsteht
- * nur ein Projekt-Eintrag. Für eine unbekannte Adresse muss ein Account angelegt
- * werden; das ist eine Workspace-Operation und verlangt `member.invite`
- * zusätzlich im Workspace-Kontext (`canInviteToWorkspace`).
+ * If the account already exists, `member.invite` in the project is enough —
+ * only a project entry is created. For an unknown address an account has to
+ * be created; that's a workspace operation and additionally requires
+ * `member.invite` in the workspace context (`canInviteToWorkspace`).
  *
- * Die Projektrolle entscheidet über die Workspace-Mitgliedschaft: ein Gast
- * bleibt bewusst außen vor und sieht nur dieses eine Projekt, jede andere Rolle
- * bekommt eine offene (`pending`) Workspace-Mitgliedschaft in der Standardrolle
- * dazu. Projekt- und Workspace-Rollen sind seit dem dreistufigen RBAC zwei
- * getrennte Töpfe — der Projektrollen-Key taugt hier also nicht als Workspace-Rolle.
+ * The project role decides workspace membership: a guest is deliberately
+ * left out and only sees this one project, every other role also gets an
+ * open (`pending`) workspace membership in the default role. Since the
+ * three-tier RBAC, project and workspace roles are two separate pools — so
+ * the project role's key doesn't work as a workspace role here.
  */
 async function inviteOneProjectMember(params: {
   projectId: string;
@@ -882,9 +883,9 @@ async function inviteOneProjectMember(params: {
       },
     });
 
-    // Wie in `inviteWorkspaceMember`: nur wer schon ein Konto hat, kann sich
-    // anmelden und eine In-App-Benachrichtigung sehen — der Neukonto-Zweig
-    // unten legt nur einen Einladungslink an.
+    // As in `inviteWorkspaceMember`: only someone who already has an account
+    // can log in and see an in-app notification — the new-account branch
+    // below only creates an invitation link.
     await notify({
       userId: existing.id,
       type: "invite",
@@ -917,9 +918,9 @@ async function inviteOneProjectMember(params: {
     };
   }
 
-  // Der Name steht erst fest, wenn die Einladung angenommen wird — bis dahin
-  // trägt der Account den lokalen Teil der Adresse, damit Avatar und Liste
-  // etwas Lesbares zeigen.
+  // The name isn't settled until the invitation is accepted — until then the
+  // account carries the local part of the address, so the avatar and list
+  // show something readable.
   const localPart = email.split("@")[0];
   const handle = await generateHandle(email);
   const now = new Date();
@@ -933,8 +934,8 @@ async function inviteOneProjectMember(params: {
         email,
         color: pickUserColor(),
         platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
-        // Eingeladen statt selbst angemeldet — kein Onboarding-Schritt nötig,
-        // die Einladung bleibt ein einziger Klick.
+        // Invited instead of self-registered — no onboarding step needed,
+        // accepting the invitation stays a single click.
         onboardedAt: now,
       },
       select: { id: true },
@@ -949,16 +950,17 @@ async function inviteOneProjectMember(params: {
           pending: true,
         },
       });
-      // Wer in den Workspace kommt, ist in dessen öffentlichen Projekten — nicht
-      // nur in dem, aus dem die Einladung kam.
+      // Whoever joins the workspace is in its public projects — not just the
+      // one the invitation came from.
       await enrollInWorkspaceProjects(tx, {
         workspaceId: guard.workspaceId,
         userId: user.id,
       });
     }
 
-    // Im einladenden Projekt gilt die eingeladene Rolle statt der abgeleiteten.
-    // Die Zeile kann aus der Aufnahme oben schon stehen, deshalb `upsert`.
+    // In the inviting project, the invited role applies instead of the
+    // derived one. The row may already exist from the enrollment above,
+    // hence `upsert`.
     await tx.projectMember.upsert({
       where: {
         projectId_userId: { projectId, userId: user.id },
@@ -972,7 +974,7 @@ async function inviteOneProjectMember(params: {
       },
     });
 
-    // Das Konto hat kein Passwort — ohne diesen Token käme niemand hinein.
+    // The account has no password — without this token nobody could get in.
     return createInvitation(
       tx,
       {
@@ -1000,8 +1002,8 @@ async function inviteOneProjectMember(params: {
 }
 
 /**
- * Erstellt (oder erneuert) den teilbaren Einladungslink eines Projekts für
- * eine Rolle — Projekt-Äquivalent zu `createWorkspaceInviteLink`.
+ * Creates (or renews) a project's shareable invitation link for a role —
+ * the project equivalent of `createWorkspaceInviteLink`.
  */
 export async function createProjectInviteLink(
   projectId: string,
@@ -1032,7 +1034,7 @@ export async function createProjectInviteLink(
   return { ok: true, url: inviteLinkUrl(token), expiresAt: expiry };
 }
 
-/** Eine weitere Seite Projekte fürs Infinite Scroll in `ProjectOverview`. */
+/** One more page of projects for infinite scroll in `ProjectOverview`. */
 export async function loadMoreProjectsOverview(
   workspaceId: string,
   cursor: string,
@@ -1041,7 +1043,7 @@ export async function loadMoreProjectsOverview(
   return { items: view.rows, nextCursor: view.nextCursor };
 }
 
-/** Eine weitere Seite der eigenen Projekt-Labels fürs Infinite Scroll in
+/** One more page of the project's own labels for infinite scroll in
  * `ProjectLabels`. */
 export async function loadMoreProjectLabels(
   projectId: string,
@@ -1053,7 +1055,7 @@ export async function loadMoreProjectLabels(
     : { items: [], nextCursor: null };
 }
 
-/** Spiegelbild von `loadMoreProjectLabels`, für die geerbten Workspace-Labels. */
+/** Mirror image of `loadMoreProjectLabels`, for the inherited workspace labels. */
 export async function loadMoreProjectInheritedLabels(
   projectId: string,
   cursor: string,
@@ -1064,7 +1066,7 @@ export async function loadMoreProjectInheritedLabels(
     : { items: [], nextCursor: null };
 }
 
-/** Eine weitere Seite fürs Infinite Scroll in `ProjectMembers`. */
+/** One more page for infinite scroll in `ProjectMembers`. */
 export async function loadMoreProjectMembers(
   projectId: string,
   cursor: string,
@@ -1075,8 +1077,8 @@ export async function loadMoreProjectMembers(
     : { items: [], nextCursor: null };
 }
 
-/** Eine weitere Seite offener Einladungen fürs Infinite Scroll im
- * "Einladungen"-Tab der Projekt-Einstellungen. */
+/** One more page of pending invitations for infinite scroll in the
+ * "Invitations" tab of the project settings. */
 export async function loadMorePendingProjectInvitations(
   projectId: string,
   cursor: string,

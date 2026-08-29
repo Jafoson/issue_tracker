@@ -13,15 +13,15 @@ import styles from "./activityFeed.module.scss";
 
 interface Props {
   entries: AuditEntry[];
-  /** Um das Kürzel eines Issues zu verlinken (`TargetLabel`). */
+  /** To link an issue's reference (`TargetLabel`). */
   workspaceSlug: string;
 }
 
 /**
- * Der kompakte Ausschnitt des Aktivitäts-Protokolls für die Übersicht — die
- * volle, filterbare Tabelle ist `AuditLog` unter den Einstellungen. Zweizeilig
- * wie die Personen-Zeilen der Mitgliederkarte, nicht die einzeilige
- * Teams/Labels-Zeile: hier steht immer auch, wer es war und wann.
+ * The compact excerpt of the activity log for the overview — the full,
+ * filterable table is `AuditLog` under settings. Two-line like the person
+ * rows on the members card, not the single-line teams/labels row: here it
+ * always also states who did it and when.
  */
 export function ActivityFeed({ entries, workspaceSlug }: Props) {
   const t = useTranslations();

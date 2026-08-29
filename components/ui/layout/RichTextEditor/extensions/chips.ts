@@ -3,36 +3,38 @@ import type { DOMOutputSpec } from "@tiptap/pm/model";
 import { Suggestion, type SuggestionOptions } from "@tiptap/suggestion";
 import { formatChipDate } from "@/lib/richtext/date";
 import { faviconStyle, hostOf } from "@/lib/richtext/link";
-// Dieselben Klassen wie in der Anzeige: der `Chip`-Atom gibt die Form, die
-// Rich-Text-Styles das Zeichen davor. Ein Chip muss beim Schreiben genauso
-// aussehen wie danach beim Lesen, sonst springt der Text beim Speichern.
+// Same classes as in the display path: the `Chip` atom provides the shape,
+// the rich-text styles provide the symbol before it. A chip must look the
+// same while writing as it does afterward while reading, otherwise the text
+// jumps when saved.
 //
-// Nur die Klassen, nicht die Komponente — `renderHTML` baut reines DOM, React
-// gibt es hier nicht.
+// Only the classes, not the component — `renderHTML` builds plain DOM,
+// there's no React here.
 import atom from "../../../atoms/Chip/chip.module.scss";
 import chip from "../../../atoms/RichText/richText.module.scss";
 import type { SuggestionItem } from "../components/SuggestionMenu/SuggestionMenu";
 
-/** Was `<Chip as="span" size="inline" variant="elevated">` erzeugt. */
+/** What `<Chip as="span" size="inline" variant="elevated">` produces. */
 const CHIP_CLASS = [atom.chip, atom.elevated, atom.inline].join(" ");
 
-/** Dasselbe mit einem Zeichen im Icon-Slot davor. */
+/** The same, with a symbol in the icon slot before it. */
 const CHIP_CLASS_ICON = `${CHIP_CLASS} ${atom.hasIcon}`;
 
 /**
- * Die vier Einsprengsel im Fließtext: Erwähnung, Issue, Datum und Emoji.
+ * The four inline chips: mention, issue, date, and emoji.
  *
- * Alle vier sind Inline-Atome — ein einzelnes Zeichen im Dokument, das seinen
- * Inhalt in den Attributen trägt und sich nicht von innen bearbeiten lässt.
- * Genau deshalb sind sie hier zusammengefasst: sie unterscheiden sich nur in
- * ihren Attributen und ihrer Beschriftung.
+ * All four are inline atoms — a single character in the document that
+ * carries its content in its attributes and can't be edited from within.
+ * That's exactly why they're grouped together here: they only differ in
+ * their attributes and their label.
  *
- * Die Attribute wandern als `data-*` ins HTML, damit Kopieren und Einfügen
- * zwischen zwei Editoren den Chip erhält statt ihn zu Text zu zerlegen.
+ * The attributes go into HTML as `data-*`, so copying and pasting between
+ * two editors preserves the chip instead of breaking it down into text.
  *
- * Welcher Trigger einen Chip öffnet, steht nicht hier: das reicht der Editor
- * über `.configure({ suggestion })` herein, weil die Daten dahinter fachlich
- * sind (Mitglieder, Issues) und `components/ui` davon nichts wissen soll.
+ * Which trigger opens a chip isn't decided here: the editor passes that in
+ * via `.configure({ suggestion })`, because the data behind it is
+ * domain-specific (members, issues) and `components/ui` shouldn't know
+ * anything about that.
  */
 
 export interface ChipOptions {
@@ -41,25 +43,25 @@ export interface ChipOptions {
 
 interface ChipConfig {
   name: string;
-  /** Attributnamen samt Vorgabewert. */
+  /** Attribute names along with their default value. */
   attrs: Record<string, string | null>;
   className?: string;
-  /** Was im Chip steht. */
+  /** What's displayed inside the chip. */
   label: (attrs: Record<string, unknown>) => string;
   /**
-   * Ein Baustein vor dem Text — der Avatar der Erwähnung. Raute und Kalender
-   * brauchen ihn nicht: die stehen als Maske im CSS und gelten damit für
-   * Editor und Anzeige gleichermaßen.
+   * A piece before the text — the mention's avatar. The hash and calendar
+   * chips don't need this: those exist as a mask in CSS and thus apply
+   * equally to the editor and the display path.
    */
   lead?: (attrs: Record<string, unknown>) => DOMOutputSpec | null;
-  /** Zusätzliche Klasse auf der Beschriftung — beim Issue die Festbreitenschrift. */
+  /** Extra class on the label — the fixed-width font for the issue chip. */
   labelClass?: string;
-  /** Was beim Überfahren erscheint — beim Link seine Adresse. */
+  /** What appears on hover — the link chip's address. */
   titleOf?: (attrs: Record<string, unknown>) => string | undefined;
   /**
-   * Die reine Textform — beim Kopieren und für `editor.getText()`. Ohne Angabe
-   * dieselbe wie `label`; die Erwähnung stellt hier ihr `@` voran, das im Chip
-   * selbst überflüssig wäre.
+   * The plain-text form — for copying and for `editor.getText()`. Falls
+   * back to `label` if not given; the mention chip prepends its `@` here,
+   * which would be redundant inside the chip itself.
    */
   text?: (attrs: Record<string, unknown>) => string;
 }
@@ -117,15 +119,15 @@ function createChip({
         ...(title ? { title } : {}),
       });
 
-      // Ohne Chip-Hülle (das Emoji) bleibt es beim nackten Zeichen — die Slots
-      // des Atoms hätten dort nichts zu halten.
+      // Without a chip wrapper (the emoji), it stays a bare character — the
+      // atom's slots would have nothing to hold there.
       if (!className) return ["span", attributes, label(node.attrs)];
 
       const before = lead?.(node.attrs);
       return [
         "span",
         attributes,
-        // Dieselben Slots wie im Atom: Zeichen davor, dann die Beschriftung.
+        // Same slots as in the atom: symbol first, then the label.
         ...(before ? [["span", { class: atom.icon }, before]] : []),
         [
           "span",
@@ -135,7 +137,7 @@ function createChip({
       ] as DOMOutputSpec;
     },
 
-    /** Für Kopieren als reiner Text und für `editor.getText()`. */
+    /** For copying as plain text and for `editor.getText()`. */
     renderText({ node }) {
       return (text ?? label)(node.attrs);
     },
@@ -149,10 +151,11 @@ function createChip({
 }
 
 /**
- * Ein erwähntes Mitglied: `@` und der Name.
+ * A mentioned member: `@` and the name.
  *
- * Das `@` steht im Text und nicht in einem eigenen Slot — so trägt es die
- * Grundlinie des Fließtexts von selbst und wird beim Markieren mitkopiert.
+ * The `@` sits in the text rather than in its own slot — that way it
+ * naturally carries the text's baseline and gets copied along when
+ * selected.
  */
 export const MentionChip = createChip({
   name: "mention",
@@ -161,7 +164,7 @@ export const MentionChip = createChip({
   label: (a) => `@${a.label ?? ""}`,
 });
 
-/** `ORB-42` — verweist über den lesbaren Schlüssel, damit er im Text steht. */
+/** `ORB-42` — references via the readable key, so it appears in the text. */
 export const IssueLinkChip = createChip({
   name: "issueLink",
   attrs: { id: null, identifier: "" },
@@ -172,19 +175,19 @@ export const IssueLinkChip = createChip({
 });
 
 /**
- * Ein Link auf eine fremde Seite.
+ * A link to an external page.
  *
- * Neben Adresse und Name kein weiteres Attribut: das Icon leitet sich aus der
- * Adresse ab, und ein mitgespeicherter Pfad veraltete nur.
+ * No attribute beyond address and name: the icon derives from the address,
+ * and a separately stored path would only go stale.
  */
 export const LinkChip = createChip({
   name: "linkChip",
   attrs: { href: "", label: "" },
   className: CHIP_CLASS_ICON,
-  // Ohne Namen steht der Hostname da — besser als eine nackte lange Adresse.
+  // Without a name, the hostname is shown — better than a bare, long address.
   label: (a) => String(a.label || hostOf(String(a.href ?? ""))),
   text: (a) => String(a.href ?? ""),
-  // Der Chip zeigt den Namen — die Adresse dahinter erscheint beim Überfahren.
+  // The chip shows the name — the address behind it appears on hover.
   titleOf: (a) => String(a.href ?? "") || undefined,
   lead: (a) => [
     "span",
@@ -197,8 +200,8 @@ export const LinkChip = createChip({
 });
 
 /**
- * Ein Datum. Gespeichert wird ISO, angezeigt die lokale Schreibweise — so
- * bleibt der Wert eindeutig und die Anzeige trotzdem lesbar.
+ * A date. Stored as ISO, displayed in the local format — that way the
+ * value stays unambiguous while the display remains readable.
  */
 export const DateChip = createChip({
   name: "dateChip",
@@ -209,9 +212,9 @@ export const DateChip = createChip({
 });
 
 /**
- * Emoji als eigener Knoten statt als Zeichen im Text: so bleibt der Kurzname
- * erhalten und `toPlainText` kann ihn für die Suche mitnehmen. Ohne eigene
- * Klasse — ein Emoji braucht keinen Rahmen.
+ * Emoji as its own node rather than a character in the text: that way the
+ * short name is preserved, and `toPlainText` can carry it along for search.
+ * No class of its own — an emoji needs no chip border.
  */
 export const EmojiChip = createChip({
   name: "emoji",

@@ -18,23 +18,23 @@ import type {
 } from "./RichTextEditor";
 
 /**
- * Text, der sich anfassen lässt: im Ruhezustand das gerenderte Dokument, nach
- * einem Klick der Editor. Mit eigenen Knöpfen (`actions`, der Normalfall)
- * bleibt die Bearbeitung offen, bis jemand sie beendet — über Speichern,
- * Abbrechen, Escape oder ⌘/Strg + Enter, nie durch bloßes Wegklicken (wie bei
- * Jira). Ohne Knöpfe (`actions={false}`) übernimmt stattdessen das Verlassen
- * des Felds, siehe `EditableRichTextProps.actions`.
+ * Text you can touch: the rendered document at rest, the editor after a
+ * click. With its own buttons (`actions`, the normal case), editing stays
+ * open until someone ends it — via save, cancel, Escape, or ⌘/Ctrl+Enter,
+ * never by simply clicking away (unlike Jira). Without buttons
+ * (`actions={false}`), leaving the field takes over instead, see
+ * `EditableRichTextProps.actions`.
  *
- * Der Editor kommt per `next/dynamic` — solange niemand schreibt, lädt der
- * Browser das Tiptap-Bündel gar nicht erst. Gelesen wird viel öfter als
- * geschrieben, und die Anzeige braucht davon nichts.
+ * The editor comes in via `next/dynamic` — as long as nobody is writing, the
+ * browser doesn't even load the Tiptap bundle. Reading happens far more
+ * often than writing, and the display path needs none of it.
  */
 
 const RichTextEditor = dynamic(
   () => import("./RichTextEditor").then((m) => m.RichTextEditor),
   {
-    // ProseMirror braucht ein echtes DOM; Vorrendern brächte nur einen
-    // abweichenden ersten Baum.
+    // ProseMirror needs a real DOM; pre-rendering would just produce a
+    // mismatched first tree.
     ssr: false,
     loading: () => <div className={styles.loading} />,
   },
@@ -42,49 +42,51 @@ const RichTextEditor = dynamic(
 
 interface EditableRichTextProps {
   value: PMDoc | unknown;
-  /** Läuft beim Verlassen des Editors — und nur, wenn sich etwas geändert hat. */
+  /** Runs when the editor is left — and only if something changed. */
   onCommit: (value: PMDoc) => void;
   /**
-   * Läuft bei jedem Tastendruck. Nötig überall dort, wo jemand anderes den Wert
-   * abschickt, ohne auf das Verlassen des Feldes zu warten: im Anlegen-Fenster
-   * greift ⌘/Strg + Enter am `document` und liefe sonst dem `onCommit` von
-   * hier voraus — das Issue entstünde ohne den zuletzt getippten Text.
+   * Runs on every keystroke. Needed everywhere something else submits the
+   * value without waiting for the field to be left: in the create-issue
+   * window, ⌘/Ctrl+Enter is caught on `document` and would otherwise run
+   * ahead of the `onCommit` here — the issue would be created without the
+   * most recently typed text.
    */
   onChange?: (value: PMDoc) => void;
-  /** Barrierefreier Name: der Text trägt kein sichtbares Label. */
+  /** Accessible name: the text carries no visible label. */
   label: string;
   placeholder?: string;
   saveLabel?: string;
   cancelLabel?: string;
   /**
-   * Haken und Kreuz unter dem Feld. Aus, wo ein Dialog schon eigene Knöpfe
-   * trägt — im Anlegen-Fenster stünden zwei „Fertig" untereinander.
-   * Übernommen wird dann still beim Verlassen oder mit ⌘/Strg + Enter.
+   * Checkmark and cross below the field. Off where a dialog already has its
+   * own buttons — in the create-issue window there would be two "Done"
+   * buttons stacked on top of each other. Committed silently on leaving the
+   * field or with ⌘/Ctrl+Enter instead.
    */
   actions?: boolean;
   members?: MentionSource[];
   issues?: IssueSource[];
-  /** Siehe `RichTextEditor` — Anhang hochladen/entfernen. Fehlt ⇒ Feature aus. */
+  /** See `RichTextEditor` — upload/remove attachment. Missing ⇒ feature off. */
   onUploadAttachment?: (
     file: File,
   ) => Promise<UploadedAttachment | { error: string }>;
   onRemoveAttachment?: (id: string) => Promise<void>;
-  /** Siehe `RichTextEditor` — Bild-URL als Anhang registrieren. */
+  /** See `RichTextEditor` — register an image URL as an attachment. */
   onAddLinkAttachment?: (input: {
     url: string;
     name?: string;
     mimeType?: string | null;
   }) => Promise<UploadedAttachment | { error: string }>;
-  /** Beschriftungen der Anzeige — bislang nur der Codeblock. */
+  /** Display labels — so far only the code block. */
   labels?: Partial<RichTextLabels>;
   className?: string;
-  /** Nur Anzeige: kein Klick öffnet den Editor, `onCommit` wird nie aufgerufen. */
+  /** Display only: no click opens the editor, `onCommit` is never called. */
   readOnly?: boolean;
   /**
-   * Macht den Bearbeitungszustand von außen steuerbar — z.B. ein Kebab-Menü-
-   * Eintrag „Bearbeiten", der den Editor öffnet, ohne dass auf den Text
-   * geklickt wurde. Fehlt eine der beiden Props, bleibt der Zustand intern
-   * (`useState`, das bisherige Verhalten) — beide zusammen übernehmen ihn.
+   * Makes the editing state controllable from outside — e.g. a kebab menu
+   * "Edit" entry that opens the editor without the text having been
+   * clicked. If either prop is missing, the state stays internal
+   * (`useState`, the previous behavior) — only both together hand control over.
    */
   editing?: boolean;
   onEditingChange?: (editing: boolean) => void;
@@ -113,39 +115,40 @@ export function EditableRichText({
   const [draft, setDraft] = useState<PMDoc>(() => toDoc(value));
   const [source, setSource] = useState(value);
   const [internalEditing, setInternalEditing] = useState(false);
-  // Kontrolliert, sobald beide Props da sind — sonst wie bisher rein intern.
+  // Controlled as soon as both props are present — otherwise purely internal as before.
   const isEditing = editingProp ?? internalEditing;
   const setIsEditing = onEditingChange ?? setInternalEditing;
-  // Der Vergleich läuft über den serialisierten Stand: zwei Dokumente sind
-  // gleich, wenn ihr JSON gleich ist, und `onUpdate` liefert bei jedem
-  // Tastendruck ein neues Objekt.
+  // The comparison runs over the serialized state: two documents are equal
+  // if their JSON is equal, and `onUpdate` delivers a new object on every
+  // keystroke.
   const committed = useRef(JSON.stringify(toDoc(value)));
   /**
-   * Ob die Maustaste gerade im Editor gedrückt ist.
+   * Whether the mouse button is currently held down inside the editor.
    *
-   * Der Ziehgriff zum Vergrößern ist kein fokussierbares Element: Ziehen nimmt
-   * dem Text den Fokus und gibt ihn an niemanden weiter — `relatedTarget` ist
-   * `null`. Für `onBlur` unten sieht das aus wie ein Klick nach draußen, und
-   * das Feld würde mitten im Ziehen zuklappen. Der Merker hält es offen.
+   * The resize handle isn't a focusable element: dragging takes focus away
+   * from the text and doesn't hand it to anyone else — `relatedTarget` is
+   * `null`. To `onBlur` below, that looks like a click outside, and the
+   * field would collapse in the middle of dragging. This flag keeps it open.
    */
   const pressedInside = useRef(false);
 
   /**
-   * Ob gerade ein nativer Datei-Dialog offen ist (Anhang/Bild hochladen).
+   * Whether a native file dialog is currently open (uploading an
+   * attachment/image).
    *
-   * Der native Dialog liegt außerhalb der Seite — das Fenster verliert dabei
-   * den Fokus, und `relatedTarget` im `blur`-Ereignis ist `null`, genau wie
-   * bei einem Klick ins Leere. Ohne diesen Merker beendete das Bearbeiten
-   * sich selbst, sobald der Dialog aufgeht, der Editor würde abgehängt, und
-   * die Auswahl einer Datei liefe ins Leere. Zurückgesetzt wird er, sobald
-   * das Fenster den Fokus zurückbekommt — der Dialog ist dann in jedem Fall
-   * zu, ob mit oder ohne Auswahl.
+   * The native dialog sits outside the page — the window loses focus in the
+   * process, and `relatedTarget` in the `blur` event is `null`, exactly as
+   * with a click into empty space. Without this flag, editing would end
+   * itself as soon as the dialog opens, the editor would be torn down, and
+   * picking a file would go nowhere. It's reset as soon as the window
+   * regains focus — the dialog is closed by then in any case, whether a
+   * file was picked or not.
    */
   const filePickerOpen = useRef(false);
 
-  // Ein neuer Wert von außen gewinnt; während des Bearbeitens bleibt er außen
-  // vor, sonst überschriebe eine eintreffende Antwort das Getippte. Angleich
-  // beim Rendern statt per Effekt.
+  // A new value from outside wins; it's ignored while editing, otherwise an
+  // incoming response would overwrite what's being typed. Reconciled during
+  // render rather than via an effect.
   if (!isEditing && source !== value) {
     setSource(value);
     setDraft(toDoc(value));
@@ -158,12 +161,12 @@ export function EditableRichText({
   };
 
   /**
-   * Escape darf nicht bis zum Modal durchschlagen, sonst schließt sich beim
-   * Verwerfen gleich das ganze Panel. Am `window` mit Capture, damit es vor dem
-   * Handler des ModalContext (auf `document`) liegt.
+   * Escape must not bubble up to the modal, or discarding would close the
+   * whole panel along with it. Attached to `window` with capture so it runs
+   * before the ModalContext handler (on `document`).
    *
-   * Die Vorschlagslisten fangen Escape schon vorher ab und halten es auf —
-   * dort schließt es nur die Liste.
+   * The suggestion lists already intercept Escape before this and stop its
+   * propagation — there it only closes the list.
    */
   useEffect(() => {
     if (!isEditing) return;
@@ -205,8 +208,8 @@ export function EditableRichText({
   };
 
   if (!isEditing) {
-    // Nur Anzeige: kein `role="button"`, kein Klick, der den Editor öffnet —
-    // sonst wirkte ein reiner Text weiterhin wie ein Feld.
+    // Display only: no `role="button"`, no click that opens the editor —
+    // otherwise plain text would still look like a field.
     if (readOnly) {
       return (
         <div className={className}>
@@ -223,15 +226,15 @@ export function EditableRichText({
 
     return (
       <div className={className}>
-        {/* biome-ignore lint/a11y/useSemanticElements: enthält Absätze und Listen — ein <button> wäre ungültiges HTML */}
+        {/* biome-ignore lint/a11y/useSemanticElements: contains paragraphs and lists — a <button> would be invalid HTML */}
         <div
           className={styles.preview}
           role="button"
           tabIndex={0}
           aria-label={label}
-          // Was im Text selbst bedienbar ist, behält seinen Klick: ein Link
-          // führt dorthin, der Kopierknopf am Codeblock kopiert. Nur ein Klick
-          // auf den Text dazwischen öffnet den Editor.
+          // Whatever is operable within the text itself keeps its click: a
+          // link navigates there, the copy button on a code block copies.
+          // Only a click on the text in between opens the editor.
           onClick={(e) => {
             if ((e.target as HTMLElement).closest("a, button")) return;
             setIsEditing(true);
@@ -250,36 +253,36 @@ export function EditableRichText({
 
   return (
     <div className={className}>
-      {/* Werkzeugleiste und Schreibfläche gehören zusammen, deshalb ein
-          `fieldset`. Mit eigenen Knöpfen (`actions`) ist das reine Verlassen
-          ohne Bedeutung — siehe `onBlur` unten. */}
+      {/* Toolbar and writing surface belong together, hence a `fieldset`.
+          With its own buttons (`actions`), plain blur has no meaning — see
+          `onBlur` below. */}
       <fieldset
         className={styles.shell}
         onMouseDown={() => {
           pressedInside.current = true;
         }}
         onBlur={
-          // Mit eigenen Knöpfen bleibt die Bearbeitung stehen, ganz gleich
-          // wohin der Fokus wandert — verlassen wird sie nur über Speichern,
-          // Abbrechen oder Escape (wie bei Jira). Ohne Knöpfe (`actions={false}`,
-          // z.B. im Anlegen-Fenster mit eigenem „Fertig") gibt es diesen Weg
-          // nicht, dort übernimmt weiterhin das Verlassen des Felds.
+          // With its own buttons, editing stays put no matter where focus
+          // wanders — it's only left via save, cancel, or Escape (like
+          // Jira). Without buttons (`actions={false}`, e.g. in the
+          // create-issue window with its own "Done"), this path doesn't
+          // exist, and leaving the field still takes over there.
           actions
             ? undefined
             : (e) => {
                 if (e.currentTarget.contains(e.relatedTarget)) return;
-                // Am Ziehgriff gedrückt: der Fokus ist zwar weg, der Editor
-                // aber nicht verlassen. Übernommen wird erst beim nächsten
-                // echten Blur.
+                // Pressed down on the resize handle: focus is gone, but the
+                // editor hasn't been left. Committed only on the next real
+                // blur.
                 if (pressedInside.current) return;
-                // Ein nativer Datei-Dialog ist offen — siehe `filePickerOpen`.
+                // A native file dialog is open — see `filePickerOpen`.
                 if (filePickerOpen.current) return;
-                // Vorschlagsliste, Kalenderblatt und Adresszeile hängen per
-                // Portal am `body` und liegen damit außerhalb dieses Baums.
-                // Der Fokus ist zwar aus dem Text heraus, der Editor aber
-                // nicht verlassen — ohne die Ausnahme klappte er beim Öffnen
-                // sofort wieder zu und nähme das Portal gleich mit. Alle drei
-                // tragen dafür `data-editor-floating`.
+                // The suggestion list, date picker, and address bar are
+                // attached to `body` via a portal and thus sit outside this
+                // tree. Focus has left the text, but the editor hasn't been
+                // left — without this exception it would collapse
+                // immediately on opening and take the portal down with it.
+                // All three carry `data-editor-floating` for this reason.
                 if (
                   (e.relatedTarget as HTMLElement | null)?.closest(
                     "[data-editor-floating]",

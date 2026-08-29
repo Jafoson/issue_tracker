@@ -16,36 +16,36 @@ import { PLATFORM, requirePermission } from "@/lib/permissions";
 import { OWNER_ROLE_KEY } from "@/lib/rbac";
 import { resolveAvatarUrl } from "@/lib/storage";
 
-// ─── Plattform-Ebene: die Hülle des Systems ───────────────────────────────────
+// ─── Platform level: the shell of the system ──────────────────────────────────
 //
-// Workspace-übergreifende Abfragen für `/admin`. Nur in Server Components und
-// Layouts verwenden (DB-Zugriff).
+// Cross-workspace queries for `/admin`. Use only in server components and
+// layouts (DB access).
 //
-// **Die Grenze dieser Datei ist zugleich eine fachliche Zusage.** Die
-// Plattformverwaltung sieht das System, nicht das, was darin gearbeitet wird:
-// Konten, Rollen, Workspaces, Projekt-Stammdaten, das Protokoll. Kein Issue,
-// kein Kommentar, kein Anhang, kein Beschreibungstext — nicht gefiltert,
-// sondern gar nicht erst geladen. Wer hier eine Abfrage ergänzt, die
-// `issue`, `comment` oder eine Textspalte daraus liest, hebt diese Zusage auf.
+// **This file's boundary is also a substantive commitment.** Platform
+// administration sees the system, not what's being worked on inside it:
+// accounts, roles, workspaces, project metadata, the audit log. No issue, no
+// comment, no attachment, no description text — not filtered out, but never
+// loaded in the first place. Whoever adds a query here that reads `issue`,
+// `comment`, or a text column from either one breaks this commitment.
 //
-// Wer in ein Projekt hineinsehen muss, nimmt einen der beiden dafür gedachten
-// Wege — und beide sind sichtbar: `tenant.access` (Support-Rolle) oder den
-// Notfall-Zugriff aus `features/admin/actions.ts`, der eine Begründung verlangt
-// und im Protokoll landet.
+// Anyone who needs to look inside a project takes one of the two paths meant
+// for that — and both are visible: `tenant.access` (support role) or the
+// break-glass access from `features/admin/actions.ts`, which requires a
+// reason and ends up in the audit log.
 //
-// Das gilt auch für das Dashboard weiter unten: es zählt Aufgaben und
-// Kommentare, es liest keine. Eine Zahl über der Zeit sagt, wie viel gearbeitet
-// wurde — kein Wort davon, woran.
+// The same applies to the dashboard further down: it counts issues and
+// comments, it doesn't read any. A number over time says how much work
+// happened — not a word about what it was.
 //
-// Jede Abfrage prüft selbst. Das Layout in `app/[locale]/(default)/admin` tut
-// das zwar auch, aber ein Layout ist keine Sicherheitsgrenze: es schützt nur die
-// Seiten unter sich, nicht jeden Aufruf dieser Funktionen.
+// Every query checks for itself. The layout in `app/[locale]/(default)/admin`
+// also does this, but a layout is not a security boundary: it only protects
+// the pages beneath it, not every call to these functions.
 
 async function requirePlatformAccess(): Promise<void> {
   await requirePermission("platform.access", PLATFORM);
 }
 
-/** Die Plattform-Rolle eines Users, so weit die Oberfläche sie braucht. */
+/** A user's platform role, to the extent the UI needs it. */
 export interface PlatformRoleRef {
   key: string;
   name: string;
@@ -63,7 +63,7 @@ export interface CurrentUser {
 }
 
 /**
- * Ein Konto, wie die Benutzerverwaltung es zeigt.
+ * An account, as the user management screen shows it.
  */
 export interface PlatformUser {
   id: string;
@@ -77,12 +77,12 @@ export interface PlatformUser {
   workspaceCount: number;
   createdAt: Date;
   lastSeenAt: Date | null;
-  /** Gesetzt heißt stillgelegt: kein Zutritt, keine Rechte. */
+  /** Set means deactivated: no access, no permissions. */
   deactivatedAt: Date | null;
-  /** Ob ein Passkey hinterlegt ist. Sonst: verbundener Anbieter oder
-   *  Einladung noch nicht angenommen. */
+  /** Whether a passkey is registered. Otherwise: connected provider or
+   *  invitation not yet accepted. */
   hasPasskey: boolean;
-  /** Konto steht, aber die Einladung ist noch nirgends angenommen. */
+  /** Account exists, but the invitation hasn't been accepted anywhere yet. */
   invitePending: boolean;
 }
 
@@ -94,11 +94,11 @@ export interface PlatformStats {
   workspaces: number;
   users: number;
   projects: number;
-  /** Konten, die stillgelegt sind — sie zählen in `users` mit. */
+  /** Accounts that are deactivated — they're still counted in `users`. */
   deactivatedUsers: number;
-  /** Projekte ohne Besitzer: gelöschtes Konto, niemand zuständig. */
+  /** Projects with no owner: deleted account, nobody responsible. */
   orphanedProjects: number;
-  /** Notfall-Zugriffe der letzten 30 Tage. Sollte klein sein und bleiben. */
+  /** Break-glass accesses in the last 30 days. Should be small and stay that way. */
   recentBreakGlass: number;
 }
 
@@ -129,10 +129,10 @@ export const getCurrentUser = cache(
 );
 
 /**
- * Alle Konten, seitenweise. `limit` ungesetzt heißt unbegrenzt — so ruft es die
- * Besitzer-Zuordnung in `AdminProjectsPage` auf, die jedes Konto zur Auswahl
- * braucht, nicht nur die erste Seite. Die Benutzerverwaltung selbst
- * (`AdminUsersPage`) setzt `limit` explizit für Infinite Scroll.
+ * All accounts, paginated. `limit` unset means unlimited — that's how the
+ * owner assignment in `AdminProjectsPage` calls it, since it needs every
+ * account to choose from, not just the first page. The user management
+ * screen itself (`AdminUsersPage`) sets `limit` explicitly for infinite scroll.
  */
 export const getAllUsers = cache(
   async (
@@ -188,7 +188,7 @@ export const getAllUsers = cache(
   },
 );
 
-/** Eine vergebbare Plattform-Rolle. */
+/** An assignable platform role. */
 export interface PlatformRoleOption {
   id: string;
   key: string;
@@ -197,9 +197,9 @@ export interface PlatformRoleOption {
 }
 
 /**
- * Die Rollen, die es auf der Plattform-Ebene gibt — für die Auswahl in der
- * Benutzerverwaltung. Welche davon jemand tatsächlich vergeben darf, entscheidet
- * `setPlatformRole` am Rang; die Liste selbst ist keine Erlaubnis.
+ * The roles that exist at the platform level — for the selection in user
+ * management. Which of them someone can actually assign is decided by
+ * `setPlatformRole` based on rank; the list itself is not a permission.
  */
 export const getPlatformRoles = cache(
   async (): Promise<PlatformRoleOption[]> => {
@@ -213,11 +213,11 @@ export const getPlatformRoles = cache(
 );
 
 /**
- * Ein Projekt, wie die Plattformverwaltung es sieht: seine Hülle.
+ * A project, as platform administration sees it: its shell.
  *
- * Name, Ort, Besitzer, Alter, Zustand, Größe — genug, um verwaiste Projekte zu
- * finden, Kosten zuzuordnen und aufzuräumen. Die Zahlen sind Zählungen, keine
- * Inhalte: `issueCount` sagt, wie viel darin liegt, nicht was.
+ * Name, location, owner, age, state, size — enough to find orphaned projects,
+ * attribute costs, and clean up. The numbers are counts, not content:
+ * `issueCount` says how much is in there, not what.
  */
 export interface PlatformProject {
   id: string;
@@ -229,13 +229,13 @@ export interface PlatformProject {
   createdAt: Date;
   archivedAt: Date | null;
   workspace: { id: string; name: string; color: string; suspended: boolean };
-  /** Wer es angelegt hat — null, wenn das Konto gelöscht wurde. */
+  /** Who created it — null if the account was deleted. */
   owner: { id: string; firstName: string; lastName: string } | null;
   memberCount: number;
   issueCount: number;
   /**
-   * Ohne Besitzer oder ohne ein einziges Mitglied — niemand ist mehr zuständig.
-   * Genau die Zeilen, für die es die Neuzuordnung gibt.
+   * No owner, or not a single member — nobody is responsible anymore.
+   * Exactly the rows the reassignment feature exists for.
    */
   orphaned: boolean;
 }
@@ -264,8 +264,8 @@ export const getAllProjects = cache(
           select: { id: true, name: true, color: true, suspended: true },
         },
         createdBy: { select: { id: true, firstName: true, lastName: true } },
-        // Zählungen, keine Zeilen: die Oberfläche zeigt „14 Aufgaben", nicht deren
-        // Titel. Ein `select` auf `issues` stünde hier nie.
+        // Counts, not rows: the UI shows "14 issues", not their titles. A
+        // `select` on `issues` would never belong here.
         _count: { select: { members: true, issues: true } },
       },
     });
@@ -332,11 +332,11 @@ export const getPlatformStats = cache(async (): Promise<PlatformStats> => {
 });
 
 /**
- * Das Protokoll der ganzen Plattform.
+ * The audit log of the whole platform.
  *
- * `audit.view` und nicht `platform.access`: den Bereich zu betreten ist eine
- * Sache, das Protokoll zu lesen eine andere. Wer es lesen darf, sieht darin auch
- * die eigenen Zeilen — ein Protokoll, das seinen Leser ausspart, wäre keins.
+ * `audit.view` and not `platform.access`: entering the area is one thing,
+ * reading the log another. Anyone allowed to read it also sees their own
+ * entries in it — a log that excludes its reader wouldn't be a log at all.
  */
 export const getAuditEntries = cache(
   async (limit = ACTIVITY_PAGE_SIZE): Promise<ActivityPage> => {
@@ -350,7 +350,7 @@ export const getAuditEntries = cache(
   },
 );
 
-// Ziel für den „Zurück"-Button: der erste Workspace des Users (oder null).
+// Target for the "back" button: the user's first workspace (or null).
 export const getFirstWorkspaceId = cache(
   async (userId: string): Promise<string | null> => {
     const membership = await db.workspaceMember.findFirst({
@@ -364,32 +364,32 @@ export const getFirstWorkspaceId = cache(
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 //
-// Zahlen über die Zeit: wie viel angelegt wurde, und wie sich das gegenüber dem
-// Zeitraum davor verhält.
+// Numbers over time: how much was created, and how that compares to the
+// preceding period.
 //
-// Gruppiert wird in der Datenbank (`date_trunc`), nicht in JavaScript. Der
-// naheliegende Weg — alle Zeitstempel holen und im Speicher zählen — überträgt
-// bei einem Jahr Betrieb Hunderttausende Zeilen, um am Ende zwölf Zahlen zu
-// zeigen. Die Achse selbst entsteht dagegen im Code (`lib/buckets.ts`): eine
-// Gruppierung kennt nur Töpfe, in denen etwas liegt, und ein ruhiges Wochenende
-// wäre sonst keine Null, sondern ein Loch.
+// Grouping happens in the database (`date_trunc`), not in JavaScript. The
+// obvious approach — fetch every timestamp and count in memory — would, after
+// a year of operation, transfer hundreds of thousands of rows just to show
+// twelve numbers at the end. The axis itself, by contrast, is built in code
+// (`lib/buckets.ts`): a `GROUP BY` only knows buckets that have something in
+// them, and a quiet weekend would otherwise not be a zero but a gap.
 
-/** Eine Marke der Zeitachse mit allem, was in ihren Topf fiel. */
+/** One marker on the time axis with everything that fell into its bucket. */
 export interface DashboardPoint {
-  /** Anfang des Topfes, `YYYY-MM-DD`. */
+  /** Start of the bucket, `YYYY-MM-DD`. */
   date: string;
   issues: number;
   comments: number;
   projects: number;
   users: number;
   workspaces: number;
-  /** Erfolgreiche Anmeldungen — aus dem Protokoll, nicht aus `User`. */
+  /** Successful sign-ins — from the audit log, not from `User`. */
   logins: number;
-  /** Gescheiterte Versuche: falsches Passwort, unbekanntes oder stillgelegtes Konto. */
+  /** Failed attempts: wrong password, unknown or deactivated account. */
   failedLogins: number;
 }
 
-/** Was im Zeitraum entstanden ist. */
+/** What was created in the period. */
 export interface DashboardTotals {
   issues: number;
   comments: number;
@@ -398,7 +398,7 @@ export interface DashboardTotals {
   workspaces: number;
 }
 
-/** Ein Workspace, gemessen an seinem Umfang — Stammdaten, keine Inhalte. */
+/** A workspace, measured by its scope — metadata, no content. */
 export interface WorkspaceSize {
   id: string;
   name: string;
@@ -412,23 +412,23 @@ export interface DashboardData {
   range: RangeKey;
   unit: BucketUnit;
   points: DashboardPoint[];
-  /** Im gewählten Zeitraum entstanden. */
+  /** Created within the chosen period. */
   totals: DashboardTotals;
-  /** Im gleich langen Zeitraum davor entstanden — die Bezugsgröße der Trends. */
+  /** Created in the equally long period before it — the baseline for trends. */
   previous: DashboardTotals;
-  /** Der Gesamtbestand, unabhängig vom Zeitraum. */
+  /** The total stock, independent of the period. */
   allTime: DashboardTotals;
   topWorkspaces: WorkspaceSize[];
 }
 
 /**
- * Die Tabellen, aus denen das Dashboard zählt — mit der Spalte, die den
- * Zeitpunkt trägt.
+ * The tables the dashboard counts from — with the column that carries the
+ * timestamp.
  *
- * Fest verdrahtet und nicht von außen bestimmbar: Tabellen- und Spaltennamen
- * lassen sich in SQL nicht als Parameter übergeben, sie werden in die Abfrage
- * geschrieben. Käme hier ein Wert von außen herein, wäre das eine Einladung.
- * Deshalb steht die Liste hier, und `countsByBucket` nimmt nur Schlüssel daraus.
+ * Hardcoded and not determinable from outside: table and column names can't
+ * be passed as parameters in SQL, they get written directly into the query.
+ * If a value came in from outside here, that would be an open invitation.
+ * That's why the list lives here, and `countsByBucket` only takes keys from it.
  */
 const SOURCES = {
   issues: { table: "Issue", column: "created" },
@@ -443,11 +443,11 @@ type Source = keyof typeof SOURCES;
 const SOURCE_KEYS = Object.keys(SOURCES) as Source[];
 
 /**
- * Wie viel je Topf entstanden ist.
+ * How much was created per bucket.
  *
- * `date_trunc` bekommt die Einheit als Parameter — das erste Argument ist Text,
- * das darf es. Tabelle und Spalte dagegen sind Bezeichner und kommen aus
- * `SOURCES`, nie von außen.
+ * `date_trunc` gets the unit as a parameter — the first argument is text,
+ * that's fine. Table and column, on the other hand, are identifiers and come
+ * from `SOURCES`, never from outside.
  */
 async function countsByBucket(
   source: Source,
@@ -470,16 +470,16 @@ async function countsByBucket(
 }
 
 /**
- * Anmeldungen je Topf, gelungene und gescheiterte.
+ * Sign-ins per bucket, successful and failed.
  *
- * Die Quelle ist das Protokoll und nicht `User.lastSeenAt`: dort steht nur der
- * letzte Zeitpunkt je Konto, aus dem sich kein Verlauf bauen lässt. Das
- * Protokoll hält jeden Vorgang einzeln fest — genau dafür ist es da.
+ * The source is the audit log and not `User.lastSeenAt`: that column only
+ * holds the most recent timestamp per account, from which no history can be
+ * built. The audit log records every event individually — that's exactly
+ * what it's for.
  *
- * Beide Reihen in einer Abfrage: sie unterscheiden sich nur in einer Spalte.
- * Die Schlüssel kommen als Werte aus `lib/audit/actions.ts`, damit eine
- * Umbenennung dort hier den Typecheck bricht statt still eine leere Reihe zu
- * liefern.
+ * Both series in one query: they only differ in one column. The keys come as
+ * values from `lib/audit/actions.ts`, so that a rename there breaks the type
+ * check here instead of silently returning an empty series.
  */
 async function loginsByBucket(
   unit: BucketUnit,
@@ -511,7 +511,7 @@ async function loginsByBucket(
   return { ok, failed };
 }
 
-/** Wie viel es in einem Zeitfenster insgesamt gab. */
+/** How much there was in total within a time window. */
 async function totalsIn(from: Date, to: Date): Promise<DashboardTotals> {
   const range = { gte: from, lt: to };
   const [issues, comments, projects, users, workspaces] = await Promise.all([
@@ -525,10 +525,10 @@ async function totalsIn(from: Date, to: Date): Promise<DashboardTotals> {
 }
 
 /**
- * Die größten Workspaces, gemessen an ihren Aufgaben.
+ * The largest workspaces, measured by their issues.
  *
- * Für die Frage, wo die Last liegt — und wem sie zuzurechnen ist. Gezählt wird
- * über die Projekte des Workspace; gelesen wird nichts davon.
+ * For the question of where the load lies — and who it's attributable to.
+ * Counting happens across the workspace's projects; none of it is read.
  */
 async function largestWorkspaces(limit: number): Promise<WorkspaceSize[]> {
   const rows = await db.workspace.findMany({
@@ -571,8 +571,8 @@ export const getDashboard = cache(
         loginsByBucket(current.unit, current.from, current.to),
         totalsIn(current.from, current.to),
         totalsIn(before.from, before.to),
-        // Ohne Zeitgrenze: der Bestand ist die Bezugsgröße, vor der die
-        // Bewegung im Zeitraum überhaupt eine Bedeutung bekommt.
+        // With no time bound: the total stock is the baseline against which
+        // the movement in the period gains any meaning at all.
         totalsIn(new Date(0), new Date(8.64e15)),
         largestWorkspaces(5),
       ]);
@@ -581,8 +581,8 @@ export const getDashboard = cache(
       SOURCE_KEYS.map((source, index) => [source, buckets[index]]),
     );
 
-    // Die Achse führt, nicht das Ergebnis der Gruppierung: jeder Topf kommt vor,
-    // auch der leere.
+    // The axis leads, not the result of the grouping: every bucket appears,
+    // even the empty one.
     const points: DashboardPoint[] = current.keys.map((date) => ({
       date,
       issues: byKey.get("issues")?.get(date) ?? 0,
@@ -608,12 +608,12 @@ export const getDashboard = cache(
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────
 //
-// Ein Workspace ist auf dieser Ebene ein Mandant: eine Hülle mit einem Namen,
-// einem Verantwortlichen, einer Größe und einem Zustand. Was darin gearbeitet
-// wird, steht auch hier nicht — `issues` ist eine Zählung, und einen Weg hinein
-// gibt es von dieser Liste aus nicht.
+// At this level, a workspace is a tenant: a shell with a name, someone
+// responsible, a size, and a state. What's being worked on inside doesn't
+// appear here either — `issues` is a count, and there's no path in from this
+// list.
 
-/** Ein Workspace, wie die Plattformverwaltung ihn sieht. */
+/** A workspace, as platform administration sees it. */
 export interface PlatformWorkspace {
   id: string;
   name: string;
@@ -621,11 +621,11 @@ export interface PlatformWorkspace {
   color: string;
   avatarUrl: string | null;
   createdAt: Date;
-  /** Gesperrt: niemand kommt hinein, auch die Leitung nicht. */
+  /** Suspended: nobody gets in, not even leadership. */
   suspended: boolean;
   /**
-   * Wer ihn führt — das Mitglied mit der Owner-Rolle. Null, wenn es keines mehr
-   * gibt: dann ist der Mandant führungslos und niemand kann ihn verwalten.
+   * Who runs it — the member with the owner role. Null if there is no
+   * longer one: then the tenant is leaderless and nobody can administer it.
    */
   owner: {
     id: string;
@@ -637,23 +637,23 @@ export interface PlatformWorkspace {
   projects: number;
   issues: number;
   /**
-   * Wann zuletzt eine Aufgabe angelegt wurde. Das grobe Maß für „wird der
-   * Mandant überhaupt noch benutzt" — null heißt: noch nie.
+   * When an issue was last created. The rough measure of "is the tenant even
+   * still being used" — null means: never.
    */
   lastActivityAt: Date | null;
 }
 
 /**
- * Alle Workspaces der Plattform.
+ * All workspaces on the platform.
  *
- * Nur `platform.access` und keine eigene Leseberechtigung: dieselbe Auskunft
- * steht bereits auf dem Dashboard (Bestand, größte Workspaces), und beide
- * Plattform-Rollen brauchen sie — der Support, um einen Mandanten zu finden,
- * die Verwaltung, um ihn zu betreuen. Eine zusätzliche Hürde vor der Liste
- * schützte nichts, was nicht eine Seite weiter ohnehin sichtbar wäre.
+ * Only `platform.access` and no separate read permission: the same
+ * information is already on the dashboard (totals, largest workspaces), and
+ * both platform roles need it — support, to find a tenant; administration, to
+ * manage it. An extra hurdle in front of the list wouldn't protect anything
+ * that isn't visible one page over anyway.
  *
- * Anfassen ist eine andere Frage: dafür gelten `workspace.suspend` und
- * `workspace.delete` (siehe `features/admin/actions.ts`).
+ * Taking action is a different question: `workspace.suspend` and
+ * `workspace.delete` apply there (see `features/admin/actions.ts`).
  */
 export const getAllWorkspaces = cache(
   async (
@@ -677,8 +677,8 @@ export const getAllWorkspaces = cache(
           suspended: true,
           _count: { select: { members: true, projects: true } },
           projects: { select: { _count: { select: { issues: true } } } },
-          // Nur die Leitung, nicht die Mitgliederliste: wer im Mandanten ist,
-          // steht in der Benutzerverwaltung, und hier zählt, wer zuständig ist.
+          // Only leadership, not the member list: who's in the tenant shows
+          // up in user management, and here what counts is who's responsible.
           members: {
             where: { role: { key: OWNER_ROLE_KEY } },
             take: 1,
@@ -695,8 +695,8 @@ export const getAllWorkspaces = cache(
           },
         },
       }),
-      // Ein Zug für alle Mandanten. Über `Project` verbunden, weil eine Aufgabe
-      // den Workspace nicht selbst kennt.
+      // One trip for all tenants. Joined via `Project`, because an issue
+      // doesn't know its workspace directly.
       db.$queryRaw<{ workspaceId: string; last: Date | null }[]>`
         SELECT p."workspaceId" AS "workspaceId", MAX(i."created") AS last
           FROM "Issue" i

@@ -1,8 +1,8 @@
 import styles from "./layout.module.scss";
 
-// Wie beim Projekt: die Topbar rendert jede View selbst — nur sie kennt die
-// Anzahl der gefilterten Issues, die im Titel steht. Das Layout hält nur die
-// Spalte zusammen.
+// As with the project: each view renders its own topbar — only it knows the
+// count of filtered issues shown in the title. This layout only holds the
+// column together.
 export default function MyLayout({ children }: { children: React.ReactNode }) {
   return <div className={styles.wrapper}>{children}</div>;
 }

@@ -1,163 +1,163 @@
 @AGENTS.md
 
-# Issue Tracker — Projektkonventionen
+# Issue Tracker — Project Conventions
 
 ## Stack
 
-- **Next.js 16** (App Router) mit TypeScript
-- **React 19** — Server Components sind Standard
-- **Biome** für Linting und Formatting (kein ESLint, kein Prettier)
-- **SCSS** (sass) für Styles — kein Tailwind
-- **PostgreSQL** via **Prisma** (Prisma 7, `prisma.config.ts` statt `schema.prisma` als Einstiegspunkt)
+- **Next.js 16** (App Router) with TypeScript
+- **React 19** — Server Components are the default
+- **Biome** for linting and formatting (no ESLint, no Prettier)
+- **SCSS** (sass) for styles — no Tailwind
+- **PostgreSQL** via **Prisma** (Prisma 7, `prisma.config.ts` instead of `schema.prisma` as the entry point)
 
-## Next.js 16 — Breaking Changes (wichtig!)
+## Next.js 16 — Breaking Changes (important!)
 
-Diese Version weicht von älteren Next.js-Versionen ab. Vor dem Schreiben von Code immer `node_modules/next/dist/docs/` lesen.
+This version deviates from older Next.js versions. Always read `node_modules/next/dist/docs/` before writing code.
 
-- `params` und `searchParams` in Pages/Layouts sind jetzt **Promises** → immer awaiten:
+- `params` and `searchParams` in pages/layouts are now **Promises** → always await them:
   ```ts
   export default async function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
   }
   ```
-- Data Mutations verwenden **Server Functions** (`'use server'`), nicht API Routes
-- Keine `getServerSideProps` / `getStaticProps` — alles über `async` Server Components und Server Functions
+- Data mutations use **Server Functions** (`'use server'`), not API routes
+- No `getServerSideProps` / `getStaticProps` — everything goes through `async` Server Components and Server Functions
 
-## Komponentenarchitektur
+## Component Architecture
 
-### Business Logic vs. UI trennen
+### Separating business logic from UI
 
-Jede Feature-Komponente wird in zwei Teile aufgeteilt:
+Every feature component is split into two parts:
 
 ```
 components/
   issues/
-    IssueList.tsx        ← Server Component: Daten laden, Logik
+    IssueList.tsx        ← Server Component: data fetching, logic
     IssueList.module.scss
-    IssueListView.tsx    ← UI-Rendering (kann "use client" sein wenn nötig)
-    IssueCard.tsx        ← Wiederverwendbare Teil-Komponente
+    IssueListView.tsx    ← UI rendering (can be "use client" if needed)
+    IssueCard.tsx        ← Reusable sub-component
     IssueCard.module.scss
 ```
 
-- `*View.tsx` oder `*UI.tsx` = reines Rendering, keine Geschäftslogik
-- Server Components fetchen Daten und reichen sie als Props weiter
-- Client Components (`'use client'`) nur für Interaktivität (onClick, onChange, Browser-APIs)
+- `*View.tsx` or `*UI.tsx` = pure rendering, no business logic
+- Server Components fetch data and pass it down as props
+- Client Components (`'use client'`) only for interactivity (onClick, onChange, browser APIs)
 
-### Wiederverwendung
+### Reuse
 
-- Komponenten modular halten — lieber eine Komponente öfter nutzen als duplizieren
-- Shared UI in `components/ui/` ablegen
+- Keep components modular — prefer reusing a component over duplicating it
+- Put shared UI in `components/ui/`
 
 ## Styling
 
-- **SCSS Modules** (`.module.scss`) für Komponenten-Styles
-- **Globale Styles** in `app/globals.css` oder `app/globals.scss`
-- Aussehen-Änderungen **immer in CSS/SCSS** umsetzen, nicht per JavaScript
-- CSS-Features aktiv nutzen: `:before`, `:after`, CSS Custom Properties, `:is()`, `:has()`
-- Keine Inline-Styles für Aussehen (nur für wirklich dynamische Werte wie berechnete Positionen)
+- **SCSS Modules** (`.module.scss`) for component styles
+- **Global styles** in `app/globals.css` or `app/globals.scss`
+- Implement appearance changes **always in CSS/SCSS**, not in JavaScript
+- Actively use CSS features: `:before`, `:after`, CSS custom properties, `:is()`, `:has()`
+- No inline styles for appearance (only for genuinely dynamic values like computed positions)
 
-## React-Regeln
+## React Rules
 
-- **Server Rendering bevorzugen** — `async` Server Components sind Standard
-- `useEffect` minimieren — nur wenn kein server-seitiger Ansatz möglich ist
-- `useMemo` / `useCallback` nur bei nachgewiesenem Performance-Problem einsetzen
-- State so nah wie möglich an der Verwendungsstelle halten, nicht global liften wenn vermeidbar
-- Formulare per `<form action={serverAction}>` statt `onSubmit` + fetch
+- **Prefer server rendering** — `async` Server Components are the default
+- Minimize `useEffect` — only when no server-side approach is possible
+- Only use `useMemo` / `useCallback` for a proven performance problem
+- Keep state as close as possible to where it's used, don't lift it globally when avoidable
+- Forms via `<form action={serverAction}>` instead of `onSubmit` + fetch
 
-## Rich Text (Beschreibungen und Kommentare)
+## Rich Text (descriptions and comments)
 
-`Issue.description` und `Comment.body` sind **ProseMirror-Dokumente** (`Json`),
-keine Strings. Lesen und Schreiben sind getrennt:
+`Issue.description` and `Comment.body` are **ProseMirror documents** (`Json`),
+not strings. Reading and writing are separate:
 
-| | Komponente | Umgebung |
+| | Component | Environment |
 |---|---|---|
-| Anzeigen | `components/ui/atoms/RichText` | Server Component, **keine** Abhängigkeit |
-| Bearbeiten | `components/ui/atoms/RichTextEditor` | `"use client"`, Tiptap, per `next/dynamic` |
+| Display | `components/ui/atoms/RichText` | Server Component, **no** dependency |
+| Edit | `components/ui/atoms/RichTextEditor` | `"use client"`, Tiptap, via `next/dynamic` |
 
-- Die Anzeige übersetzt das JSON von Hand nach React — kein `generateHTML`, kein
-  `dangerouslySetInnerHTML`. Wer dort einen Knotentyp ergänzt, muss die passende
-  Extension im Editor mitliefern (und umgekehrt).
-- Der Editor wird nie direkt importiert, sondern über `next/dynamic` mit
-  `ssr: false` — sonst landet das Bündel auch im Lesepfad.
-- Fachliche Vorschlagsdaten (`@` Mitglieder, `#` Issues) kommen als Props herein.
-  `components/ui` kennt weder Workspace noch Prisma; die Brücke ist
+- Display translates the JSON to React by hand — no `generateHTML`, no
+  `dangerouslySetInnerHTML`. Whoever adds a node type there must ship the
+  matching extension in the editor (and vice versa).
+- The editor is never imported directly, only via `next/dynamic` with
+  `ssr: false` — otherwise its bundle would also end up on the read path.
+- Domain suggestion data (`@` members, `#` issues) comes in as props.
+  `components/ui` knows nothing about workspaces or Prisma; the bridge is
   `features/issues/components/IssueRichText`.
-- Neben jeder Dokumentspalte liegt eine abgeleitete Textspalte
-  (`descriptionText`, `bodyText`) für die Suche — `contains` arbeitet nicht auf
-  `Json`. Sie wird in `features/issues/actions.ts` bei **jedem** Schreibvorgang
-  aus `toPlainText(doc)` neu gesetzt.
-- `lib/richtext/` ist abhängigkeitsfrei und läuft überall (Tests, Seed, Skripte):
-  `toDoc`/`isEmptyDoc` (Eingang aus der DB), `toPlainText`/`toPreview`
-  (Suche, Vorschauen), `fromMarkdown` (Seed und einmalige Migration).
+- Next to every document column sits a derived text column
+  (`descriptionText`, `bodyText`) for search — `contains` doesn't work on
+  `Json`. It's freshly set from `toPlainText(doc)` in
+  `features/issues/actions.ts` on **every** write.
+- `lib/richtext/` has no dependencies and runs everywhere (tests, seed,
+  scripts): `toDoc`/`isEmptyDoc` (input from the DB), `toPlainText`/`toPreview`
+  (search, previews), `fromMarkdown` (seed and one-off migration).
 
-## E-Mail (`lib/mail`)
+## Email (`lib/mail`)
 
-SMTP, ausschließlich über die Umgebung konfiguriert (`SMTP_HOST`, `SMTP_PORT`,
-`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, dazu optional
-`MAIL_COMPANY_NAME`/`MAIL_COMPANY_ADDRESS` für die Fußzeile — siehe
-`example.env`). Ohne `SMTP_HOST` verschickt die App keine Mails; alle Wege
-bleiben dabei funktionsfähig (Einladungslink zum Kopieren, In-App-Benachrichtigungen).
-`tests/setup.ts` löscht alle `SMTP_*`-Variablen vor jedem Testlauf — sonst
-würde ein lokal für Mailpit & Co. gesetztes `SMTP_HOST` in `.env` (Bun lädt
-`.env` auch für `bun test`) `isMailConfigured()` mitten im Unit-Test wahr
-werden lassen.
+SMTP, configured exclusively through the environment (`SMTP_HOST`, `SMTP_PORT`,
+`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, plus optional
+`MAIL_COMPANY_NAME`/`MAIL_COMPANY_ADDRESS` for the footer — see
+`example.env`). Without `SMTP_HOST` the app sends no mail; every path stays
+functional regardless (invitation link to copy, in-app notifications).
+`tests/setup.ts` clears all `SMTP_*` variables before every test run —
+otherwise an `SMTP_HOST` set locally for Mailpit & co. in `.env` (Bun loads
+`.env` for `bun test` too) would make `isMailConfigured()` come back true in
+the middle of a unit test.
 
-| Datei | Aufgabe |
+| File | Job |
 |---|---|
-| `lib/mail/config.ts` | Liest die SMTP-Variablen, `isMailConfigured()` |
-| `lib/mail/transport.ts` | `nodemailer`-Transport, wiederverwendet solange die Konfiguration gleich bleibt |
-| `lib/mail/send.ts` | `sendMail()` — schluckt Fehler, no-op ohne Konfiguration |
-| `lib/mail/templates/layout.ts` | `renderLayout()` (Rahmen, Marke, Fußzeile), `renderDetailTable()`, `renderAlertBox()` |
+| `lib/mail/config.ts` | Reads the SMTP variables, `isMailConfigured()` |
+| `lib/mail/transport.ts` | `nodemailer` transport, reused as long as the config stays the same |
+| `lib/mail/send.ts` | `sendMail()` — swallows errors, no-op without configuration |
+| `lib/mail/templates/layout.ts` | `renderLayout()` (frame, branding, footer), `renderDetailTable()`, `renderAlertBox()` |
 | `lib/mail/templates/html.ts` | `escapeHtml()`, `humanizeKey()`, `formatDateDe()` |
-| `lib/mail/templates/*.ts` | Je Anlass eine reine Funktion `(Input) → { subject, html, text }`, kein DB-Zugriff |
-| `lib/mail/index.ts` | Barrel + `sendInvitationEmail()`/`sendMemberRemovedEmail()` (laden Workspace-/Projekt-/Namen selbst) |
+| `lib/mail/templates/*.ts` | One pure function per occasion, `(Input) → { subject, html, text }`, no DB access |
+| `lib/mail/index.ts` | Barrel + `sendInvitationEmail()`/`sendMemberRemovedEmail()` (load workspace/project/names themselves) |
 
-Vorlagen, Stand heute:
+Templates, as of today:
 
-| Datei | Anlass | Versandpunkt |
+| File | Occasion | Send point |
 |---|---|---|
-| `invitation.ts` | Einladung (neues Konto) | `sendInvitationEmail()`, aus den Invite-Aktionen |
-| `memberRemoved.ts` | Aus Workspace/Projekt entfernt | `sendMemberRemovedEmail()`, aus `removeMember`/`removeProjectMember` |
-| `notification.ts` | assigned/mentioned/comment/status/invite/role | `lib/notify` (per `*Email`-Spalte) |
-| `welcome.ts` | Registrierung mit Passwort | **noch nicht verdrahtet** |
-| `emailVerification.ts` | E-Mail-Adresse bestätigen | **noch nicht verdrahtet** (kein Token-System) |
-| `passwordReset.ts` | Passwort zurücksetzen | **noch nicht verdrahtet** (kein Reset-Token) |
-| `weeklyDigest.ts` | Wöchentliche Zusammenfassung | **noch nicht verdrahtet** (kein Job, keine Abfrage) |
-| `issueUpdate.ts` | Sammel-Mail für Titel/Priorität/Labels | **noch nicht verdrahtet** (kein `NotificationEvent` dafür) |
+| `invitation.ts` | Invitation (new account) | `sendInvitationEmail()`, from the invite actions |
+| `memberRemoved.ts` | Removed from workspace/project | `sendMemberRemovedEmail()`, from `removeMember`/`removeProjectMember` |
+| `notification.ts` | assigned/mentioned/comment/status/invite/role | `lib/notify` (per `*Email` column) |
+| `welcome.ts` | Registration with password | **not wired up yet** |
+| `emailVerification.ts` | Confirm email address | **not wired up yet** (no token system) |
+| `passwordReset.ts` | Reset password | **not wired up yet** (no reset token) |
+| `weeklyDigest.ts` | Weekly summary | **not wired up yet** (no job, no query) |
+| `issueUpdate.ts` | Batched mail for title/priority/labels | **not wired up yet** (no `NotificationEvent` for it) |
 
-Drei aktive Aufrufer:
+Three active callers:
 
-- **Einladungen** (`inviteWorkspaceMember`/`inviteProjectMember` im Neukonto-Zweig)
-  rufen `sendInvitationEmail()` direkt auf — derselbe Link, den die Aktion auch
-  zum Kopieren zurückgibt. `lib/invitations.ts#createInvitation()` gibt dafür
-  `{ token, expiresAt }` zurück statt nur den Token.
-- **Entfernen** (`removeMember`/`removeProjectMember`) rufen `sendMemberRemovedEmail()`
-  direkt auf, ohne `notify()`: eine In-App-Zeile wäre bei einer
-  Workspace-Entfernung ohnehin unerreichbar (`canEnterWorkspace` sperrt den
-  Workspace schon im Layout aus, bevor die Inbox lädt), und für „nur aus dem
-  Projekt entfernt“ gibt es keinen eigenen `NotificationEvent`. Kein
-  Preference-Schalter — wie bei der Einladung.
-- **`lib/notify`** verschickt zusätzlich zur In-App-Zeile eine Mail, wenn
-  `{type}Email` in `UserPreferences` an ist (Defaults siehe
-  `EMAIL_DEFAULT` in `lib/notify/index.ts` — Kommentare und Statuswechsel sind
-  standardmäßig aus, alles andere an, deckungsgleich mit `prisma/schema.prisma`).
-  `manageUrl` (Link „Benachrichtigungen verwalten“ im Fuß) zeigt immer auf
+- **Invitations** (`inviteWorkspaceMember`/`inviteProjectMember` in the
+  new-account branch) call `sendInvitationEmail()` directly — the same link
+  the action also returns for copying. `lib/invitations.ts#createInvitation()`
+  returns `{ token, expiresAt }` for that instead of just the token.
+- **Removal** (`removeMember`/`removeProjectMember`) calls
+  `sendMemberRemovedEmail()` directly, without `notify()`: an in-app row would
+  be unreachable after a workspace removal anyway (`canEnterWorkspace` already
+  locks the workspace out in the layout before the inbox loads), and for
+  "removed from the project only" there's no dedicated `NotificationEvent`.
+  No preference toggle — same as for invitations.
+- **`lib/notify`** additionally sends a mail alongside the in-app row when
+  `{type}Email` is on in `UserPreferences` (defaults: see `EMAIL_DEFAULT` in
+  `lib/notify/index.ts` — comments and status changes are off by default,
+  everything else on, matching `prisma/schema.prisma`). `manageUrl` ("Manage
+  notifications" link in the footer) always points to
   `accountPath(workspaceId, "notifications")`.
 
-Neue Vorlage hinzufügen: Funktion in `lib/mail/templates/` ergänzen, die
-`renderLayout()` (plus bei Bedarf `renderDetailTable()`/`renderAlertBox()`)
-nutzt und `{ subject, html, text }` liefert — Werte aus der DB oder von
-Nutzereingaben immer mit `escapeHtml()` behandeln, bevor sie ins HTML kommen
-(der Klartext bleibt unescaped). `to` (Empfängeradresse, für die Fußzeile
-„Diese E-Mail wurde an … gesendet“) gehört in jedes Input-Interface.
+Adding a new template: add a function to `lib/mail/templates/` that uses
+`renderLayout()` (plus `renderDetailTable()`/`renderAlertBox()` as needed) and
+returns `{ subject, html, text }` — always run values from the DB or user
+input through `escapeHtml()` before they go into the HTML (the plain-text
+version stays unescaped). `to` (recipient address, for the footer's "This
+email was sent to …") belongs in every input interface.
 
 ## Prisma
 
 - Schema: `prisma/schema.prisma`
-- Config: `prisma.config.ts` (Prisma 7 neu)
-- Client-Output: `lib/generated/prisma`
-- DB-Zugriff nur in Server Components, Server Functions und Route Handlers
-- Prisma Client als Singleton in `lib/db.ts` exportieren
+- Config: `prisma.config.ts` (new in Prisma 7)
+- Client output: `lib/generated/prisma`
+- DB access only in Server Components, Server Functions, and Route Handlers
+- Export the Prisma client as a singleton in `lib/db.ts`
 
 ```ts
 // lib/db.ts
@@ -170,44 +170,46 @@ export const db = globalForPrisma.prisma ?? new PrismaClient()
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db
 ```
 
-### Schema ändern — Pflicht-Checkliste
+### Changing the schema — mandatory checklist
 
-**Immer alle drei Schritte ausführen, nie nur einen:**
+**Always do all three steps, never just one:**
 
 ```
-1. prisma/schema.prisma  anpassen
-2. bun prisma migrate dev --name <beschreibung>   ← erstellt Migration + regeneriert Client
-3. Seed und alle Server Actions/Queries prüfen    ← neue Pflichtfelder überall ergänzen
+1. Adjust prisma/schema.prisma
+2. bun prisma migrate dev --name <description>   ← creates migration + regenerates client
+3. Check the seed and all Server Actions/queries  ← add new required fields everywhere
 ```
 
-**Warum alle drei?**
-- Schritt 1 allein → Client und DB sind out of sync, Laufzeitfehler
-- Schritt 2 allein (ohne 1) → keine Migration, DB fehlt das Feld
-- Schritt 3 vergessen → Seed schlägt fehl, `bun db:reset` bricht ab
+**Why all three?**
+- Step 1 alone → client and DB fall out of sync, runtime errors
+- Step 2 alone (without 1) → no migration, DB is missing the field
+- Forgetting step 3 → seed fails, `bun db:reset` breaks
 
-**Feld hinzufügen (NOT NULL ohne Default):**
+**Adding a field (NOT NULL without a default):**
 ```sql
--- In der generierten migration.sql ergänzen, BEVOR migrate deploy läuft:
-ALTER TABLE "Model" ADD COLUMN "feld" TEXT;
-UPDATE "Model" SET "feld" = <backfill>;          -- bestehende Zeilen befüllen
-ALTER TABLE "Model" ALTER COLUMN "feld" SET NOT NULL;
+-- Add this to the generated migration.sql BEFORE migrate deploy runs:
+ALTER TABLE "Model" ADD COLUMN "field" TEXT;
+UPDATE "Model" SET "field" = <backfill>;          -- populate existing rows
+ALTER TABLE "Model" ALTER COLUMN "field" SET NOT NULL;
 ```
-Prisma erzeugt für NOT-NULL-Spalten ohne Default kein valides SQL für existierende Daten.
-Die Migration manuell um den Backfill-Schritt erweitern.
+Prisma doesn't generate valid SQL for existing data on NOT NULL columns
+without a default. Extend the migration manually with the backfill step.
 
-**Migrations-Verzeichnis niemals leer lassen:**
-Ein Ordner in `prisma/migrations/` ohne `migration.sql` bricht `migrate deploy` ab (Error P3015).
-Entweder die Datei erstellen oder das leere Verzeichnis löschen.
+**Never leave a migration directory empty:**
+A folder under `prisma/migrations/` without a `migration.sql` breaks
+`migrate deploy` (error P3015). Either create the file or delete the empty
+directory.
 
-### Neue Permission — Provisionierung nicht vergessen
+### New permission — don't forget provisioning
 
-Ein Eintrag in `PERMISSIONS` (`lib/rbac/permissions.ts`) ist nur die Code-Definition.
-Die Tabellen `Permission` und `RolePermission` bekommen die neue Zeile erst durch
-`provisionSystemRbac()` (`lib/rbac-provision.ts`) — aufgerufen von `prisma/seed.ts`,
-idempotent über `skipDuplicates`. Auf einer schon gesäten DB (Dev, bestehende Umgebungen)
-bleibt eine neue Permission sonst wirkungslos: `requirePermission()` schlägt fehl, ohne
-dass Schema oder Migration etwas davon ahnen lassen — kein Typfehler, keine fehlgeschlagene
-Migration, nur ein „Seite nicht gefunden“ beim eigentlich berechtigten Account.
+An entry in `PERMISSIONS` (`lib/rbac/permissions.ts`) is only the code
+definition. The `Permission` and `RolePermission` tables only get the new row
+through `provisionSystemRbac()` (`lib/rbac-provision.ts`) — called from
+`prisma/seed.ts`, idempotent via `skipDuplicates`. On a DB that's already been
+seeded (dev, existing environments), a new permission otherwise stays inert:
+`requirePermission()` fails without the schema or migration giving any hint
+why — no type error, no failed migration, just a "page not found" for an
+account that should actually have access.
 
 ```
 bun -e '
@@ -217,32 +219,32 @@ await db.$transaction((tx) => provisionSystemRbac(tx));
 '
 ```
 
-Auf einer frischen DB erledigt `bun db:dev`/`bun db:seed` das ohnehin mit.
+On a fresh DB, `bun db:dev`/`bun db:seed` handles this anyway.
 
-## Verzeichnisstruktur
+## Directory Structure
 
 ```
-app/                              ← Nur Routing
+app/                              ← Routing only
 │   layout.tsx
 │   page.tsx
 │   globals.scss
-│   (auth)/                       ← Route Group (kein URL-Segment)
+│   (auth)/                       ← Route group (no URL segment)
 │   │   login/page.tsx
 │   │   register/page.tsx
 │   issues/
 │   │   page.tsx                  ← /issues
-│   │   loading.tsx               ← Suspense-Skeleton
-│   │   error.tsx                 ← Error Boundary
+│   │   loading.tsx               ← Suspense skeleton
+│   │   error.tsx                 ← Error boundary
 │   │   new/page.tsx
 │   │   [id]/
 │   │       page.tsx
-│   │       _components/          ← Private Folder: nur für diese Route
+│   │       _components/          ← Private folder: only for this route
 │   generated/
-│       prisma/                   ← Generierter Prisma Client (nicht anfassen)
+│       prisma/                   ← Generated Prisma client (don't touch)
 │
 components/
-│   ui/                           ← Generische, domänenlose UI-Bausteine
-│   │   atoms/                    ← Kleinste, unteilbare Bausteine
+│   ui/                           ← Generic, domain-agnostic UI building blocks
+│   │   atoms/                    ← Smallest, indivisible building blocks
 │   │   │   Button/
 │   │   │   │   Button.tsx
 │   │   │   │   button.module.scss
@@ -252,7 +254,7 @@ components/
 │   │   │   Input/
 │   │   │       Input.tsx
 │   │   │       input.module.scss
-│   │   layout/                   ← Strukturgebende UI-Komponenten
+│   │   layout/                   ← Structural UI components
 │   │       Header/
 │   │       │   Header.tsx
 │   │       │   header.module.scss
@@ -263,9 +265,9 @@ components/
 │   │           Footer.tsx
 │   │           footer.module.scss
 │
-features/                         ← Fachliche Domänen
+features/                         ← Business domains
 │   issues/
-│   │   components/               ← Issue-spezifische Komponenten (gleiche Struktur: Ordner + scss)
+│   │   components/               ← Issue-specific components (same structure: folder + scss)
 │   │   │   IssueCard/
 │   │   │   │   IssueCard.tsx
 │   │   │   │   issueCard.module.scss
@@ -273,17 +275,17 @@ features/                         ← Fachliche Domänen
 │   │   │       IssueList.tsx
 │   │   │       issueList.module.scss
 │   │   actions.ts                ← Server Functions ("use server")
-│   │   queries.ts                ← DB-Abfragen (nur server-seitig)
+│   │   queries.ts                ← DB queries (server-side only)
 │   │   types.ts
-│   │   index.ts                  ← Barrel Export (public API)
+│   │   index.ts                  ← Barrel export (public API)
 │   projects/
-│       (gleiche Struktur)
+│       (same structure)
 │
 lib/
-│   db.ts                         ← Prisma Singleton
+│   db.ts                         ← Prisma singleton
 │   auth.ts
 │
-types/                            ← Globale TypeScript-Typen
+types/                            ← Global TypeScript types
 │   index.ts
 │
 prisma/
@@ -291,149 +293,151 @@ prisma/
 prisma.config.ts
 ```
 
-### Namenskonvention für Komponenten-Ordner
+### Naming convention for component folders
 
-Jede Komponente bekommt einen **eigenen Ordner** mit zwei Dateien:
+Every component gets its **own folder** with two files:
 
 ```
 Button/
-  Button.tsx          ← PascalCase für die Komponente
-  button.module.scss  ← camelCase für die Styles
+  Button.tsx          ← PascalCase for the component
+  button.module.scss  ← camelCase for the styles
 ```
 
-- Kein `index.ts` Barrel pro Komponente — Import direkt: `import { Button } from "@/components/ui/atoms/Button/Button"`
-- `atoms/` = kleinste Einheiten (Button, Badge, Input, Icon, Spinner...)
-- `layout/` = strukturgebende Hüllkomponenten (Header, Sidebar, Footer, PageWrapper...)
+- No per-component `index.ts` barrel — import directly: `import { Button } from "@/components/ui/atoms/Button/Button"`
+- `atoms/` = smallest units (Button, Badge, Input, Icon, Spinner...)
+- `layout/` = structural wrapper components (Header, Sidebar, Footer, PageWrapper...)
 
 ## Tooling
 
-- **Bun** als Package Manager und Runner
-- `bun run dev` — Dev-Server
-- `bun run lint` — Biome Check
-- `bun run format` — Biome Format
-- `bun prisma migrate dev` — DB-Schema anwenden
-- `bun prisma generate` — Prisma Client neu generieren
+- **Bun** as package manager and runner
+- `bun run dev` — dev server
+- `bun run lint` — Biome check
+- `bun run format` — Biome format
+- `bun prisma migrate dev` — apply the DB schema
+- `bun prisma generate` — regenerate the Prisma client
 
 ## Testing
 
-- **Vitest** als Test-Runner (kein Jest)
-- Konfiguration: `vitest.config.ts` im Root
-- Setup-Datei: `tests/setup.ts` (mockt `server-only` global)
-- Alle Tests liegen in `tests/unit/` nach Domänen aufgeteilt
+- **Vitest** as the test runner (no Jest)
+- Config: `vitest.config.ts` at the root
+- Setup file: `tests/setup.ts` (mocks `server-only` globally)
+- All tests live under `tests/unit/`, split by domain
 
-### Befehle
+### Commands
 
-- `bun test` — Alle Tests einmalig ausführen
-- `bun run test:watch` — Tests im Watch-Modus
-- `bun run test:coverage` — Tests mit Coverage-Report
+- `bun test` — run all tests once
+- `bun run test:watch` — tests in watch mode
+- `bun run test:coverage` — tests with a coverage report
 
-### Struktur
+### Structure
 
 ```
 tests/
-  setup.ts                        ← Globale Mocks (server-only)
+  setup.ts                        ← Global mocks (server-only)
   unit/
     auth/
       login.test.ts               ← login() Server Action
       register.test.ts            ← register() Server Action
       logout.test.ts              ← logout() Server Action
-      acceptInvitation.test.ts    ← Einladung annehmen (pending → false)
+      acceptInvitation.test.ts    ← accepting an invitation (pending → false)
     middleware/
-      middleware.test.ts          ← Auth-Middleware (JWT, Routing)
+      middleware.test.ts          ← auth middleware (JWT, routing)
     session/
       session.test.ts             ← createSession / getSession / clearSession
     invitations/
-      invitations.test.ts         ← lib/invitations (Token, Frist, Gültigkeit)
+      invitations.test.ts         ← lib/invitations (token, deadline, validity)
     workspace/
       createWorkspace.test.ts     ← createWorkspace() Server Action
-      inviteWorkspaceMember.test.ts ← Mitglied einladen (Konto oder Link)
+      inviteWorkspaceMember.test.ts ← invite a member (account or link)
       workspaceSettings.test.ts   ← updateWorkspace / deleteWorkspace
-      teams.test.ts               ← Teams anlegen, ändern, löschen
+      teams.test.ts               ← create, change, delete teams
     projects/
       createProject.test.ts       ← createProject() Server Action
-      projectMembers.test.ts      ← Projektrollen verwalten
-      projectMembership.test.ts   ← lib/project-membership (Aufnahme & Austritt)
-      projectSettings.test.ts     ← updateProject / deleteProject, Sichtbarkeit
+      projectMembers.test.ts      ← manage project roles
+      projectMembership.test.ts   ← lib/project-membership (joining & leaving)
+      projectSettings.test.ts     ← updateProject / deleteProject, visibility
     issues/
       createLabel.test.ts         ← createLabel() Server Action
-      getLabels.test.ts           ← Label-Abfrage (ersetzt `react` durch Stub!)
-      composerData.test.ts        ← creatableProjectIds (wo darf angelegt werden)
-      rank.test.ts                ← Sortierschlüssel für Drag & Drop
+      getLabels.test.ts           ← label query (replaces `react` with a stub!)
+      composerData.test.ts        ← creatableProjectIds (where creation is allowed)
+      rank.test.ts                ← sort key for drag & drop
     permissions/
-      resolver.test.ts            ← lib/permissions (eigener Prozess, siehe unten)
-      rbac.test.ts                ← Registry aus lib/rbac
-      roleActions.test.ts         ← Rollenverwaltung
+      resolver.test.ts            ← lib/permissions (own process, see below)
+      rbac.test.ts                ← registry from lib/rbac
+      roleActions.test.ts         ← role management
     table/
-      tableDnd.test.tsx           ← Table mit `dnd` (components/ui/layout/Table)
+      tableDnd.test.tsx           ← Table with `dnd` (components/ui/layout/Table)
     ui/
-      issueCreateButtons.test.tsx ← rechteabhängige Auslöser („Neues Issue")
-      permissionMatrix.test.tsx   ← Rollen-Matrix (features/roles)
+      issueCreateButtons.test.tsx ← permission-dependent triggers ("New issue")
+      permissionMatrix.test.tsx   ← role matrix (features/roles)
     richtext/
-      richText.test.tsx           ← PM-JSON-Renderer (components/ui/atoms/RichText)
-      fromMarkdown.test.ts        ← Markdown → PM-JSON (Migration + Seed)
+      richText.test.tsx           ← PM-JSON renderer (components/ui/atoms/RichText)
+      fromMarkdown.test.ts        ← Markdown → PM-JSON (migration + seed)
       text.test.ts                ← toPlainText / toPreview / isEmptyDoc
     notifications/
-      notify.test.ts              ← lib/notify (mockt zusätzlich `@/lib/mail`, eigener Prozess)
-      queries.test.ts             ← Inbox-Abfrage
+      notify.test.ts              ← lib/notify (also mocks `@/lib/mail`, own process)
+      queries.test.ts             ← inbox query
       actions.test.ts             ← markNotificationRead / markAllNotificationsRead
     mail/
-      config.test.ts              ← lib/mail/config (SMTP aus der Umgebung)
-      send.test.ts                ← lib/mail/send (Transport, Fehler geschluckt)
-      templates.test.ts           ← lib/mail/templates (Escaping, Betreff/Text)
+      config.test.ts              ← lib/mail/config (SMTP from the environment)
+      send.test.ts                ← lib/mail/send (transport, errors swallowed)
+      templates.test.ts           ← lib/mail/templates (escaping, subject/text)
 ```
 
-### Mocking-Konventionen
+### Mocking conventions
 
-- `@/lib/db` immer mocken — kein echter DB-Zugriff in Unit Tests
-- `@/lib/session` mocken wenn getestet wird, was die Session konsumiert
-- `server-only` wird global in `tests/setup.ts` gemockt
-- `next/headers` (`cookies`) und `jose` werden pro Datei gemockt
-- SCSS-Module (`*.module.scss`) fängt ein Bun-Plugin in `tests/setup.ts` ab —
-  Komponenten-Tests brauchen dafür keinen Bundler
-- `vi.clearAllMocks()` in `beforeEach` — kein Zustand zwischen Tests
+- Always mock `@/lib/db` — no real DB access in unit tests
+- Mock `@/lib/session` when testing something that consumes the session
+- `server-only` is mocked globally in `tests/setup.ts`
+- `next/headers` (`cookies`) and `jose` are mocked per file
+- SCSS modules (`*.module.scss`) are intercepted by a Bun plugin in
+  `tests/setup.ts` — component tests don't need a bundler for that
+- `vi.clearAllMocks()` in `beforeEach` — no state carries over between tests
 
-### Wichtig: Immer `bun run test` statt `bun test`
+### Important: always use `bun run test`, not `bun test`
 
-Bun 1.3 teilt den Modul-Cache zwischen Test-Dateien innerhalb eines Prozesses. Da
-andere Test-Dateien `@/lib/session` mocken, würde dieser Mock in `session.test.ts`
-durchlecken wenn alle Tests in einem einzigen `bun test`-Aufruf laufen. Dasselbe gilt
-für die Richtext-Tests: `issues/getLabels.test.ts` ersetzt `react` durch einen Stub mit
-nur `cache`, und `react-dom/server` verweigert dann den Dienst. Und
-`permissions/roleActions.test.ts` mockt `@/lib/permissions` komplett weg — im selben
-Prozess prüft `permissions/resolver.test.ts` dann den Mock statt den Resolver. Das
-`test`-Script in `package.json` splittet den Aufruf deshalb in mehrere Prozesse:
+Bun 1.3 shares the module cache between test files within one process. Since
+other test files mock `@/lib/session`, that mock would leak into
+`session.test.ts` if all tests ran in a single `bun test` invocation. The same
+applies to the rich-text tests: `issues/getLabels.test.ts` replaces `react`
+with a stub that only has `cache`, and `react-dom/server` then refuses to
+work. And `permissions/roleActions.test.ts` mocks `@/lib/permissions` away
+entirely — in the same process, `permissions/resolver.test.ts` would then be
+checking the mock instead of the resolver. That's why the `test` script in
+`package.json` splits the invocation into several processes:
 
-Umgekehrt gilt: **kein Modul mocken, dessen eigene Tests im selben Prozess laufen.**
-`auth/acceptInvitation.test.ts` prüft eine Funktion, die `lib/invitations` benutzt,
-und mockt trotzdem nur `@/lib/db` — ein `mock.module("@/lib/invitations")` hätte
-`invitations/invitations.test.ts` gegen den Mock testen lassen. Der DB-Mock ist die
-kleinere Annahme und lässt den echten Code laufen.
+Conversely: **never mock a module whose own tests run in the same process.**
+`auth/acceptInvitation.test.ts` checks a function that uses
+`lib/invitations`, and still only mocks `@/lib/db` — a
+`mock.module("@/lib/invitations")` would have made `invitations/invitations.test.ts`
+test against the mock. The DB mock is the smaller assumption and lets the
+real code run.
 
-Aus demselben Grund steht `notifications/` (mit `notify.test.ts`) in einem eigenen
-Prozess: es mockt `@/lib/mail` komplett, um zu prüfen, *ob* und *für wen* `notify()`
-eine Mail anstößt. `workspace/inviteWorkspaceMember.test.ts` und
-`projects/projectMembers.test.ts` importieren transitiv `sendInvitationEmail` aus
-`@/lib/mail` und verlassen sich auf die echte Funktion (die ohne `SMTP_HOST` sofort
-zurückkehrt) — liefen sie im selben Prozess, riefen sie den Mock aus `notify.test.ts`
-auf, der `sendInvitationEmail` gar nicht exportiert.
+For the same reason, `notifications/` (with `notify.test.ts`) gets its own
+process: it mocks `@/lib/mail` entirely, to check *whether* and *for whom*
+`notify()` triggers a mail. `workspace/inviteWorkspaceMember.test.ts` and
+`projects/projectMembers.test.ts` transitively import `sendInvitationEmail`
+from `@/lib/mail` and rely on the real function (which returns immediately
+without `SMTP_HOST`) — if they ran in the same process, they'd hit the mock
+from `notify.test.ts`, which doesn't even export `sendInvitationEmail`.
 
-Innerhalb von `mail/` gilt dieselbe Regel noch einmal, eine Ebene tiefer:
-`send.test.ts` mockt `@/lib/mail/config` und `@/lib/mail/transport`, um `sendMail()`
-isoliert zu prüfen — `config.test.ts` testet aber genau `@/lib/mail/config` echt, mit
-gesetzten und gelöschten Umgebungsvariablen. Liefen beide im selben Prozess, sähe
-`config.test.ts` den Mock aus `send.test.ts` statt der echten Funktion. `send.test.ts`
-bekommt deshalb einen eigenen Aufruf, `config.test.ts` und `templates.test.ts` (beide
-ohne `mock.module`) teilen sich einen.
+Within `mail/`, the same rule applies again, one level deeper: `send.test.ts`
+mocks `@/lib/mail/config` and `@/lib/mail/transport` to check `sendMail()` in
+isolation — but `config.test.ts` tests `@/lib/mail/config` itself for real,
+with environment variables set and cleared. If both ran in the same process,
+`config.test.ts` would see the mock from `send.test.ts` instead of the real
+function. `send.test.ts` therefore gets its own invocation; `config.test.ts`
+and `templates.test.ts` (neither of which uses `mock.module`) share one.
 
 ```
-# Korrekt:
+# Correct:
 bun run test
 
-# NICHT direkt verwenden (Session- und Markdown-Tests schlagen fehl):
+# Do NOT use directly (session and markdown tests fail):
 bun test
 ```
 
 ### CI
 
-GitHub Actions Workflow: `.github/workflows/tests.yml`
-Läuft bei jedem Push und PR auf `main`.
+GitHub Actions workflow: `.github/workflows/tests.yml`
+Runs on every push and PR to `main`.

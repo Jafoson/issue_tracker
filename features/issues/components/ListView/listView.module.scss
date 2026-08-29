@@ -1,8 +1,8 @@
-/* Zellen und Gruppenköpfe der Issue-Liste. Raster, Zeilenhöhe, Hover und
-   Sticky-Verhalten kommen aus der Table-Komponente. */
+/* Cells and group headers of the issue list. Grid, row height, hover, and
+   sticky behavior come from the Table component. */
 
-/* Die Karte hat keinen eigenen Außenabstand — der Rand ringsum gehört hierher,
-   damit die Tabelle darin ihre volle Höhe behält und selbst scrollt. */
+/* The card has no margin of its own — the surrounding border belongs here,
+   so the table inside it keeps its full height and scrolls on its own. */
 .content {
   display: flex;
   flex-direction: column;
@@ -11,7 +11,7 @@
   padding: 12px 16px 16px;
 }
 
-/* ---------- Zellen ---------- */
+/* ---------- Cells ---------- */
 
 .identifier {
   font-family: var(--font-mono);
@@ -20,11 +20,11 @@
   white-space: nowrap;
 }
 
-/* Der Titel ist ein Knopf, sieht aber aus wie Text — bis man ihn überfährt:
-   dann zeigt ein Rahmen, dass hier geschrieben werden kann. Er ist von Anfang
-   an da, nur durchsichtig, sonst rückte der Titel beim Überfahren um einen
-   Pixel. Der negative Einzug hält den Text an derselben Stelle wie die übrigen
-   Spalten, obwohl er innen polstert. */
+/* The title is a button but looks like plain text — until hovered: a
+   border then shows that it's editable. It's present from the start, just
+   transparent, otherwise the title would shift by a pixel on hover. The
+   negative indent keeps the text at the same position as the other
+   columns, despite its inner padding. */
 .title {
   min-width: 0;
   padding: 2px 6px;
@@ -45,9 +45,9 @@
   }
 }
 
-/* Das Feld tritt an die Stelle des Knopfes — derselbe Einzug, damit der Text
-   beim Umschalten nicht springt. Seine eigene Polsterung bringt `EditableText`
-   mit (5px 8px), deshalb hier zwei Pixel weniger als beim Knopf. */
+/* The field takes the button's place — same indent, so the text doesn't
+   jump when switching. `EditableText` brings its own padding (5px 8px),
+   hence two pixels less here than on the button. */
 .titleEdit {
   min-width: 0;
   flex: 1;
@@ -66,9 +66,9 @@
   display: inline-flex;
 }
 
-/* Projektspalte — nur in projektübergreifenden Ansichten. Sie steht neben dem
-   Kürzel und wird notfalls beschnitten: der Titel ist wichtiger als ein langer
-   Projektname, und die Farbe allein sagt schon, um welches Projekt es geht. */
+/* Project column — only in cross-project views. It sits next to the key
+   and gets truncated if needed: the title is more important than a long
+   project name, and the color alone already indicates which project it is. */
 .project {
   display: inline-flex;
   align-items: center;
@@ -81,8 +81,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Icon-Auslöser der Inline-Picker — bewusst kleiner als ein Button, damit die
-   Symbolspalten schmal bleiben und die Zeile ruhig wirkt. */
+/* Icon trigger for the inline pickers — deliberately smaller than a button,
+   so the icon columns stay narrow and the row looks calm. */
 .pickerBtn {
   display: inline-flex;
   align-items: center;
@@ -98,10 +98,10 @@
   }
 }
 
-/* ---------- Gruppenkopf ---------- */
+/* ---------- Group header ---------- */
 
-/* Der Pfeil zeigt nach unten, wenn die Gruppe offen ist, und dreht sich beim
-   Einklappen zur Seite — eine Grafik, zwei Zustände. */
+/* The arrow points down when the group is open, and rotates to the side
+   when collapsing — one graphic, two states. */
 .groupToggle {
   display: inline-flex;
   align-items: center;
@@ -135,8 +135,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Sitzt am rechten Rand des Gruppenkopfs und bleibt sichtbar — der Kopf ist der
-   erwartbare Ort, um eine Aufgabe in genau diesem Status anzulegen. */
+/* Sits at the right edge of the group header and stays visible — the
+   header is the expected place to create a task in exactly this status. */
 .groupAdd {
   margin-left: auto;
   color: var(--on-surface-variant);

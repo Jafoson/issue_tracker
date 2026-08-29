@@ -1,5 +1,5 @@
-/* Codeblock im Editor. Aussehen bewusst wie in der Anzeige
-   (`richText.module.scss`) — beim Speichern soll nichts springen. */
+/* Code block in the editor. Deliberately styled like the display path
+   (`richText.module.scss`) — nothing should jump when saving. */
 
 .block {
   margin: .7em 0;
@@ -37,7 +37,7 @@
 
 .body {
   display: flex;
-  /* Der Code scrollt, die Nummern bleiben stehen. */
+  /* The code scrolls, the numbers stay put. */
   align-items: stretch;
 }
 

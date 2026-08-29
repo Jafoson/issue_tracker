@@ -1,6 +1,6 @@
-/* Der Dialog selbst kommt aus `Modal` — hier steht nur, was eine Rückfrage
-   davon abweichend braucht: ein Fließtext statt eines Formulars und eine rote
-   Bestätigung für die Wege, die etwas kosten. */
+/* The dialog itself comes from `Modal` — this only holds what a confirmation
+   prompt needs differently: body text instead of a form, and a red
+   confirmation for the paths that cost something. */
 
 .body {
   padding-top: 4px;
@@ -14,13 +14,13 @@
   color: var(--on-surface-variant);
 }
 
-/* Nur die Farbe wechselt; Maße, Zustände und die Aufhellung beim Überfahren
-   bleiben die des Primary-Knopfes — deshalb eine Ergänzung per `className`
-   statt einer eigenen Button-Variante. Rot ist hier die Eigenschaft dieser
-   einen Antwort, keine neue Sorte Knopf.
+/* Only the color changes; size, states, and the hover highlight stay those
+   of the primary button — hence an addition via `className` instead of a
+   dedicated button variant. Red is a property of this one answer here, not
+   a new kind of button.
 
-   `--error`/`--on-error` statt `--red`: das Paar dreht sich im dunklen Thema
-   mit, ein festes Rot mit weißer Schrift täte das nicht. */
+   `--error`/`--on-error` instead of `--red`: the pair adapts with dark
+   theme, whereas a fixed red with white text wouldn't. */
 .danger {
   background: var(--error);
   color: var(--on-error);

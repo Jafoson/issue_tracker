@@ -60,10 +60,10 @@ async function uniqueLabelSlug(workspaceId: string, name: string) {
   return slug;
 }
 
-// Lädt die für `.own`/`.any`-Prüfungen nötigen Issue-Felder — und den Status,
-// an dem `closedAt` hängt (siehe `closedPatch`). Trägt außerdem, was die
-// Benachrichtigungen unten brauchen (Titel, Beschreibung, Workspace/Prefix des
-// Projekts), damit dafür keine zweite Abfrage nötig ist.
+// Loads the issue fields needed for `.own`/`.any` checks — and the status
+// that `closedAt` depends on (see `closedPatch`). Also carries what the
+// notifications below need (title, description, workspace/prefix of the
+// project), so no second query is needed for that.
 async function issueContext(id: string) {
   const issue = await db.issue.findUnique({
     where: { id },
@@ -95,29 +95,29 @@ type IssueAuditCtx = {
   project: { workspaceId: string; prefix: string };
 };
 
-/** `MOB-1` — dieselbe Kennung wie überall sonst in der Oberfläche, statt des
- * (womöglich langen oder inzwischen geänderten) Titels. */
+/** `MOB-1` — the same identifier used everywhere else in the UI, instead of
+ * the (possibly long, or by now changed) title. */
 function issueRef(issue: { key: number; project: { prefix: string } }) {
   return `${issue.project.prefix}-${issue.key}`;
 }
 
 /**
- * Ein Protokolleintrag für ein Issue — dieselben drei Angaben (Ziel,
- * Workspace, Projekt) für jeden der grob unterschiedenen Bearbeitungs-Anlässe
- * unten, deshalb hier gebündelt statt an jeder Stelle wiederholt.
+ * An audit log entry for an issue — the same three pieces of data (target,
+ * workspace, project) for each of the broadly distinguished edit occasions
+ * below, so bundled here instead of repeated at every call site.
  *
- * `detail` ist bewusst optional: bei manchen Anlässen (Zuweisung entfernt,
- * Beschreibung geändert) sagt schon der Vorgang selbst genug, und das Kürzel
- * allein identifiziert das Ticket.
+ * `detail` is deliberately optional: for some occasions (assignment removed,
+ * description changed) the action itself already says enough, and the key
+ * alone identifies the ticket.
  *
- * Das „Grob" gilt für den Anlass (welcher Aspekt sich änderte), nicht für die
- * Beschriftung selbst: wo es einen sinnvollen alten und neuen Wert gibt (Status,
- * Priorität, Typ, Labels, Titel), steht „Alt → Neu" direkt in `targetLabel` —
- * dieselbe Auskunft, die ein Audit-Log laut gängiger Praxis geben soll, nur
- * ohne eigene Spalte dafür. Die Oberfläche (`AuditLog`/`ActivityFeed`) zerlegt
- * „Kürzel: Alt → Neu" beim Anzeigen wieder in seine Teile. `meta` trägt
- * dieselben Werte zusätzlich roh (nicht in der Liste sichtbar, aber in der
- * Datenbank nachvollziehbar).
+ * The "broadly" applies to the occasion (which aspect changed), not to the
+ * label itself: where there's a meaningful old and new value (status,
+ * priority, type, labels, title), "Old → New" goes directly into
+ * `targetLabel` — the same information an audit log is expected to provide
+ * by common practice, just without a dedicated column for it. The UI
+ * (`AuditLog`/`ActivityFeed`) splits "key: Old → New" back into its parts
+ * when displaying it. `meta` additionally carries the same values raw (not
+ * visible in the list, but traceable in the database).
  */
 async function recordIssueAudit(
   action:
@@ -140,8 +140,8 @@ async function recordIssueAudit(
   actorId: string,
   detail?: string,
   meta?: object,
-  /** Kontofarbe der/des Zugewiesenen, für den Avatar neben ihrem Namen in
-   * `detail` — das Ziel selbst ist das Issue, nicht sie. */
+  /** Account color of the assignee, for the avatar next to their name in
+   * `detail` — the target itself is the issue, not them. */
   personColor?: string | null,
 ) {
   const ref = issueRef(issue);
@@ -156,9 +156,9 @@ async function recordIssueAudit(
   });
 }
 
-/** Name und Farbe eines Status — die Farbe geht mit ins Protokoll (eingefroren,
- * wie `actorColor`), damit `StatusIcon` sie zeigen kann, ohne den Katalog zum
- * Lesezeitpunkt erneut zu befragen. */
+/** Name and color of a status — the color goes into the log too (frozen,
+ * like `actorColor`), so `StatusIcon` can show it without querying the
+ * catalog again at read time. */
 async function statusInfo(
   id: string,
 ): Promise<{ name: string; color: string } | null> {
@@ -182,7 +182,7 @@ async function issueTypeName(id: string): Promise<string | null> {
   );
 }
 
-/** Statuswechsel protokollieren — geteilt von `moveIssue`, `reorderIssue` und `updateIssue`. */
+/** Log a status change — shared by `moveIssue`, `reorderIssue` and `updateIssue`. */
 async function recordStatusChangeAudit(
   id: string,
   issue: IssueAuditCtx,
@@ -210,7 +210,7 @@ async function recordStatusChangeAudit(
   );
 }
 
-/** Welche Labels dazukamen und welche weg sind — nicht nur „etwas hat sich geändert". */
+/** Which labels were added and which were removed — not just "something changed". */
 async function recordLabelsChangeAudit(
   id: string,
   issue: IssueAuditCtx,
@@ -258,9 +258,9 @@ async function recordLabelsChangeAudit(
 }
 
 /**
- * Benachrichtigt Bearbeiter und Ersteller über einen Statuswechsel — aus
- * `moveIssue`, `reorderIssue` und `updateIssue` gleichermaßen aufgerufen, denn
- * ein Statuswechsel per Drag&Drop ist derselbe Anlass wie einer aus dem Panel.
+ * Notifies the assignee and reporter about a status change — called equally
+ * from `moveIssue`, `reorderIssue` and `updateIssue`, since a status change
+ * via drag-and-drop is the same occasion as one from the panel.
  */
 async function notifyStatusChange(
   issueId: string,
@@ -292,7 +292,7 @@ async function notifyStatusChange(
   );
 }
 
-/** Wer neu in einem Dokument erwähnt wurde, minus dem, der es geschrieben hat. */
+/** Who was newly mentioned in a document, minus whoever wrote it. */
 async function notifyMentions(
   ids: string[],
   ctx: {
@@ -319,16 +319,16 @@ async function notifyMentions(
 }
 
 /**
- * Was am Abschlussdatum zu ändern ist, wenn der Status auf `next` wechselt.
+ * What needs to change on the closed date when the status changes to `next`.
  *
- * Drei Fälle, und der dritte ist der Grund für diese Funktion: wer eine
- * abgeschlossene Aufgabe wieder aufmacht, muss das Datum verlieren — sonst zählt
- * das Dashboard sie weiter zum Durchsatz jenes Tages, an dem sie einmal fertig
- * war. Und wer sie von „Done" nach „Canceled" schiebt, behält das ursprüngliche
- * Datum: geschlossen wurde sie damals, umbenannt wurde nur, wie.
+ * Three cases, and the third is the reason this function exists: reopening a
+ * completed task must clear the date — otherwise the dashboard keeps
+ * counting it toward the throughput of the day it was once finished. And
+ * moving it from "Done" to "Canceled" keeps the original date: it was
+ * closed back then, only how it was closed got renamed.
  *
- * Ein leeres Objekt heißt „nichts anzufassen" und lässt sich unverändert in
- * `data` spreaden.
+ * An empty object means "nothing to touch" and can be spread into `data`
+ * unchanged.
  */
 function closedPatch(
   before: { status: string; closedAt: Date | null },
@@ -337,7 +337,7 @@ function closedPatch(
   if (next === undefined || next === before.status) return {};
 
   if (isClosedStatus(next)) {
-    // Schon ein Datum? Dann bleibt es stehen — siehe „Done" → „Canceled".
+    // Already has a date? Then it stays as-is — see "Done" → "Canceled".
     return before.closedAt ? {} : { closedAt: new Date() };
   }
   return before.closedAt ? { closedAt: null } : {};
@@ -402,7 +402,7 @@ export async function updateIssue(id: string, patch: IssuePatch) {
       ownerIds: [issue.reporterId, issue.assigneeId],
     },
   ]);
-  // Das (Neu-)Zuweisen eines Issues erfordert zusätzlich die Assign-Permission.
+  // (Re-)assigning an issue additionally requires the assign permission.
   if (patch.assignee !== undefined) {
     await requirePermission("issue.assign", ctx);
   }
@@ -417,11 +417,11 @@ export async function updateIssue(id: string, patch: IssuePatch) {
       ...(patch.assignee !== undefined && { assigneeId: patch.assignee }),
       ...(patch.labels !== undefined && { labels: patch.labels }),
       ...(patch.title !== undefined && { title: patch.title }),
-      // Dokument und abgeleiteter Fließtext gehören zusammen — die Suche
-      // liefe sonst gegen einen veralteten Stand. `stripAttachmentAttrs`
-      // wirft die nur zur Anzeige angereicherten Anhang-Attribute (url,
-      // name, mimeType, size) wieder ab — sonst landete eine presignte URL,
-      // die nach einer Stunde abläuft, dauerhaft in der Spalte.
+      // The document and its derived plain text belong together — otherwise
+      // search would run against a stale state. `stripAttachmentAttrs`
+      // strips back off the attachment attributes (url, name, mimeType,
+      // size) that were only added for display — otherwise a presigned URL
+      // that expires after an hour would end up permanently in the column.
       ...(patch.description !== undefined && {
         description: stripAttachmentAttrs(
           patch.description,
@@ -467,13 +467,12 @@ export async function updateIssue(id: string, patch: IssuePatch) {
     );
   }
 
-  // ── Grob protokollieren, was sich geändert hat ──
+  // ── Broadly log what changed ──
   //
-  // Ein Eintrag je geändertem Aspekt, nicht ein Feld-für-Feld-Diff: „Titel
-  // geändert" sagt genug, der alte Text gehört nicht ins Protokoll. Jeder
-  // Vergleich läuft gegen den Stand von `issue` (vor diesem Patch) — ein
-  // erneutes Speichern desselben Werts (Picker ohne echte Änderung) erzeugt
-  // damit keine Zeile.
+  // One entry per changed aspect, not a field-by-field diff: "title changed"
+  // says enough, the old text doesn't belong in the log. Every comparison
+  // runs against the state of `issue` (before this patch) — saving the same
+  // value again (a picker without a real change) therefore produces no line.
   if (patch.assignee !== undefined && patch.assignee !== issue.assigneeId) {
     if (patch.assignee) {
       const [assignee, previous] = await Promise.all([
@@ -481,8 +480,8 @@ export async function updateIssue(id: string, patch: IssuePatch) {
           where: { id: patch.assignee },
           select: { firstName: true, lastName: true, color: true },
         }),
-        // Wer die Aufgabe vorher hatte — steht mit in der Zeile, sonst sähe
-        // eine Umverteilung wie eine Erstzuweisung aus.
+        // Whoever had the task before — included in the line, otherwise a
+        // reassignment would look like a first-time assignment.
         issue.assigneeId
           ? db.user.findUnique({
               where: { id: issue.assigneeId },
@@ -580,11 +579,11 @@ export async function updateIssue(id: string, patch: IssuePatch) {
   await revalidate();
 }
 
-// ── Anhänge ──────────────────────────────────────────────────────────────────
+// ── Attachments ────────────────────────────────────────────────────────────
 //
-// Dieselbe Berechtigung wie beim Bearbeiten der Beschreibung selbst
-// (`issue.update.any`/`.own`) — ein Anhang ist Teil der Beschreibung, keine
-// eigene Permission nötig.
+// Same permission as editing the description itself (`issue.update.any`/
+// `.own`) — an attachment is part of the description, no separate
+// permission needed.
 
 async function requireAttachmentAccess(issueId: string) {
   const issue = await issueContext(issueId);
@@ -646,8 +645,8 @@ export async function confirmIssueAttachmentUpload(
   };
 }
 
-/** Nur `http(s)://` — dieselbe Zurückhaltung wie bei jeder anderen Adresse,
- *  die in ein `href` wandert (siehe `lib/richtext/link.ts`). */
+/** Only `http(s)://` — the same restraint as for any other address that
+ *  ends up in an `href` (see `lib/richtext/link.ts`). */
 function isWebUrl(href: string): boolean {
   try {
     return /^https?:$/i.test(new URL(href).protocol);
@@ -720,7 +719,7 @@ export async function createIssue(data: {
   projectId: string;
   reporterId: string;
 }) {
-  // Reporter ist immer der eingeloggte User — nicht der Client-Parameter.
+  // The reporter is always the logged-in user — not the client parameter.
   const userId = await requirePermission("issue.create", {
     projectId: data.projectId,
   });
@@ -743,8 +742,8 @@ export async function createIssue(data: {
       ) as unknown as Prisma.InputJsonValue,
       descriptionText: toPlainText(data.description),
       status: data.status,
-      // Wer eine Aufgabe gleich als erledigt anlegt — nachgetragene Arbeit —
-      // hat sie in derselben Sekunde geschlossen.
+      // Creating a task as already done — backfilled work — closes it in
+      // the same second.
       ...(isClosedStatus(data.status) ? { closedAt: new Date() } : {}),
       priority: data.priority,
       assigneeId: data.assignee,
@@ -799,10 +798,11 @@ export async function createLabel(data: {
   workspaceId: string;
   projectId?: string | null;
 }) {
-  // Ein Projekt-Label gehört zwei Eltern: dem Projekt und dessen Workspace. Der
-  // Workspace kommt deshalb aus dem Projekt und nicht aus dem Aufruf — geprüft
-  // wird im Projekt-Kontext, geschrieben würde sonst woanders. Ein Aufruf mit
-  // fremder `workspaceId` legt damit kein Label im fremden Mandanten mehr an.
+  // A project label belongs to two parents: the project and its workspace.
+  // The workspace is therefore taken from the project, not from the call —
+  // the check happens in the project context, otherwise a write could land
+  // elsewhere. A call with someone else's `workspaceId` can no longer
+  // create a label in a foreign tenant this way.
   let workspaceId = data.workspaceId;
   let actorId: string;
 
@@ -854,20 +854,20 @@ export async function createLabel(data: {
 }
 
 /**
- * Anders als `createLabel` werfen Ändern und Löschen nicht, sondern melden den
- * Grund zurück — sie werden von der Verwaltungsseite aufgerufen, und die zeigt
- * den Satz an, statt in eine Fehlergrenze zu laufen.
+ * Unlike `createLabel`, update and delete don't throw but report the reason
+ * back — they're called from the management page, which displays the
+ * message instead of hitting an error boundary.
  */
 type LabelResult = { ok: true } | { error: string };
 
 /**
- * In welchem Scope über ein Label entschieden wird.
+ * The scope in which a label is decided.
  *
- * Ein Projekt-Label gehört seinem Projekt, ein Label ohne `projectId` dem
- * ganzen Workspace. Derselbe Permission-Key, zwei Ebenen — genau die
- * Unterscheidung, für die `WORKSPACE_AND_PROJECT` in der Registry steht. Ein
- * Workspace-Label lässt sich deshalb nicht aus den Einstellungen eines
- * einzelnen Projekts heraus ändern: es gilt auch in allen anderen.
+ * A project label belongs to its project, a label without a `projectId`
+ * belongs to the whole workspace. Same permission key, two levels — exactly
+ * the distinction `WORKSPACE_AND_PROJECT` stands for in the registry. A
+ * workspace label therefore can't be changed from a single project's
+ * settings: it also applies in all the others.
  */
 async function labelScope(labelId: string) {
   const label = await db.label.findUnique({
@@ -885,11 +885,11 @@ async function labelScope(labelId: string) {
 }
 
 /**
- * Namen und Farbe eines Labels ändern.
+ * Change a label's name and color.
  *
- * Der Slug bleibt, wie er ist. Er steht in gespeicherten Filtern und in den
- * URLs offener Reiter (`?label=…`) — ein Umbenennen soll die nicht ins Leere
- * laufen lassen. Wer wirklich einen neuen Slug braucht, legt ein neues Label an.
+ * The slug stays as it is. It appears in saved filters and in the URLs of
+ * open tabs (`?label=…`) — a rename shouldn't make those point at nothing.
+ * Anyone who really needs a new slug creates a new label.
  */
 export async function updateLabel(
   labelId: string,
@@ -916,15 +916,15 @@ export async function updateLabel(
 }
 
 /**
- * Label löschen und aus allen Issues nehmen, an denen es hängt.
+ * Delete a label and remove it from every issue it's attached to.
  *
- * `Issue.labels` ist ein Array aus IDs ohne Fremdschlüssel — die Datenbank
- * räumt hier nichts hinterher. Ohne den zweiten Schritt bliebe in jedem
- * betroffenen Issue eine ID stehen, die auf nichts mehr zeigt: die Anzeige
- * verschwiegen sie stillschweigend, die Filter aber zählten sie mit.
+ * `Issue.labels` is an array of IDs without a foreign key — the database
+ * doesn't clean up after this. Without the second step, every affected
+ * issue would be left with an ID pointing at nothing: the display would
+ * silently ignore it, but filters would still count it.
  *
- * Beides in einer Transaktion, damit es kein Dazwischen gibt, in dem das Label
- * schon weg und die Verweise noch da sind.
+ * Both steps in one transaction, so there's no in-between state where the
+ * label is already gone but the references still exist.
  */
 export async function deleteLabel(labelId: string): Promise<LabelResult> {
   const scoped = await labelScope(labelId);
@@ -961,20 +961,21 @@ export async function deleteLabel(labelId: string): Promise<LabelResult> {
 }
 
 /**
- * Ein Workspace-Label in einem Projekt aus- oder wieder einblenden.
+ * Hide or unhide a workspace label within a project.
  *
- * Der Gegenentwurf zum Löschen: das Label bleibt, wo es hingehört, und gilt in
- * allen anderen Projekten weiter — nur hier wird es nicht mehr angeboten. Damit
- * lässt sich eine workspaceweite Sammlung nutzen, ohne dass jedes Projekt jedes
- * Label mitschleppt.
+ * The counterpart to deleting: the label stays where it belongs and still
+ * applies in every other project — it's just no longer offered here. This
+ * lets a workspace-wide collection be used without every project having to
+ * carry every label along.
  *
- * Entschieden wird im Projekt-Scope über `label.update`: es ist eine Aussage
- * über dieses Projekt, nicht über das Label. Wer im Workspace nichts darf, darf
- * hier trotzdem aufräumen — und ändert dabei für die anderen nichts.
+ * The decision is made in the project scope via `label.update`: it's a
+ * statement about this project, not about the label. Someone with no
+ * workspace permissions can still tidy up here — without changing anything
+ * for the others.
  *
- * Für Projekt-Labels ist der Aufruf sinnlos und wird abgelehnt: sie gelten
- * ohnehin nur hier, ausblenden hieße löschen. Das Label an Aufgaben, die es
- * schon tragen, bleibt in beiden Richtungen unangetastet.
+ * The call is pointless for project labels and is rejected: they only apply
+ * here anyway, so hiding them would mean deleting them. The label on issues
+ * that already carry it is left untouched in both directions.
  */
 export async function setLabelHidden(
   projectId: string,
@@ -993,16 +994,16 @@ export async function setLabelHidden(
     where: { id: projectId },
     select: { workspaceId: true },
   });
-  // Ein Label aus einem fremden Mandanten hat in diesem Projekt nichts zu
-  // suchen — auch nicht als ausgeblendete Zeile.
+  // A label from a foreign tenant has no business in this project — not
+  // even as a hidden row.
   if (!project || project.workspaceId !== label.workspaceId)
     return { error: "This label does not belong to this project." };
 
   if (!(await hasPermission("label.update", { projectId })))
     return { error: "You are not allowed to change the labels here." };
 
-  // Beide Richtungen vertragen einen zweiten Aufruf: zwei Klicks auf denselben
-  // Umschalter sollen keinen Fehler ergeben, sondern denselben Zustand.
+  // Both directions tolerate a second call: two clicks on the same toggle
+  // should not produce an error, just the same end state.
   if (hidden) {
     await db.projectHiddenLabel.upsert({
       where: { projectId_labelId: { projectId, labelId } },
@@ -1037,9 +1038,9 @@ export async function deleteIssue(id: string) {
   await revalidate();
 }
 
-/** Neuer Token + die Metadaten, die `/share/[token]` über den aktuellen Link
- *  anzeigt (wer, wann, bis wann) — an einer Stelle, damit `enableIssueShare`
- *  und das stille Einschalten aus `shareIssueByEmail` nicht auseinanderlaufen. */
+/** New token + the metadata `/share/[token]` displays about the current link
+ *  (who, when, until when) — in one place, so `enableIssueShare` and the
+ *  silent enabling from `shareIssueByEmail` don't drift apart. */
 function newShareTokenData(actorId: string, now: Date) {
   return {
     shareToken: newIssueShareToken(),
@@ -1052,10 +1053,10 @@ function newShareTokenData(actorId: string, now: Date) {
 }
 
 /**
- * Schaltet den öffentlichen Lese-Link eines Issues ein und erzeugt (oder
- * erneuert) den Token. Wer den Link kennt, sieht Titel, Beschreibung, Status/
- * Priorität/Typ/Labels und Kommentare — nichts, was `issue.share.manage`
- * nicht selbst schon sehen darf, nur eben ohne Login (`/share/[token]`).
+ * Enables an issue's public read-only link and generates (or renews) the
+ * token. Anyone who knows the link sees title, description, status/
+ * priority/type/labels, and comments — nothing that `issue.share.manage`
+ * couldn't already see itself, just without logging in (`/share/[token]`).
  */
 export async function enableIssueShare(
   id: string,
@@ -1074,7 +1075,7 @@ export async function enableIssueShare(
   return { ok: true, url: issueShareUrl(data.shareToken) };
 }
 
-/** Schaltet den öffentlichen Lese-Link wieder aus — der alte Token wird ungültig. */
+/** Disables the public read-only link again — the old token becomes invalid. */
 export async function disableIssueShare(id: string): Promise<{ ok: true }> {
   const issue = await issueContext(id);
   const actorId = await requirePermission("issue.share.manage", {
@@ -1098,12 +1099,11 @@ export async function disableIssueShare(id: string): Promise<{ ok: true }> {
 }
 
 /**
- * Benachrichtigt ein Workspace-Mitglied über dieses Issue — in-app und, wenn
- * die Person es so eingestellt hat, per Mail (`lib/notify`, Anlass
- * "issueShared"). Anders als der öffentliche Link braucht es dafür keinen
- * Token: die Person sieht das Issue über ihre eigene, ganz normale
- * Berechtigung, genau wie bei einer Erwähnung — fehlt ihr die, läuft sie beim
- * Öffnen in dieselbe Zugriffsschranke wie bei jeder anderen Erwähnung auch.
+ * Notifies a workspace member about this issue — in-app and, if the person
+ * has it enabled, by mail (`lib/notify`, "issueShared" event). Unlike the
+ * public link, this needs no token: the person sees the issue through their
+ * own, entirely normal permission, just like with a mention — if they lack
+ * it, they hit the same access barrier on opening as with any other mention.
  */
 export async function shareIssueWithMember(
   id: string,
@@ -1129,11 +1129,11 @@ export async function shareIssueWithMember(
 }
 
 /**
- * Verschickt den öffentlichen Lese-Link per Mail an eine beliebige Adresse —
- * anders als `shareIssueWithMember` kein Konto im System, deshalb über den
- * `/share/[token]`-Weg statt der internen Issue-Seite. Ist das Teilen noch
- * aus, schaltet der Versand es gleich mit ein (derselbe Token wie beim
- * expliziten "Link erstellen") — eine Mail mit einem toten Link wäre sinnlos.
+ * Sends the public read-only link by mail to any address — unlike
+ * `shareIssueWithMember`, no account in the system, hence via the
+ * `/share/[token]` route instead of the internal issue page. If sharing is
+ * still off, sending it enables it at the same time (the same token as the
+ * explicit "create link") — a mail with a dead link would be pointless.
  */
 export async function shareIssueByEmail(
   id: string,
@@ -1181,7 +1181,7 @@ export async function addComment(
   issueId: string,
   body: PMDoc,
   _authorId: string,
-  /** Antwort auf einen anderen Kommentar — `undefined` heißt Top-Level. */
+  /** Reply to another comment — `undefined` means top-level. */
   parentId?: string,
 ) {
   const issue = await db.issue.findUnique({
@@ -1194,17 +1194,16 @@ export async function addComment(
     },
   });
   if (!issue) throw new PermissionError("comment.create");
-  // Autor ist immer der eingeloggte User — der Parameter wird ignoriert.
+  // The author is always the logged-in user — the parameter is ignored.
   const userId = await requirePermission("comment.create", {
     projectId: issue.projectId,
   });
 
   let parentAuthorId: string | null = null;
   if (parentId) {
-    // Verhindert, dass eine Antwort über die `issueId` eines fremden Issues
-    // an einen Kommentar dort andockt — der Client liefert `issueId` und
-    // `parentId` getrennt, ein manipulierter Aufruf könnte sie sonst
-    // auseinanderreißen.
+    // Prevents a reply from docking onto a comment on a different issue via
+    // that issue's `issueId` — the client sends `issueId` and `parentId`
+    // separately, so a tampered call could otherwise pull them apart.
     const parent = await db.comment.findUnique({
       where: { id: parentId },
       select: { issueId: true, authorId: true },
@@ -1239,14 +1238,14 @@ export async function addComment(
     userId,
   );
 
-  // Wer explizit erwähnt wurde, bekommt nur die genauere "mentioned"-
-  // Benachrichtigung, nicht zusätzlich die generische "comment" für dieselbe
-  // Zeile.
+  // Anyone explicitly mentioned only gets the more specific "mentioned"
+  // notification, not additionally the generic "comment" one for the same
+  // line.
   const mentioned = new Set(mentionedIds);
 
-  // Bei einer Antwort bekommt der ursprüngliche Autor die genauere
-  // "commentReply"-Benachrichtigung statt der generischen "comment" — auch
-  // wenn er zufällig Bearbeiter oder Ersteller des Issues ist.
+  // On a reply, the original author gets the more specific "commentReply"
+  // notification instead of the generic "comment" one — even if they
+  // happen to be the assignee or reporter of the issue.
   const replyRecipientId =
     parentAuthorId &&
     parentAuthorId !== userId &&
@@ -1334,11 +1333,11 @@ export async function updateComment(commentId: string, body: PMDoc) {
 }
 
 /**
- * Reaktion an/aus — je Person, Kommentar und Emoji höchstens eine Zeile
- * (`@@unique([commentId, userId, emoji])`). Statt vorher nachzusehen, ob sie
- * schon existiert (Zeitfenster für einen Doppelklick-Race), wird direkt
- * erstellt und ein Konflikt als „schon da, also weg damit" gelesen — der
- * eindeutige Index macht den Erstversuch selbst zum Test.
+ * Reaction on/off — at most one row per person, comment, and emoji
+ * (`@@unique([commentId, userId, emoji])`). Instead of checking beforehand
+ * whether it already exists (a race window for a double-click), it's
+ * created directly and a conflict is read as "already there, so remove it"
+ * — the unique index turns the create attempt itself into the check.
  */
 export async function toggleCommentReaction(commentId: string, emoji: string) {
   const comment = await db.comment.findUnique({

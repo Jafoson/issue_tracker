@@ -1,13 +1,13 @@
 /**
- * Wie die Attribute stehen.
+ * How the attributes are laid out.
  *
- * `column` heißt: alles untereinander in einer Spalte, die Attribute als
- * flache Leiste unter dem Titel. Das schmale Seitenpanel kann nichts anderes —
- * eine zweite Spalte bliebe dort ein Stapel mit Trennlinie.
+ * `column` means: everything stacked in one column, the attributes as a
+ * flat bar below the title. The narrow side panel can't do anything else —
+ * a second column there would just be a stack with a divider line.
  *
- * `aside` ist die zweispaltige Aufteilung des großen Dialogs und der
- * Vollseite: Inhalt links, Attribute rechts daneben. Dort ist die Breite da,
- * und beides gleichzeitig im Blick zu haben ist mehr wert als der Lesefluss
- * von oben nach unten.
+ * `aside` is the two-column layout of the large dialog and the full page:
+ * content on the left, attributes next to it on the right. There's the
+ * width for that there, and having both in view at once is worth more than
+ * top-to-bottom reading flow.
  */
 export type IssueDetailLayout = "column" | "aside";

@@ -11,15 +11,15 @@ const mockTx = {
 
 const mockTransaction = mock();
 const mockInvitationFindUnique = mock();
-// `recordAudit` (`@/lib/audit`) läuft hier echt gegen diese beiden — ein Mock
-// des Moduls würde in `tests/unit/audit/audit.test.ts` lecken, das im selben
-// Prozess die echte Funktion prüft (siehe CLAUDE.md).
+// `recordAudit` (`@/lib/audit`) runs for real here against these two — mocking
+// the module would leak into `tests/unit/audit/audit.test.ts`, which checks
+// the real function in the same process (see CLAUDE.md).
 const mockAuditLogCreate = mock();
 const mockAuditUserFindUnique = mock();
 
 mock.module("@/lib/db", () => ({
   db: {
-    // `openInvitation` läuft hier echt — nur die Zeile kommt aus dem Mock.
+    // `openInvitation` runs for real here — only the row comes from the mock.
     invitation: { findUnique: mockInvitationFindUnique },
     auditLog: { create: mockAuditLogCreate },
     user: { findUnique: mockAuditUserFindUnique },
@@ -32,7 +32,7 @@ mock.module("@/lib/session", () => ({ getSession: mockGetSession }));
 
 import { acceptInvitation } from "@/features/auth/actions";
 
-/** Eine offene Einladung, wie die Datenbank sie liefert. */
+/** An open invitation, as delivered by the database. */
 const VALID_ROW = {
   token: "tok",
   workspaceId: "acme",
@@ -56,8 +56,8 @@ function reset() {
       fn.mockResolvedValue({});
     }
   }
-  // Zwei Leser derselben Zeile: die Action fragt `pending`, das Nachziehen der
-  // Projekte fragt die Rollen-Einträge.
+  // Two readers of the same row: the action queries `pending`, catching up
+  // on the projects queries the role entries.
   mockTx.workspaceMember.findUnique.mockResolvedValue({
     pending: true,
     role: {
@@ -100,8 +100,8 @@ describe("acceptInvitation() — Zugriff", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  // Unbekannt, abgelaufen, benutzt: `openInvitation` unterscheidet das nicht, und
-  // diese Meldung tut es auch nicht.
+  // Unknown, expired, used: `openInvitation` doesn't distinguish between
+  // these, and neither does this message.
   it("lehnt eine ungültige Einladung ab", async () => {
     mockInvitationFindUnique.mockResolvedValue(null);
     expect(await acceptInvitation("tok")).toEqual({
@@ -166,8 +166,8 @@ describe("acceptInvitation() — Projekt-Gast", () => {
   beforeEach(reset);
 
   it("lässt einen Gast ohne Workspace-Mitgliedschaft in Ruhe", async () => {
-    // Kein `WorkspaceMember`: der Zugriff hängt allein an der Projektzeile, die
-    // schon steht. Zu heben gibt es hier nichts.
+    // No `WorkspaceMember`: access hinges solely on the project row, which
+    // is already in place. There's nothing to lift here.
     mockTx.workspaceMember.findUnique.mockResolvedValue(null);
 
     await acceptInvitation("tok");

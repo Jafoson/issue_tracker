@@ -18,9 +18,9 @@ export type RequestAttachmentUploadResult =
   | { error: string };
 
 /**
- * Wie `requestAvatarUpload`, nur ohne MIME-Allowlist — jeder Dateityp ist
- * erlaubt, nur die Größe wird begrenzt. RBAC (Berechtigung, das Issue zu
- * bearbeiten) bleibt außerhalb dieser Datei, in `features/issues/actions.ts`.
+ * Like `requestAvatarUpload`, just without a MIME allowlist — every file
+ * type is permitted, only the size is limited. RBAC (permission to edit
+ * the issue) stays outside this file, in `features/issues/actions.ts`.
  */
 export async function requestAttachmentUpload(input: {
   issueId: string;
@@ -51,9 +51,9 @@ export type FinalizeAttachmentUploadResult =
   | { error: string };
 
 /**
- * Bestätigt einen Upload nach dem direkten PUT gegen S3 — prüft Eigentum am
- * Key (gegen manipulierte Keys aus dem Client), dass das Objekt existiert,
- * und liest die tatsächliche Größe aus (nicht die vom Client behauptete).
+ * Confirms an upload after the direct PUT against S3 — checks ownership of
+ * the key (against tampered keys from the client), that the object exists,
+ * and reads the actual size (not the one the client claims).
  */
 export async function finalizeAttachmentUpload(
   issueId: string,

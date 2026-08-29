@@ -36,9 +36,9 @@ export { welcomeEmail } from "@/lib/mail/templates/welcome";
 export interface SendInvitationEmailInput {
   to: string;
   workspaceId: string;
-  /** Gesetzt = Einladung in ein bestimmtes Projekt. */
+  /** Set = invitation into a specific project. */
   projectId?: string | null;
-  /** Wer eingeladen hat. */
+  /** Who sent the invitation. */
   inviterId: string;
   roleName: string;
   expiresAt: Date;
@@ -46,15 +46,15 @@ export interface SendInvitationEmailInput {
 }
 
 /**
- * Verschickt die Einladungsmail für ein neu angelegtes Konto (unbekannte
- * Adresse in `inviteWorkspaceMember`/`inviteProjectMember`) — der einzige Weg
- * für diese Person, an ihr passwortloses Konto zu kommen.
+ * Sends the invitation email for a newly created account (unknown address
+ * in `inviteWorkspaceMember`/`inviteProjectMember`) — the only way for this
+ * person to get to their passwordless account.
  *
- * Lädt Workspace-, Projekt- und Einladendennamen selbst nach, damit die
- * Aufrufer nur die Ids durchreichen müssen. Schluckt jeden Fehler: die
- * Mitgliedschaft steht zu diesem Zeitpunkt schon, eine hakende Mail darf sie
- * nicht rückgängig machen. Ohne SMTP-Konfiguration bleibt es beim kopierbaren
- * Link, den die Aktionen ohnehin zurückgeben.
+ * Loads the workspace, project, and inviter names itself, so callers only
+ * need to pass through ids. Swallows every error: the membership already
+ * exists at this point, a stumbling email must not undo it. Without SMTP
+ * configuration, it stays at the copyable link that the actions return
+ * anyway.
  */
 export async function sendInvitationEmail(
   input: SendInvitationEmailInput,
@@ -102,22 +102,22 @@ export async function sendInvitationEmail(
 }
 
 export interface SendMemberRemovedEmailInput {
-  /** Wer entfernt wurde. */
+  /** Who was removed. */
   userId: string;
   workspaceId: string;
-  /** Gesetzt = nur aus diesem Projekt entfernt, Workspace-Zugriff bleibt. */
+  /** Set = removed only from this project, workspace access remains. */
   projectId?: string | null;
-  /** Wer entfernt hat. */
+  /** Who removed them. */
   actorId: string;
 }
 
 /**
- * Verschickt die Mail für `removeMember`/`removeProjectMember` — lädt
- * Empfänger-, Workspace-, Projekt- und Handelndennamen selbst nach, damit die
- * Aufrufer nur Ids durchreichen müssen (wie `sendInvitationEmail`).
+ * Sends the email for `removeMember`/`removeProjectMember` — loads the
+ * recipient, workspace, project, and actor names itself, so callers only
+ * need to pass through ids (like `sendInvitationEmail`).
  *
- * Schluckt jeden Fehler: die Mitgliedschaft ist zu diesem Zeitpunkt schon
- * weg, eine hakende Mail darf das nicht rückgängig machen.
+ * Swallows every error: the membership is already gone at this point, a
+ * stumbling email must not undo that.
  */
 export async function sendMemberRemovedEmail(
   input: SendMemberRemovedEmailInput,
@@ -146,8 +146,8 @@ export async function sendMemberRemovedEmail(
       }),
       getMailTemplateOverride("memberRemoved"),
     ]);
-    // Ein Passkey-Konto ohne hinterlegte Adresse hat hier nichts zu
-    // erreichen — kein Fehler, nur nichts zu verschicken.
+    // A passkey account with no address on file has nothing to be reached
+    // at here — not an error, just nothing to send.
     if (!user?.email || !workspace) return;
 
     const { subject, html, text } = memberRemovedEmail(
@@ -177,12 +177,12 @@ export interface SendIssueShareLinkEmailInput {
 }
 
 /**
- * Verschickt den öffentlichen Lese-Link eines Issues an eine beliebige
- * Adresse — anders als `sendInvitationEmail`/`sendMemberRemovedEmail` nicht an
- * ein Konto im System, `to` kommt direkt von der teilenden Person.
+ * Sends an issue's public read-only link to an arbitrary address — unlike
+ * `sendInvitationEmail`/`sendMemberRemovedEmail`, not to an account in the
+ * system; `to` comes directly from the person sharing.
  *
- * Schluckt jeden Fehler: der Link steht zu diesem Zeitpunkt schon, eine
- * hakende Mail darf das Teilen selbst nicht rückgängig machen.
+ * Swallows every error: the link already exists at this point, a stumbling
+ * email must not undo the sharing itself.
  */
 export async function sendIssueShareLinkEmail(
   input: SendIssueShareLinkEmailInput,

@@ -9,10 +9,11 @@ const EXT_MIME: Record<string, string> = {
 };
 
 /**
- * Rät den MIME-Type eines Bildes an seiner URL-Endung — ein verlinktes Bild
- * wird nie heruntergeladen, also bleibt nur die Dateiendung als Hinweis.
- * Unbekannte/fehlende Endung → `null`, der Anhang landet dann als generische
- * Datei-Karte statt als Bildvorschau (siehe `RichText`'s `attachment`-Fall).
+ * Guesses an image's MIME type from its URL extension — a linked image is
+ * never downloaded, so the file extension is the only clue available.
+ * Unknown/missing extension → `null`, the attachment then lands as a
+ * generic file card instead of an image preview (see `RichText`'s
+ * `attachment` case).
  */
 export function guessImageMimeType(url: string): string | null {
   let pathname: string;

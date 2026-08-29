@@ -1,14 +1,14 @@
-/* Alle senkrechten Maße stehen auf ganzen, geraden Pixeln — Zeilenbox, Polster,
-   Punkt und Kreuz. Der Grund ist die Umgebung: das Label sitzt mittig in einer
-   Tabellenzeile (40px minus 2×4px Polster = 32px) oder auf einer Karte, und
-   `align-items: center` halbiert die Differenz. Ist die Chiphöhe ungerade,
-   landet der ganze Chip auf einem halben Pixel, und der Browser verwischt
-   Rahmen, Schrift und Punkt. Der Punkt sieht dann aus, als läge er neben der
-   Zeile statt darauf.
+/* All vertical dimensions land on whole, even pixels — line box, padding,
+   dot, and cross. The reason is the environment: the label sits centered in
+   a table row (40px minus 2×4px padding = 32px) or on a card, and
+   `align-items: center` halves the difference. If the chip height is odd,
+   the whole chip lands on a half pixel, and the browser blurs border, text,
+   and dot. The dot then looks like it's sitting next to the line rather
+   than on it.
 
-   Deshalb `line-height` in Pixeln statt als Faktor: `1.25 × 11px` sind 13.75 —
-   damit war der `sm`-Chip 23.75px hoch, und in der Issue-Liste stand alles
-   krumm. Die drei Größen ergeben so 28 / 24 / 20px. */
+   That's why `line-height` is in pixels rather than a factor: `1.25 × 11px`
+   is 13.75 — that made the `sm` chip 23.75px tall, and everything in the
+   issue list looked crooked. The three sizes this way come out to 28 / 24 / 20px. */
 .label {
   display: inline-flex;
   align-items: center;
@@ -35,11 +35,11 @@
     line-height: 12px;
     gap: 4px;
 
-    /* Bei 10px Schrift setzt die Rundung den Punkt von selbst richtig ab. */
+    /* At 10px text size, rounding naturally positions the dot correctly. */
     .dot { translate: none; }
   }
 
-  /* Rechts weniger Polster, das Kreuz bringt selbst Fläche mit. */
+  /* Less padding on the right, the cross brings its own hit area. */
   &.removable {
     padding-right: 6px;
   }
@@ -54,15 +54,15 @@
   }
 }
 
-/* Der Punkt ist überall gleich groß: er trägt die Farbe des Labels, keine
-   Größenaussage — und nur ein gerades Maß bleibt in der geraden Zeilenbox auf
-   ganzen Pixeln (vorher 7px, und damit halb).
+/* The dot is the same size everywhere: it carries the label's color, not a
+   size statement — and only an even measurement stays on whole pixels
+   within the even line box (it used to be 7px, and thus half a pixel off).
 
-   Flex zentriert ihn auf die Mitte der Zeilenbox. Die liegt über der Mitte des
-   Wortes: Ober- und Unterlängen zählen mit, das Wort selbst besteht aber
-   überwiegend aus x-Höhe — bei Hanken Grotesk knapp einen Pixel. Genau diesen
-   einen Pixel schiebt `translate` nach, nicht weniger: ein halber machte den
-   Kreis unscharf, und unscharf sieht schiefer aus als schief. */
+   Flex centers it on the middle of the line box. That sits above the middle
+   of the word: ascenders and descenders count too, but the word itself
+   consists mostly of x-height — for Hanken Grotesk, just under one pixel.
+   `translate` nudges it down by exactly that one pixel, no less: half a
+   pixel made the circle blurry, and blurry looks more crooked than crooked. */
 .dot {
   width: 6px;
   height: 6px;
@@ -71,12 +71,12 @@
   translate: 0 1px;
 }
 
-/* Das Kreuz zum Entfernen — zurückhaltend, bis man darüber fährt. Farbe erbt
-   es vom Label, damit es bei der gefüllten Variante mitzieht.
+/* The remove cross — understated until hovered. It inherits color from the
+   label so it follows along in the filled variant.
 
-   Es bleibt bewusst innerhalb der Zeilenbox (14px bzw. 12px): wäre es höher,
-   bestimmte es die Höhe des Chips, und die Reihe stünde bei entfernbaren
-   Labels einen Pixel anders als bei festen. */
+   It deliberately stays within the line box (14px or 12px): if it were
+   taller, it would dictate the chip's height, and the row would sit one
+   pixel off for removable labels compared to fixed ones. */
 .remove {
   display: inline-flex;
   align-items: center;

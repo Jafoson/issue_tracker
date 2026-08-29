@@ -23,32 +23,32 @@ import {
 } from "@/lib/permissions";
 import { PROJECT_ADMIN_ROLE_KEY, systemRoleId } from "@/lib/rbac";
 
-// ─── Was die Plattformverwaltung tun darf ─────────────────────────────────────
+// ─── What platform administration is allowed to do ────────────────────────────
 //
-// Vier Eingriffe, und drei Regeln ziehen sich durch alle:
+// Four kinds of intervention, and three rules run through all of them:
 //
-//   1. **Niemand fasst sich selbst an.** Die eigene Rolle zu setzen wäre
-//      Selbstbeförderung, sich selbst stillzulegen wäre ein Weg, die letzte
-//      Verwaltung der Plattform aus Versehen zu schließen.
-//   2. **Niemand vergibt eine Rolle über dem eigenen Rang** — dieselbe Regel wie
-//      in `features/roles/actions.ts`, eine Ebene höher.
-//   3. **Jeder Eingriff steht danach im Protokoll.** Beim Notfall-Zugriff nicht
-//      nebenher, sondern in derselben Transaktion: ohne Eintrag keine
-//      Mitgliedschaft.
+//   1. **Nobody touches themselves.** Setting your own role would be
+//      self-promotion, deactivating yourself would be a way to accidentally
+//      lock out the last platform administrator.
+//   2. **Nobody assigns a role above their own rank** — the same rule as
+//      in `features/roles/actions.ts`, one level up.
+//   3. **Every intervention ends up in the audit log afterward.** For the
+//      break-glass access, not as a side effect but in the same transaction:
+//      no log entry, no membership.
 //
-// Der Notfall-Zugriff ist die einzige Stelle im ganzen Plattform-Bereich, die
-// den Weg zu Inhalten öffnet. Er tut es offen: er legt eine gewöhnliche
-// Mitgliedschaft an, die im Projekt für alle sichtbar ist, verlangt eine
-// Begründung und schreibt beides fest. Ein stiller Durchgriff, der Inhalte zeigt
-// ohne Spur zu hinterlassen, existiert hier nicht — dafür gibt es allein
-// `tenant.access` in der Support-Rolle, und die trägt kein Administrator.
+// Break-glass access is the only place in the whole platform area that opens a
+// path to actual content. It does so openly: it creates an ordinary
+// membership, visible to everyone in the project, requires a written reason,
+// and records both. A silent override that shows content without leaving a
+// trace does not exist here — for that there's only `tenant.access` in the
+// support role, and no administrator holds that role.
 
 type AdminResult = { ok: true } | { error: string };
 
 const NOT_LOGGED_IN = "You must be logged in.";
 const NOT_ALLOWED = "You are not allowed to do this.";
 
-/** Kürzeste Begründung, die als Begründung durchgeht. */
+/** Shortest reason that counts as an actual reason. */
 const MIN_REASON = 10;
 
 async function revalidate() {
@@ -59,13 +59,14 @@ function displayName(user: { firstName: string; lastName: string }): string {
   return `${user.firstName} ${user.lastName}`.trim();
 }
 
-// ─── Konten ───────────────────────────────────────────────────────────────────
+// ─── Accounts ───────────────────────────────────────────────────────────────
 
 /**
- * Die Plattform-Rolle eines Kontos setzen.
+ * Set an account's platform role.
  *
- * Das ist die Antwort auf „wer hat wem Administrator-Rechte gegeben?" — und
- * genau deshalb steht sie hinterher im Protokoll, mit alter und neuer Rolle.
+ * This is the answer to "who gave whom administrator rights?" — and exactly
+ * for that reason it ends up in the audit log afterward, with the old and
+ * new role.
  */
 export async function setPlatformRole(
   userId: string,
@@ -77,7 +78,7 @@ export async function setPlatformRole(
   const access = await getAccess(PLATFORM);
   if (!access.has("user.manage")) return { error: NOT_ALLOWED };
 
-  // Regel 1. Wer sich selbst befördern könnte, bräuchte die Rangordnung nicht.
+  // Rule 1. Anyone able to promote themselves wouldn't need the rank order.
   if (userId === actorId)
     return { error: "You cannot change your own platform role." };
 
@@ -101,8 +102,8 @@ export async function setPlatformRole(
   if (!role || role.scope !== "PLATFORM")
     return { error: "This is not a platform role." };
 
-  // Regel 2, in beide Richtungen: weder eine höhere Rolle vergeben, noch jemanden
-  // anfassen, der schon höher steht als man selbst.
+  // Rule 2, in both directions: neither assign a higher role, nor touch
+  // someone who already ranks above yourself.
   const ceiling = assignmentCeiling(access, "PLATFORM");
   if (role.rank > ceiling)
     return { error: "You cannot assign a role above your own." };
@@ -129,12 +130,12 @@ export async function setPlatformRole(
 }
 
 /**
- * Ein Konto stilllegen oder wieder freigeben.
+ * Deactivate an account, or reactivate it.
  *
- * Stilllegen statt löschen: ein gelöschtes Konto nähme seine Issues, Kommentare
- * und Zuweisungen mit oder ließe sie ohne Urheber zurück. Ein stillgelegtes
- * bleibt sichtbar, wo es gearbeitet hat, kommt aber nicht mehr herein
- * (`auth.ts`) und bekommt nirgends mehr Rechte (`lib/permissions.ts`).
+ * Deactivating instead of deleting: a deleted account would either take its
+ * issues, comments, and assignments with it or leave them without an author.
+ * A deactivated one stays visible wherever it worked, but can no longer sign
+ * in (`auth.ts`) and no longer gets permissions anywhere (`lib/permissions.ts`).
  */
 export async function setUserActive(
   userId: string,
@@ -179,19 +180,19 @@ export async function setUserActive(
   return { ok: true };
 }
 
-// ─── Projekt-Stammdaten ───────────────────────────────────────────────────────
+// ─── Project metadata ───────────────────────────────────────────────────────
 
 /**
- * Ein verwaistes Projekt neu zuordnen.
+ * Reassign an orphaned project.
  *
- * Ein Projekt wird zum Waisen, wenn das Konto seines Erstellers gelöscht wird —
- * dann steht es da und niemand ist zuständig. Diese Aktion setzt den Besitzer
- * neu und **nimmt ihn zugleich ins Projekt auf**, denn ein Besitzer ohne
- * Mitgliedschaft wäre nur ein Name in einer Tabelle: Zugriff entsteht in diesem
- * System allein aus `ProjectMember`.
+ * A project becomes an orphan when its creator's account is deleted — it then
+ * sits there with nobody responsible. This action sets a new owner and
+ * **adds them to the project at the same time**, because an owner without
+ * membership would be nothing more than a name in a table: in this system,
+ * access arises solely from `ProjectMember`.
  *
- * Sie ist damit ein offener Weg in ein fremdes Projekt und wird wie der
- * Notfall-Zugriff behandelt: in einer Transaktion, mit Protokoll.
+ * It is therefore an open path into someone else's project and is treated
+ * like break-glass access: inside a transaction, with an audit entry.
  */
 export async function reassignProject(
   projectId: string,
@@ -229,8 +230,8 @@ export async function reassignProject(
       data: { createdById: newOwnerId },
     });
 
-    // Aufnehmen, ohne eine bestehende Rolle zu überschreiben: wer schon drin ist,
-    // behält, was er hatte.
+    // Add without overwriting an existing role: whoever is already in keeps
+    // what they had.
     await tx.projectMember.createMany({
       data: [
         {
@@ -256,7 +257,7 @@ export async function reassignProject(
   return { ok: true };
 }
 
-/** Ein Projekt stilllegen oder wieder in Betrieb nehmen. */
+/** Archive a project, or bring it back into operation. */
 export async function setProjectArchived(
   projectId: string,
   archived: boolean,
@@ -290,25 +291,25 @@ export async function setProjectArchived(
   return { ok: true };
 }
 
-// ─── Notfall-Zugriff ──────────────────────────────────────────────────────────
+// ─── Break-glass access ───────────────────────────────────────────────────────
 
 /**
- * Sich selbst in ein fremdes Projekt eintragen — der Ausnahmefall.
+ * Add yourself to someone else's project — the exceptional case.
  *
- * Gedacht für den Tag, an dem die Projektleitung im Krankenhaus liegt und etwas
- * dringend geändert werden muss. Drei Dinge machen ihn zur Ausnahme und nicht
- * zum bequemen Weg:
+ * Intended for the day the project lead is in the hospital and something
+ * urgently needs to change. Three things make it an exception rather than a
+ * convenient shortcut:
  *
- *   - Es braucht eine **Begründung**, und zwar eine geschriebene. Sie steht
- *     danach im Protokoll neben dem Namen dessen, der sie geschrieben hat.
- *   - Der Eintrag entsteht **in derselben Transaktion** wie die Mitgliedschaft.
- *     Es gibt keinen Zustand, in dem jemand drin ist und das Protokoll schweigt.
- *   - Die Mitgliedschaft ist **sichtbar**. Sie steht in der Mitgliederliste des
- *     Projekts wie jede andere; wer dort arbeitet, sieht am nächsten Morgen, wer
- *     dazugekommen ist.
+ *   - It requires a **reason**, a written one. It ends up in the audit log
+ *     afterward, next to the name of whoever wrote it.
+ *   - The audit entry is created **in the same transaction** as the
+ *     membership. There is no state in which someone is in and the log stays
+ *     silent.
+ *   - The membership is **visible**. It appears in the project's member list
+ *     like any other; anyone working there sees the next morning who joined.
  *
- * Wer schon Mitglied ist, braucht ihn nicht — dann ist es kein Notfall-Zugriff,
- * sondern der normale Weg, und die Aktion sagt das.
+ * Anyone already a member doesn't need it — then it isn't break-glass access,
+ * it's the normal path, and the action says so.
  */
 export async function breakGlassJoinProject(data: {
   projectId: string;
@@ -363,31 +364,31 @@ export async function breakGlassJoinProject(data: {
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────
 //
-// Zwei Eingriffe, und zwischen ihnen liegt eine Absicht: **sperren ist der
-// Normalfall, löschen die Ausnahme.**
+// Two kinds of intervention, and between them lies an intent: **suspending is
+// the normal case, deleting the exception.**
 //
-// Sperren nimmt den Zugang und lässt die Daten stehen. Es wirkt sofort und für
-// alle — `lib/permissions.ts` gibt in einem gesperrten Workspace niemandem mehr
-// Rechte, auch seiner Leitung nicht — und es lässt sich am nächsten Tag
-// zurücknehmen. Das ist die richtige Antwort auf eine offene Rechnung, einen
-// Missbrauchsverdacht, ein auslaufendes Vertragsverhältnis.
+// Suspending removes access and leaves the data in place. It takes effect
+// immediately and for everyone — `lib/permissions.ts` grants nobody any
+// permissions in a suspended workspace, not even its own leadership — and it
+// can be undone the next day. That's the right response to an outstanding
+// invoice, a suspicion of abuse, an expiring contract.
 //
-// Löschen nimmt alles: Projekte, Aufgaben, Kommentare, Mitgliedschaften, Rollen.
-// Es gibt keinen Weg zurück. Deshalb hängt es an einer Vorbedingung, die diese
-// Aktion nicht selbst erfindet, sondern verlangt: **ein Workspace lässt sich nur
-// löschen, wenn er schon gesperrt ist.** Wer löschen will, muss also erst
-// sperren — und zwischen beiden Schritten liegt eine Nacht, ein zweiter Blick,
-// die Möglichkeit, dass sich jemand meldet. Diese Reihenfolge ist der eigentliche
-// Schutz; der Tippzwang im Dialog ist nur die Erinnerung daran.
+// Deleting takes everything: projects, issues, comments, memberships, roles.
+// There is no way back. That's why it hangs on a precondition that this
+// action doesn't invent itself but requires: **a workspace can only be
+// deleted once it's already suspended.** Anyone wanting to delete must
+// therefore suspend first — and between the two steps lies a night, a second
+// look, the chance that someone speaks up. This ordering is the real
+// protection; the typed confirmation in the dialog is only a reminder of it.
 
 /**
- * Einen Workspace sperren oder wieder freigeben.
+ * Suspend a workspace, or lift the suspension.
  *
- * Die Sperre ist keine Anzeige, sondern eine Wirkung: `loadBase` in
- * `lib/permissions.ts` liest `suspended` **vor** jeder Rollenauflösung und gibt
- * danach nichts mehr heraus. Ein gesperrter Mandant ist für alle zu, die darin
- * arbeiten — der Support kommt über `tenant.access` weiterhin hinein, denn
- * gerade dann muss jemand nachsehen können.
+ * The suspension isn't cosmetic, it's an actual effect: `loadBase` in
+ * `lib/permissions.ts` reads `suspended` **before** any role resolution and
+ * grants nothing afterward. A suspended tenant is closed to everyone working
+ * in it — support still gets in via `tenant.access`, because that's exactly
+ * when someone needs to be able to look.
  */
 export async function setWorkspaceSuspended(
   workspaceId: string,
@@ -417,8 +418,8 @@ export async function setWorkspaceSuspended(
     target: { type: "workspace", id: workspaceId, label: workspace.name },
     workspaceId,
     reason,
-    // Wie viele Menschen das betrifft, gehört in die Zeile: „gesperrt" liest
-    // sich anders, wenn dahinter vierzig Konten stehen.
+    // How many people this affects belongs in the entry: "suspended" reads
+    // differently when forty accounts stand behind it.
     meta: { members: workspace._count.members },
   });
 
@@ -427,22 +428,23 @@ export async function setWorkspaceSuspended(
 }
 
 /**
- * Einen Workspace mit allem, was darin liegt, löschen — von der Plattform aus.
+ * Delete a workspace and everything in it — from the platform side.
  *
- * Es gibt diese Aktion **zusätzlich** zu `deleteWorkspace` in
- * `features/workspaces/actions.ts`, und der Unterschied ist keine Doppelung,
- * sondern der Kontext der Prüfung. `workspace.delete` darf in beiden Scopes
- * stehen und bedeutet dort Verschiedenes:
+ * This action exists **in addition to** `deleteWorkspace` in
+ * `features/workspaces/actions.ts`, and the difference isn't duplication, it's
+ * the context of the permission check. `workspace.delete` can appear in both
+ * scopes and means different things in each:
  *
- *   in einer Workspace-Rolle  → „ich darf **diesen** Workspace löschen" (Owner)
- *   in einer Plattform-Rolle  → „ich darf Mandanten löschen" (Betreiber)
+ *   in a workspace role  → "I may delete **this** workspace" (owner)
+ *   in a platform role   → "I may delete tenants" (operator)
  *
- * Der Weg über den Workspace-Kontext greift für einen Plattform-Admin nicht: er
- * ist dort kein Mitglied, und die Auflösung sammelt nur aus der Workspace-Rolle.
- * Deshalb prüft diese Aktion im Plattform-Kontext.
+ * Going through the workspace context doesn't work for a platform admin: they
+ * aren't a member there, and resolution only gathers from the workspace role.
+ * That's why this action checks in the platform context.
  *
- * Die Vorbedingung — erst sperren, dann löschen — steht bewusst im Server und
- * nicht nur im Dialog: eine Bestätigung im Browser ist eine Bitte, keine Regel.
+ * The precondition — suspend first, then delete — deliberately lives on the
+ * server and not only in the dialog: a confirmation in the browser is a
+ * request, not a rule.
  */
 export async function deleteWorkspaceAsPlatform(
   workspaceId: string,
@@ -470,8 +472,8 @@ export async function deleteWorkspaceAsPlatform(
     };
   }
 
-  // Der getippte Name. Nicht als Schikane, sondern damit die Zeile, auf der man
-  // gerade steht, nicht die Zeile ist, die man löscht.
+  // The typed name. Not as an obstacle, but so the row you happen to be on
+  // isn't the row you delete.
   if (confirmation.trim() !== workspace.name) {
     return { error: "The name does not match." };
   }
@@ -479,9 +481,9 @@ export async function deleteWorkspaceAsPlatform(
   const issues = await db.issue.count({ where: { project: { workspaceId } } });
 
   await db.$transaction(async (tx) => {
-    // Die Aufgaben zuerst: ihr Fremdschlüssel auf das Projekt steht auf
-    // `Restrict`, die Projekte ließen sich sonst gar nicht löschen. Alles
-    // Übrige kaskadiert vom Workspace aus.
+    // Issues first: their foreign key to the project is set to `Restrict`,
+    // otherwise the projects couldn't be deleted at all. Everything else
+    // cascades from the workspace.
     await tx.issue.deleteMany({ where: { project: { workspaceId } } });
     await tx.workspace.delete({ where: { id: workspaceId } });
   });
@@ -503,8 +505,8 @@ export async function deleteWorkspaceAsPlatform(
   return { ok: true };
 }
 
-/** Spiegelbild von `loadMoreWorkspaceActivity`/`loadMoreProjectActivity`
- * (`features/audit/actions.ts`), für das Plattform-Protokoll. */
+/** Mirror image of `loadMoreWorkspaceActivity`/`loadMoreProjectActivity`
+ * (`features/audit/actions.ts`), for the platform audit log. */
 export async function loadMorePlatformActivity(
   cursor: string,
 ): Promise<ActivityPage> {
@@ -519,7 +521,7 @@ export async function loadMorePlatformActivity(
   };
 }
 
-/** Eine weitere Seite fürs Infinite Scroll in `PlatformUsers`. */
+/** One more page for infinite scroll in `PlatformUsers`. */
 export async function loadMoreUsers(
   cursor: string,
 ): Promise<{ items: PlatformUser[]; nextCursor: string | null }> {
@@ -527,7 +529,7 @@ export async function loadMoreUsers(
   return { items: rows, nextCursor };
 }
 
-/** Eine weitere Seite fürs Infinite Scroll in `PlatformProjects`. */
+/** One more page for infinite scroll in `PlatformProjects`. */
 export async function loadMoreProjects(
   cursor: string,
 ): Promise<{ items: PlatformProject[]; nextCursor: string | null }> {
@@ -535,7 +537,7 @@ export async function loadMoreProjects(
   return { items: rows, nextCursor };
 }
 
-/** Eine weitere Seite fürs Infinite Scroll in `PlatformWorkspaces`. */
+/** One more page for infinite scroll in `PlatformWorkspaces`. */
 export async function loadMoreWorkspaces(
   cursor: string,
 ): Promise<{ items: PlatformWorkspace[]; nextCursor: string | null }> {

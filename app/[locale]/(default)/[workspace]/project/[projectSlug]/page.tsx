@@ -43,7 +43,7 @@ export default async function BoardPage({
         statuses={statuses}
         composer={composer}
       />
-      {/* Öffnet das angeklickte Issue als Seitenpanel (`?issue=` in der URL). */}
+      {/* Opens the clicked issue as a side panel (`?issue=` in the URL). */}
       <IssuePeek data={composer} />
     </>
   );

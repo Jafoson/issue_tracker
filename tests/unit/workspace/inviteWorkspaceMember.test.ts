@@ -41,8 +41,8 @@ mock.module("@/lib/permissions", () => ({
   accessFor: mockAccessFor,
   requirePermission: mock(),
   PermissionError: class PermissionError extends Error {},
-  // Reine Funktion — im Original nachgebildet, damit die Rangregel mitgetestet
-  // wird und nicht weggemockt ist.
+  // A pure function — reproduced from the original so the rank rule is
+  // actually exercised by the test instead of being mocked away.
   assignmentCeiling: (
     access: {
       roleKey: (s: string) => string | null;
@@ -62,10 +62,10 @@ mock.module("@/lib/user-defaults", () => ({
   pickUserColor: () => "#6e63e6",
 }));
 
-// `@/lib/project-membership` wird auch von `teams.test.ts` und
-// `removeMember.test.ts` im selben Prozess komplett gemockt (geteilter
-// Modul-Cache, siehe CLAUDE.md) — hier deshalb selbst mocken, statt auf die
-// echte Implementierung zu vertrauen.
+// `@/lib/project-membership` is also mocked completely by `teams.test.ts` and
+// `removeMember.test.ts` in the same process (shared module cache, see
+// CLAUDE.md) — so it's mocked here too, instead of relying on the real
+// implementation.
 const mockEnrollInWorkspaceProjects = mock();
 mock.module("@/lib/project-membership", () => ({
   enrollInWorkspaceProjects: mockEnrollInWorkspaceProjects,
@@ -79,7 +79,7 @@ import {
 const WS = "acme";
 const ACTOR = "u-actor";
 
-/** Ein Handelnder mit Rechten und einem Rang auf der Workspace-Ebene. */
+/** An actor with permissions and a rank at the workspace level. */
 function access(rank: number | null) {
   return {
     has: () => true,
@@ -208,7 +208,7 @@ describe("inviteWorkspaceMember() — bekanntes Konto", () => {
       pending: false,
     });
     expect(mockTx.invitation.create).not.toHaveBeenCalled();
-    // Und es landet in den öffentlichen Projekten.
+    // And it ends up in the public projects.
     expect(mockEnrollInWorkspaceProjects).toHaveBeenCalledWith(mockTx, {
       workspaceId: WS,
       userId: "u-1",
@@ -237,7 +237,7 @@ describe("inviteWorkspaceMember() — unbekannte Adresse", () => {
     const created = mockTx.user.create.mock.calls[0][0].data;
     expect(created.email).toBe("ada@example.com");
     expect(created.passwordHash).toBeUndefined();
-    // Vorname aus dem lokalen Teil, bis die Person ihn selbst setzt.
+    // First name derived from the local part, until the person sets it themselves.
     expect(created.firstName).toBe("Ada");
 
     expect(mockTx.workspaceMember.create.mock.calls[0][0].data.pending).toBe(

@@ -3,24 +3,24 @@ import createMiddleware from "next-intl/middleware";
 import { auth } from "@/auth.edge";
 import { routing } from "@/i18n/routing";
 
-// Öffentliche Seiten (ohne Locale-Präfix), die ohne gültige Session erreichbar sind.
+// Public pages (without locale prefix) reachable without a valid session.
 //
-// `/invite` gehört dazu: der Token im Pfad ist die Berechtigung, und wer eine
-// Einladung annimmt, hat noch kein Passwort — ein Auth-Gate davor wäre eine Tür,
-// hinter der der Schlüssel liegt. `/join` (teilbarer Einladungslink,
-// `lib/invite-links.ts`) aus demselben Grund — die Seite selbst entscheidet
-// dort zwischen "schon angemeldet" und "erst noch anmelden". `/share`
-// (öffentlicher Issue-Link, `lib/issue-share.ts`) ist von Natur aus für
-// Nicht-Mitglieder gedacht — ein Auth-Gate davor widerspräche dem Zweck.
+// `/invite` belongs here: the token in the path is the authorization, and
+// whoever accepts an invitation doesn't have a password yet — an auth gate in
+// front of it would be a door with the key lying behind it. `/join`
+// (shareable invite link, `lib/invite-links.ts`) for the same reason — that
+// page itself decides between "already signed in" and "sign in first".
+// `/share` (public issue link, `lib/issue-share.ts`) is inherently meant for
+// non-members — an auth gate in front of it would defeat its purpose.
 const PUBLIC_PATHS = ["/login", "/register", "/invite", "/join", "/share"];
 
 const handleI18nRouting = createMiddleware(routing);
 
-// `auth` (Edge-Instanz) stellt die Session als `req.auth` bereit (JWT-Decoding).
+// `auth` (edge instance) exposes the session as `req.auth` (JWT decoding).
 export default auth((request) => {
   const { pathname } = request.nextUrl;
 
-  // Locale-Präfix abtrennen, um öffentliche Pfade locale-unabhängig zu prüfen.
+  // Strip the locale prefix so public paths can be checked locale-independently.
   const segments = pathname.split("/").filter(Boolean);
   const hasLocalePrefix = (routing.locales as readonly string[]).includes(
     segments[0],
@@ -33,23 +33,23 @@ export default auth((request) => {
     (p) => restPath === p || restPath.startsWith(`${p}/`),
   );
 
-  // Auth-Gate: geschützte Route ohne gültige Session → zum Login umleiten.
+  // Auth gate: protected route without a valid session → redirect to login.
   if (!isPublic && !request.auth) {
     const locale = hasLocalePrefix ? segments[0] : routing.defaultLocale;
     const loginUrl = new URL(`/${locale}/login`, request.url);
-    // callbackUrl ohne Locale-Präfix – der Client navigiert über next-intl,
-    // das die aktive Locale automatisch ergänzt.
+    // callbackUrl without a locale prefix – the client navigates via
+    // next-intl, which adds the active locale automatically.
     loginUrl.searchParams.set("callbackUrl", restPath);
     return NextResponse.redirect(loginUrl);
   }
 
-  // next-intl übernimmt das Locale-Routing (z.B. /login → /de/login) und setzt
-  // die nötigen Locale-Header für die nachgelagerten Server Components.
+  // next-intl takes over locale routing (e.g. /login → /de/login) and sets
+  // the locale headers needed by the downstream Server Components.
   return handleI18nRouting(request);
 });
 
 export const config = {
-  // Auf allen Pfaden laufen, außer API-Routen, Next.js-Internals und Dateien mit
-  // Endung (z.B. favicon.ico). Entspricht der next-intl-Empfehlung.
+  // Run on all paths except API routes, Next.js internals, and files with an
+  // extension (e.g. favicon.ico). Matches the next-intl recommendation.
   matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };

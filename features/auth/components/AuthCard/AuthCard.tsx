@@ -19,26 +19,26 @@ interface AuthCardProps {
   title: string;
   subtitle?: string;
   error?: string;
-  /** Ohne `onSubmit` bleibt der generische Button weg — Formulare ohne
-   *  eigenes Feld-basiertes Absenden (z. B. reine Passkey-Anmeldung) tragen
-   *  ihren Auslöser stattdessen über `extra`. */
+  /** Without `onSubmit`, the generic button is omitted — forms with no
+   *  field-based submission of their own (e.g. pure passkey sign-in) carry
+   *  their trigger via `extra` instead. */
   submitLabel?: string;
   onSubmit?: () => void;
   oauthProviders?: string[];
-  /** Überschreibt den Anzeigenamen einzelner Anbieter — für OIDC, dessen Name
-   *  aus `AUTH_OIDC_NAME` kommt statt aus der festen Marken-Liste. */
+  /** Overrides the display name of individual providers — for OIDC, whose
+   *  name comes from `AUTH_OIDC_NAME` instead of the fixed brand list. */
   oauthLabels?: Record<string, string>;
-  /** Zusätzlicher Anmeldeweg (z. B. Passkey-Button) — steht zwischen dem
-   *  Submit-Button und den OAuth-Anbietern, teilt sich aber keine Optik mit
-   *  ihnen (andere Bedingung, anderer Ceremony-Ablauf). */
+  /** Additional sign-in method (e.g. a passkey button) — sits between the
+   *  submit button and the OAuth providers, but shares no styling with them
+   *  (different condition, different ceremony flow). */
   extra?: React.ReactNode;
   children: React.ReactNode;
 }
 
 /**
- * Reines UI-Shell für die Anmeldung: links die Marke (verborgen auf schmalen
- * Bildschirmen), rechts die Karte mit Titel, Feldern (`children`), Fehler,
- * Submit, Extra-Weg und OAuth-Zeilen. Enthält keine Formular-Logik.
+ * Pure UI shell for sign-in: the brand on the left (hidden on narrow
+ * screens), the card with title, fields (`children`), error, submit, extra
+ * method, and OAuth rows on the right. Contains no form logic.
  */
 export function AuthCard({
   title,
@@ -101,9 +101,9 @@ export function AuthCard({
           {oauthProviders.length > 0 && (
             <>
               <div className={styles.divider}>{t("login.or")}</div>
-              {/* Ab drei Anbietern würde eine gestapelte Liste voller Knöpfe
-                  die Karte sprengen — ab da nur noch Logos in einer Reihe,
-                  wie bei Google/Apple/Facebook üblich. */}
+              {/* With three or more providers, a stacked list of full
+                  buttons would blow up the card — from there on, just logos
+                  in a row, as is common with Google/Apple/Facebook. */}
               <div
                 className={
                   oauthProviders.length >= 3

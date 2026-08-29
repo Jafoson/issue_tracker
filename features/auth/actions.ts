@@ -11,13 +11,13 @@ import { getSession } from "@/lib/session";
 type AuthResult = { redirectTo: string } | { error: string };
 
 /**
- * Verschickt den Anmeldelink. Funktioniert auch für ein vorab angelegtes,
- * eingeladenes Konto (`pending: true`, noch kein Passkey) — anders als
- * Passkey/OAuth kennt next-auths Mail-Provider keine `AccountNotLinked`-Sperre
- * für eine schon existierende Adresse: der Klick auf den Link *ist* der
- * Beweis, dass sie der Person gehört. `redirect: false` liefert das Ergebnis
- * zurück statt zu werfen — `sendVerificationRequest` (`auth.ts`) hat die Mail
- * zu diesem Zeitpunkt schon an `sendMail()` übergeben.
+ * Sends the magic sign-in link. Also works for a pre-created, invited
+ * account (`pending: true`, no passkey yet) — unlike passkey/OAuth,
+ * next-auth's mail provider has no `AccountNotLinked` block for an address
+ * that already exists: clicking the link *is* the proof that it belongs to
+ * the person. `redirect: false` returns the result instead of throwing —
+ * `sendVerificationRequest` (`auth.ts`) has already handed the mail off to
+ * `sendMail()` by this point.
  */
 export async function sendMagicLink(
   email: string,
@@ -43,22 +43,22 @@ export async function sendMagicLink(
 }
 
 /**
- * Schließt eine Einladung ab, nachdem die Person sich angemeldet hat (Magic
- * Link — für ein vorab angelegtes Konto der einzige Weg, siehe
- * `sendMagicLink`; danach kann sie sich in den eigenen Einstellungen einen
- * Passkey einrichten, wie jede andere Person auch).
+ * Finalizes an invitation after the person has signed in (magic link — for a
+ * pre-created account the only way, see `sendMagicLink`; afterward they can
+ * set up a passkey in their own settings, like anyone else).
  *
- * Diese Aktion setzt nur noch das, was eine Session allein nicht herstellt:
+ * This action only sets what a session alone doesn't establish:
  *
- *   1. `pending = false` — erst damit greifen die Rechte der Workspace-Rolle,
- *   2. Aufnahme in die öffentlichen Projekte: zwischen Einladung und Annahme
- *      können neue dazugekommen sein.
+ *   1. `pending = false` — only this activates the workspace role's
+ *      permissions,
+ *   2. enrollment in the public projects: new ones may have appeared
+ *      between the invitation and its acceptance.
  *
- * Ein Projekt-Gast hat keine Workspace-Mitgliedschaft. Für den entfällt beides
- * — sein Zugriff hängt allein an der Projektzeile, die schon steht.
+ * A project guest has no workspace membership. Neither applies to them —
+ * their access hangs entirely off the project row that already exists.
  *
- * Verlangt eine Session, die zur Einladung passt — sonst könnte eine fremde,
- * eingeloggte Person eine Einladung annehmen, die gar nicht ihre ist.
+ * Requires a session matching the invitation — otherwise some other, logged-in
+ * person could accept an invitation that isn't theirs at all.
  */
 export async function acceptInvitation(token: string): Promise<AuthResult> {
   const session = await getSession();
@@ -67,12 +67,12 @@ export async function acceptInvitation(token: string): Promise<AuthResult> {
 
   const invitation = await openInvitation(db, token, new Date());
   if (!invitation) {
-    // `openInvitation` schließt eine schon angenommene Einladung aus — das
-    // ist hier nicht zwangsläufig ein Fehler: ruft dieselbe (eingeloggte)
-    // Person diese Aktion für ihre eigene, gerade eben angenommene Einladung
-    // ein zweites Mal auf (Doppel-Aufruf durch Reacts Dev-Strict-Mode auf
-    // Server Components, erneuter Seitenaufruf, Zurück-Knopf), ist die
-    // Aufnahme längst erledigt — derselbe Erfolg, kein zweiter Schreibvorgang.
+    // `openInvitation` excludes an already-accepted invitation — that's not
+    // necessarily an error here: if the same (logged-in) person calls this
+    // action a second time for their own invitation that was just accepted
+    // (double invocation via React's dev strict mode on server components, a
+    // repeated page load, the back button), the enrollment is long since
+    // done — same success, no second write.
     const already = await db.invitation.findUnique({
       where: { token },
       select: {
@@ -89,9 +89,9 @@ export async function acceptInvitation(token: string): Promise<AuthResult> {
     ) {
       return { redirectTo: `/${already.workspaceId}` };
     }
-    // Unbekannt, abgelaufen, schon von jemand anderem benutzt oder Workspace
-    // gesperrt — eine Meldung für alle Fälle, damit der Endpunkt kein Orakel
-    // für gültige Tokens ist.
+    // Unknown, expired, already used by someone else, or workspace
+    // suspended — one message for every case, so this endpoint isn't an
+    // oracle for valid tokens.
     return { error: "This invitation is no longer valid. Ask for a new one." };
   }
   if (session.userId !== invitation.userId) {
@@ -138,9 +138,9 @@ export async function acceptInvitation(token: string): Promise<AuthResult> {
   });
 
   if (joined) {
-    // Erst jetzt ist die Mitgliedschaft wirklich da — die Person nimmt ihre
-    // eigene Einladung an, ist also zugleich Akteur und Ziel. Außerhalb der
-    // Transaktion: ein klemmendes Protokoll soll die Annahme nicht verhindern.
+    // Only now does the membership actually exist — the person accepts
+    // their own invitation, so they're actor and target at once. Outside
+    // the transaction: a stuck audit write shouldn't block the acceptance.
     await recordAudit({
       action: "member.added",
       actorId: invitation.userId,
@@ -160,7 +160,7 @@ export async function logout(): Promise<void> {
   await signOut({ redirect: true, redirectTo: "/login" });
 }
 
-/** OAuth-Login (GitHub/Google). Leitet direkt zum Provider weiter. */
+/** OAuth login (GitHub/Google). Redirects straight to the provider. */
 export async function signInWithOAuth(provider: string): Promise<void> {
   await signIn(provider, { redirectTo: "/" });
 }

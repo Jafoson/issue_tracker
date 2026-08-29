@@ -14,9 +14,9 @@ import styles from "./boardColumn.module.scss";
 interface BoardColumnProps {
   status: Status;
   issues: IssueDetail[];
-  /** Ohne Projekt gibt es kein „Neue Aufgabe“ — siehe `Board`. */
+  /** Without a project there is no "New task" — see `Board`. */
   projectId?: string;
-  /** Reicht die Spalte nur durch: die Karte nennt dann ihr Projekt. */
+  /** The column just passes this through: the card names its project instead. */
   showProject?: boolean;
   lookups: IssueLookups;
   composer: IssueComposerData;
@@ -31,10 +31,10 @@ interface BoardColumnProps {
   onCardDragStart: (issue: IssueDetail) => (e: React.DragEvent) => void;
   onCardDragEnd: () => void;
   onCardDragOver: (cardId: string) => (e: React.DragEvent) => void;
-  /** Ob dieses Issue gerade im Seitenpanel steht. */
+  /** Whether this issue is currently shown in the side panel. */
   isCardActive: (issue: IssueDetail) => boolean;
   onCardOpen: (issue: IssueDetail) => void;
-  /** Strg/Cmd- und Mittelklick auf eine Karte: Vollseite im neuen Tab. */
+  /** Ctrl/Cmd click and middle click on a card: full page in a new tab. */
   onCardOpenInNewTab: (issue: IssueDetail) => void;
 }
 
@@ -62,10 +62,10 @@ export function BoardColumn({
 }: BoardColumnProps) {
   const { openModal } = useModal();
 
-  // Ohne `issue.create` in diesem Projekt gibt es weder das Plus im Spaltenkopf
-  // noch die Zeile am Ende der Spalte. Der Server hat das schon entschieden
-  // (`creatableProjectIds`), hier wird es nur nicht gezeichnet. Ohne Projekt
-  // ist die Frage gar nicht erst zu stellen.
+  // Without `issue.create` in this project there is neither the plus in the
+  // column header nor the row at the end of the column. The server has already
+  // decided this (`creatableProjectIds`), it's just not rendered here. Without
+  // a project the question doesn't even arise.
   const canCreate =
     projectId !== undefined && composer.creatableProjectIds.includes(projectId);
 

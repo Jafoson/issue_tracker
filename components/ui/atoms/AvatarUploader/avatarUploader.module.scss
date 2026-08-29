@@ -12,11 +12,11 @@
   border: none;
   background: none;
   cursor: pointer;
-  /* Alle Avatare hier stehen quadratisch (`shape="square"`) — derselbe Radius,
-     den `Avatar` bei dieser Größe selbst für `square` errechnet
-     (`avatar.module.scss`s Klammerformel läuft bei diesen Maßen gegen
-     `--radius-lg`). Kein `border-radius: inherit`: der Button hat keinen
-     Vorfahren, von dem er das Maß erben könnte. */
+  /* All avatars here are square (`shape="square"`) — the same radius that
+     `Avatar` itself computes for `square` at this size (`avatar.module.scss`'s
+     clamp formula converges on `--radius-lg` at these dimensions). Not
+     `border-radius: inherit`: the button has no ancestor to inherit the
+     value from. */
   border-radius: var(--radius-lg);
 
   &:disabled {

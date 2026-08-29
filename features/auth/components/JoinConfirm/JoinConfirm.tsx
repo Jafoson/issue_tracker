@@ -16,10 +16,10 @@ interface Props {
 }
 
 /**
- * Letzter Schritt beim Einlösen eines Einladungslinks für eine schon
- * angemeldete Person: "Als X beitreten?" statt eines stillschweigenden
- * Auto-Joins — wer mit einer fremden Sitzung auf den Link klickt (geteilter
- * Rechner, falscher Account), soll das sehen, bevor etwas passiert.
+ * Last step in redeeming an invite link for a person who's already signed
+ * in: "Join as X?" instead of a silent auto-join — anyone who clicks the
+ * link with someone else's session active (shared computer, wrong account)
+ * should see this before anything happens.
  */
 export function JoinConfirm({
   token,

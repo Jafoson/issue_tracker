@@ -1,24 +1,25 @@
 /**
- * Die Emoji, die der `:`-Trigger anbietet.
+ * The emoji offered by the `:` trigger.
  *
- * Bewusst eine kurze, handverlesene Liste statt eines Pakets mit mehreren
- * tausend Einträgen: in einem Issue-Tracker wiederholen sich dieselben zwanzig
- * Zeichen, und die vollständige Unicode-Tabelle wöge mehr als der Editor selbst.
+ * Deliberately a short, hand-picked list instead of a package with several
+ * thousand entries: in an issue tracker, the same twenty symbols repeat
+ * over and over, and the full Unicode table would weigh more than the
+ * editor itself.
  *
- * Die Schlüsselwörter sind englisch, weil die Kurznamen es auch sind — wer
- * `:daumen:` tippt, findet nichts, wer `:thumb:` tippt, schon. Das entspricht
- * dem Verhalten von Jira, Slack und GitHub.
+ * The keywords are English, because the short names are too — someone
+ * typing `:daumen:` finds nothing, someone typing `:thumb:` does. That
+ * matches the behavior of Jira, Slack, and GitHub.
  */
 
 export interface EmojiEntry {
   name: string;
   emoji: string;
-  /** Zusätzliche Suchbegriffe neben dem Namen. */
+  /** Extra search terms besides the name. */
   keywords?: string[];
 }
 
 export const EMOJI: EmojiEntry[] = [
-  // Zustimmung und Reaktion
+  // Agreement and reaction
   { name: "thumbsup", emoji: "👍", keywords: ["+1", "yes", "ok"] },
   { name: "thumbsdown", emoji: "👎", keywords: ["-1", "no"] },
   { name: "tada", emoji: "🎉", keywords: ["party", "ship", "release"] },
@@ -31,7 +32,7 @@ export const EMOJI: EmojiEntry[] = [
   { name: "wave", emoji: "👋", keywords: ["hello", "hi", "bye"] },
   { name: "point_right", emoji: "👉", keywords: ["this", "see"] },
 
-  // Zustand eines Issues
+  // State of an issue
   { name: "bug", emoji: "🐛", keywords: ["defect", "error"] },
   { name: "warning", emoji: "⚠️", keywords: ["caution", "careful"] },
   { name: "boom", emoji: "💥", keywords: ["crash", "breaking"] },
@@ -60,7 +61,7 @@ export const EMOJI: EmojiEntry[] = [
   { name: "question", emoji: "❓", keywords: ["help", "unclear"] },
   { name: "exclamation", emoji: "❗", keywords: ["important", "urgent"] },
 
-  // Fortschritt
+  // Progress
   { name: "white_check_mark", emoji: "✅", keywords: ["done", "check", "ok"] },
   { name: "x", emoji: "❌", keywords: ["no", "fail", "reject"] },
   { name: "heavy_check_mark", emoji: "✔️", keywords: ["done", "check"] },
@@ -69,7 +70,7 @@ export const EMOJI: EmojiEntry[] = [
   { name: "red_circle", emoji: "🔴", keywords: ["blocked", "down", "stop"] },
   { name: "no_entry", emoji: "⛔", keywords: ["blocked", "stop"] },
 
-  // Gesichter
+  // Faces
   { name: "smile", emoji: "😄", keywords: ["happy", "joy"] },
   { name: "grin", emoji: "😁", keywords: ["happy"] },
   { name: "wink", emoji: "😉", keywords: ["joke"] },
@@ -87,7 +88,7 @@ export const EMOJI: EmojiEntry[] = [
   { name: "robot", emoji: "🤖", keywords: ["bot", "automation", "ci"] },
 ];
 
-/** Treffer zur Eingabe hinter dem Doppelpunkt, Namenstreffer zuerst. */
+/** Matches for the input after the colon, name matches first. */
 export function searchEmoji(query: string, limit = 12): EmojiEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return EMOJI.slice(0, limit);

@@ -5,20 +5,20 @@ import { useState } from "react";
 import styles from "./copyField.module.scss";
 
 interface CopyFieldProps {
-  /** Der Wert, der kopiert wird — und der zu lesen sein muss. */
+  /** The value being copied — and that must be readable. */
   value: string;
-  /** Beschriftung des Knopfes, lokalisiert. */
+  /** Label for the button, localized. */
   copyLabel: string;
-  /** Bestätigung nach dem Kopieren, lokalisiert. */
+  /** Confirmation after copying, localized. */
   copiedLabel: string;
 }
 
 /**
- * Ein Wert zum Mitnehmen: sichtbar, auswählbar, mit einem Knopf zum Kopieren.
+ * A value to take with you: visible, selectable, with a button to copy it.
  *
- * Kein Eingabefeld — es gibt hier nichts einzugeben. Der Text bleibt trotzdem
- * markierbar, damit auch von Hand kopieren geht, wenn die Clipboard-API fehlt
- * (unsicherer Kontext, verweigerte Berechtigung).
+ * Not an input field — there's nothing to type here. The text still stays
+ * selectable so copying by hand also works when the Clipboard API is
+ * unavailable (insecure context, denied permission).
  */
 export function CopyField({ value, copyLabel, copiedLabel }: CopyFieldProps) {
   const [copied, setCopied] = useState(false);
@@ -29,8 +29,8 @@ export function CopyField({ value, copyLabel, copiedLabel }: CopyFieldProps) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Kein Zugriff auf die Zwischenablage — der Wert steht daneben und lässt
-      // sich markieren. Eine Fehlermeldung hülfe hier nicht weiter.
+      // No access to the clipboard — the value is right there and can be
+      // selected. An error message wouldn't help here.
     }
   };
 

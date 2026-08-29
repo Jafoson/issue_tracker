@@ -8,8 +8,8 @@
   background: var(--surface-container-low);
 }
 
-/* Ein langer Link soll die Zeile nicht sprengen: er bricht nicht um, sondern
-   scrollt in seinem eigenen Kasten. Der Knopf bleibt dadurch immer sichtbar. */
+/* A long link shouldn't blow out the row: it doesn't wrap, it scrolls
+   inside its own box instead. This keeps the button always visible. */
 .value {
   flex: 1;
   min-width: 0;

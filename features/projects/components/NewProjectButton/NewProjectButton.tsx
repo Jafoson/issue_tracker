@@ -8,14 +8,14 @@ import { useModal } from "@/lib/context";
 
 interface NewProjectButtonProps {
   workspaceId: string;
-  /** Nur das Plus-Icon, für enge Stellen wie die Sidebar-Überschrift. */
+  /** Just the plus icon, for tight spots like the sidebar heading. */
   compact?: boolean;
 }
 
 /**
- * Öffnet das `CreateProjectModal`. Eigene Client-Komponente, damit Server
- * Components (Sidebar-Navigation, Projektliste) den Button einsetzen können,
- * ohne selbst zur Client-Komponente zu werden.
+ * Opens the `CreateProjectModal`. A dedicated Client Component so Server
+ * Components (sidebar navigation, project list) can use the button without
+ * becoming Client Components themselves.
  */
 export function NewProjectButton({
   workspaceId,

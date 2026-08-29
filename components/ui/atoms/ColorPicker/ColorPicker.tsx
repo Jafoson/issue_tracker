@@ -4,18 +4,18 @@ import { PALETTE } from "@/lib/utils";
 import styles from "./colorPicker.module.scss";
 
 interface ColorPickerProps {
-  /** Aktuell gewählte Farbe. Entfällt, wenn die Auswahl direkt eine Aktion auslöst. */
+  /** Currently selected color. Omitted when the selection directly triggers an action. */
   value?: string;
   onChange: (color: string) => void;
-  /** Abweichende Palette. Default: die gemeinsame Palette aus `lib/utils/color`. */
+  /** Alternate palette. Default: the shared palette from `lib/utils/color`. */
   colors?: readonly string[];
-  /** `sm` für Popover/Menüs, `md` (Default) für Formulare und Modals. */
+  /** `sm` for popovers/menus, `md` (default) for forms and modals. */
   size?: "sm" | "md";
-  /** Barrierefreies Label je Feld — bitte lokalisiert übergeben. */
+  /** Accessible label per swatch — pass it in localized. */
   swatchLabel?: (color: string) => string;
 }
 
-/** Farbraster zur Auswahl einer Akzentfarbe (Workspace, Projekt, Label …). */
+/** Color grid for picking an accent color (workspace, project, label, ...). */
 export function ColorPicker({
   value,
   onChange,

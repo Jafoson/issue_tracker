@@ -9,16 +9,16 @@ interface OptionButtonProps
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   variant?: OptionButtonVariant;
-  /** Aus bei einer Zeile, die selbst schon zu einem anderen Ziel führt (nicht
-   *  der Fall hier bisher, aber ein einzeiliger Knopf braucht ihn nie). */
+  /** Off for a row that already leads to another destination on its own (not
+   *  the case here so far, but a single-line button never needs it). */
   chevron?: boolean;
 }
 
 /**
- * Eine Zeile statt eines Knopfes: Icon links, Titel + Untertitel gestapelt,
- * Chevron rechts. Für Anmeldewege, die eine zweite Zeile Erklärung brauchen
- * (Passkey, SSO-Anbieter) — `Button` hat eine feste Höhe pro Größe und damit
- * keinen Platz für eine zweite Zeile.
+ * A row instead of a button: icon on the left, title + subtitle stacked,
+ * chevron on the right. For sign-in methods that need a second line of
+ * explanation (passkey, SSO provider) — `Button` has a fixed height per
+ * size and thus no room for a second line.
  */
 export function OptionButton({
   icon,

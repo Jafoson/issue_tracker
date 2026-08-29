@@ -1,15 +1,15 @@
-// ─── Teilbare Einladungslinks ───────────────────────────────────────────────
+// ─── Shareable invite links ──────────────────────────────────────────────────
 //
-// Anders als `lib/invitations.ts` (ein Token → ein vorab angelegtes Konto)
-// ist ein Link hier generisch: unbegrenzt viele Personen können ihn einlösen,
-// bis er widerrufen wird oder abläuft. Es gibt keine vorab bekannte Identität
-// — die Person entscheidet sich erst beim Öffnen des Links, ob sie sich
-// registriert oder mit einer bestehenden Sitzung beitritt (`redeemInviteLink`
-// deckt beide Fälle mit demselben Code ab).
+// Unlike `lib/invitations.ts` (one token → one pre-created account), a link
+// here is generic: an unlimited number of people can redeem it, until it's
+// revoked or expires. There's no identity known in advance — the person
+// only decides when opening the link whether they register or join with an
+// existing session (`redeemInviteLink` covers both cases with the same
+// code).
 //
-// Ein Scope (Workspace, optional zusätzlich ein Projekt, plus Rolle) trägt
-// höchstens einen aktiven Link — `createInviteLink` widerruft einen
-// vorherigen für denselben Scope, bevor der neue entsteht.
+// A scope (workspace, optionally also a project, plus a role) carries at
+// most one active link — `createInviteLink` revokes a previous one for the
+// same scope before the new one is created.
 
 import { randomBytes } from "node:crypto";
 import { appUrl } from "@/lib/app-url";
@@ -17,16 +17,16 @@ import type { Prisma } from "@/lib/generated/prisma/client";
 import { enrollInWorkspaceProjects } from "@/lib/project-membership";
 import { PROJECT_GUEST_ROLE_KEY } from "@/lib/rbac";
 
-/** Passt auf den Prisma-Client wie auf einen Transaktions-Client. */
+/** Fits both the Prisma client and a transaction client. */
 type Db = Prisma.TransactionClient;
 
-/** 32 Byte aus dem Zufallsgenerator des Betriebssystems, base64url kodiert —
- *  wie `newInvitationToken` in `lib/invitations.ts`. */
+/** 32 bytes from the OS's random number generator, base64url encoded —
+ *  same as `newInvitationToken` in `lib/invitations.ts`. */
 export function newInviteLinkToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-/** Der Pfad, unter dem ein Einladungslink eingelöst wird. Ohne Locale-Präfix. */
+/** The path where an invite link is redeemed. Without a locale prefix. */
 export function inviteLinkPath(token: string): string {
   return `/join/${token}`;
 }
@@ -88,11 +88,11 @@ export interface ResolvedInviteLink {
 }
 
 /**
- * Lädt einen Link, der noch eingelöst werden kann.
+ * Loads a link that can still be redeemed.
  *
- * `null` heißt in jedem Fall dasselbe: unbekannt, widerrufen, abgelaufen oder
- * Workspace gesperrt — dieselbe Zurückhaltung wie `openInvitation`, damit die
- * Seite kein Orakel für gültige Tokens wird.
+ * `null` always means the same thing: unknown, revoked, expired, or
+ * workspace suspended — the same reticence as `openInvitation`, so the page
+ * doesn't become an oracle for valid tokens.
  */
 export async function resolveInviteLink(
   db: Db,
@@ -133,12 +133,13 @@ export async function resolveInviteLink(
 }
 
 /**
- * Löst einen Link für eine angemeldete Person ein.
+ * Redeems a link for an already logged-in person.
  *
- * Idempotent: schon Mitglied → no-op statt Fehler, dieselbe Adresse kann den
- * Link mehrfach öffnen (Reload, zweites Gerät), ohne dass danach etwas anders
- * dasteht. Kein `pending` — anders als bei `Invitation` gibt es kein
- * Schatten-Konto mit offenem Passwort, das Konto ist schon da und angemeldet.
+ * Idempotent: already a member → no-op instead of an error, the same
+ * address can open the link multiple times (reload, second device) without
+ * anything ending up different afterward. No `pending` — unlike
+ * `Invitation`, there's no shadow account with an unset password; the
+ * account already exists and is logged in.
  */
 export async function redeemInviteLink(
   db: Db,
@@ -158,9 +159,9 @@ export async function redeemInviteLink(
       },
     });
 
-    // Wie beim E-Mail-Invite: ein Gast bleibt außen vor, jede andere Rolle
-    // bringt eine vollwertige Workspace-Mitgliedschaft mit (und damit Zugriff
-    // auf die öffentlichen Projekte, nicht nur das eine).
+    // As with the email invite: a guest stays excluded, any other role
+    // comes with full workspace membership (and thus access to the public
+    // projects, not just this one).
     if (link.roleKey !== PROJECT_GUEST_ROLE_KEY) {
       const existing = await db.workspaceMember.findUnique({
         where: {

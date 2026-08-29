@@ -1,29 +1,28 @@
-// ─── Der Umfang eines Dashboards ──────────────────────────────────────────────
+// ─── A dashboard's scope ────────────────────────────────────────────────────
 //
-// Abhängigkeitsfrei: kein React, keine DB. Dasselbe Muster wie `view.ts`
-// nebenan und wie `toRange` in `lib/buckets.ts`.
+// Dependency-free: no React, no DB. Same pattern as `view.ts` next door and
+// as `toRange` in `lib/buckets.ts`.
 
-/** Steht als `?scope=` in der Adresse und in `DashboardPreference.scope`. */
+/** Appears as `?scope=` in the address and in `DashboardPreference.scope`. */
 export const DASHBOARD_SCOPES = ["all", "mine"] as const;
 
 export type DashboardScope = (typeof DASHBOARD_SCOPES)[number];
 
 /**
- * Womit das Dashboard aufgeht, wenn niemand etwas gewählt hat.
+ * What the dashboard opens with when nobody has chosen anything.
  *
- * Wer `dashboard.view.all` nicht trägt, bekommt diese Vorgabe ohnehin
- * überschrieben (`getProjectDashboard`/`getWorkspaceDashboard` erzwingen
- * `"mine"`) — sie gilt also nur für die, die überhaupt wählen dürfen.
+ * Anyone without `dashboard.view.all` gets this default overridden anyway
+ * (`getProjectDashboard`/`getWorkspaceDashboard` force `"mine"`) — so it
+ * only applies to those who can even choose.
  */
 export const DEFAULT_DASHBOARD_SCOPE: DashboardScope = "all";
 
 /**
- * Einen Wert aus Adresse oder Datenbank auf einen bekannten Umfang bringen.
+ * Bring a value from the address or the database to a known scope.
  *
- * Fällt auf die Vorgabe zurück statt zu werfen: ein Tippfehler in einem
- * Parameter, der nur die Darstellung wählt, ist kein Grund für eine 404. Mehrere
- * Kandidaten dürfen der Reihe nach hereingereicht werden — der erste bekannte
- * gewinnt, wie bei `toProjectView`.
+ * Falls back to the default instead of throwing: a typo in a parameter that
+ * only picks the display is no reason for a 404. Multiple candidates may be
+ * passed in in order — the first known one wins, as with `toProjectView`.
  */
 export function toDashboardScope(
   ...candidates: (string | null | undefined)[]

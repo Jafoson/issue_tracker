@@ -1,27 +1,27 @@
-// ─── Öffentlicher Issue-Link ────────────────────────────────────────────────
+// ─── Public issue link ───────────────────────────────────────────────────────
 //
-// `Issue.shareToken` ist `null`, solange Teilen aus ist. Anders als bei
-// Einladungen gibt es keinen Verlauf und keinen Zähler — nur einen aktiven
-// Link pro Issue, der sich an- und ausschalten sowie neu erzeugen lässt. Jede
-// Änderung steht zusätzlich im Audit-Log (`issue.shared`/`issue.share.revoked`).
+// `Issue.shareToken` is `null` as long as sharing is off. Unlike
+// invitations, there's no history and no counter — just one active link per
+// issue, which can be turned on and off and regenerated. Every change is
+// additionally recorded in the audit log (`issue.shared`/`issue.share.revoked`).
 
 import { randomBytes } from "node:crypto";
 import { appUrl } from "@/lib/app-url";
 
-/** Wie lange ein neu erzeugter Link gilt, bevor `/share/[token]` ihn wie einen
- *  unbekannten Token behandelt — dieselbe Zurückhaltung wie bei
- *  Einladungs-/Beitrittslinks, nur mit einer festen statt einer wählbaren
- *  Frist (kein Bedarf für eine eigene Auswahl in der Oberfläche). */
+/** How long a newly generated link stays valid before `/share/[token]`
+ *  treats it like an unknown token — the same reticence as invitation/join
+ *  links, just with a fixed instead of a selectable deadline (no need for
+ *  its own picker in the UI). */
 export const ISSUE_SHARE_LINK_DAYS = 30;
 
-/** 32 Byte aus dem Zufallsgenerator des Betriebssystems, base64url kodiert —
- *  wie `newInvitationToken` in `lib/invitations.ts`. */
+/** 32 bytes from the OS's random number generator, base64url encoded —
+ *  same as `newInvitationToken` in `lib/invitations.ts`. */
 export function newIssueShareToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-/** Der Pfad, unter dem ein geteiltes Issue öffentlich zu sehen ist. Ohne
- *  Locale-Präfix. */
+/** The path where a shared issue is publicly visible. Without a locale
+ *  prefix. */
 export function issueSharePath(token: string): string {
   return `/share/${token}`;
 }

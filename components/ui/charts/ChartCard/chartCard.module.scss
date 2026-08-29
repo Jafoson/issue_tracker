@@ -6,8 +6,8 @@
   padding: 16px 18px 18px;
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius);
-  /* Dieselbe Fläche, gegen die die Reihenfarben geprüft wurden. Ein anderer
-     Grund hier hieße, den Kontrast neu zu messen. */
+  /* The same surface the series colors were checked against. A different
+     background here would mean re-measuring the contrast. */
   background: var(--surface);
 }
 
@@ -31,9 +31,9 @@
   color: var(--on-surface);
 }
 
-/* Die Summe des Zeitraums neben dem Titel — die eine Zahl, die man mitnimmt,
-   wenn man das Diagramm nur überfliegt. Proportionale Ziffern: sie steht für
-   sich und muss sich mit nichts untereinander ausrichten. */
+/* The sum for the period next to the title — the one number you take away
+   when just skimming the chart. Proportional digits: it stands on its own
+   and doesn't need to align with anything else. */
 .total {
   flex: none;
   font-size: var(--text-lg);
@@ -61,14 +61,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  /* Textfarbe, nie die Farbe der Reihe: ein heller Farbton ist als Schrift
-     unlesbar. Die Zugehörigkeit trägt das Kästchen daneben. */
+  /* Text color, never the series' color: a light hue is unreadable as
+     text. The swatch next to it carries the association. */
   font-size: var(--text-sm);
   color: var(--on-surface-variant);
 }
 
-/* Kästchen, weil die Marke ein Kästchen ist — die Legende spiegelt, was sie
-   erklärt. */
+/* A small square because the mark is a small square — the legend mirrors
+   what it explains. */
 .swatch {
   width: 9px;
   height: 9px;

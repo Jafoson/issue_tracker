@@ -9,8 +9,8 @@ interface Props {
   copiedLabel: string;
 }
 
-/** Kopiert die aktuelle Seiten-URL — dieselbe Adresse, die schon in der
- *  Adresszeile steht, kein serverseitig gebauter Link nötig. */
+/** Copies the current page URL — the same address already shown in the
+ *  address bar, no server-built link needed. */
 export function CopyShareLinkButton({ copyLabel, copiedLabel }: Props) {
   const [copied, setCopied] = useState(false);
 
@@ -20,7 +20,7 @@ export function CopyShareLinkButton({ copyLabel, copiedLabel }: Props) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
-      // Ohne Clipboard-Freigabe bleibt es beim Versuch.
+      // Without clipboard permission, it stays at the attempt.
     }
   };
 

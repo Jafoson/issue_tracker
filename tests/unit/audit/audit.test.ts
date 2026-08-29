@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// Das Protokoll selbst: was beim Schreiben festgehalten wird, und was passiert,
-// wenn dabei etwas schiefgeht.
+// The audit log itself: what gets recorded on write, and what happens
+// when something goes wrong along the way.
 
 const mockAuditCreate = mock();
 const mockAuditFindMany = mock();
@@ -64,8 +64,8 @@ describe("Schreiben", () => {
   });
 
   it("nimmt ohne Id die mitgegebene Beschriftung", async () => {
-    // Der fehlgeschlagene Anmeldeversuch: es steht niemand fest, nur eine
-    // getippte Adresse.
+    // The failed login attempt: no one is identified yet, only a typed
+    // address.
     await recordAudit({
       action: "auth.login.failed",
       actorLabel: "  wer@auch.immer  ",
@@ -84,7 +84,7 @@ describe("Schreiben", () => {
 
     const entry = mockAuditCreate.mock.calls[0][0].data;
     expect(entry.actorLabel).toBe("Unbekannt");
-    // Keine Farbe ohne Konto — die Liste zeigt dann den Platzhalter-Avatar.
+    // No color without an account — the list then shows the placeholder avatar.
     expect(entry.actorColor).toBeNull();
   });
 
@@ -94,8 +94,8 @@ describe("Schreiben", () => {
   });
 
   it("lässt die Handlung nicht scheitern, wenn das Protokoll klemmt", async () => {
-    // Eine Anmeldung soll nicht daran hängen, dass die Protokolltabelle
-    // gerade nicht erreichbar ist.
+    // A login shouldn't fail just because the audit log table happens to
+    // be unreachable.
     const error = console.error;
     console.error = () => {};
     mockAuditCreate.mockRejectedValueOnce(new Error("DB weg"));
@@ -108,9 +108,9 @@ describe("Schreiben", () => {
   });
 
   it("reicht den Fehler durch, wo der Eintrag die Bedingung ist", async () => {
-    // `recordAuditIn` läuft in der Transaktion des Aufrufers. Schluckte es hier
-    // den Fehler, entstünde genau der Zustand, den es verhindern soll: Zugriff
-    // ohne Spur.
+    // `recordAuditIn` runs inside the caller's transaction. If it swallowed
+    // the error here, it would create exactly the state it's meant to
+    // prevent: access without a trace.
     const client = {
       auditLog: {
         create: mock(async () => {
@@ -121,7 +121,7 @@ describe("Schreiben", () => {
     };
 
     await expect(
-      // biome-ignore lint/suspicious/noExplicitAny: schmaler Test-Klient
+      // biome-ignore lint/suspicious/noExplicitAny: narrow test client
       recordAuditIn(client as any, {
         action: "project.breakglass",
         actorId: "u1",
@@ -147,9 +147,9 @@ describe("Lesen", () => {
   });
 
   it("schränkt auf einen Workspace ein und blendet Projekt-Tagesgeschäft aus", async () => {
-    // Ohne projectId ist das der Workspace-Feed: Issues und projektgebundene
-    // Labels gehören zu einem einzelnen Projekt, nicht zum Workspace als
-    // Ganzes, auch wenn sie `workspaceId` tragen (siehe `whereFor`).
+    // Without projectId this is the workspace feed: issues and
+    // project-bound labels belong to a single project, not to the workspace
+    // as a whole, even though they carry `workspaceId` (see `whereFor`).
     await listAudit({ workspaceId: "ws1" });
     expect(mockAuditFindMany.mock.calls[0][0].where).toEqual({
       workspaceId: "ws1",
@@ -162,8 +162,8 @@ describe("Lesen", () => {
   });
 
   it("lässt Issue- und Label-Vorgänge im Projekt-Feed unberührt", async () => {
-    // Mit projectId (Projekt-Feed) greift der Workspace-Ausschluss nicht —
-    // dort gehören Issues und Labels gerade hin.
+    // With projectId (project feed) the workspace exclusion doesn't apply —
+    // that's exactly where issues and labels belong.
     await listAudit({ projectId: "p1" });
     expect(mockAuditFindMany.mock.calls[0][0].where).toEqual({
       projectId: "p1",
@@ -176,8 +176,9 @@ describe("Lesen", () => {
   });
 
   it("ergänzt die aktuelle Farbe für Zeilen ohne eingefrorene", async () => {
-    // Vor der `actorColor`-Spalte entstandene Zeilen — die Liste soll trotzdem
-    // einen Avatar zeigen können, statt für immer beim Platzhalter zu bleiben.
+    // Rows created before the `actorColor` column existed — the list should
+    // still be able to show an avatar instead of staying on the placeholder
+    // forever.
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: null },
       { id: "a2", actorId: "u2", actorColor: "#already-frozen" },
@@ -187,8 +188,8 @@ describe("Lesen", () => {
 
     const entries = await listAudit();
 
-    // Nur die eine fehlende Farbe wird nachgefragt — nicht die schon
-    // eingefrorene und nicht die ohne Konto.
+    // Only the one missing color is looked up — not the one already frozen
+    // and not the one without an account.
     expect(mockUserFindMany.mock.calls[0][0].where.id.in).toEqual(["u1"]);
     expect(entries).toMatchObject([
       { id: "a1", actorId: "u1", actorColor: "#current" },
@@ -204,9 +205,9 @@ describe("Lesen", () => {
 
     await listAudit();
 
-    // Das Profilbild ist nie eingefroren (siehe `AuditEntry.actorAvatarUrl`)
-    // und wird deshalb immer live nachgeschlagen — auch wenn die Farbe schon
-    // eingefroren ist. Genau ein Aufruf statt zwei: nicht mehr für die Farbe.
+    // The avatar image is never frozen (see `AuditEntry.actorAvatarUrl`) and
+    // is therefore always looked up live — even when the color is already
+    // frozen. Exactly one call instead of two: no extra one for the color.
     expect(mockUserFindMany).toHaveBeenCalledTimes(1);
     expect(mockUserFindMany.mock.calls[0][0].select).toEqual({
       id: true,
@@ -292,7 +293,7 @@ describe("Schlüssel", () => {
   });
 
   it("gibt bei einem unbekannten null zurück", () => {
-    // Das Protokoll ist älter als jede Fassung der Oberfläche.
+    // The audit log is older than any version of the UI.
     expect(toAuditAction("etwas.ganz.neues")).toBeNull();
   });
 

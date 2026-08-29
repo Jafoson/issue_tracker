@@ -1,9 +1,9 @@
-/* Die Zeiträume als zusammenhängende Gruppe — ein Wert, mehrere Möglichkeiten,
-   also ein Segment-Schalter und keine vier einzelnen Knöpfe. */
+/* The time ranges as a cohesive group — one value, multiple options, so a
+   segmented control and not four separate buttons. */
 .ranges {
   display: inline-flex;
-  /* `fieldset` bringt eigene Vorgaben mit — Rand, Polster und ein
-     `min-width: min-content`, das sich nicht schrumpfen ließe. */
+  /* `fieldset` comes with its own defaults — border, padding, and a
+     `min-width: min-content` that couldn't otherwise be shrunk. */
   min-width: 0;
   margin: 0;
   padding: 2px;

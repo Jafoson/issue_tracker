@@ -1,17 +1,17 @@
-/* Dieselbe Aufteilung wie unter Labels: die Seite scrollt, die Karten darin
-   nicht — und beide nehmen die volle Breite. Das Aussehen der Listen kommt aus
-   `components/ui/layout/Table` (Variante `card`); hier steht nur, was die
-   Zellen füllt.
+/* Same layout as under Labels: the page scrolls, the cards inside it don't —
+   and both take the full width. The list's appearance comes from
+   `components/ui/layout/Table` (the `card` variant); this file only defines
+   what fills the cells.
 
-   Drei Werte weichen von der Vorgabe der Tabelle ab (siehe deren Dokumentation).
-   Eine Einstellung ist keine Liste gleichartiger Datensätze, sondern ein
-   Formular: die Zeile trägt zwei Textzeilen und ein Bedienelement, also braucht
-   sie Höhe; sie ist von der nächsten getrennt, weil hier jede Zeile für sich
-   steht statt in eine Reihe zu gehören; und sie leuchtet nicht auf, wenn der
-   Zeiger sie überfährt — anzuklicken gibt es nur das Bedienelement rechts.
+   Three values deviate from the table's default (see its documentation). A
+   setting isn't a list of uniform records, but a form: the row carries two
+   lines of text and a control, so it needs height; it's separated from the
+   next one because here every row stands on its own instead of belonging to
+   a series; and it doesn't light up when the pointer passes over it —
+   the only clickable thing is the control on the right.
 
-   Die Fläche bleibt die der Seite: Rahmen und Trennlinien genügen, um die
-   Karte zu fassen. Nur die Gefahrenzone hebt sich ab (`.dangerCard`). */
+   The surface stays that of the page: border and divider lines are enough
+   to frame the card. Only the danger zone stands out (`.dangerCard`). */
 .content {
   --table-row-height: 62px;
   --table-divider: var(--outline-variant);
@@ -26,14 +26,14 @@
   gap: 20px;
 }
 
-/* Überschrift und Erklärung gehören zur Karte darunter, nicht zur davor. */
+/* Heading and explanation belong to the card below, not the one before it. */
 .group {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-/* Wie unter Labels: Gruppenüberschrift über der Karte, nicht in ihr. */
+/* As under Labels: group heading above the card, not inside it. */
 .groupTitle {
   margin: 0;
   font-size: var(--text-md);
@@ -45,8 +45,8 @@
   color: var(--error);
 }
 
-/* Läuft über die volle Breite der Karte darunter — eine gekappte Zeilenlänge
-   ließ den Satz als schmale Säule neben viel Leerraum stehen. */
+/* Runs the full width of the card below — a capped line length left the
+   sentence sitting as a narrow column next to a lot of empty space. */
 .groupDesc {
   margin: 0 0 4px;
   font-size: var(--text-sm);
@@ -54,10 +54,10 @@
   color: var(--on-surface-variant);
 }
 
-/* Beschriftung und Erklärung stehen übereinander in einer Zelle: sie sagen
-   dasselbe zweimal, einmal kurz und einmal ganz. Nebeneinander in zwei Spalten
-   wirkten sie wie zwei Angaben, und die Erklärung risse bei jedem Feld eine
-   andere Lücke auf. */
+/* Label and explanation stack in one cell: they say the same thing twice,
+   once short and once in full. Side by side in two columns they'd read as
+   two separate pieces of information, and the explanation would tear open a
+   different-sized gap for every field. */
 .setting {
   display: flex;
   flex-direction: column;
@@ -73,27 +73,27 @@
   line-height: var(--leading-tight);
 }
 
-/* Ein Satz, kein Wert — deshalb kleiner und ruhiger als die Beschriftung
-   darüber. Seine Breite gibt die Spalte vor; sie endet ohnehin dort, wo die
-   Steuerung beginnt. */
+/* A sentence, not a value — hence smaller and quieter than the label above
+   it. Its width is dictated by the column; it ends where the control
+   begins anyway. */
 .desc {
   color: var(--on-surface-variant);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
 }
 
-/* Alle Eingabefelder gleich breit, damit ihre rechten Kanten eine Linie bilden.
-   `flex: none`, weil die Zelle der Tabelle ein Flex-Container ist und das Feld
-   sonst auf die Breite der Farbpalette mitwüchse. */
+/* All input fields the same width, so their right edges form a line.
+   `flex: none` because the table cell is a flex container and the field
+   would otherwise grow to the width of the color palette. */
 .control {
   flex: none;
   width: 280px;
   max-width: 100%;
 }
 
-/* Die einzige Ausnahme: hier steht eine ganze Adresse samt Host, und die soll
-   lesbar sein und nicht im eigenen Kasten scrollen. Die Spalte wächst mit —
-   rechts bündig bleiben die Bedienelemente trotzdem alle. */
+/* The one exception: this holds a full address including host, and it
+   should be readable without scrolling inside its own box. The column grows
+   to fit — the controls still all stay right-aligned. */
 .urlControl {
   width: 460px;
 }
@@ -105,8 +105,9 @@
   border-radius: var(--radius-sm);
 }
 
-/* Für die Farbwahl im Kopf (`SettingsIdentity`) — sie hat kein eigenes
-   `label`-Prop wie `Input`, also dieselbe Beschriftung von Hand daneben. */
+/* For the color picker in the header (`SettingsIdentity`) — it has no
+   `label` prop of its own like `Input`, so the same label is added by hand
+   next to it. */
 .field {
   display: flex;
   flex-direction: column;
@@ -119,7 +120,7 @@
   color: var(--on-surface-variant);
 }
 
-/* Bestätigung des Speicherns, neben dem Knopf im Seitenkopf. */
+/* Save confirmation, next to the button in the page header. */
 .saved {
   display: inline-flex;
   align-items: center;
@@ -134,13 +135,14 @@
   gap: 6px;
 }
 
-/* Löschen ist nicht rückholbar, also trägt die Karte die Warnfarbe schon im
-   Rahmen — bevor jemand den Knopf sucht. Und als einzige eine eigene Fläche:
-   sie soll nicht als weiterer Abschnitt mitgelesen werden, sondern auffallen.
+/* Deletion can't be undone, so the card already carries the warning color
+   in its border — before anyone even looks for the button. And it's the
+   only one with its own surface: it's meant to stand out, not read as just
+   another section.
 
-   Doppelt benannt, um die Spezifität zu heben: der Rahmen kommt aus
-   `table.module.scss`, und bei gleicher Spezifität entschiede die Reihenfolge
-   der Stylesheets — die hängt an der Ladereihenfolge der Module. */
+   Named twice to raise specificity: the border comes from
+   `table.module.scss`, and at equal specificity the stylesheet order would
+   decide — which depends on the modules' load order. */
 .dangerCard.dangerCard {
   --table-surface: var(--surface);
 

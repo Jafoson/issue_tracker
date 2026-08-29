@@ -32,7 +32,7 @@ const mockDeleteMany = db.projectHiddenLabel.deleteMany as ReturnType<
   typeof mock
 >;
 
-/** Ein Workspace-Label — nur solche lassen sich in einem Projekt ausblenden. */
+/** A workspace label — only these can be hidden within a project. */
 const WORKSPACE_LABEL = { workspaceId: "ws-1", projectId: null };
 
 describe("setLabelHidden()", () => {
@@ -86,8 +86,8 @@ describe("setLabelHidden()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  // Ein Projekt-Label gilt ohnehin nur in seinem Projekt — dort wäre es zu
-  // löschen, nicht auszublenden.
+  // A project label only ever applies within its own project anyway — there
+  // it would need to be deleted, not hidden.
   it("lehnt Projekt-Labels ab", async () => {
     mockLabelFindUnique.mockResolvedValue({
       workspaceId: "ws-1",
@@ -100,8 +100,8 @@ describe("setLabelHidden()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  // Sonst ließe sich über eine fremde Label-ID eine Zeile in einem Mandanten
-  // anlegen, zu dem das Label gar nicht gehört.
+  // Otherwise a foreign label id could be used to create a row in a tenant
+  // that the label doesn't even belong to.
   it("lehnt ein Label aus einem anderen Workspace ab", async () => {
     mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-2" });
 

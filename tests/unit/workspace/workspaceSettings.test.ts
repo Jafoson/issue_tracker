@@ -26,8 +26,8 @@ mock.module("@/lib/db", () => ({
     workspace: {
       update: mockWorkspaceUpdate,
       delete: mockWorkspaceDelete,
-      // `deleteWorkspace` liest Name und Umfang, bevor es löscht — danach
-      // stünde im Protokoll nur noch eine Id.
+      // `deleteWorkspace` reads the name and extent before it deletes —
+      // afterward the log would only have an id left to show.
       findUnique: mockWorkspaceFindUnique,
     },
     user: { findUnique: mock(async () => null) },
@@ -128,8 +128,8 @@ describe("updateWorkspace()", () => {
     expect(mockWorkspaceUpdate.mock.calls[0][0].data).toEqual({ name: "Acme" });
   });
 
-  // Der Slug ist zugleich die Id und steht in jeder Adresse — die Action nimmt
-  // ihn gar nicht erst entgegen. Der Test hält das fest.
+  // The slug is also the id and appears in every address — the action never
+  // even accepts it as input. The test documents this.
   it("rührt den Slug nicht an", async () => {
     await updateWorkspace(WS, { name: "Acme", color: "#fff" });
     const data = mockWorkspaceUpdate.mock.calls[0][0].data;
@@ -218,8 +218,8 @@ describe("deleteWorkspace()", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  // Der Fremdschlüssel der Issues auf das Projekt steht auf `Restrict` — ohne
-  // diesen ersten Schritt scheitert das Löschen der Projekte.
+  // The issues' foreign key to the project is set to `Restrict` — without
+  // this first step, deleting the projects would fail.
   it("löscht erst die Aufgaben, dann den Workspace", async () => {
     expect(await deleteWorkspace(WS)).toEqual({ ok: true });
     expect(mockTx.issue.deleteMany).toHaveBeenCalledWith({

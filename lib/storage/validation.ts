@@ -1,6 +1,6 @@
-// Pur, ohne `server-only` — wird auch von der Client-Komponente
-// `AvatarUploader` direkt importiert (nicht über den server-only Barrel),
-// analog zu `lib/richtext`.
+// Pure, no `server-only` — also imported directly by the client component
+// `AvatarUploader` (not through the server-only barrel), analogous to
+// `lib/richtext`.
 
 export const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -15,7 +15,7 @@ export function avatarExtensionFor(contentType: string): string | null {
   return AVATAR_MIME_EXTENSIONS[contentType] ?? null;
 }
 
-/// Jeder Dateityp ist erlaubt (Bilder, generell Dateien, Videos) — nur die
-/// Größe wird begrenzt. Großzügig genug für kurze Videoclips; an dieser
-/// einen Stelle leicht anzupassen.
+/// Every file type is permitted (images, general files, videos) — only the
+/// size is limited. Generous enough for short video clips; easy to adjust
+/// in this one place.
 export const ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024; // 100 MB

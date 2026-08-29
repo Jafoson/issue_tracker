@@ -61,7 +61,7 @@ describe("toPreview", () => {
     const preview = toPreview(long, 40);
     expect(preview.length).toBeLessThanOrEqual(41);
     expect(preview.endsWith("…")).toBe(true);
-    // Nicht mitten im Wort abgeschnitten.
+    // Not cut off in the middle of a word.
     expect(preview).not.toContain("wor…");
   });
 
@@ -91,7 +91,7 @@ describe("isEmptyDoc", () => {
         ],
       }),
     ).toBe(false);
-    // Ein Bild ist kein leerer Absatz.
+    // An image is not an empty paragraph.
     expect(isEmptyDoc(fromMarkdown("![a](/b.png)"))).toBe(false);
   });
 });

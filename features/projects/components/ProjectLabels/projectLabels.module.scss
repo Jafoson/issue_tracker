@@ -1,5 +1,5 @@
-/* Nicht die Seite scrollt, sondern jede Tabelle für sich (`fill`) — beide
-   Abschnitte teilen sich die verfügbare Höhe gleich auf. */
+/* It's not the page that scrolls, but each table on its own (`fill`) — both
+   sections split the available height evenly. */
 .content {
   flex: 1;
   min-height: 0;
@@ -14,16 +14,16 @@
   color: var(--on-surface-variant);
 }
 
-/* Ein unbenutztes Label ist kein Fehler, nur eine Randnotiz — vor allem beim
-   Aufräumen. Es bleibt deshalb blasser als eine echte Zahl. */
+/* An unused label isn't an error, just a side note — mainly useful when
+   cleaning up. It therefore stays fainter than an actual number. */
 .unused {
   font-size: var(--text-sm);
   color: var(--outline);
 }
 
-/* Ausgeblendet: die Zeile bleibt lesbar, tritt aber zurück. Das Label behält
-   seine Farbe — sie ist seine Kennung, und ein blasses Rot wäre ein anderes
-   Label; blass wird die ganze Fläche. */
+/* Hidden: the row stays readable but recedes. The label keeps its color —
+   it's its identifier, and a faded red would be a different label; instead
+   the whole area is faded. */
 .hiddenLabel {
   opacity: 0.45;
 }
@@ -47,9 +47,9 @@
   gap: 4px;
 }
 
-/* Wie in „Allgemein": Gruppenüberschrift über der Karte, nicht in ihr — und in
-   derselben Größe und Schriftfarbe, sonst wechselt beim Umschalten zwischen den
-   Bereichen die Gliederung mit. */
+/* As in "General": group heading above the card, not inside it — and in the
+   same size and text color, otherwise the structure would shift visually
+   when switching between sections. */
 .groupTitle {
   margin: 8px 0 0;
   font-size: var(--text-md);

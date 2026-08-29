@@ -1,6 +1,6 @@
-/* Dieselbe Bühne wie `AuthCard` und `(auth)/join/[token]/page.module.scss` —
-   ein Duplikat statt eines Imports aus `app/`, weil Routing und Komponente
-   getrennt bleiben (siehe CLAUDE.md: `app/` ist nur Routing). */
+/* Same backdrop as `AuthCard` and `(auth)/join/[token]/page.module.scss` —
+   a duplicate instead of an import from `app/`, because routing and
+   component stay separate (see CLAUDE.md: `app/` is routing only). */
 .page {
   min-height: 100dvh;
   display: flex;

@@ -1,28 +1,28 @@
-/* Zweite Navigationsebene, direkt neben der Seitenleiste. Etwas schmaler als
-   diese, damit die Rangfolge auch ohne Beschriftung erkennbar bleibt: außen die
-   App, dann der Gegenstand (Workspace oder Projekt), dann der Inhalt. */
-/* Die Linie oben ist dieselbe, die rechts über der Kopfzeile des Bereichs steht
-   (`components/ui/layout/PageHeader`) — zusammen ergeben sie einen Strich über
-   die ganze Breite, der die Reiterleiste vom Inhalt trennt. Ohne sie bräche er
-   an der Kante der Leiste ab. */
+/* Second navigation level, directly next to the sidebar. Slightly narrower
+   than it, so the hierarchy stays recognizable even without labels: the app
+   on the outside, then the subject (workspace or project), then the
+   content. */
+/* The line at the top is the same one that sits on the right above the
+   section's header (`components/ui/layout/PageHeader`) — together they
+   form a single line across the full width that separates the tab strip
+   from the content. Without this one, it would break off at the nav's edge. */
 .nav {
-  /* 208px als Wunsch, nicht als Forderung: `flex: none` nahm sich die Breite
-     auch dann, wenn daneben nichts mehr übrig war — in einem schmalen Fenster
-     schnitt die Leiste dann den Bereich ab, der ihr Zweck ist. Der Bereich
-     daneben hat `flex-basis: 0` und trägt an einer Verknappung nichts bei, also
-     landet das Nachgeben vollständig hier, und zwar erst, wenn es nicht anders
-     geht.
+  /* 208px as a wish, not a demand: `flex: none` claimed the width even when
+     nothing was left beside it — in a narrow window, the nav would then cut
+     off the very content it exists to give access to. The area next to it
+     has `flex-basis: 0` and contributes nothing to any shrinking, so
+     yielding lands entirely here, and only once there's no other way.
 
-     `min-width: 0` ist dafür die Bedingung: sonst gilt für ein Flex-Element die
-     Inhaltsbreite als Untergrenze. Die Zeilen darunter kürzen ihren Text schon
-     selbst (`NavLink`), es geht also nichts verloren außer Buchstaben. */
+     `min-width: 0` is the precondition for that: otherwise a flex item's
+     content width counts as its floor. The rows below already truncate
+     their own text (`NavLink`), so nothing is lost but letters. */
   flex: 0 1 208px;
   min-width: 0;
-  /* Und eine Obergrenze für den entgegengesetzten Fall: weil der Bereich daneben
-     an der Verknappung nichts beiträgt, bekäme diese Spalte unter 208px sonst
-     den ganzen Rest und drückte ihn auf null. Sie darf nie mehr als die Hälfte
-     nehmen — eine Navigation, die den Inhalt verdrängt, den sie erschließt, hat
-     ihren Zweck verfehlt. */
+  /* And an upper bound for the opposite case: because the area next to it
+     contributes nothing to shrinking, this column would otherwise take all
+     the remaining space below 208px and push it to zero. It must never take
+     more than half — a navigation that crowds out the content it opens up
+     access to has missed its purpose. */
   max-width: 50%;
   display: flex;
   flex-direction: column;
@@ -31,15 +31,16 @@
   border-top: 1px solid var(--outline-variant);
   border-right: 1px solid var(--outline-variant);
   overflow-y: auto;
-  /* Quer wird nichts gescrollt — was nicht passt, wird gekürzt. Ohne diese
-     Zeile machte der Browser aus `overflow-y: auto` auch quer ein `auto` und
-     legte beim Schrumpfen einen zweiten Balken darunter. */
+  /* Nothing scrolls sideways — whatever doesn't fit gets truncated. Without
+     this line, the browser would also turn the horizontal axis into `auto`
+     because of `overflow-y: auto` and add a second scrollbar underneath
+     while shrinking. */
   overflow-x: hidden;
 }
 
-/* Sagt, was hier eingestellt wird. Nötig, weil die Seitenleiste daneben alle
-   Workspaces und Projekte zeigt — ohne diese Zeile bliebe offen, welches
-   gemeint ist. */
+/* States what's being configured here. Necessary because the sidebar next
+   to it shows all workspaces and projects — without this row, it would
+   stay unclear which one is meant. */
 .head {
   display: flex;
   align-items: center;
@@ -48,10 +49,10 @@
   min-width: 0;
 }
 
-/* Derselbe Kopf, nur aufklappbar (`SettingsSubjectMenu`). Er darf die Zeile
-   nicht breiter machen als die Bereiche darunter, also nimmt der Knopf deren
-   Polster an — sonst spränge der Name beim Wechsel zwischen Konto (fester Kopf)
-   und Projekt (Wechsler) um ein paar Pixel. */
+/* The same header, just expandable (`SettingsSubjectMenu`). It must not
+   make the row wider than the sections below, so the button adopts their
+   padding — otherwise the name would jump a few pixels when switching
+   between account (fixed header) and project (switcher). */
 .switcher {
   margin: -4px 0 0 -8px;
   width: calc(100% + 16px);
@@ -62,9 +63,9 @@
   padding: 0 8px;
 }
 
-/* Zeigt an, dass hier etwas aufgeht, ohne es auszurufen — erst unter dem Zeiger
-   nimmt es die volle Farbe an. Gleiches Verhalten wie im Wechsler der
-   Seitenleiste. */
+/* Signals that something expands here, without announcing it — only under
+   the pointer does it take on its full color. Same behavior as the switcher
+   in the sidebar. */
 .chevron {
   margin-inline-start: auto;
   flex: none;

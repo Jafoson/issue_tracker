@@ -1,8 +1,8 @@
-/* Scrollt nicht selbst — die Karte drumherum tut das schon
+/* Doesn't scroll itself — the surrounding card already does
    (`.card[data-scroll]` in `projectProfileView.module.scss` /
-   `workspaceProfileView.module.scss`), genau wie bei den Personen-Listen der
-   Mitgliederkarte. Zwei verschachtelte Scrollbereiche wären zwei Bildläufe
-   für dieselbe Liste. */
+   `workspaceProfileView.module.scss`), exactly like the member card's person
+   lists. Two nested scroll areas would be two scrollbars for the same
+   list. */
 .list {
   display: flex;
   flex-direction: column;

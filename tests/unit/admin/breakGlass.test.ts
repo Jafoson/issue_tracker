@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-// Der Notfall-Zugriff ist die einzige Stelle, an der die Plattformverwaltung an
-// Inhalte kommt. Diese Datei prüft die drei Zusagen, die ihn tragbar machen:
-// eine Begründung ist Pflicht, Mitgliedschaft und Protokolleintrag entstehen
-// zusammen, und ohne das Recht passiert gar nichts.
+// Break-glass access is the only place where platform administration reaches
+// into content. This file checks the three guarantees that make it tolerable:
+// a reason is mandatory, membership and audit log entry are created
+// together, and without the permission nothing happens at all.
 
 const mockProjectFindUnique = mock();
 const mockProjectMemberFindUnique = mock();
@@ -16,11 +16,11 @@ const mockUserFindUnique = mock(async () => ({
 }));
 
 /**
- * Die Transaktion führt ihren Rückruf mit demselben Klienten aus.
+ * The transaction runs its callback with the same client.
  *
- * Genau darum geht es hier: `recordAuditIn` bekommt `tx`, nicht `db`. Wirft der
- * Rückruf, wäre in Wahrheit beides zurückgerollt — der Test prüft deshalb, dass
- * beide Schreibvorgänge *innerhalb* dieses Rückrufs stattfinden.
+ * That's exactly the point here: `recordAuditIn` receives `tx`, not `db`. If
+ * the callback throws, both would in fact be rolled back — the test therefore
+ * checks that both writes happen *inside* this callback.
  */
 const client = {
   project: { findUnique: mockProjectFindUnique },
@@ -119,7 +119,7 @@ describe("Notfall-Zugriff", () => {
     expect(mockProjectMemberCreate.mock.calls[0][0].data).toMatchObject({
       projectId: "p1",
       userId: "admin1",
-      // Sichtbar in der Mitgliederliste wie jede andere Mitgliedschaft.
+      // Visible in the member list like any other membership.
       roleId: "sys:PROJECT:project_admin",
     });
 
@@ -132,7 +132,7 @@ describe("Notfall-Zugriff", () => {
       workspaceId: "ws1",
       reason: REASON,
     });
-    // Der Name wird beim Schreiben eingefroren, nicht beim Lesen aufgelöst.
+    // The name is frozen at write time, not resolved at read time.
     expect(entry.actorLabel).toBe("Ada Lovelace (ada@example.com)");
     expect(entry.targetLabel).toBe("Kündigungen Q3");
   });
@@ -147,7 +147,7 @@ describe("Notfall-Zugriff", () => {
     });
 
     expect("error" in result).toBe(true);
-    // Kein Protokolleintrag: es war kein Notfall-Zugriff, sondern der Normalweg.
+    // No audit log entry: this wasn't break-glass access, but the normal path.
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 

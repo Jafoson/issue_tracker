@@ -1,4 +1,4 @@
-/* Kopfzeile einer Verwaltungsseite — steht fix über der scrollenden Liste. */
+/* Header of a management page — stays fixed above the scrolling list. */
 .header {
   border-top: 1px solid var(--outline-variant);
   border-bottom: 1px solid var(--outline-variant);
@@ -6,16 +6,18 @@
   flex-direction: column;
   gap: 4px;
   flex: none;
-  /* Unten mehr als oben: das Polster gilt dem Beschreibungssatz, der tiefer
-     sitzt als die Titelzeile und mehr Luft nach unten braucht. */
+  /* More padding below than above: the extra cushion belongs to the
+     description sentence, which sits lower than the title row and needs
+     more room below it. */
   padding: 8px 24px 14px;
 }
 
-/* Ohne Beschreibung ist die Kopfzeile einzeilig, und die Staffelung von oben
-   kippt sie sichtbar nach unten. Dann steht die Zeile mittig in ihrem Streifen.
-   Über `:has()` statt über einen Modifier von außen: ob es eine Beschreibung
-   gibt, weiß die Kopfzeile selbst — jeder Aufrufer müsste es sonst ein zweites
-   Mal mitteilen und könnte es dabei vergessen. */
+/* Without a description, the header is single-line, and the padding
+   staggered from above visibly tips it downward. In that case, the row
+   should sit centered in its strip. Via `:has()` instead of a modifier from
+   outside: whether there's a description is something the header itself
+   knows — every caller would otherwise have to communicate it a second time
+   and could forget to. */
 .header:not(:has(.description)) {
   padding-block: 12px;
 }
@@ -42,13 +44,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  /* Schiebt die Aktionen ans Ende, egal wie breit der Titel ausfällt. */
+  /* Pushes the actions to the end, no matter how wide the title turns out. */
   margin-inline-start: auto;
 }
 
 .description {
   margin: 0;
-  /* Lesbare Zeilenlänge — der Satz erklärt, er füllt nicht die Seite. */
+  /* Readable line length — the sentence explains, it doesn't fill the page. */
   max-width: 72ch;
   color: var(--on-surface-variant);
   font-size: var(--text-sm);

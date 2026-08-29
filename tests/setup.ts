@@ -4,12 +4,12 @@ import { plugin } from "bun";
 // server-only throws when imported outside of Next.js server context
 mock.module("server-only", () => ({}));
 
-// Bun lädt `.env` für jeden Aufruf automatisch, auch für `bun test` — ein
-// lokal für Mailpit & Co. gesetztes SMTP_HOST würde `isMailConfigured()`
-// sonst mitten im Unit-Test wahr werden lassen, ohne dass ein Test das
-// erwartet oder `@/lib/db` entsprechend mockt. Tests, die den Mailversand
-// selbst prüfen (`tests/unit/mail/config.test.ts`), setzen die Variablen
-// gezielt selbst.
+// Bun automatically loads `.env` for every invocation, including `bun test`
+// — an SMTP_HOST set locally for Mailpit & co. would otherwise make
+// `isMailConfigured()` turn true in the middle of a unit test, without any
+// test expecting that or `@/lib/db` being mocked accordingly. Tests that
+// check mail delivery itself (`tests/unit/mail/config.test.ts`) set the
+// variables deliberately, on their own.
 for (const name of [
   "SMTP_HOST",
   "SMTP_PORT",
@@ -21,9 +21,9 @@ for (const name of [
   delete process.env[name];
 }
 
-// Dieselbe Gefahr wie bei SMTP: ein lokal für rustfs gesetztes `.env` würde
-// `isStorageConfigured()` mitten im Unit-Test wahr werden lassen.
-// `tests/unit/storage/config.test.ts` setzt die Variablen gezielt selbst.
+// The same risk as with SMTP: a `.env` set locally for rustfs would make
+// `isStorageConfigured()` turn true in the middle of a unit test.
+// `tests/unit/storage/config.test.ts` sets the variables deliberately, on its own.
 for (const name of [
   "S3_ENDPOINT",
   "S3_REGION",
@@ -35,9 +35,9 @@ for (const name of [
   delete process.env[name];
 }
 
-// Komponenten importieren ihre SCSS-Module direkt — im Test gibt es keinen
-// Bundler dafür. Der Stub liefert für jede Klasse ihren eigenen Namen zurück,
-// damit gerenderte Klassennamen lesbar bleiben.
+// Components import their SCSS modules directly — there's no bundler for
+// that in tests. The stub returns each class's own name, so rendered class
+// names stay readable.
 plugin({
   name: "css-module-stub",
   setup(build) {
@@ -62,6 +62,6 @@ const headerFns = { get: mock(), has: mock(), entries: mock(() => []) };
 
 mock.module("next/headers", () => ({
   cookies: () => Promise.resolve(cookieFns),
-  // next-auth (via @/auth) importiert `headers` — muss im Mock vorhanden sein.
+  // next-auth (via @/auth) imports `headers` — must be present in the mock.
   headers: () => Promise.resolve(headerFns),
 }));

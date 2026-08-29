@@ -9,24 +9,23 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface EmailVerificationInput {
   to: string;
   firstName: string;
-  /** Die Bestätigungs-URL, samt Token — der Aufrufer baut sie, diese Datei
-   *  kennt kein Token-Format. */
+  /** The verification URL, token included — the caller builds it, this
+   *  file knows nothing about the token format. */
   verifyUrl: string;
-  /** Alternative zum Klick auf den Knopf — nur gesetzt, wenn der
-   *  Aufrufer tatsächlich einen Code-Abgleich anbietet (die App tut das
-   *  heute nicht, das Feld ist für einen späteren Ausbau vorbereitet). */
+  /** Alternative to clicking the button — only set if the caller actually
+   *  offers code matching (the app doesn't do that today, the field is
+   *  prepared for a later extension). */
   code?: string;
-  /** Für den Hinweistext unterm Knopf — ohne Angabe bleibt er unspezifisch,
-   *  statt eine Frist zu behaupten, die es (noch) nicht gibt. */
+  /** For the hint text under the button — without it, the text stays
+   *  unspecific, rather than claiming a deadline that doesn't exist (yet). */
   expiresInHours?: number;
 }
 
 /**
- * Für die Bestätigung einer E-Mail-Adresse — bislang ohne eigenen
- * Versandpunkt, siehe `AccountProfileView.emailVerified` in
- * `features/account/types.ts`. Der Token selbst (Ausstellung, Frist,
- * Einlösen) existiert noch nicht; diese Vorlage nimmt nur die fertige URL
- * entgegen, analog zu `invitationEmail`.
+ * For confirming an email address — no dedicated send point yet, see
+ * `AccountProfileView.emailVerified` in `features/account/types.ts`. The
+ * token itself (issuing, deadline, redeeming) doesn't exist yet; this
+ * template only accepts the finished URL, analogous to `invitationEmail`.
  */
 export function emailVerificationEmail(
   input: EmailVerificationInput,

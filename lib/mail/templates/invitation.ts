@@ -9,7 +9,7 @@ import type { MailContent } from "@/lib/mail/templates/types";
 export interface InvitationEmailInput {
   to: string;
   workspaceName: string;
-  /** Gesetzt = Einladung in ein bestimmtes Projekt. */
+  /** Set = invitation into a specific project. */
   projectName?: string | null;
   roleName: string;
   inviterName: string;
@@ -17,12 +17,12 @@ export interface InvitationEmailInput {
   inviteUrl: string;
 }
 
-/** Für die unbekannte Adresse aus `inviteWorkspaceMember`/`inviteProjectMember`
- *  — das neue Konto hat kein Passwort, ohne diesen Link käme niemand hinein.
+/** For the unknown address from `inviteWorkspaceMember`/`inviteProjectMember`
+ *  — the new account has no password, without this link no one could get in.
  *
- *  `override` kommt aus `MailTemplate` (Admin-Bearbeitung, siehe
- *  `features/mail-templates`) — ersetzt Betreff/Überschrift/Einleitung,
- *  Detailtabelle und Fußzeile bleiben davon unberührt. */
+ *  `override` comes from `MailTemplate` (admin editing, see
+ *  `features/mail-templates`) — replaces subject/heading/intro, the detail
+ *  table and footer stay unaffected by it. */
 export function invitationEmail(
   input: InvitationEmailInput,
   override?: TemplateOverride,
