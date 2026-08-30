@@ -37,7 +37,7 @@ interface ListViewProps {
   issues: IssueDetail[];
   /**
    * The project a new task is created in. Without one — for instance for
-   * “my issues” spanning all projects — the “+” in the group header is
+   * "my issues" spanning all projects — the "+" in the group header is
    * left out, and instead a column per row states which project it comes
    * from.
    */
@@ -48,7 +48,7 @@ interface ListViewProps {
    * their composer from it. The same prop as on the board.
    */
   composer: IssueComposerData;
-  /** What's shown instead of the empty table. Default: “No tasks”. */
+  /** What's shown instead of the empty table. Default: "No tasks". */
   emptyTitle?: string;
 }
 
@@ -70,17 +70,17 @@ export function ListView({
   const router = useRouter();
   const issueOpen = useIssueOpen(composer.workspaceId);
   const [, startTransition] = useTransition();
-  // Eingeklappte Gruppen sind reine Ansichtssache — nichts, wofür die URL oder
-  // der Server etwas wissen müsste.
+  // Collapsed groups are purely a view concern — nothing the URL or the
+  // server would need to know about.
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
-  // Welche Zeile gerade ihren Titel schreibt. Die Liste hält das, nicht die
-  // Zelle: die Tabelle muss wissen, dass diese eine Zeile solange nicht zu
-  // ziehen ist.
+  // Which row is currently editing its title. The list holds this, not the
+  // cell: the table needs to know that this one row can't be dragged for
+  // the duration.
   const [editing, setEditing] = useState<string | null>(null);
 
-  // Was gerade geändert wurde, steht sofort da; der Server zieht nach. Ohne das
-  // spränge die Zeile für die Dauer der Aktion an ihren alten Platz — oder trüge
-  // wieder ihren alten Titel.
+  // Whatever just changed shows up immediately; the server catches up
+  // afterward. Without this, the row would jump back to its old place for
+  // the duration of the action — or show its old title again.
   const [shown, applyPatch] = useOptimistic(
     issues,
     (state, patch: { id: string } & Partial<IssueDetail>) =>
@@ -106,17 +106,18 @@ export function ListView({
   const identifier = (issue: IssueDetail) =>
     `${projects.find((p) => p.id === issue.project)?.prefix ?? "?"}-${issue.key}`;
 
-  // Das offene Issue steht als Identifier in der URL — dieselbe Quelle nutzt die
-  // Detailansicht, deshalb hebt sich die passende Zeile ohne eigenen State hervor.
+  // The open issue is stored as an identifier in the URL — the detail view
+  // uses the same source, so the matching row highlights itself without
+  // its own state.
   const openIssue = issueOpen.openIssue;
 
-  // Workflow-Status bekommen immer eine Gruppe — auch leer, damit das "+" im
-  // Kopf erreichbar bleibt. Alle übrigen nur, wenn Issues darin liegen.
+  // Workflow statuses always get a group — even empty, so the "+" in the
+  // header stays reachable. All others only if issues are in them.
   const groups: TableGroup<IssueDetail>[] = statuses
     .map((status) => ({
       status,
-      // Nach Rang, nicht nach Anlagedatum — sonst stünde die Zeile nach dem
-      // Ziehen wieder woanders als dort, wo sie fallen gelassen wurde.
+      // By rank, not by creation date — otherwise the row would end up
+      // somewhere other than where it was dropped after a drag.
       rows: sortByRank(shown.filter((issue) => issue.status === status.id)),
     }))
     .filter(({ status, rows }) => status.isColumn || rows.length > 0)
@@ -148,8 +149,8 @@ export function ListView({
         <span className={styles.identifier}>{identifier(issue)}</span>
       ),
     },
-    // Nur, wo die Zeilen aus verschiedenen Projekten kommen — sonst stünde in
-    // jeder Zeile dasselbe.
+    // Only where the rows come from different projects — otherwise every
+    // row would show the same thing.
     ...(projectId === undefined
       ? [
           {
@@ -172,13 +173,12 @@ export function ListView({
     {
       id: "title",
       width: "minmax(0, 1fr)",
-      // Der Titel ist sein eigener Auslöser: anklicken und schreiben. Er liegt
-      // damit über dem Zeilen-Link — geöffnet wird das Issue über den Rest der
-      // Zeile.
+      // The title is its own trigger: click and type. It therefore sits
+      // above the row link — the issue is opened via the rest of the row.
       //
-      // Ohne issue.update.any/.own bleibt es beim reinen Text: der Server
-      // lehnt den Patch ohnehin ab (`updateIssue`), und ein Knopf, der nichts
-      // auslöst, ist nur eine falsche Einladung.
+      // Without issue.update.any/.own it stays plain text: the server
+      // would reject the patch anyway (`updateIssue`), and a button that
+      // triggers nothing is just a false invitation.
       cell: (issue) =>
         editing === issue.id && issue.access.canEdit ? (
           <IssueTitleField
@@ -221,8 +221,9 @@ export function ListView({
     },
   ];
 
-  // Was der Screenreader beim Sortieren per Tastatur hört. Die Tabelle kennt
-  // weder Sprache noch Status — sie liefert nur Zeile, Gruppe und Position.
+  // What the screen reader hears when reordering via keyboard. The table
+  // knows neither language nor status — it only supplies row, group, and
+  // position.
   const announce = ({
     row,
     groupId,
@@ -242,16 +243,16 @@ export function ListView({
   const dnd = useTableDnd<IssueDetail>({
     groups,
     getRowKey: (issue) => issue.id,
-    // Wer gerade schreibt, wird nicht gezogen: eine ziehbare Zeile nähme dem
-    // Feld darin das Markieren mit der Maus weg. Ohne issue.update.any/.own
-    // auch nicht — Ziehen ändert den Status (`reorderIssue`), den der Server
-    // ohne diese Rechte ablehnt.
+    // Whoever is currently editing isn't dragged: a draggable row would
+    // steal mouse text selection from the field inside it. Not without
+    // issue.update.any/.own either — dragging changes the status
+    // (`reorderIssue`), which the server rejects without those permissions.
     canDrag: (issue) => issue.id !== editing && issue.access.canEdit,
     rowLabel: (issue) =>
       t("actions.reorder", { name: `${identifier(issue)} ${issue.title}` }),
     announce,
-    // Die Gruppe ist der Status: eine Zeile, die in einer anderen Gruppe landet,
-    // wechselt ihn — dieselbe Aktion wie beim Ziehen auf dem Board.
+    // The group is the status: a row that ends up in a different group
+    // changes it — the same action as dragging on the board.
     onDrop: ({ row, groupId, previous, next }) => {
       const rank = rankBetween(previous, next);
       startTransition(async () => {

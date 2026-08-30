@@ -64,12 +64,12 @@ describe("createLabel()", () => {
     mockRevalidate.mockReset();
   });
 
-  describe("Workspace-weites Label", () => {
+  describe("Workspace-wide label", () => {
     beforeEach(() => {
       mockLabelCreate.mockResolvedValue(DB_LABEL_WS);
     });
 
-    it("legt ein Label mit workspace connect an", async () => {
+    it("creates a label with a workspace connect", async () => {
       await createLabel(BASE);
       expect(mockLabelCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -82,7 +82,7 @@ describe("createLabel()", () => {
       );
     });
 
-    it("enthält kein project-Feld wenn kein projectId übergeben", async () => {
+    it("contains no project field when no projectId is passed", async () => {
       await createLabel(BASE);
       const call = mockLabelCreate.mock.calls[0][0] as {
         data: Record<string, unknown>;
@@ -90,7 +90,7 @@ describe("createLabel()", () => {
       expect(call.data.project).toBeUndefined();
     });
 
-    it("gibt id, name, slug, color und projectId null zurück", async () => {
+    it("returns id, name, slug, color, and projectId null", async () => {
       const result = await createLabel(BASE);
       expect(result).toEqual({
         id: "l-uuid",
@@ -101,7 +101,7 @@ describe("createLabel()", () => {
       });
     });
 
-    it("generiert einen Slug aus dem Namen", async () => {
+    it("generates a slug from the name", async () => {
       await createLabel({ ...BASE, name: "Tech Debt" });
       const call = mockLabelCreate.mock.calls[0][0] as {
         data: Record<string, unknown>;
@@ -109,7 +109,7 @@ describe("createLabel()", () => {
       expect(call.data.slug).toBe("tech-debt");
     });
 
-    it("hängt einen Zähler an wenn der Slug bereits existiert", async () => {
+    it("appends a counter when the slug already exists", async () => {
       mockLabelFindUnique
         .mockResolvedValueOnce({ id: "existing" }) // "bug" taken
         .mockResolvedValueOnce(null); // "bug-2" free
@@ -120,18 +120,18 @@ describe("createLabel()", () => {
       expect(call.data.slug).toBe("bug-2");
     });
 
-    it("ruft revalidatePath auf", async () => {
+    it("calls revalidatePath", async () => {
       await createLabel(BASE);
       expect(mockRevalidate).toHaveBeenCalledWith("/", "layout");
     });
   });
 
-  describe("Projektspezifisches Label", () => {
+  describe("Project-specific label", () => {
     beforeEach(() => {
       mockLabelCreate.mockResolvedValue(DB_LABEL_PROJECT);
     });
 
-    it("legt ein Label mit project connect an", async () => {
+    it("creates a label with a project connect", async () => {
       await createLabel({
         ...BASE,
         name: "Feature",
@@ -148,7 +148,7 @@ describe("createLabel()", () => {
       );
     });
 
-    it("gibt die projectId zurück", async () => {
+    it("returns the projectId", async () => {
       const result = await createLabel({
         ...BASE,
         name: "Feature",
@@ -160,7 +160,7 @@ describe("createLabel()", () => {
 
     // The call comes from the client and must not get to pick its own
     // workspace: the check happens on the project, so the write does too.
-    it("nimmt den Workspace aus dem Projekt, nicht aus der Eingabe", async () => {
+    it("takes the workspace from the project, not from the input", async () => {
       mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-echt" });
 
       await createLabel({
@@ -179,7 +179,7 @@ describe("createLabel()", () => {
       );
     });
 
-    it("wirft, wenn das Projekt nicht existiert", async () => {
+    it("throws when the project doesn't exist", async () => {
       mockProjectFindUnique.mockResolvedValue(null);
       await expect(
         createLabel({ ...BASE, projectId: "proj-weg" }),
@@ -188,12 +188,12 @@ describe("createLabel()", () => {
     });
   });
 
-  describe("Label-ID", () => {
+  describe("Label ID", () => {
     beforeEach(() => {
       mockLabelCreate.mockResolvedValue(DB_LABEL_WS);
     });
 
-    it("übergibt eine generierte ID mit Präfix 'l'", async () => {
+    it("passes a generated ID with prefix 'l'", async () => {
       await createLabel(BASE);
       const call = mockLabelCreate.mock.calls[0][0] as {
         data: Record<string, unknown>;

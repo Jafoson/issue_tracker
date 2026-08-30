@@ -5,12 +5,12 @@ import { mentionedUserIds, toPlainText, toPreview } from "@/lib/richtext/text";
 import type { PMDoc } from "@/lib/richtext/types";
 
 describe("toPlainText", () => {
-  test("zieht den Text aus den Blöcken und trennt sie", () => {
+  test("pulls the text out of the blocks and separates them", () => {
     const doc = fromMarkdown("# Titel\n\nEin Absatz.");
     expect(toPlainText(doc)).toBe("Titel\nEin Absatz.");
   });
 
-  test("nimmt die Chips mit — sonst fielen sie aus der Suche", () => {
+  test("includes the chips — otherwise they'd drop out of search", () => {
     const doc: PMDoc = {
       type: "doc",
       content: [
@@ -34,17 +34,17 @@ describe("toPlainText", () => {
     expect(text).toContain("ORB-42");
   });
 
-  test("nimmt den Alt-Text eines Bildes mit", () => {
+  test("includes an image's alt text", () => {
     expect(toPlainText(fromMarkdown("![Ein Diagramm](/d.png)"))).toContain(
       "Ein Diagramm",
     );
   });
 
-  test("fasst Listenpunkte zeilenweise zusammen", () => {
+  test("joins list items line by line", () => {
     expect(toPlainText(fromMarkdown("- eins\n- zwei"))).toBe("eins\nzwei");
   });
 
-  test("gibt für kaputte Eingaben einen leeren Text zurück", () => {
+  test("returns empty text for broken input", () => {
     expect(toPlainText(null)).toBe("");
     expect(toPlainText("kein Dokument")).toBe("");
     expect(toPlainText({ type: "doc" })).toBe("");
@@ -52,11 +52,11 @@ describe("toPlainText", () => {
 });
 
 describe("toPreview", () => {
-  test("lässt kurzen Text unangetastet", () => {
+  test("leaves short text untouched", () => {
     expect(toPreview(fromMarkdown("Kurz."))).toBe("Kurz.");
   });
 
-  test("kürzt an der Wortgrenze und hängt ein Auslassungszeichen an", () => {
+  test("truncates at a word boundary and appends an ellipsis", () => {
     const long = fromMarkdown("wort ".repeat(60));
     const preview = toPreview(long, 40);
     expect(preview.length).toBeLessThanOrEqual(41);
@@ -65,20 +65,20 @@ describe("toPreview", () => {
     expect(preview).not.toContain("wor…");
   });
 
-  test("macht aus Umbrüchen Leerzeichen", () => {
+  test("turns line breaks into spaces", () => {
     expect(toPreview(fromMarkdown("# Titel\n\nText"))).toBe("Titel Text");
   });
 });
 
 describe("isEmptyDoc", () => {
-  test("erkennt das frische Dokument als leer", () => {
+  test("recognizes a fresh document as empty", () => {
     expect(isEmptyDoc(emptyDoc())).toBe(true);
     expect(isEmptyDoc(fromMarkdown(""))).toBe(true);
     expect(isEmptyDoc(null)).toBe(true);
     expect(isEmptyDoc({ type: "doc", content: [] })).toBe(true);
   });
 
-  test("erkennt Inhalt — auch wenn er nur aus einem Chip besteht", () => {
+  test("recognizes content — even if it consists of just a chip", () => {
     expect(isEmptyDoc(fromMarkdown("Text"))).toBe(false);
     expect(
       isEmptyDoc({
@@ -97,13 +97,13 @@ describe("isEmptyDoc", () => {
 });
 
 describe("toDoc / isPMDoc", () => {
-  test("lässt gültige Dokumente unverändert durch", () => {
+  test("lets valid documents through unchanged", () => {
     const doc = fromMarkdown("Text");
     expect(toDoc(doc)).toBe(doc);
     expect(isPMDoc(doc)).toBe(true);
   });
 
-  test("ersetzt alles andere durch ein leeres Dokument", () => {
+  test("replaces everything else with an empty document", () => {
     for (const bad of [
       null,
       undefined,
@@ -119,7 +119,7 @@ describe("toDoc / isPMDoc", () => {
 });
 
 describe("mentionedUserIds", () => {
-  test("findet Erwähnungen in beliebiger Tiefe und ohne Dubletten", () => {
+  test("finds mentions at any depth and without duplicates", () => {
     const doc: PMDoc = {
       type: "doc",
       content: [
@@ -141,7 +141,7 @@ describe("mentionedUserIds", () => {
     expect(mentionedUserIds(doc).sort()).toEqual(["u1", "u2"]);
   });
 
-  test("gibt für Text ohne Erwähnung eine leere Liste zurück", () => {
+  test("returns an empty list for text without mentions", () => {
     expect(mentionedUserIds(fromMarkdown("nichts hier"))).toEqual([]);
   });
 });

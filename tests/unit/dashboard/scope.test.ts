@@ -10,37 +10,37 @@ import {
 // the permission check (who's even allowed to choose "all") lives in
 // `getProjectDashboard`, not here.
 
-describe("Die Vorgabe", () => {
-  it("ist der ganze Umfang", () => {
+describe("The default", () => {
+  it("is the full scope", () => {
     expect(DEFAULT_DASHBOARD_SCOPE).toBe("all");
     expect(DASHBOARD_SCOPES).toContain(DEFAULT_DASHBOARD_SCOPE);
   });
 
-  it("gilt, wenn gar nichts hereinkommt", () => {
+  it("applies when nothing comes in at all", () => {
     expect(toDashboardScope()).toBe("all");
     expect(toDashboardScope(undefined, null)).toBe("all");
   });
 });
 
-describe("Die Rangfolge", () => {
-  it("nimmt den ersten bekannten Wert", () => {
+describe("The precedence", () => {
+  it("takes the first known value", () => {
     expect(toDashboardScope("mine", "all")).toBe("mine");
     expect(toDashboardScope("all", "mine")).toBe("all");
   });
 
-  it("überspringt, was fehlt, und nimmt den nächsten", () => {
+  it("skips what's missing and takes the next one", () => {
     expect(toDashboardScope(undefined, "mine")).toBe("mine");
     expect(toDashboardScope(null, "mine")).toBe("mine");
   });
 });
 
-describe("Unbekannte Werte", () => {
-  it("fallen durch, statt zu werfen", () => {
+describe("Unknown values", () => {
+  it("fall through instead of throwing", () => {
     expect(toDashboardScope("gibtsnicht")).toBe("all");
     expect(toDashboardScope("")).toBe("all");
   });
 
-  it("halten den nächsten Kandidaten nicht auf", () => {
+  it("don't hold up the next candidate", () => {
     expect(toDashboardScope("gibtsnicht", "mine")).toBe("mine");
   });
 });

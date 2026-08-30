@@ -10,13 +10,13 @@ import { isoDate, parseDateInput, toIso } from "@/lib/richtext/date";
 const jahr = new Date().getFullYear();
 
 describe("parseDateInput", () => {
-  test("liest die hier übliche Schreibweise", () => {
+  test("reads the notation commonly used here", () => {
     expect(parseDateInput("1.2.2002")).toBe("2002-02-01");
     expect(parseDateInput("01.02.2002")).toBe("2002-02-01");
     expect(parseDateInput("14.8.2026")).toBe("2026-08-14");
   });
 
-  test("ergänzt zweistellige Jahreszahlen", () => {
+  test("expands two-digit years", () => {
     expect(parseDateInput("1.2.02")).toBe("2002-02-01");
     // From 69 backward — the cutoff from POSIX.
     expect(parseDateInput("1.2.98")).toBe("1998-02-01");
@@ -24,34 +24,34 @@ describe("parseDateInput", () => {
     expect(parseDateInput("1.2.69")).toBe("1969-02-01");
   });
 
-  test("nimmt ohne Jahr das laufende", () => {
+  test("uses the current year when none is given", () => {
     expect(parseDateInput("1.2.")).toBe(`${jahr}-02-01`);
     expect(parseDateInput("1.2")).toBe(`${jahr}-02-01`);
   });
 
-  test("versteht die ISO-Form", () => {
+  test("understands the ISO form", () => {
     expect(parseDateInput("2002-02-01")).toBe("2002-02-01");
     expect(parseDateInput("2026-12-31")).toBe("2026-12-31");
   });
 
-  test("nimmt auch Bindestriche mit Tag zuerst", () => {
+  test("also accepts hyphens with day first", () => {
     // Four digits at the start means ISO, otherwise day first.
     expect(parseDateInput("1-2-2002")).toBe("2002-02-01");
   });
 
-  test("lehnt Tage ab, die es nicht gibt", () => {
+  test("rejects days that don't exist", () => {
     expect(parseDateInput("31.02.2002")).toBeNull();
     expect(parseDateInput("32.1.2020")).toBeNull();
     expect(parseDateInput("1.13.2020")).toBeNull();
     expect(parseDateInput("2002-02-30")).toBeNull();
   });
 
-  test("kennt den Schalttag", () => {
+  test("knows about the leap day", () => {
     expect(parseDateInput("29.2.2024")).toBe("2024-02-29");
     expect(parseDateInput("29.2.2023")).toBeNull();
   });
 
-  test("lässt alles andere liegen", () => {
+  test("leaves everything else alone", () => {
     for (const eingabe of [
       "",
       "   ",
@@ -66,18 +66,18 @@ describe("parseDateInput", () => {
     }
   });
 
-  test("stört sich nicht an Leerzeichen am Rand", () => {
+  test("is not bothered by surrounding whitespace", () => {
     expect(parseDateInput("  1.2.2002  ")).toBe("2002-02-01");
   });
 });
 
 describe("isoDate / toIso", () => {
-  test("füllt auf zwei Stellen auf", () => {
+  test("pads to two digits", () => {
     expect(toIso(2026, 2, 1)).toBe("2026-02-01");
     expect(toIso(2026, 12, 31)).toBe("2026-12-31");
   });
 
-  test("zählt Tage vorwärts — auch über den Monatswechsel", () => {
+  test("counts days forward — even across a month boundary", () => {
     const heute = new Date();
     expect(isoDate()).toBe(
       toIso(heute.getFullYear(), heute.getMonth() + 1, heute.getDate()),
@@ -94,7 +94,7 @@ describe("isoDate / toIso", () => {
     );
   });
 
-  test("liefert etwas, das der Parser wieder versteht", () => {
+  test("produces something the parser understands again", () => {
     expect(parseDateInput(isoDate(30))).toBe(isoDate(30));
   });
 });

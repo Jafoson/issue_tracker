@@ -1,6 +1,7 @@
-/* Die E-Mail-Zelle trägt zwei Textzeilen (Adresse + Name) — ohne die höhere
-   Vorgabe hier zentriert der Tisch die Nachbarspalten auf eine einzeilige
-   Zeilenhöhe und die zweite Zeile ragt in die nächste Zeile hinein. */
+/* The email cell carries two lines of text (address + name) — without the
+   taller default here, the table would center the neighboring columns on a
+   single-line row height and the second line would poke into the next
+   row. */
 .content {
   --table-row-height: 60px;
 

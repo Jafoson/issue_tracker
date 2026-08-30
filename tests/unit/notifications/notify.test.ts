@@ -90,13 +90,13 @@ const base = {
 };
 
 describe("notify()", () => {
-  it("benachrichtigt niemanden über die eigene Tat", async () => {
+  it("notifies no one about their own action", async () => {
     await notify({ ...base, userId: "u-actor", type: "comment" });
 
     expect(mockNotificationCreateMany).not.toHaveBeenCalled();
   });
 
-  it("schreibt eine Zeile mit eingefrorenem Actor-Namen", async () => {
+  it("writes a row with a frozen actor name", async () => {
     await notify({ ...base, userId: "u-other", type: "comment" });
 
     const rows = mockNotificationCreateMany.mock.calls[0][0].data;
@@ -112,7 +112,7 @@ describe("notify()", () => {
     });
   });
 
-  it("gilt als eingeschaltet, solange niemand etwas eingestellt hat", async () => {
+  it("counts as on as long as no one has configured anything", async () => {
     // No `UserPreferences` row — the schema default for every `*InApp`
     // column is `true`.
     mockPreferencesFindMany.mockResolvedValue([]);
@@ -122,7 +122,7 @@ describe("notify()", () => {
     expect(mockNotificationCreateMany).toHaveBeenCalledTimes(1);
   });
 
-  it("respektiert einen abgeschalteten In-App-Kanal", async () => {
+  it("respects a disabled in-app channel", async () => {
     mockPreferencesFindMany.mockResolvedValue([
       { userId: "u-other", statusInApp: false },
     ]);
@@ -132,7 +132,7 @@ describe("notify()", () => {
     expect(mockNotificationCreateMany).not.toHaveBeenCalled();
   });
 
-  it("lädt den Actor-Namen nur einmal für mehrere Empfänger", async () => {
+  it("loads the actor name only once for multiple recipients", async () => {
     await notify([
       { ...base, userId: "u-1", type: "mentioned" },
       { ...base, userId: "u-2", type: "mentioned" },
@@ -142,7 +142,7 @@ describe("notify()", () => {
     expect(mockNotificationCreateMany.mock.calls[0][0].data).toHaveLength(2);
   });
 
-  it("lässt die Aktion nicht scheitern, wenn das Schreiben klemmt", async () => {
+  it("does not let the action fail when the write jams", async () => {
     const error = console.error;
     console.error = () => {};
     mockNotificationCreateMany.mockRejectedValueOnce(new Error("DB weg"));
@@ -155,8 +155,8 @@ describe("notify()", () => {
   });
 });
 
-describe("notify() — Mailversand", () => {
-  it("verschickt keine Mail, solange kein SMTP konfiguriert ist", async () => {
+describe("notify() — mail sending", () => {
+  it("sends no mail as long as SMTP is not configured", async () => {
     mockIsMailConfigured.mockReturnValue(false);
 
     await notify({ ...base, userId: "u-other", type: "assigned" });
@@ -164,7 +164,7 @@ describe("notify() — Mailversand", () => {
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("verschickt eine Mail, wenn SMTP konfiguriert ist und niemand widerspricht", async () => {
+  it("sends a mail when SMTP is configured and no one objects", async () => {
     mockIsMailConfigured.mockReturnValue(true);
     mockUserFindMany.mockResolvedValue([
       { id: "u-actor", firstName: "Ada", lastName: "Lovelace" },
@@ -180,7 +180,7 @@ describe("notify() — Mailversand", () => {
     });
   });
 
-  it("respektiert einen abgeschalteten Mail-Kanal, unabhängig vom In-App-Kanal", async () => {
+  it("respects a disabled mail channel, independent of the in-app channel", async () => {
     mockIsMailConfigured.mockReturnValue(true);
     mockPreferencesFindMany.mockResolvedValue([
       { userId: "u-other", commentInApp: true, commentEmail: false },
@@ -193,7 +193,7 @@ describe("notify() — Mailversand", () => {
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("greift auf den Schema-Default zurück, wenn nichts eingestellt ist (Kommentare: aus)", async () => {
+  it("falls back to the schema default when nothing is configured (comments: off)", async () => {
     mockIsMailConfigured.mockReturnValue(true);
     mockPreferencesFindMany.mockResolvedValue([]);
     mockUserFindMany.mockResolvedValue([
@@ -208,7 +208,7 @@ describe("notify() — Mailversand", () => {
     expect(mockSendMail).toHaveBeenCalledTimes(1);
   });
 
-  it("lädt Workspace/Projekt/Issue nur einmal für mehrere Empfänger derselben Zeile", async () => {
+  it("loads workspace/project/issue only once for multiple recipients of the same row", async () => {
     mockIsMailConfigured.mockReturnValue(true);
     mockUserFindMany.mockResolvedValue([
       { id: "u-actor", firstName: "Ada", lastName: "Lovelace" },
@@ -226,7 +226,7 @@ describe("notify() — Mailversand", () => {
     expect(mockSendMail).toHaveBeenCalledTimes(2);
   });
 
-  it("gibt einen Admin-Override an notificationEmail() weiter, keyed nach Anlass", async () => {
+  it("passes an admin override through to notificationEmail(), keyed by occasion", async () => {
     mockIsMailConfigured.mockReturnValue(true);
     mockUserFindMany.mockResolvedValue([
       { id: "u-actor", firstName: "Ada", lastName: "Lovelace" },
@@ -249,7 +249,7 @@ describe("notify() — Mailversand", () => {
     expect(mockNotificationEmail.mock.calls[0][1]).toEqual(override);
   });
 
-  it("verschickt keine Mail an eine Empfänger-Id ohne bekannte Adresse", async () => {
+  it("sends no mail to a recipient id without a known address", async () => {
     mockIsMailConfigured.mockReturnValue(true);
     mockUserFindMany.mockResolvedValue([
       { id: "u-actor", firstName: "Ada", lastName: "Lovelace" },

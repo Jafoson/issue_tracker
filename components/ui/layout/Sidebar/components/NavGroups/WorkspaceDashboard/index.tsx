@@ -9,10 +9,10 @@ import styles from "../../../sidebar.module.scss";
 import TabList, { type TabGroup } from "../components/TabList";
 
 /**
- * „Übersicht" und „Dashboard" des Workspace — zwei eigene Navlinks, anders als
- * beim Projekt, das beide unter einer gemeinsamen Zeile führt. Ganz oben, vor
- * „Meine Aufgaben": wer den Workspace öffnet, soll zuerst sehen, wie er
- * dasteht, nicht erst danach suchen müssen.
+ * "Overview" and "Dashboard" of the workspace — two separate nav links,
+ * unlike the project, which lists both under one shared row. Right at the
+ * top, before "My tasks": whoever opens the workspace should see how
+ * things stand first, not have to search for it afterward.
  */
 async function NavGroupWorkspaceDashboard() {
   const t = await getTranslations("nav");

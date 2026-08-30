@@ -67,10 +67,10 @@ export function WorkspaceMenuClient({
             variant="ghost"
             full
             textAlign="left"
-            // Dieselbe Markierung wie in jedem anderen Dropdown/Menü
-            // (`NavLink`, `ScopePicker`, `RangePicker`): `data-active` statt
-            // einer eigenen Klasse, damit der aktive Eintrag hier genauso
-            // aussieht wie überall sonst.
+            // Same marking as in every other dropdown/menu (`NavLink`,
+            // `ScopePicker`, `RangePicker`): `data-active` instead of a
+            // custom class, so the active entry looks the same here as
+            // everywhere else.
             data-active={ws.id === workspace.id ? "true" : undefined}
             onClick={() => goTo(ws.id)}
           >

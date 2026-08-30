@@ -11,8 +11,8 @@ import { type TabMeta, tabMeta, workspaceIdFromPath } from "./tabMeta";
 type StoredTab = { id: string; href: string };
 export type Tab = StoredTab & { meta: TabMeta };
 
-// Ein einziger, globaler Tab-Set über alle Bereiche (Workspaces + Admin).
-// Die Tabs speichern jeweils die volle URL, der Kontext wird daraus abgeleitet.
+// A single, global tab set across all areas (workspaces + admin). Each tab
+// stores the full URL, the context is derived from it.
 const TABS_KEY = "orbit-tabs";
 const ACTIVE_KEY = "orbit-active";
 
@@ -40,21 +40,21 @@ function save(tabs: StoredTab[]) {
 }
 
 interface UseTabBarOptions {
-  // Href des ersten Tabs bzw. neu geöffneter Tabs.
+  // Href of the first tab / newly opened tabs.
   defaultHref: string;
-  // Serverseitig vorgeladene Projekte des aktiven Workspace — Startwert für den
-  // Projekt-Cache unten, damit dessen Tab sofort korrekt betitelt ist.
+  // Server-preloaded projects of the active workspace — starting value for
+  // the project cache below, so its tab is titled correctly right away.
   projects: Project[];
-  // ID des aktiven Workspace, oder `null` im Admin-Bereich.
+  // ID of the active workspace, or `null` in the admin area.
   currentWorkspaceId: string | null;
 }
 
-// Hält den gesamten Tab-Zustand: Persistenz (localStorage), Navigation und die
-// Auflösung von Titel/Farbe/Icon pro Tab. Jeder Tab trägt seine eigene
-// Workspace-ID in der URL — Projekte fremder Workspaces sind serverseitig
-// nicht vorgeladen und werden hier gezielt nachgeladen, sobald ein
-// entsprechender Tab auftaucht. TabBarClient bekommt bereits fertige,
-// renderbare Tabs zurück und bleibt reine Darstellung.
+// Holds the entire tab state: persistence (localStorage), navigation, and
+// resolving title/color/icon per tab. Every tab carries its own workspace ID
+// in the URL — projects of other workspaces aren't preloaded server-side and
+// get loaded here specifically as soon as a matching tab shows up.
+// TabBarClient receives already-finished, renderable tabs and stays pure
+// rendering.
 export function useTabBar({
   defaultHref,
   projects,
@@ -83,8 +83,8 @@ export function useTabBar({
     Record<string, Project[]>
   >(() => (currentWorkspaceId ? { [currentWorkspaceId]: projects } : {}));
 
-  // Welche Workspace-IDs schon geladen (oder angefragt) sind — verhindert
-  // wiederholte Server-Aufrufe für dieselbe Workspace bei jedem Tab-Wechsel.
+  // Which workspace IDs are already loaded (or requested) — prevents
+  // repeated server calls for the same workspace on every tab switch.
   const requestedRef = useRef(
     new Set<string>(currentWorkspaceId ? [currentWorkspaceId] : []),
   );
@@ -132,8 +132,8 @@ export function useTabBar({
     if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
   }, [activeId]);
 
-  // Projekte für Workspaces nachladen, die noch keiner offene Tab bereits kennt
-  // (z.B. ein Tab, der in einem anderen Workspace geöffnet wurde).
+  // Load projects for workspaces no open tab already knows about (e.g. a
+  // tab that was opened in a different workspace).
   useEffect(() => {
     const missing = [
       ...new Set(

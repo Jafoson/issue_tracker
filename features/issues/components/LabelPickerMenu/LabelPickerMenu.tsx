@@ -79,7 +79,7 @@ export function LabelPickerMenu({
             <Icon icon="lucide:arrow-left" width={14} />
           </button>
           <span>
-            Farbe für <strong>„{pending.name}"</strong> wählen
+            Choose a color for <strong>"{pending.name}"</strong>
           </span>
         </div>
         <div className={styles.colorGrid}>
@@ -93,7 +93,7 @@ export function LabelPickerMenu({
     <SelectMenu
       multi
       searchable
-      placeholder="Label suchen…"
+      placeholder="Search labels…"
       value={selected}
       onPick={(v) => {
         onPick(v as string);
@@ -112,17 +112,17 @@ export function LabelPickerMenu({
               icon={<Icon icon="lucide:plus" width={14} />}
               onClick={() => setPending({ name: q.trim(), scope: "project" })}
             >
-              „{q.trim()}" in <strong>{projectName}</strong> anlegen
+              Create "{q.trim()}" in <strong>{projectName}</strong>
             </SelectAction>
             <SelectAction
               icon={<Icon icon="lucide:plus" width={14} />}
               onClick={() => setPending({ name: q.trim(), scope: "workspace" })}
             >
-              „{q.trim()}" im Workspace anlegen
+              Create "{q.trim()}" in the workspace
             </SelectAction>
           </>
         ) : (
-          <SelectEmpty>Keine Labels vorhanden</SelectEmpty>
+          <SelectEmpty>No labels yet</SelectEmpty>
         )
       }
     />

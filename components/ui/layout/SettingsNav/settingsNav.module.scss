@@ -76,19 +76,19 @@
   }
 }
 
-/* Über alle Workspaces hinweg kann die Auswahl beliebig lang werden. Sie scrollt
-   dann in sich, statt das Menü über den Bildschirmrand hinauswachsen zu lassen —
-   `min()` deckelt sie zusätzlich absolut, damit sie auf einem hohen Bildschirm
-   nicht zur halben Seite wird. */
+/* Across all workspaces, the selection can grow arbitrarily long. It then
+   scrolls internally instead of letting the menu grow past the screen edge
+   — `min()` additionally caps it in absolute terms, so it doesn't become
+   half the page on a tall screen. */
 .menuList {
   max-height: min(52vh, 420px);
   overflow-y: auto;
 }
 
-/* Sagt, wovon die Liste darunter die Auswahl ist — „Projekt", „Workspace" oder,
-   wenn die Auswahl über Workspaces hinausreicht, der Name des Workspace. Ab der
-   zweiten Überschrift steht Luft davor: sie trennt dann Gruppen, statt nur die
-   Liste zu benennen. */
+/* States what the list below is a selection of — "Project", "Workspace",
+   or, when the selection spans across workspaces, the workspace's name.
+   From the second heading on, space is added above it: it then separates
+   groups instead of just naming the list. */
 .menuLabel {
   margin: 0 0 6px;
   padding: 0 8px;
@@ -124,8 +124,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Die Zeilen bringen ihr Aussehen selbst mit (`components/ui/layout/NavLink`) —
-   hier steht nur, wie sie gestapelt werden. */
+/* The rows bring their own look (`components/ui/layout/NavLink`) — this
+   file only holds how they're stacked. */
 .list {
   list-style: none;
   margin: 0;

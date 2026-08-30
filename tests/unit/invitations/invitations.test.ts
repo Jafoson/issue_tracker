@@ -52,13 +52,13 @@ function row(
 }
 
 describe("newInvitationToken()", () => {
-  it("ist lang und url-sicher", () => {
+  it("is long and URL-safe", () => {
     const token = newInvitationToken();
     expect(token.length).toBeGreaterThanOrEqual(43);
     expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
-  it("wiederholt sich nicht", () => {
+  it("doesn't repeat itself", () => {
     const tokens = new Set(
       Array.from({ length: 200 }, () => newInvitationToken()),
     );
@@ -69,20 +69,20 @@ describe("newInvitationToken()", () => {
 describe("createInvitation()", () => {
   beforeEach(reset);
 
-  it("verwirft die vorherige offene Einladung derselben Person", async () => {
+  it("discards the previous open invitation for the same person", async () => {
     await createInvitation(db, { userId: "u-1", workspaceId: "acme" }, NOW);
     expect(deleteMany).toHaveBeenCalledWith({
       where: { userId: "u-1", workspaceId: "acme", acceptedAt: null },
     });
   });
 
-  it("setzt eine Frist von 14 Tagen", async () => {
+  it("sets a 14-day deadline", async () => {
     await createInvitation(db, { userId: "u-1", workspaceId: "acme" }, NOW);
     const { data } = create.mock.calls[0][0];
     expect(data.expires).toEqual(new Date("2026-08-18T12:00:00Z"));
   });
 
-  it("merkt sich das einladende Projekt", async () => {
+  it("remembers the inviting project", async () => {
     await createInvitation(
       db,
       { userId: "u-1", workspaceId: "acme", projectId: "p-1" },
@@ -91,7 +91,7 @@ describe("createInvitation()", () => {
     expect(create.mock.calls[0][0].data.projectId).toBe("p-1");
   });
 
-  it("gibt Token und Frist zurück, wie sie geschrieben wurden", async () => {
+  it("returns the token and deadline as they were written", async () => {
     const result = await createInvitation(
       db,
       { userId: "u-1", workspaceId: "acme" },
@@ -103,11 +103,11 @@ describe("createInvitation()", () => {
 });
 
 describe("invitationUrl()", () => {
-  it("hängt den Pfad an die Basis-URL", () => {
+  it("appends the path to the base URL", () => {
     expect(invitationUrl("tok")).toEndWith(invitationPath("tok"));
   });
 
-  it("ist absolut — der Link wird kopiert und woanders geöffnet", () => {
+  it("is absolute — the link gets copied and opened elsewhere", () => {
     expect(invitationUrl("tok")).toMatch(/^https?:\/\//);
   });
 });
@@ -115,7 +115,7 @@ describe("invitationUrl()", () => {
 describe("openInvitation()", () => {
   beforeEach(reset);
 
-  it("liefert die Einladung samt Workspace-Namen", async () => {
+  it("returns the invitation along with the workspace name", async () => {
     findUnique.mockResolvedValue(row());
     const invitation = await openInvitation(db, "tok", NOW);
     expect(invitation).toMatchObject({
@@ -127,34 +127,34 @@ describe("openInvitation()", () => {
     });
   });
 
-  it("meldet ein Konto mit Passkey — das braucht keine Einladung mehr", async () => {
+  it("reports an account with a passkey — that no longer needs an invitation", async () => {
     findUnique.mockResolvedValue(row({ hasPasskey: true }));
     expect((await openInvitation(db, "tok", NOW))?.hasPasskey).toBe(true);
   });
 
   // Unknown, expired, used, suspended: all four end the same way, so the
   // endpoint isn't an oracle for valid tokens.
-  it("gibt null für einen unbekannten Token", async () => {
+  it("returns null for an unknown token", async () => {
     findUnique.mockResolvedValue(null);
     expect(await openInvitation(db, "tok", NOW)).toBeNull();
   });
 
-  it("gibt null für einen leeren Token, ohne die Datenbank zu fragen", async () => {
+  it("returns null for an empty token, without asking the database", async () => {
     expect(await openInvitation(db, "", NOW)).toBeNull();
     expect(findUnique).not.toHaveBeenCalled();
   });
 
-  it("gibt null für eine abgelaufene Einladung", async () => {
+  it("returns null for an expired invitation", async () => {
     findUnique.mockResolvedValue(row({ expires: new Date("2026-08-01") }));
     expect(await openInvitation(db, "tok", NOW)).toBeNull();
   });
 
-  it("gibt null für eine schon angenommene Einladung", async () => {
+  it("returns null for an invitation that was already accepted", async () => {
     findUnique.mockResolvedValue(row({ acceptedAt: new Date("2026-08-02") }));
     expect(await openInvitation(db, "tok", NOW)).toBeNull();
   });
 
-  it("gibt null, wenn der Workspace gesperrt ist", async () => {
+  it("returns null when the workspace is suspended", async () => {
     findUnique.mockResolvedValue(row({ suspended: true }));
     expect(await openInvitation(db, "tok", NOW)).toBeNull();
   });

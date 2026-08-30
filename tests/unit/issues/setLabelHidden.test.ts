@@ -48,7 +48,7 @@ describe("setLabelHidden()", () => {
     mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-1" });
   });
 
-  it("legt eine Zeile an, wenn ausgeblendet wird", async () => {
+  it("creates a row when hiding", async () => {
     const result = await setLabelHidden("p-1", "l-1", true);
 
     expect(result).toEqual({ ok: true });
@@ -60,7 +60,7 @@ describe("setLabelHidden()", () => {
     expect(mockDeleteMany).not.toHaveBeenCalled();
   });
 
-  it("nimmt die Zeile wieder weg, wenn eingeblendet wird", async () => {
+  it("removes the row again when unhiding", async () => {
     const result = await setLabelHidden("p-1", "l-1", false);
 
     expect(result).toEqual({ ok: true });
@@ -70,14 +70,14 @@ describe("setLabelHidden()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  it("entscheidet im Projekt-Scope über label.update", async () => {
+  it("decides on label.update in the project scope", async () => {
     await setLabelHidden("p-1", "l-1", true);
     expect(mockHasPermission).toHaveBeenCalledWith("label.update", {
       projectId: "p-1",
     });
   });
 
-  it("lehnt ab, wer im Projekt keine Labels pflegen darf", async () => {
+  it("rejects whoever isn't allowed to manage labels in the project", async () => {
     mockHasPermission.mockResolvedValue(false);
 
     const result = await setLabelHidden("p-1", "l-1", true);
@@ -88,7 +88,7 @@ describe("setLabelHidden()", () => {
 
   // A project label only ever applies within its own project anyway — there
   // it would need to be deleted, not hidden.
-  it("lehnt Projekt-Labels ab", async () => {
+  it("rejects project labels", async () => {
     mockLabelFindUnique.mockResolvedValue({
       workspaceId: "ws-1",
       projectId: "p-1",
@@ -102,7 +102,7 @@ describe("setLabelHidden()", () => {
 
   // Otherwise a foreign label id could be used to create a row in a tenant
   // that the label doesn't even belong to.
-  it("lehnt ein Label aus einem anderen Workspace ab", async () => {
+  it("rejects a label from another workspace", async () => {
     mockProjectFindUnique.mockResolvedValue({ workspaceId: "ws-2" });
 
     const result = await setLabelHidden("p-1", "l-1", true);
@@ -111,7 +111,7 @@ describe("setLabelHidden()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  it("meldet ein gelöschtes Label zurück, statt zu werfen", async () => {
+  it("reports a deleted label instead of throwing", async () => {
     mockLabelFindUnique.mockResolvedValue(null);
 
     const result = await setLabelHidden("p-1", "l-1", true);

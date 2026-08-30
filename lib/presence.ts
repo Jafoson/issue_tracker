@@ -1,35 +1,35 @@
 import "server-only";
 import { db } from "@/lib/db";
 
-// ─── „Zuletzt online" ─────────────────────────────────────────────────────────
+// ─── "Last seen" ────────────────────────────────────────────────────────────
 //
-// Die Plattformverwaltung braucht die Angabe, um tote Konten von benutzten zu
-// unterscheiden — nicht, um jemandem beim Arbeiten zuzusehen. Sie ist deshalb
-// mit Absicht grob: eine Genauigkeit von einer Stunde beantwortet „wird dieses
-// Konto noch benutzt?" genauso gut wie eine von einer Sekunde, kostet aber nicht
-// bei jedem Seitenaufruf einen Schreibvorgang.
+// Platform administration needs this to tell dead accounts from ones in use
+// — not to watch someone work in real time. It's deliberately coarse for
+// that reason: an accuracy of one hour answers "is this account still being
+// used?" just as well as one of one second, but doesn't cost a write on
+// every page load.
 //
-// Zwei Bremsen liegen hintereinander. Die erste ist ein Merker im Prozess: wer
-// gerade eben schon gezählt wurde, löst nicht einmal eine Abfrage aus. Die
-// zweite steht in der `WHERE`-Bedingung und gilt auch dann, wenn mehrere
-// Instanzen laufen oder der Prozess neu gestartet ist — dort entscheidet die
-// Datenbank, nicht der Merker.
+// Two brakes sit one after another. The first is an in-process memo:
+// whoever was already counted just now doesn't even trigger a query. The
+// second lives in the `WHERE` condition and still applies when several
+// instances are running or the process has restarted — there, the database
+// decides, not the memo.
 
 const INTERVAL_MS = 60 * 60 * 1000;
 
 /**
- * Wen dieser Prozess zuletzt wann durchgelassen hat.
+ * Who this process last let through, and when.
  *
- * Nur eine Abkürzung, keine Wahrheit: geht der Merker verloren, entscheidet die
- * Bedingung in der Abfrage — es wird höchstens einmal zu oft geschrieben.
+ * Only a shortcut, not the truth: if the memo is lost, the condition in the
+ * query decides — at most one extra write happens.
  */
 const seen = new Map<string, number>();
 
 /**
- * Ein Lebenszeichen festhalten, höchstens einmal je Stunde und Konto.
+ * Record a sign of life, at most once per hour and account.
  *
- * Schluckt seine Fehler: dass die Spalte eine Stunde alt bleibt, darf keine
- * Seite kosten.
+ * Swallows its errors: the column staying an hour stale must never cost a
+ * page.
  */
 export async function touchLastSeen(userId: string): Promise<void> {
   const now = Date.now();
@@ -38,10 +38,10 @@ export async function touchLastSeen(userId: string): Promise<void> {
   seen.set(userId, now);
 
   try {
-    // `updateMany` statt `update`: die Bedingung ist der eigentliche Punkt — so
-    // schreibt die Datenbank nur, wenn der Wert wirklich alt ist, und zwei
-    // Instanzen kommen sich nicht in die Quere. `update` kennt kein `where`
-    // jenseits des Schlüssels und müsste erst lesen.
+    // `updateMany` instead of `update`: the condition is the actual point —
+    // this way the database only writes when the value is genuinely stale,
+    // and two instances don't step on each other. `update` doesn't support
+    // a `where` beyond the key and would have to read first.
     await db.user.updateMany({
       where: {
         id: userId,
@@ -54,6 +54,6 @@ export async function touchLastSeen(userId: string): Promise<void> {
     });
   } catch (error) {
     seen.delete(userId);
-    console.error("[presence] lastSeenAt nicht geschrieben:", error);
+    console.error("[presence] lastSeenAt not written:", error);
   }
 }

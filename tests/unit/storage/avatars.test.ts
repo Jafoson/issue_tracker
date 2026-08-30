@@ -49,7 +49,7 @@ function reset() {
 describe("requestAvatarUpload()", () => {
   beforeEach(reset);
 
-  it("lehnt ohne Konfiguration ab", async () => {
+  it("rejects without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     const result = await requestAvatarUpload({
       kind: "user",
@@ -61,7 +61,7 @@ describe("requestAvatarUpload()", () => {
     expect(mockPresignPutUrl).not.toHaveBeenCalled();
   });
 
-  it("lehnt nicht erlaubte Mime-Types ab", async () => {
+  it("rejects disallowed MIME types", async () => {
     const result = await requestAvatarUpload({
       kind: "user",
       ownerId: "u-1",
@@ -74,7 +74,7 @@ describe("requestAvatarUpload()", () => {
     expect(mockPresignPutUrl).not.toHaveBeenCalled();
   });
 
-  it("lehnt zu große Dateien ab", async () => {
+  it("rejects files that are too large", async () => {
     const result = await requestAvatarUpload({
       kind: "user",
       ownerId: "u-1",
@@ -85,7 +85,7 @@ describe("requestAvatarUpload()", () => {
     expect(mockPresignPutUrl).not.toHaveBeenCalled();
   });
 
-  it("baut einen Key nach dem Owner-Schema und signiert ihn", async () => {
+  it("builds a key following the owner schema and signs it", async () => {
     mockPresignPutUrl.mockResolvedValue("https://s3.example/put");
 
     const result = await requestAvatarUpload({
@@ -110,25 +110,25 @@ describe("requestAvatarUpload()", () => {
 describe("finalizeAvatarUpload()", () => {
   beforeEach(reset);
 
-  it("lehnt einen Key ab, der nicht dem Owner gehört", async () => {
+  it("rejects a key that doesn't belong to the owner", async () => {
     const result = await finalizeAvatarUpload("user", "u-1", "users/u-2/x.png");
     expect(result).toEqual({ error: "Invalid upload key." });
     expect(mockObjectExists).not.toHaveBeenCalled();
   });
 
-  it("lehnt ohne Konfiguration ab", async () => {
+  it("rejects without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     const result = await finalizeAvatarUpload("user", "u-1", "users/u-1/x.png");
     expect(result).toEqual({ error: "Avatar uploads are not configured." });
   });
 
-  it("lehnt ab, wenn das Objekt nicht existiert", async () => {
+  it("rejects when the object doesn't exist", async () => {
     mockObjectExists.mockResolvedValue({ exists: false });
     const result = await finalizeAvatarUpload("user", "u-1", "users/u-1/x.png");
     expect(result).toEqual({ error: "Upload not found — please try again." });
   });
 
-  it("löscht und lehnt ab, wenn die Datei zu groß ist", async () => {
+  it("deletes and rejects when the file is too large", async () => {
     mockObjectExists.mockResolvedValue({ exists: true, size: 6 * 1024 * 1024 });
     const result = await finalizeAvatarUpload("user", "u-1", "users/u-1/x.png");
     expect(result).toEqual({ error: "File is too large (max. 5 MB)." });
@@ -138,7 +138,7 @@ describe("finalizeAvatarUpload()", () => {
     );
   });
 
-  it("bestätigt ein gültiges Upload", async () => {
+  it("confirms a valid upload", async () => {
     mockObjectExists.mockResolvedValue({ exists: true, size: 100 });
     const result = await finalizeAvatarUpload("user", "u-1", "users/u-1/x.png");
     expect(result).toEqual({ ok: true });
@@ -149,19 +149,19 @@ describe("finalizeAvatarUpload()", () => {
 describe("deleteAvatarObject()", () => {
   beforeEach(reset);
 
-  it("tut nichts ohne Key", async () => {
+  it("does nothing without a key", async () => {
     await deleteAvatarObject(null);
     await deleteAvatarObject(undefined);
     expect(mockDeleteObjectSafely).not.toHaveBeenCalled();
   });
 
-  it("tut nichts ohne Konfiguration", async () => {
+  it("does nothing without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     await deleteAvatarObject("users/u-1/x.png");
     expect(mockDeleteObjectSafely).not.toHaveBeenCalled();
   });
 
-  it("löscht über den Avatars-Bucket", async () => {
+  it("deletes via the avatars bucket", async () => {
     await deleteAvatarObject("users/u-1/x.png");
     expect(mockDeleteObjectSafely).toHaveBeenCalledWith(
       "avatars",
@@ -173,17 +173,17 @@ describe("deleteAvatarObject()", () => {
 describe("resolveAvatarUrl()", () => {
   beforeEach(reset);
 
-  it("ist null ohne Key", async () => {
+  it("is null without a key", async () => {
     expect(await resolveAvatarUrl(null)).toBeNull();
     expect(await resolveAvatarUrl(undefined)).toBeNull();
   });
 
-  it("ist null ohne Konfiguration", async () => {
+  it("is null without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     expect(await resolveAvatarUrl("users/u-1/x.png")).toBeNull();
   });
 
-  it("signiert eine GET-URL über den Avatars-Bucket", async () => {
+  it("signs a GET URL via the avatars bucket", async () => {
     mockPresignGetUrl.mockResolvedValue("https://s3.example/get");
     expect(await resolveAvatarUrl("users/u-1/x.png")).toBe(
       "https://s3.example/get",

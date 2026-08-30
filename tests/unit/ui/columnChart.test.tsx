@@ -40,15 +40,15 @@ function ticks(markup: string): string[] {
   );
 }
 
-describe("Achsenbeschriftung", () => {
-  it("beschriftet bei einer Woche jede Säule", () => {
+describe("Axis labels", () => {
+  it("labels every column for a week", () => {
     const markup = renderToStaticMarkup(
       <ColumnChart series={SERIES} points={days(7)} label="Test" />,
     );
     expect(ticks(markup).filter(Boolean)).toHaveLength(7);
   });
 
-  it("lässt bei dreißig Tagen höchstens acht stehen", () => {
+  it("leaves at most eight standing for thirty days", () => {
     const markup = renderToStaticMarkup(
       <ColumnChart series={SERIES} points={days(30)} label="Test" />,
     );
@@ -57,7 +57,7 @@ describe("Achsenbeschriftung", () => {
     expect(shown.length).toBeLessThanOrEqual(8);
   });
 
-  it("stellt nie zwei Beschriftungen nebeneinander", () => {
+  it("never places two labels next to each other", () => {
     // The case that made it into the first version: the regular tick at
     // index 28 and the always-shown last one at 29.
     for (const count of [7, 12, 13, 30, 90]) {
@@ -77,7 +77,7 @@ describe("Achsenbeschriftung", () => {
     }
   });
 
-  it("beschriftet immer die letzte Säule", () => {
+  it("always labels the last column", () => {
     const markup = renderToStaticMarkup(
       <ColumnChart series={SERIES} points={days(30)} label="Test" />,
     );
@@ -85,8 +85,8 @@ describe("Achsenbeschriftung", () => {
   });
 });
 
-describe("Jede Zahl ohne Zeiger erreichbar", () => {
-  it("nennt in der Beschriftung jeder Säule alle Reihen", () => {
+describe("Every value reachable without a pointer", () => {
+  it("names all series in every column's label", () => {
     // The keyboard path: focusing a column reads out the same thing the
     // tooltip shows.
     const markup = renderToStaticMarkup(
@@ -97,7 +97,7 @@ describe("Jede Zahl ohne Zeiger erreichbar", () => {
     );
   });
 
-  it("zeigt als Tabelle dieselben Werte", () => {
+  it("shows the same values as a table", () => {
     const markup = renderToStaticMarkup(
       <ColumnChart series={SERIES} points={days(3)} label="Verlauf" asTable />,
     );

@@ -9,9 +9,9 @@ import { db } from "@/lib/db";
 import { PLATFORM, requirePermission } from "@/lib/permissions";
 
 /**
- * Alle Vorlagen mit ihrem Katalog-Eintrag und dem DB-Override, falls
- * vorhanden — für den Admin-Editor. Prüft selbst; das Admin-Layout ist keine
- * Sicherheitsgrenze für einzelne Abfragen (siehe `features/admin/queries.ts`).
+ * All templates with their catalog entry and the DB override, if any — for
+ * the admin editor. Checks itself; the admin layout isn't a security
+ * boundary for individual queries (see `features/admin/queries.ts`).
  */
 export const getMailTemplates = cache(async (): Promise<MailTemplateRow[]> => {
   await requirePermission("mail.template.manage", PLATFORM);
@@ -32,8 +32,8 @@ export const getMailTemplates = cache(async (): Promise<MailTemplateRow[]> => {
   });
 });
 
-/** Die eigene Adresse — als Vorschlag im „Testmail senden“-Feld, damit dort
- *  nicht jedes Mal von Neuem getippt werden muss. */
+/** Your own address — as a suggestion in the "Send test mail" field, so it
+ *  doesn't have to be typed in fresh every time. */
 export const getCurrentAdminEmail = cache(async (): Promise<string> => {
   const actorId = await requirePermission("mail.template.manage", PLATFORM);
   const user = await db.user.findUnique({

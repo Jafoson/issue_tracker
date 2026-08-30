@@ -35,13 +35,13 @@ function matchAtEnd(text: string, char: string) {
   });
 }
 
-describe("Auslöser / und //", () => {
-  test("ein einzelner Schrägstrich öffnet das Befehlsmenü", () => {
+describe("Trigger / and //", () => {
+  test("a single slash opens the command menu", () => {
     expect(matchAtEnd("/", "/")).not.toBeNull();
     expect(matchAtEnd("/tab", "/")?.query).toBe("tab");
   });
 
-  test("der zweite Schrägstrich schließt das Befehlsmenü", () => {
+  test("the second slash closes the command menu", () => {
     // The character right before the match is a `/`, which isn't in
     // `allowedPrefixes`. That's exactly what keeps both triggers from
     // matching at the same time.
@@ -49,24 +49,24 @@ describe("Auslöser / und //", () => {
     expect(matchAtEnd("//1.2.2002", "/")).toBeNull();
   });
 
-  test("`//` löst den Datums-Auslöser aus", () => {
+  test("`//` triggers the date trigger", () => {
     expect(matchAtEnd("//", "//")).not.toBeNull();
     expect(matchAtEnd("//", "//")?.query).toBe("");
   });
 
-  test("hinter `//` steht die Eingabe als Suchtext", () => {
+  test("the input after `//` is used as the search text", () => {
     expect(matchAtEnd("//now", "//")?.query).toBe("now");
     expect(matchAtEnd("//1.2.2002", "//")?.query).toBe("1.2.2002");
     expect(matchAtEnd("//2026-08-14", "//")?.query).toBe("2026-08-14");
   });
 
-  test("greift auch mitten im Satz — aber nur nach einem Leerzeichen", () => {
+  test("also works mid-sentence — but only after a space", () => {
     expect(matchAtEnd("Fällig am //", "//")).not.toBeNull();
     // Stuck directly onto a word, it's not a trigger — just text.
     expect(matchAtEnd("http://", "//")).toBeNull();
   });
 
-  test("ein einzelner Schrägstrich löst den Datums-Auslöser nicht aus", () => {
+  test("a single slash does not trigger the date trigger", () => {
     expect(matchAtEnd("/", "//")).toBeNull();
     expect(matchAtEnd("/tab", "//")).toBeNull();
   });

@@ -1,10 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { emailVerificationEmail } from "@/lib/mail/templates/emailVerification";
-import {
-  escapeHtml,
-  formatDateDe,
-  humanizeKey,
-} from "@/lib/mail/templates/html";
+import { escapeHtml, formatDate, humanizeKey } from "@/lib/mail/templates/html";
 import { invitationEmail } from "@/lib/mail/templates/invitation";
 import { issueUpdateEmail } from "@/lib/mail/templates/issueUpdate";
 import { memberRemovedEmail } from "@/lib/mail/templates/memberRemoved";
@@ -14,7 +10,7 @@ import { weeklyDigestEmail } from "@/lib/mail/templates/weeklyDigest";
 import { welcomeEmail } from "@/lib/mail/templates/welcome";
 
 describe("escapeHtml()", () => {
-  it("escaped die fünf HTML-Sonderzeichen", () => {
+  it("escapes the five HTML special characters", () => {
     expect(escapeHtml(`<img src=x onerror="alert('x')">&`)).toBe(
       "&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;&amp;",
     );
@@ -22,16 +18,16 @@ describe("escapeHtml()", () => {
 });
 
 describe("humanizeKey()", () => {
-  it("macht aus einem Statuskey einen lesbaren Text", () => {
+  it("turns a status key into readable text", () => {
     expect(humanizeKey("in_progress")).toBe("In progress");
     expect(humanizeKey("todo")).toBe("Todo");
   });
 });
 
-describe("formatDateDe()", () => {
-  it("formatiert fest auf Deutsch, unabhängig vom Server-Locale", () => {
-    expect(formatDateDe(new Date("2026-08-21T12:00:00Z"))).toBe(
-      "21. August 2026",
+describe("formatDate()", () => {
+  it("formats fixed to English, independent of the server locale", () => {
+    expect(formatDate(new Date("2026-08-21T12:00:00Z"))).toBe(
+      "August 21, 2026",
     );
   });
 });
@@ -41,34 +37,34 @@ describe("invitationEmail()", () => {
     to: "mara@example.com",
     workspaceName: "Acme",
     projectName: null,
-    roleName: "Mitarbeiter:in",
+    roleName: "Member",
     inviterName: "Ada Lovelace",
     expiresAt: new Date("2026-08-21T12:00:00Z"),
     inviteUrl: "https://issues.example.com/invite/abc",
   };
 
-  it("nennt Workspace, Rolle und Einladenden im Betreff und im Text", () => {
+  it("names workspace, role, and inviter in the subject and the text", () => {
     const { subject, text, html } = invitationEmail(base);
 
-    expect(subject).toBe("Einladung zu Acme");
-    expect(text).toContain("Ada Lovelace hat dich zu Acme eingeladen");
-    expect(text).toContain("Rolle: Mitarbeiter:in");
+    expect(subject).toBe("Invitation to Acme");
+    expect(text).toContain("Ada Lovelace invited you to Acme");
+    expect(text).toContain("Role: Member");
     expect(text).toContain("https://issues.example.com/invite/abc");
-    expect(text).toContain("21. August 2026");
+    expect(text).toContain("August 21, 2026");
     expect(html).toContain("https://issues.example.com/invite/abc");
   });
 
-  it("nennt zusätzlich das Projekt, wenn die Einladung dort einlädt", () => {
+  it("also names the project when the invitation is into one", () => {
     const { subject, text } = invitationEmail({
       ...base,
       projectName: "Mobile",
     });
 
-    expect(subject).toBe("Einladung zu Mobile (Acme)");
-    expect(text).toContain("Projekt: Mobile");
+    expect(subject).toBe("Invitation to Mobile (Acme)");
+    expect(text).toContain("Project: Mobile");
   });
 
-  it("escaped Namen im HTML, lässt den Klartext aber unverändert", () => {
+  it("escapes names in the HTML but leaves the plain text unchanged", () => {
     const { html, text } = invitationEmail({
       ...base,
       workspaceName: "<b>Acme</b>",
@@ -79,16 +75,16 @@ describe("invitationEmail()", () => {
     expect(text).toContain("<b>Acme</b>");
   });
 
-  it("nutzt einen Admin-Override statt der Default-Texte, mit Platzhaltern", () => {
+  it("uses an admin override instead of the default texts, with placeholders", () => {
     const { subject, text } = invitationEmail(base, {
-      subject: "Los geht's bei {{workspaceName}}!",
-      heading: "Willkommen, {{inviterName}} hat dich eingeladen",
-      bodyText: "Schön, dass du bei {{workspaceName}} dabei bist.",
+      subject: "Let's go at {{workspaceName}}!",
+      heading: "Welcome, {{inviterName}} invited you",
+      bodyText: "Glad you're joining {{workspaceName}}.",
     });
 
-    expect(subject).toBe("Los geht's bei Acme!");
-    expect(text).toContain("Willkommen, Ada Lovelace hat dich eingeladen");
-    expect(text).toContain("Schön, dass du bei Acme dabei bist.");
+    expect(subject).toBe("Let's go at Acme!");
+    expect(text).toContain("Welcome, Ada Lovelace invited you");
+    expect(text).toContain("Glad you're joining Acme.");
   });
 });
 
@@ -100,29 +96,25 @@ describe("memberRemovedEmail()", () => {
     actorName: "Ada Lovelace",
   };
 
-  it("nennt den Workspace, wenn projectName fehlt", () => {
+  it("names the workspace when projectName is missing", () => {
     const { subject, text } = memberRemovedEmail(base);
 
-    expect(subject).toBe("Du wurdest aus Acme entfernt");
-    expect(text).toContain(
-      "Ada Lovelace hat dich aus dem Workspace Acme entfernt",
-    );
+    expect(subject).toBe("You were removed from Acme");
+    expect(text).toContain("Ada Lovelace removed you from the workspace Acme");
   });
 
-  it("nennt stattdessen das Projekt, wenn gesetzt", () => {
+  it("names the project instead when set", () => {
     const { subject, text } = memberRemovedEmail({
       ...base,
       projectName: "Mobile",
     });
 
-    expect(subject).toBe("Du wurdest aus Mobile (Acme) entfernt");
-    expect(text).toContain(
-      "Ada Lovelace hat dich aus dem Projekt Mobile entfernt",
-    );
-    expect(text).toContain("Der Workspace Acme bleibt dir erhalten");
+    expect(subject).toBe("You were removed from Mobile (Acme)");
+    expect(text).toContain("Ada Lovelace removed you from the project Mobile");
+    expect(text).toContain("You keep access to the workspace Acme");
   });
 
-  it("escaped Namen im HTML, lässt den Klartext aber unverändert", () => {
+  it("escapes names in the HTML but leaves the plain text unchanged", () => {
     const { html, text } = memberRemovedEmail({
       ...base,
       workspaceName: "<b>Acme</b>",
@@ -133,15 +125,15 @@ describe("memberRemovedEmail()", () => {
     expect(text).toContain("<b>Acme</b>");
   });
 
-  it("nutzt einen Admin-Override statt der Default-Texte, mit Platzhaltern", () => {
+  it("uses an admin override instead of the default texts, with placeholders", () => {
     const { subject, text } = memberRemovedEmail(base, {
-      subject: "Tschüss bei {{workspaceName}}",
+      subject: "Bye from {{workspaceName}}",
       heading: "H",
-      bodyText: "{{actorName}} hat dich rausgeworfen.",
+      bodyText: "{{actorName}} kicked you out.",
     });
 
-    expect(subject).toBe("Tschüss bei Acme");
-    expect(text).toContain("Ada Lovelace hat dich rausgeworfen.");
+    expect(subject).toBe("Bye from Acme");
+    expect(text).toContain("Ada Lovelace kicked you out.");
   });
 });
 
@@ -156,44 +148,44 @@ describe("notificationEmail()", () => {
     manageUrl: "https://issues.example.com/ws-1/account/notifications",
   };
 
-  it("baut eine Zuweisungs-Mail mit Issue-Bezug", () => {
+  it("builds an assignment email with an issue reference", () => {
     const { subject, text } = notificationEmail({
       ...base,
       type: "assigned",
       text: "",
-      issue: { identifier: "ACME-1", title: "Login-Fehler beheben" },
+      issue: { identifier: "ACME-1", title: "Fix login error" },
     });
 
-    expect(subject).toBe("ACME-1 wurde dir zugewiesen");
-    expect(text).toContain("Ada Lovelace hat dir gerade ACME-1");
-    expect(text).toContain("Login-Fehler beheben");
+    expect(subject).toBe("ACME-1 was assigned to you");
+    expect(text).toContain("Ada Lovelace just assigned ACME-1");
+    expect(text).toContain("Fix login error");
   });
 
-  it("baut eine Rollen-Mail ohne Issue-Bezug", () => {
+  it("builds a role email without an issue reference", () => {
     const { subject, text } = notificationEmail({
       ...base,
       type: "role",
       text: "Admin",
     });
 
-    expect(subject).toBe("Deine Rolle wurde geändert");
+    expect(subject).toBe("Your role was changed");
     expect(text).toContain("Acme");
     expect(text).toContain("Admin");
   });
 
-  it("zitiert die Kommentar-Vorschau bei `comment`", () => {
+  it("quotes the comment preview for `comment`", () => {
     const { html, text } = notificationEmail({
       ...base,
       type: "comment",
-      text: "Bitte vor dem Release fixen.",
+      text: "Please fix before release.",
       issue: { identifier: "ACME-1", title: "Login" },
     });
 
-    expect(html).toContain("Bitte vor dem Release fixen.");
-    expect(text).toContain("„Bitte vor dem Release fixen.“");
+    expect(html).toContain("Please fix before release.");
+    expect(text).toContain('"Please fix before release."');
   });
 
-  it("verlinkt die Benachrichtigungseinstellungen im Fuß", () => {
+  it("links the notification settings in the footer", () => {
     const { html } = notificationEmail({
       ...base,
       type: "assigned",
@@ -204,7 +196,7 @@ describe("notificationEmail()", () => {
     expect(html).toContain(base.manageUrl);
   });
 
-  it("escaped Titel und Namen im HTML, ohne den Klartext zu verändern", () => {
+  it("escapes title and names in the HTML without changing the plain text", () => {
     const { html, text } = notificationEmail({
       ...base,
       type: "comment",
@@ -217,56 +209,56 @@ describe("notificationEmail()", () => {
     expect(text).toContain("<script>alert('x')</script>");
   });
 
-  it("nutzt einen Admin-Override nur für den betroffenen Anlass", () => {
+  it("uses an admin override only for the affected occasion", () => {
     const overridden = notificationEmail(
       { ...base, type: "assigned", text: "", issue: null },
       {
-        subject: "Neu für dich: {{issueIdentifier}}",
-        heading: "Zugewiesen!",
-        bodyText: "{{actorLabel}} hat dir etwas zugewiesen.",
+        subject: "New for you: {{issueIdentifier}}",
+        heading: "Assigned!",
+        bodyText: "{{actorLabel}} assigned you something.",
       },
     );
-    expect(overridden.subject).toBe("Neu für dich: ");
-    expect(overridden.text).toContain("Zugewiesen!");
-    expect(overridden.text).toContain("Ada Lovelace hat dir etwas zugewiesen.");
+    expect(overridden.subject).toBe("New for you: ");
+    expect(overridden.text).toContain("Assigned!");
+    expect(overridden.text).toContain("Ada Lovelace assigned you something.");
 
     const notOverridden = notificationEmail({
       ...base,
       type: "role",
       text: "Admin",
     });
-    expect(notOverridden.subject).toBe("Deine Rolle wurde geändert");
+    expect(notOverridden.subject).toBe("Your role was changed");
   });
 });
 
 describe("welcomeEmail()", () => {
-  it("begrüßt mit Namen und verlinkt den Login", () => {
+  it("greets by name and links to sign-in", () => {
     const { subject, text } = welcomeEmail({
       to: "mara@example.com",
       firstName: "Ada",
       loginUrl: "https://issues.example.com/login",
     });
 
-    expect(subject).toBe("Willkommen beim Issue Tracker");
-    expect(text).toContain("Willkommen, Ada");
+    expect(subject).toBe("Welcome to Issue Tracker");
+    expect(text).toContain("Welcome, Ada");
     expect(text).toContain("https://issues.example.com/login");
   });
 });
 
 describe("emailVerificationEmail()", () => {
-  it("verlinkt die Bestätigungs-URL im Betreff- und Textkörper", () => {
+  it("links the confirmation URL in the subject and body", () => {
     const { subject, text, html } = emailVerificationEmail({
       to: "mara@example.com",
       firstName: "Ada",
       verifyUrl: "https://issues.example.com/verify/abc",
     });
 
-    expect(subject).toBe("Bestätige deine E-Mail-Adresse");
+    expect(subject).toBe("Confirm your email address");
     expect(text).toContain("https://issues.example.com/verify/abc");
     expect(html).toContain("https://issues.example.com/verify/abc");
   });
 
-  it("zeigt den Code, wenn einer mitgegeben wird", () => {
+  it("shows the code when one is supplied", () => {
     const { html, text } = emailVerificationEmail({
       to: "mara@example.com",
       firstName: "Ada",
@@ -278,13 +270,13 @@ describe("emailVerificationEmail()", () => {
     expect(text).toContain("Code: 482917");
   });
 
-  it("nennt die Frist nur, wenn eine mitgegeben wird", () => {
+  it("names the deadline only when one is supplied", () => {
     const withoutExpiry = emailVerificationEmail({
       to: "mara@example.com",
       firstName: "Ada",
       verifyUrl: "https://issues.example.com/verify/abc",
     });
-    expect(withoutExpiry.text).not.toContain("Stunden");
+    expect(withoutExpiry.text).not.toContain("hours");
 
     const withExpiry = emailVerificationEmail({
       to: "mara@example.com",
@@ -292,7 +284,7 @@ describe("emailVerificationEmail()", () => {
       verifyUrl: "https://issues.example.com/verify/abc",
       expiresInHours: 24,
     });
-    expect(withExpiry.text).toContain("24 Stunden");
+    expect(withExpiry.text).toContain("24 hours");
   });
 });
 
@@ -304,30 +296,30 @@ describe("passwordResetEmail()", () => {
     resetUrl: "https://issues.example.com/reset/abc",
   };
 
-  it("nennt Empfänger, Frist und Link", () => {
+  it("names recipient, deadline, and link", () => {
     const { subject, text } = passwordResetEmail(base);
 
-    expect(subject).toBe("Passwort zurücksetzen");
+    expect(subject).toBe("Reset your password");
     expect(text).toContain("mara@example.com");
-    expect(text).toContain("Gültig bis");
-    expect(text).toContain("(60 Min.)");
+    expect(text).toContain("Valid until");
+    expect(text).toContain("(60 min)");
     expect(text).toContain("https://issues.example.com/reset/abc");
   });
 
-  it("zeigt Gerät und Ort nur, wenn mitgegeben", () => {
+  it("shows device and location only when supplied", () => {
     const withoutContext = passwordResetEmail(base);
-    expect(withoutContext.text).not.toContain("Gerät:");
+    expect(withoutContext.text).not.toContain("Device:");
 
     const withContext = passwordResetEmail({
       ...base,
-      device: "Chrome auf macOS",
+      device: "Chrome on macOS",
       location: "Hamburg, DE",
     });
-    expect(withContext.text).toContain("Gerät: Chrome auf macOS");
-    expect(withContext.text).toContain("Ort: Hamburg, DE");
+    expect(withContext.text).toContain("Device: Chrome on macOS");
+    expect(withContext.text).toContain("Location: Hamburg, DE");
   });
 
-  it("verlinkt die Sicherheitseinstellungen in der Warnbox, wenn gesetzt", () => {
+  it("links the security settings in the alert box when set", () => {
     const { html } = passwordResetEmail({
       ...base,
       securityUrl: "https://issues.example.com/ws-1/account/security",
@@ -341,60 +333,60 @@ describe("weeklyDigestEmail()", () => {
     to: "mara@example.com",
     firstName: "Ada",
     workspaceName: "Acme",
-    periodLabel: "13.–19. Januar",
+    periodLabel: "Jan 13–19",
     assignedOpenCount: 3,
     completedCount: 5,
     createdCount: 2,
     highlights: [
       {
         identifier: "ACME-1",
-        title: "Login-Fehler beheben",
-        statusLabel: "Erledigt",
+        title: "Fix login error",
+        statusLabel: "Done",
       },
     ],
     url: "https://issues.example.com/ws-1/my",
   };
 
-  it("nennt die erledigte Anzahl im Betreff und die Zähler im Text", () => {
+  it("names the completed count in the subject and the counters in the text", () => {
     const { subject, text } = weeklyDigestEmail(base);
 
-    expect(subject).toBe("Deine Woche in Acme: 5 erledigt");
-    expect(text).toContain("Dir zugewiesen, offen: 3");
-    expect(text).toContain("Erledigt: 5");
-    expect(text).toContain("Neu angelegt: 2");
-    expect(text).toContain("ACME-1 Login-Fehler beheben (Erledigt)");
+    expect(subject).toBe("Your week in Acme: 5 completed");
+    expect(text).toContain("Assigned to you, open: 3");
+    expect(text).toContain("Completed: 5");
+    expect(text).toContain("Newly created: 2");
+    expect(text).toContain("ACME-1 Fix login error (Done)");
   });
 
-  it("kommt ohne Highlights aus", () => {
+  it("works without highlights", () => {
     const { text } = weeklyDigestEmail({ ...base, highlights: [] });
     expect(text).not.toContain("ACME-1");
   });
 });
 
 describe("issueUpdateEmail()", () => {
-  it("listet mehrere Feldänderungen einer Bearbeitung", () => {
+  it("lists several field changes from one edit", () => {
     const { subject, text } = issueUpdateEmail({
       to: "mara@example.com",
       actorLabel: "Ada Lovelace",
-      issue: { identifier: "ACME-1", title: "Login-Fehler beheben" },
+      issue: { identifier: "ACME-1", title: "Fix login error" },
       changes: [
-        { field: "Priorität", from: "Mittel", to: "Hoch" },
-        { field: "Titel", to: "Login-Fehler dringend beheben" },
+        { field: "Priority", from: "Medium", to: "High" },
+        { field: "Title", to: "Urgently fix login error" },
       ],
       url: "https://issues.example.com/ws-1/issue/ACME-1",
     });
 
-    expect(subject).toBe("ACME-1 wurde aktualisiert");
-    expect(text).toContain("Priorität: Mittel → Hoch");
-    expect(text).toContain("Titel: Login-Fehler dringend beheben");
+    expect(subject).toBe("ACME-1 was updated");
+    expect(text).toContain("Priority: Medium → High");
+    expect(text).toContain("Title: Urgently fix login error");
   });
 
-  it("escaped Feldwerte im HTML, ohne den Klartext zu verändern", () => {
+  it("escapes field values in the HTML without changing the plain text", () => {
     const { html, text } = issueUpdateEmail({
       to: "mara@example.com",
       actorLabel: "Ada",
       issue: { identifier: "ACME-1", title: "Login" },
-      changes: [{ field: "Titel", to: "<b>Login</b>" }],
+      changes: [{ field: "Title", to: "<b>Login</b>" }],
       url: "https://issues.example.com/ws-1/issue/ACME-1",
     });
 

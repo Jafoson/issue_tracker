@@ -19,17 +19,18 @@ function isMailTemplateKey(value: string): value is MailTemplateKey {
 }
 
 /**
- * Speichert Betreff, Überschrift und Einleitungstext für eine Vorlage — Layout,
- * Detailtabellen und Knopf bleiben Code (siehe `lib/mail/templates/override.ts`).
- * Ein leeres Feld ist erlaubt (dann steht dort eben nichts) — Pflicht ist nur,
- * dass der Schlüssel zu einer bekannten Vorlage gehört.
+ * Saves subject, heading, and intro text for a template — layout, detail
+ * tables, and the button stay in code (see
+ * `lib/mail/templates/override.ts`). An empty field is allowed (then it
+ * simply shows nothing) — the only requirement is that the key belongs to a
+ * known template.
  */
 export async function saveMailTemplate(
   key: string,
   data: { subject: string; heading: string; bodyText: string },
 ): Promise<MailTemplateResult> {
   const actorId = await requirePermission("mail.template.manage", PLATFORM);
-  if (!isMailTemplateKey(key)) return { error: "Unbekannte Vorlage." };
+  if (!isMailTemplateKey(key)) return { error: "Unknown template." };
 
   await db.mailTemplate.upsert({
     where: { key },
@@ -52,10 +53,10 @@ export async function saveMailTemplate(
 }
 
 /**
- * Verschickt die aktuelle Entwurfsfassung (noch ungespeichert) mit
- * Beispieldaten an eine Testadresse — derselbe Weg wie die Vorschau
- * (`renderMailPreview`), nur tatsächlich durch `sendMail()` geschickt statt
- * nur ins iframe gerendert. Speichert nichts.
+ * Sends the current draft (not yet saved) with sample data to a test
+ * address — the same path as the preview (`renderMailPreview`), just
+ * actually sent via `sendMail()` instead of only rendered into the iframe.
+ * Saves nothing.
  */
 export async function sendTestMailTemplate(
   key: string,
@@ -63,14 +64,14 @@ export async function sendTestMailTemplate(
   to: string,
 ): Promise<MailTemplateResult> {
   await requirePermission("mail.template.manage", PLATFORM);
-  if (!isMailTemplateKey(key)) return { error: "Unbekannte Vorlage." };
+  if (!isMailTemplateKey(key)) return { error: "Unknown template." };
 
   const email = to.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { error: "Bitte eine gültige E-Mail-Adresse angeben." };
+    return { error: "Please provide a valid email address." };
   }
   if (!isMailConfigured()) {
-    return { error: "SMTP ist nicht konfiguriert (SMTP_HOST fehlt)." };
+    return { error: "SMTP is not configured (SMTP_HOST is missing)." };
   }
 
   const override =
@@ -81,12 +82,12 @@ export async function sendTestMailTemplate(
   return { ok: true };
 }
 
-/** Löscht den Override — die Vorlage fällt zurück auf den Code-Default. */
+/** Deletes the override — the template falls back to the code default. */
 export async function resetMailTemplate(
   key: string,
 ): Promise<MailTemplateResult> {
   const actorId = await requirePermission("mail.template.manage", PLATFORM);
-  if (!isMailTemplateKey(key)) return { error: "Unbekannte Vorlage." };
+  if (!isMailTemplateKey(key)) return { error: "Unknown template." };
 
   await db.mailTemplate.deleteMany({ where: { key } });
 

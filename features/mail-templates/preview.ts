@@ -1,10 +1,10 @@
-// ─── Vorschau ────────────────────────────────────────────────────────────────
+// ─── Preview ─────────────────────────────────────────────────────────────────
 //
-// Rendert eine Vorlage mit Beispieldaten — für den Admin-Editor, live bei
-// jedem Tastendruck. Importiert bewusst nur aus `lib/mail/templates/*`, nie
-// aus `lib/mail/index.ts` oder `lib/mail/send.ts`: die einen sind reine
-// Funktionen ohne `server-only`, die anderen brauchen die Datenbank. Diese
-// Datei muss aus einer Client-Komponente heraus laufen können.
+// Renders a template with sample data — for the admin editor, live on every
+// keystroke. Deliberately imports only from `lib/mail/templates/*`, never
+// from `lib/mail/index.ts` or `lib/mail/send.ts`: the former are pure
+// functions with no `server-only`, the latter need the database. This file
+// has to be able to run from a client component.
 
 import type { MailTemplateKey } from "@/features/mail-templates/catalog";
 import { emailVerificationEmail } from "@/lib/mail/templates/emailVerification";
@@ -35,7 +35,7 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           workspaceName: "Acme",
           projectName: "Apollo Redesign",
-          roleName: "Mitarbeiter:in",
+          roleName: "Member",
           inviterName: "Jonas Reuter",
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           inviteUrl: "https://issues.example.com/invite/abc123",
@@ -76,7 +76,7 @@ export function renderMailPreview(
         {
           to: SAMPLE_TO,
           requestedAt: new Date(),
-          device: "Chrome auf macOS",
+          device: "Chrome on macOS",
           location: "Hamburg, DE",
           expiresInMinutes: 60,
           resetUrl: "https://issues.example.com/reset/abc123",
@@ -93,7 +93,7 @@ export function renderMailPreview(
           text: "",
           workspaceName: "Acme",
           project: { name: "Apollo Redesign" },
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           url: SAMPLE_URL,
           manageUrl: SAMPLE_MANAGE_URL,
         },
@@ -105,10 +105,10 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           type: "mentioned",
           actorLabel: "Jonas Reuter",
-          text: "@mara kannst du das noch prüfen?",
+          text: "@mara can you check this?",
           workspaceName: "Acme",
           project: { name: "Apollo Redesign" },
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           url: SAMPLE_URL,
           manageUrl: SAMPLE_MANAGE_URL,
         },
@@ -120,10 +120,10 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           type: "comment",
           actorLabel: "Jonas Reuter",
-          text: "Screenreader liest die Reihenfolge falsch vor — bitte vor dem Release fixen.",
+          text: "The screen reader announces the order incorrectly — please fix before release.",
           workspaceName: "Acme",
           project: { name: "Apollo Redesign" },
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           url: SAMPLE_URL,
           manageUrl: SAMPLE_MANAGE_URL,
         },
@@ -135,10 +135,10 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           type: "commentReply",
           actorLabel: "Jonas Reuter",
-          text: "Guter Punkt — ich passe das noch vor dem Release an.",
+          text: "Good point — I'll adjust that before release.",
           workspaceName: "Acme",
           project: { name: "Apollo Redesign" },
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           url: SAMPLE_URL,
           manageUrl: SAMPLE_MANAGE_URL,
         },
@@ -153,7 +153,7 @@ export function renderMailPreview(
           text: "in_progress",
           workspaceName: "Acme",
           project: { name: "Apollo Redesign" },
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           url: SAMPLE_URL,
           manageUrl: SAMPLE_MANAGE_URL,
         },
@@ -165,7 +165,7 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           type: "invite",
           actorLabel: "Jonas Reuter",
-          text: "Mitarbeiter:in",
+          text: "Member",
           workspaceName: "Acme",
           project: null,
           issue: null,
@@ -195,10 +195,10 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           type: "issueShared",
           actorLabel: "Jonas Reuter",
-          text: "Kannst du dir das mal ansehen?",
+          text: "Can you take a look at this?",
           workspaceName: "Acme",
           project: { name: "Apollo Redesign" },
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           url: SAMPLE_URL,
           manageUrl: SAMPLE_MANAGE_URL,
         },
@@ -210,15 +210,15 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           firstName: "Mara",
           workspaceName: "Acme",
-          periodLabel: "7.–14. August",
+          periodLabel: "Aug 7–14",
           assignedOpenCount: 3,
           completedCount: 5,
           createdCount: 2,
           highlights: [
             {
               identifier: "ACME-42",
-              title: "Login-Fehler beheben",
-              statusLabel: "Erledigt",
+              title: "Fix login error",
+              statusLabel: "Done",
             },
           ],
           url: "https://issues.example.com/acme/my",
@@ -230,10 +230,10 @@ export function renderMailPreview(
         {
           to: SAMPLE_TO,
           actorLabel: "Jonas Reuter",
-          issue: { identifier: "ACME-42", title: "Login-Fehler beheben" },
+          issue: { identifier: "ACME-42", title: "Fix login error" },
           changes: [
-            { field: "Priorität", from: "Mittel", to: "Hoch" },
-            { field: "Titel", to: "Login-Fehler dringend beheben" },
+            { field: "Priority", from: "Medium", to: "High" },
+            { field: "Title", to: "Urgently fix login error" },
           ],
           url: SAMPLE_URL,
         },
@@ -245,8 +245,8 @@ export function renderMailPreview(
           to: SAMPLE_TO,
           actorName: "Jonas Reuter",
           issueIdentifier: "ACME-42",
-          issueTitle: "Login-Fehler beheben",
-          text: "Kannst du dir das mal ansehen?",
+          issueTitle: "Fix login error",
+          text: "Can you take a look at this?",
           url: "https://issues.example.com/share/abc123",
         },
         override,

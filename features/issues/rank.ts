@@ -1,14 +1,14 @@
 import type { Issue } from "@/types";
 
 /**
- * Die Reihenfolge von Issues — dieselbe Rechnung für Board und Liste.
+ * The ordering of issues — the same calculation for board and list.
  *
- * Der Rang ist eine Fließkommazahl, keine Position: zwischen zwei Nachbarn
- * passt immer noch eine Zahl. Ein Umsortieren schreibt deshalb genau eine
- * Zeile, nicht die ganze Spalte.
+ * The rank is a floating-point number, not a position: there's always
+ * another number that fits between two neighbors. Reordering therefore
+ * writes exactly one row, not the whole column.
  */
 
-/** `rank = 0` heißt "noch nie einsortiert" — dann zählt der Anlagezeitpunkt. */
+/** `rank = 0` means "never sorted yet" — the creation time counts instead. */
 export const effectiveRank = (issue: Issue) =>
   issue.rank !== 0 ? issue.rank : issue.created;
 
@@ -16,9 +16,9 @@ export const sortByRank = <T extends Issue>(issues: T[]): T[] =>
   [...issues].sort((a, b) => effectiveRank(a) - effectiveRank(b));
 
 /**
- * Der Rang für einen Platz zwischen zwei Nachbarn. Fehlt einer, geht es um den
- * Anfang bzw. das Ende der Liste; fehlen beide, ist die Liste leer und der
- * Zeitstempel gibt einen Rang, der zu den übrigen passt.
+ * The rank for a spot between two neighbors. If one is missing, it's about
+ * the start or end of the list; if both are missing, the list is empty and
+ * the timestamp provides a rank consistent with the rest.
  */
 export const rankBetween = (previous: Issue | null, next: Issue | null) => {
   if (previous && next)

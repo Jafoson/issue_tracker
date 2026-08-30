@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
-// Beide Aktionen kennen keine Rechteprüfung außer der Session — dieselbe
-// Selbst-Scoping-Logik wie in `features/account/actions.ts`: die eigene Inbox
-// gehört niemandem außer dem, der sie liest, es gibt also nichts, das RBAC
-// hier zu entscheiden hätte.
+// Neither action checks anything beyond the session — the same
+// self-scoping logic as in `features/account/actions.ts`: your own inbox
+// belongs to nobody but whoever reads it, so there's nothing for RBAC to
+// decide here.
 
 type Result = { ok: true } | { error: string };
 

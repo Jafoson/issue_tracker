@@ -43,10 +43,10 @@ const FILTER_KEYS: FilterKey[] = [
 export type View = "board" | "list";
 
 /**
- * Woraufhin die Ansicht Issues zeigt: auf ein Projekt, oder auf die eigene
- * Zuständigkeit quer durch alle. Board und Liste sind dieselben — verschieden
- * sind nur der Titel, die Adresse hinter dem Umschalter und welche Filter
- * überhaupt einen Sinn ergeben.
+ * What the view shows issues by: a single project, or the current user's
+ * own assignments across all of them. Board and list are the same either
+ * way — only the title, the address behind the switcher, and which filters
+ * even make sense differ.
  */
 export type IssueArea = "project" | "my";
 
@@ -55,7 +55,7 @@ export interface FilterState {
   priority: number[];
   assignee: string[];
   label: string[];
-  /** Nur im Bereich „Meine Aufgaben“ — im Projekt gibt es nichts einzugrenzen. */
+  /** Only in the "My issues" area — within a project there's nothing to narrow down. */
   project: string[];
 }
 
@@ -91,9 +91,9 @@ export function useTopbar({
   const [, startQuietTransition] = useTransition();
   const base = `/${workspaceId}`;
 
-  // Der Bereich steht im Pfad — `/<ws>/project/<slug>[/list]` oder
-  // `/<ws>/my[/list]`. Überall sonst gibt es keine Issue-Ansicht und damit auch
-  // keine Leiste.
+  // The area lives in the path — `/<ws>/project/<slug>[/list]` or
+  // `/<ws>/my[/list]`. Everywhere else there's no issue view and therefore
+  // no topbar either.
   const area: IssueArea | null = pathname.startsWith(`${base}/project/`)
     ? "project"
     : pathname === `${base}/my` || pathname.startsWith(`${base}/my/`)
@@ -235,8 +235,8 @@ export function useTopbar({
     else p.delete("q");
     const qs = p.toString();
     const suffix = qs ? `?${qs}` : "";
-    // Der Umschalter bleibt in seinem Bereich: das Board eines Projekts führt in
-    // dessen Liste, die eigenen Aufgaben in die eigene Liste.
+    // The switcher stays within its own area: a project's board leads to
+    // that project's list, "my issues" leads to my own list.
     const areaBase = area === "my" ? `${base}/my` : `${base}/project/${slug}`;
     startTransition(() =>
       router.push(

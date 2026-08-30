@@ -20,8 +20,8 @@ const classesOf = (code: string, lang: string) =>
     .filter(Boolean)
     .join(" ");
 
-describe("lowlight-Instanz", () => {
-  test("kennt jede Sprache aus der Auswahlliste", () => {
+describe("lowlight instance", () => {
+  test("knows every language in the selection list", () => {
     // Otherwise a language would show up in the menu that highlights nothing.
     const fehlend = CODE_LANGUAGES.filter(
       (l) => !lowlight.registered(l.value),
@@ -29,42 +29,42 @@ describe("lowlight-Instanz", () => {
     expect(fehlend).toEqual([]);
   });
 
-  test("registriert nur diese — nicht die knapp zweihundert von highlight.js", () => {
+  test("registers only these — not the nearly two hundred from highlight.js", () => {
     expect(lowlight.listLanguages().length).toBe(CODE_LANGUAGES.length);
   });
 });
 
 describe("highlightLines", () => {
-  test("erkennt die üblichen Rollen", () => {
+  test("recognizes the usual token roles", () => {
     const ts = classesOf('const a = "hallo" // hi', "ts");
     expect(ts).toContain("hljs-keyword");
     expect(ts).toContain("hljs-string");
     expect(ts).toContain("hljs-comment");
   });
 
-  test("findet die Sprache auch über eine andere Schreibweise", () => {
+  test("finds the language even via an alternate spelling", () => {
     // `py` and `python` must highlight the same way.
     expect(classesOf("def f(): pass", "py")).toBe(
       classesOf("def f(): pass", "python"),
     );
   });
 
-  test("gibt eine Zeile je Zeile zurück", () => {
+  test("returns one entry per line", () => {
     expect(highlightLines("eins\nzwei\ndrei", null)).toHaveLength(3);
     expect(highlightLines("const a = 1\nconst b = 2", "ts")).toHaveLength(2);
   });
 
-  test("zählt einen abschließenden Umbruch nicht als weitere Zeile", () => {
+  test("does not count a trailing line break as another line", () => {
     expect(highlightLines("eins\nzwei\n", null)).toHaveLength(2);
   });
 
-  test("behält leere Zeilen — ihre Nummer soll stehen bleiben", () => {
+  test("keeps empty lines — their line number should remain", () => {
     const lines = highlightLines("eins\n\ndrei", "ts");
     expect(lines).toHaveLength(3);
     expect(lines[1]).toEqual([]);
   });
 
-  test("teilt ein Stück, das über einen Umbruch geht", () => {
+  test("splits a token that spans a line break", () => {
     // A block comment is a single token spanning multiple lines — both
     // halves need to keep their role, otherwise the second one loses its color.
     const lines = highlightLines("/* eins\n   zwei */", "ts");
@@ -73,7 +73,7 @@ describe("highlightLines", () => {
     expect(lines[1][0].className).toContain("hljs-comment");
   });
 
-  test("setzt den Text unverändert wieder zusammen", () => {
+  test("reassembles the text unchanged", () => {
     // Nothing may get lost while splitting apart.
     const code = 'function f(x) {\n  return "a" + x; // hm\n}';
     const wieder = highlightLines(code, "ts")
@@ -82,7 +82,7 @@ describe("highlightLines", () => {
     expect(wieder).toBe(code);
   });
 
-  test("lässt Text ohne Sprache in Ruhe", () => {
+  test("leaves text without a language alone", () => {
     // Deliberately no guessing: a guess would look different every time.
     expect(highlightLines("beliebiger text", null)).toEqual([
       [{ text: "beliebiger text" }],
@@ -92,7 +92,7 @@ describe("highlightLines", () => {
 });
 
 describe("detectLanguage", () => {
-  test("erkennt die üblichen Sprachen", () => {
+  test("recognizes the common languages", () => {
     const proben: [string, string][] = [
       [
         "ts",
@@ -124,14 +124,14 @@ describe("detectLanguage", () => {
     }
   });
 
-  test("rät nicht bei zu wenig Text", () => {
+  test("does not guess when there is too little text", () => {
     // Three words fit a dozen languages.
     expect(detectLanguage("const a = 1")).toBeNull();
     expect(detectLanguage("x")).toBeNull();
     expect(detectLanguage("")).toBeNull();
   });
 
-  test("lässt Prosa in Ruhe", () => {
+  test("leaves prose alone", () => {
     // `highlight.js` always crowns a winner — here with a score of 1, which
     // stays below the threshold. Without that, every plain prose text would
     // be called "CSS".
@@ -147,7 +147,7 @@ describe("detectLanguage", () => {
     ).toBeNull();
   });
 
-  test("liefert nur Werte, die die Auswahlliste kennt", () => {
+  test("only returns values the selection list knows", () => {
     // Otherwise the block would end up tagged with a value the menu can't display.
     const bekannt = CODE_LANGUAGES.map((l) => l.value);
     const proben = [
@@ -163,7 +163,7 @@ describe("detectLanguage", () => {
     }
   });
 
-  test("verwirft einen schwachen Treffer, statt falsch zu beschriften", () => {
+  test("discards a weak match instead of mislabeling it", () => {
     // `highlight.js` guesses short Python without distinctive features as
     // "css" with a score of 4 — below the threshold. Better plain than wrong.
     expect(

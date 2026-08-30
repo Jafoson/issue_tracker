@@ -126,21 +126,21 @@ function reset() {
 describe("resendInvitation()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await resendInvitation(TOKEN)).toEqual({
       error: "You must be logged in.",
     });
   });
 
-  it("meldet eine unbekannte oder schon angenommene Einladung", async () => {
+  it("reports an unknown or already accepted invitation", async () => {
     mockInvitationFindUnique.mockResolvedValue(null);
     expect(await resendInvitation(TOKEN)).toEqual({
       error: "This invitation no longer exists.",
     });
   });
 
-  it("meldet eine schon angenommene Einladung", async () => {
+  it("reports an already accepted invitation", async () => {
     mockInvitationFindUnique.mockResolvedValue({
       workspaceId: WS,
       projectId: null,
@@ -153,14 +153,14 @@ describe("resendInvitation()", () => {
     });
   });
 
-  it("verlangt member.invite im Workspace", async () => {
+  it("requires member.invite in the workspace", async () => {
     mockCan.mockResolvedValue(false);
     expect(await resendInvitation(TOKEN)).toEqual({
       error: "You are not allowed to manage invitations here.",
     });
   });
 
-  it("stellt einen neuen Token aus und verschickt ihn erneut", async () => {
+  it("issues a new token and resends it", async () => {
     const result = await resendInvitation(TOKEN);
 
     expect(result).toMatchObject({ ok: true });
@@ -180,21 +180,21 @@ describe("resendInvitation()", () => {
 describe("revokeInvitation()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await revokeInvitation(TOKEN)).toEqual({
       error: "You must be logged in.",
     });
   });
 
-  it("meldet eine unbekannte oder schon angenommene Einladung", async () => {
+  it("reports an unknown or already accepted invitation", async () => {
     mockInvitationFindUnique.mockResolvedValue(null);
     expect(await revokeInvitation(TOKEN)).toEqual({
       error: "This invitation no longer exists.",
     });
   });
 
-  it("verlangt member.invite im Workspace", async () => {
+  it("requires member.invite in the workspace", async () => {
     mockCan.mockResolvedValue(false);
     expect(await revokeInvitation(TOKEN)).toEqual({
       error: "You are not allowed to manage invitations here.",
@@ -202,7 +202,7 @@ describe("revokeInvitation()", () => {
     expect(mockInvitationDelete).not.toHaveBeenCalled();
   });
 
-  it("löscht Token und Mitgliedschaften und danach das Schatten-Konto", async () => {
+  it("deletes the token and memberships and then the shadow account", async () => {
     // Default situation: no password, no remaining memberships.
     const result = await revokeInvitation(TOKEN);
 
@@ -219,7 +219,7 @@ describe("revokeInvitation()", () => {
     expect(mockUserDelete).toHaveBeenCalledWith({ where: { id: INVITEE } });
   });
 
-  it("lässt das Konto stehen, wenn es einen Passkey hat", async () => {
+  it("leaves the account in place when it has a passkey", async () => {
     mockUserFindUnique.mockResolvedValue({
       _count: { authenticators: 1, accounts: 0 },
     });
@@ -227,7 +227,7 @@ describe("revokeInvitation()", () => {
     expect(mockUserDelete).not.toHaveBeenCalled();
   });
 
-  it("lässt das Konto stehen, wenn es einen verbundenen Anbieter hat", async () => {
+  it("leaves the account in place when it has a connected provider", async () => {
     mockUserFindUnique.mockResolvedValue({
       _count: { authenticators: 0, accounts: 1 },
     });
@@ -235,14 +235,14 @@ describe("revokeInvitation()", () => {
     expect(mockUserDelete).not.toHaveBeenCalled();
   });
 
-  it("lässt das Konto stehen, wenn es noch anderswo Mitglied ist", async () => {
+  it("leaves the account in place when it is still a member elsewhere", async () => {
     // E.g. in the middle of a second, independent invitation.
     mockWorkspaceMemberCount.mockResolvedValue(1);
     await revokeInvitation(TOKEN);
     expect(mockUserDelete).not.toHaveBeenCalled();
   });
 
-  it("räumt bei einem Projekt-Gast dieselben Zeilen auf, ohne Workspace-Mitgliedschaft", async () => {
+  it("cleans up the same rows for a project guest, without a workspace membership", async () => {
     mockInvitationFindUnique.mockResolvedValue({
       workspaceId: WS,
       projectId: "p-1",

@@ -1,27 +1,30 @@
-// ─── Projektmitgliedschaft ────────────────────────────────────────────────────
+// ─── Project membership ─────────────────────────────────────────────────────
 //
-// `ProjectMember` ist auf der Projekt-Ebene, was `WorkspaceMember` auf der
-// Workspace-Ebene ist: die Liste, wer dabei ist, und mit welcher Rolle. Sie ist
-// die Zugriffsentscheidung für alles Projektbezogene — keine Zeile heißt kein
-// Zugriff (siehe `lib/permissions.ts`).
+// `ProjectMember` is at the project level what `WorkspaceMember` is at the
+// workspace level: the list of who's in and with which role. It's the
+// access decision for everything project-related — no row means no access
+// (see `lib/permissions.ts`).
 //
-// Damit muss die Zeile entstehen, wo Zugehörigkeit entsteht: bei einem neuen
-// Projekt für alle Mitglieder des Workspace, bei einer neuen Mitgliedschaft für
-// alle öffentlichen Projekte. Wer den Workspace verlässt, verliert sie wieder.
+// That means the row has to come into being wherever membership comes into
+// being: for a new project, for every workspace member; for a new
+// membership, for every public project. Whoever leaves the workspace loses
+// it again.
 //
-// Die Rolle wird dabei aus der Workspace-Rolle abgeleitet — einmal, als
-// Startwert. Danach ist sie unabhängig: sie gilt in genau diesem Projekt und
-// lässt sich dort ändern, ohne dass eine Änderung am Workspace sie überschreibt.
-// Genau das ist der Sinn einer eigenen Projektrolle.
+// The role is derived from the workspace role in the process — once, as a
+// starting value. After that it's independent: it applies within exactly
+// this project and can be changed there without a change to the workspace
+// overwriting it. That's precisely the point of having a separate project
+// role.
 //
-// Private Projekte bleiben außen vor: dort ist nur, wer ausdrücklich aufgenommen
-// wurde. `Project.visibility` entscheidet also nur, wer automatisch eingetragen
-// wird — den Zugriff selbst regelt allein diese Tabelle.
+// Private projects stay out of this: there, only whoever was explicitly
+// added is in. So `Project.visibility` only decides who gets added
+// automatically — access itself is governed solely by this table.
 //
-// Umgekehrt heißt das auch: ein Projekt privat zu schalten nimmt niemandem etwas.
-// Wer schon drin ist, bleibt drin; nur neue Workspace-Mitglieder kommen nicht mehr
-// von selbst dazu. Jemanden hinauszunehmen ist eine eigene, sichtbare Handlung
-// (`removeProjectMember`) — und keine Nebenwirkung eines Schalters.
+// Conversely, that also means: switching a project to private doesn't take
+// anything away from anyone. Whoever's already in stays in; only new
+// workspace members no longer join automatically. Removing someone is its
+// own, visible action (`removeProjectMember`) — not a side effect of a
+// toggle.
 
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
@@ -33,15 +36,15 @@ import {
   systemRoleId,
 } from "@/lib/rbac";
 
-/** Passt auf den Prisma-Client wie auf einen Transaktions-Client. */
+/** Fits the Prisma client just as well as a transaction client. */
 type Db = Prisma.TransactionClient;
 
-/** Ein Rollen-Eintrag, wie ihn die Datenbank liefert. */
+/** A role grant row, as the database returns it. */
 interface Grant {
   permissionKey: string;
 }
 
-/** Key und Rollen-Einträge genügen für die Ableitung. */
+/** Key and role grants are enough for the derivation. */
 const roleGrants = {
   select: {
     key: true,
@@ -49,23 +52,24 @@ const roleGrants = {
   },
 } as const satisfies Prisma.RoleDefaultArgs;
 
-/** So viel einer Workspace-Rolle, wie die Ableitung braucht. */
+/** As much of a workspace role as the derivation needs. */
 interface WorkspaceRole {
   key: string;
   permissions: readonly Grant[];
 }
 
 /**
- * Die Projektrolle, mit der jemand ins Projekt aufgenommen wird.
+ * The project role someone is added to a project with.
  *
- * Seit die Ebenen getrennt sind, sagt eine Workspace-Rolle nichts mehr darüber,
- * was ihr Träger in einem Projekt darf — über Issues und Kommentare steht dort
- * nichts. Die Zuordnung wird deshalb bei den System-Rollen ausdrücklich erklärt
- * (`defaultProjectRoleKey` in lib/rbac/roles.ts) statt aus Rechten erraten.
+ * Since the levels were split, a workspace role no longer says anything
+ * about what its holder may do in a project — it says nothing about issues
+ * and comments. The mapping is therefore stated explicitly for the system
+ * roles (`defaultProjectRoleKey` in lib/rbac/roles.ts) instead of guessed
+ * from permissions.
  *
- * Nur für selbst angelegte Workspace-Rollen bleibt eine Ableitung nötig. Sie
- * fällt bewusst nie auf `blocked`: einen Ausschluss spricht man aus, er ist kein
- * Nebenprodukt einer schwachen Rolle.
+ * A derivation is only still needed for custom workspace roles. It
+ * deliberately never falls back to `blocked`: an exclusion is something you
+ * state, not a byproduct of a weak role.
  */
 export function projectRoleKeyFor(role: WorkspaceRole): string {
   const declared = defaultProjectRoleKeyOf(role.key);
@@ -74,12 +78,12 @@ export function projectRoleKeyFor(role: WorkspaceRole): string {
   const granted = new Set<string>(role.permissions.map((g) => g.permissionKey));
   const has = (permission: Permission) => granted.has(permission);
 
-  // Greift ohnehin in jedes Projekt durch — der Eintrag ändert daran nichts.
+  // Reaches into every project anyway — the entry doesn't change that.
   if (has("project.admin.all")) return PROJECT_ADMIN_ROLE_KEY;
-  // Darf im Workspace etwas anlegen, arbeitet also mit.
+  // May create something in the workspace, so is actively working.
   if (has("project.create") || has("label.create"))
     return DEFAULT_PROJECT_ROLE_KEY;
-  // Sonst: mitlesen.
+  // Otherwise: read along.
   return PROJECT_VIEWER_ROLE_KEY;
 }
 
@@ -88,12 +92,12 @@ function projectRoleIdFor(role: WorkspaceRole): string {
 }
 
 /**
- * Alle Mitglieder des Workspace in ein Projekt aufnehmen.
+ * Add every workspace member to a project.
  *
- * Für ein frisch angelegtes Projekt gedacht, deshalb ohne Rücksicht auf
- * `visibility` — ein neues Projekt ist öffentlich. Offene Einladungen
- * (`pending`) kommen mit: die Zeile steht dann bereit, Rechte bekommt eine offene
- * Einladung dadurch keine (`lib/permissions.ts` hält sie vorher auf).
+ * Meant for a freshly created project, so it doesn't consider `visibility`
+ * — a new project is public. Open invitations (`pending`) are included: the
+ * row is then ready, but an open invitation gets no permissions from it
+ * (`lib/permissions.ts` blocks it beforehand).
  */
 export async function enrollWorkspaceMembers(
   db: Db,
@@ -111,18 +115,18 @@ export async function enrollWorkspaceMembers(
       userId: m.userId,
       roleId: projectRoleIdFor(m.role),
     })),
-    // Wer schon eine Zeile hat, behält seine Rolle.
+    // Whoever already has a row keeps their role.
     skipDuplicates: true,
   });
 }
 
 /**
- * Eine einzelne Person ins Projekt aufnehmen, mit der aus ihrer Workspace-Rolle
- * abgeleiteten Projektrolle.
+ * Add a single person to the project, with the project role derived from
+ * their workspace role.
  *
- * Für ein privates Projekt: dort wird niemand automatisch eingetragen, der
- * Ersteller braucht seine Zeile aber trotzdem — sonst hätte er das Projekt
- * angelegt und käme nicht hinein.
+ * For a private project: nobody gets added automatically there, but the
+ * creator still needs their row — otherwise they'd have created the project
+ * and couldn't get into it.
  */
 export async function enrollMember(
   db: Db,
@@ -150,10 +154,10 @@ export async function enrollMember(
 }
 
 /**
- * Ein Workspace-Mitglied in alle öffentlichen Projekte aufnehmen.
+ * Add a workspace member to every public project.
  *
- * Das Gegenstück zu `enrollWorkspaceMembers`: dort kommt ein Projekt hinzu, hier
- * eine Person.
+ * The counterpart to `enrollWorkspaceMembers`: there a project is added,
+ * here a person is.
  */
 export async function enrollInWorkspaceProjects(
   db: Db,
@@ -187,23 +191,23 @@ export async function enrollInWorkspaceProjects(
   });
 }
 
-// ─── Team-Rollen nachziehen ────────────────────────────────────────────────
+// ─── Carrying team roles forward ────────────────────────────────────────────
 //
-// Ein Team kann an einem `TeamProject` eine Rolle tragen (siehe Schema-
-// Kommentar dort). Diese Rolle wirkt nicht über eine zweite Auflösung in
-// `lib/permissions.ts` — dort bleibt es bei „genau eine Rolle je Scope, nichts
-// wird vereinigt". Stattdessen schreibt sie sich hier, beim Ändern von Team,
-// Mitgliedschaft oder Projekt-Verknüpfung, in ganz normale `ProjectMember`-
-// Zeilen. Die Leseseite merkt von alledem nichts.
+// A team can carry a role on a `TeamProject` (see the schema comment
+// there). That role doesn't take effect through a second resolution step in
+// `lib/permissions.ts` — there it stays "exactly one role per scope,
+// nothing gets merged". Instead, it writes itself here, whenever a team,
+// its membership, or a project link changes, into perfectly normal
+// `ProjectMember` rows. The read side notices none of this.
 //
-// Eine `ProjectMember`-Zeile mit `origin: "manual"` fasst diese Funktion nie
-// an — weder um sie zu ändern noch um sie zu löschen. Das ist die Zusage an
-// den Projektleiter: eine von Hand gesetzte Rolle bleibt, was ein Team auch
-// zwischendrin an seinen Verknüpfungen ändert. Wer sie wieder den Teams
-// überlassen will, setzt sie über die Mitgliederliste zurück (dort entsteht
-// dann wieder eine `manual`-Zeile mit der Team-Rolle als Startwert — echtes
-// „zurück auf Team" gibt es bewusst nicht, siehe `resetProjectMemberToTeam`
-// weiter unten).
+// A `ProjectMember` row with `origin: "manual"` is never touched by this
+// function — neither to change it nor to delete it. That's the promise made
+// to the project lead: a manually set role stays what it is, whatever a
+// team changes about its links in the meantime. Whoever wants to hand it
+// back to the teams resets it via the member list (which then creates a
+// `manual` row again, with the team role as its starting value — a genuine
+// "back to team" deliberately doesn't exist, see `resetProjectMemberToTeam`
+// further below).
 
 interface TeamRoleGrant {
   roleId: string;
@@ -212,13 +216,13 @@ interface TeamRoleGrant {
 }
 
 /**
- * Die ranghöchste Team-Rolle je Person in einem Projekt.
+ * The highest-ranked team role per person in a project.
  *
- * Mehrere Teams können an demselben Projekt hängen und dieselbe Person
- * enthalten — dann gewinnt die Rolle mit dem höheren `Role.rank`, genau wie
- * `assignmentCeiling` Ränge sonst auch vergleicht. Nur Verknüpfungen mit
- * gesetzter Rolle zählen; ein Team, das nur zur Gruppierung an einem Projekt
- * hängt, vergibt nichts.
+ * Several teams can be linked to the same project and contain the same
+ * person — in that case the role with the higher `Role.rank` wins, exactly
+ * the way `assignmentCeiling` otherwise compares ranks too. Only links with
+ * a role set count; a team linked to a project purely for grouping grants
+ * nothing.
  */
 async function bestTeamRoleByUser(
   db: Db,
@@ -264,23 +268,23 @@ async function bestTeamRoleByUser(
 }
 
 /**
- * `ProjectMember` für eine Reihe von Personen an die aktuellen Team-Rollen in
- * einem Projekt angleichen.
+ * Bring `ProjectMember` for a set of people in line with the current team
+ * roles in a project.
  *
- * Aufzurufen nach jeder Änderung, die eine Team-Rolle in diesem Projekt
- * betreffen könnte: Team-Mitgliedschaft, Team-Projekt-Verknüpfung, deren
- * Rolle, oder das Löschen eines Teams. Die Funktion fragt den aktuellen Stand
- * frisch ab, statt einen Diff entgegenzunehmen — bei mehreren Teams pro
- * Projekt ist „was gilt jetzt" einfacher zu bilden als „was hat sich
- * geändert".
+ * Call after any change that could affect a team role in this project:
+ * team membership, a team-project link, its role, or deleting a team. The
+ * function queries the current state fresh instead of taking a diff — with
+ * several teams per project, "what applies now" is simpler to compute than
+ * "what changed".
  *
- * Drei Fälle je Person:
- * - `origin: "manual"` → unangetastet, siehe oben.
- * - kein Team trägt mehr eine Rolle, aber die Zeile stammt aus einem Team
- *   (`origin: "team"`) → gelöscht. Keine Zeile heißt kein Zugriff, und ohne
- *   Team gibt es dafür keinen Grund mehr.
- * - sonst → die Zeile trägt (neu oder aktualisiert) die ranghöchste
- *   Team-Rolle, mit `origin: "team"` und `originTeamId` zur Anzeige.
+ * Three cases per person:
+ * - `origin: "manual"` → left untouched, see above.
+ * - no team carries a role anymore, but the row came from a team
+ *   (`origin: "team"`) → deleted. No row means no access, and without a
+ *   team there's no longer a reason for one.
+ * - otherwise → the row carries (newly created or updated) the
+ *   highest-ranked team role, with `origin: "team"` and `originTeamId` for
+ *   display.
  */
 export async function syncProjectTeamRoles(
   db: Db,
@@ -334,11 +338,11 @@ export async function syncProjectTeamRoles(
 }
 
 /**
- * Alle Projektmitgliedschaften einer Person in einem Workspace löschen.
+ * Delete all of a person's project memberships in a workspace.
  *
- * Für den Austritt aus dem Workspace: wer nicht mehr im Workspace ist, ist auch
- * in keinem seiner Projekte mehr. Ohne das behielte die Person über ihre
- * Projektrollen weiter Zugriff.
+ * For leaving the workspace: whoever is no longer in the workspace is no
+ * longer in any of its projects either. Without this, the person would keep
+ * access through their project roles.
  */
 export async function dropProjectMemberships(
   db: Db,

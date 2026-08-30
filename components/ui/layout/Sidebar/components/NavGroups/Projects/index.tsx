@@ -24,15 +24,16 @@ export default async function NavGroupProjects() {
     getAccess({ workspaceId: workspace.id }),
   ]);
 
-  // Je Projekt seine eigene Rolle — die Sichtbarkeit von "Einstellungen"
-  // (`role.manage`/`label.create`/`project.update`) hängt an der Projektrolle,
-  // nicht an der Workspace-Rolle darüber.
+  // Each project has its own role — the visibility of "Settings"
+  // (`role.manage`/`label.create`/`project.update`) depends on the project
+  // role, not the workspace role above it.
   const projectAccess = await Promise.all(
     projects.map((p) => getAccess({ projectId: p.id })),
   );
 
-  // Die Projektzeile trägt `/*` und ist damit markiert, solange man irgendwo im
-  // Projekt steht — ausgewertet wird das Muster in `lib/nav.ts` (`isNavActive`).
+  // The project row carries `/*` and is thus marked active as long as
+  // you're anywhere within the project — the pattern is evaluated in
+  // `lib/nav.ts` (`isNavActive`).
   const projectTabs: TabGroup[] = projects.map((p, i) => {
     const projPath = projectPath(workspace.id, p.slug, "");
     const pAccess = projectAccess[i];
@@ -52,9 +53,10 @@ export default async function NavGroupProjects() {
             href,
             label: t(`nav.${entry.labelKey}`),
             icon: entry.icon,
-            // Die Einstellungen haben eine zweite Ebene (Rollen, Labels). Ohne
-            // den Bereich darunter verlöre der Eintrag seine Markierung, sobald
-            // man dort etwas anklickt — und der Zweig klappte zu.
+            // Settings has a second level (roles, labels). Without the
+            // section below, the entry would lose its active marking as
+            // soon as something in it is clicked — and the branch would
+            // collapse.
             ...(entry.section === "settings"
               ? { activeHref: `${href}/*` }
               : {}),

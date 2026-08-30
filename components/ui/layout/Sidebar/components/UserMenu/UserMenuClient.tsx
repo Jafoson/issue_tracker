@@ -20,28 +20,29 @@ import styles from "./UserMenu.module.scss";
 interface UserMenuClientProps {
   me: PersonAvatarData;
   /**
-   * Weg zu den eigenen Einstellungen. `null`, wenn es keinen Workspace gibt, in
-   * dem sie stehen könnten — dann fehlt der Eintrag.
+   * Path to the account settings. `null` when there's no workspace they
+   * could live under — then the entry is omitted.
    */
   settingsHref: string | null;
-  /** Weg zur Inbox. `null` aus demselben Grund wie `settingsHref`. */
+  /** Path to the inbox. `null` for the same reason as `settingsHref`. */
   inboxHref: string | null;
   /**
-   * Weg in die Plattformverwaltung. `null` ohne `platform.access` — dann fehlt
-   * der Eintrag ganz, statt ihn nur auszugrauen (siehe `UserMenu`).
+   * Path into platform administration. `null` without `platform.access` —
+   * then the entry is omitted entirely rather than just grayed out (see
+   * `UserMenu`).
    */
   adminHref: string | null;
-  /** Ungelesene Benachrichtigungen im aktiven Workspace. */
+  /** Unread notifications in the active workspace. */
   unreadCount: number;
 }
 
 /**
- * Das eigene Menü unten in der Seitenleiste.
+ * The user's own menu at the bottom of the sidebar.
  *
- * Einträge, die weiterführen, zuerst — Einstellungen, dann (für die wenigsten)
- * die Plattformverwaltung —, dann das Abmelden. Zwischen beiden Gruppen eine
- * Linie: das eine führt weiter, das andere hinaus, und beides direkt
- * untereinander wäre eine Einladung zum Verklicken.
+ * Entries that lead onward come first — settings, then (for the few who
+ * have it) platform administration — followed by sign out. A line between
+ * the two groups: one leads onward, the other leads out, and having both
+ * directly stacked would be an invitation to misclick.
  */
 function UserMenuClient({
   me,
@@ -100,10 +101,9 @@ function UserMenuClient({
       >
         {(settingsHref || adminHref) && (
           <>
-            {/* Dieselbe Zeile wie in der Seitenleiste und in den
-                Einstellungsleisten — ein Menüeintrag, der woandershin führt,
-                ist ein Link und soll sich auch so verhalten (Mittelklick,
-                „in neuem Tab öffnen"). */}
+            {/* The same row as in the sidebar and the settings navs — a
+                menu entry that leads elsewhere is a link and should behave
+                like one too (middle-click, "open in new tab"). */}
             {settingsHref && (
               <NavLink
                 href={settingsHref}

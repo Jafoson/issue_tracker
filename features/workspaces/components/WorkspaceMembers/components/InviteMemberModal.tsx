@@ -24,7 +24,7 @@ import styles from "./inviteMemberModal.module.scss";
 
 interface Props {
   workspaceId: string;
-  /** Rollen, die der aktuelle User vergeben darf — vom Server gefiltert. */
+  /** Roles the current user is allowed to assign — filtered by the server. */
   roles: Role[];
   close: () => void;
 }
@@ -33,15 +33,14 @@ type BulkResult = Awaited<ReturnType<typeof inviteWorkspaceMembers>>;
 type BulkRow = Extract<BulkResult, { rows: unknown }>["rows"][number];
 
 /**
- * Eine oder mehrere Adressen in den Workspace einladen.
+ * Invite one or more addresses into the workspace.
  *
- * Nach dem Absenden steht für jede Adresse eine eigene Zeile: ein bekanntes
- * Konto ist danach einfach dabei, für eine unbekannte Adresse entsteht ein
- * Einladungslink. Der geht per Mail raus, wenn SMTP konfiguriert ist
- * (`mailSent`) — der Link bleibt trotzdem stehen, bis er kopiert wurde, statt
- * mit dem Dialog zu verschwinden, für den Fall ohne Mailversand oder eine
- * hakende Zustellung. Eine ungültige oder schon vergebene Adresse blockiert
- * die übrigen Zeilen nicht.
+ * After submitting, each address gets its own row: a known account simply
+ * ends up as a member, an unknown address gets an invitation link. That
+ * link goes out by mail when SMTP is configured (`mailSent`) — it stays
+ * displayed regardless, until it's been copied, rather than vanishing with
+ * the dialog, in case mail isn't sent or delivery falters. An invalid or
+ * already-taken address doesn't block the remaining rows.
  */
 export function InviteMemberModal({ workspaceId, roles, close }: Props) {
   const t = useTranslations();

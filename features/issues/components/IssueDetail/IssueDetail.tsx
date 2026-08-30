@@ -9,7 +9,7 @@ import {
 import { useIssueDetail } from "./useIssueDetail";
 
 interface IssueDetailProps {
-  /** Internal id or reference of the form “PREFIX-123”. */
+  /** Internal id or reference of the form "PREFIX-123". */
   issueRef: string;
   data: IssueComposerData;
   onClose: () => void;

@@ -34,24 +34,24 @@ export function emailVerificationEmail(
   const placeholders = { firstName: input.firstName };
 
   const subject = resolveText(
-    "Bestätige deine E-Mail-Adresse",
+    "Confirm your email address",
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    "Bitte bestätige deine E-Mail-Adresse",
+    "Please confirm your email address",
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
-    "Willkommen bei Orbit. Bestätige deine Adresse, damit wir dein Konto aktivieren und dir Benachrichtigungen zu deinen Issues senden können.",
+    "Welcome to Orbit. Confirm your address so we can activate your account and send you notifications about your issues.",
     override?.bodyText,
     placeholders,
   );
 
   const codeHtml = input.code
     ? `
-    <p style="margin: 16px 0 8px; color: #6b6b6b;">Oder gib diesen Code in der App ein:</p>
+    <p style="margin: 16px 0 8px; color: #6b6b6b;">Or enter this code in the app:</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #eef1e8; border-radius: 8px;">
       <tr>
         <td style="padding: 16px; text-align: center; font-family: monospace; font-size: 22px; font-weight: 700; letter-spacing: 0.3em;">
@@ -66,14 +66,14 @@ export function emailVerificationEmail(
     ${codeHtml}`;
 
   const footnoteHtml = input.expiresInHours
-    ? `Der Link${input.code ? " und der Code sind" : " ist"} ${input.expiresInHours} Stunden gültig. Danach kannst du in der App einfach eine neue Bestätigung anfordern.`
-    : "Diese Adresse wurde ohne dein Zutun eingetragen? Ignorier die Mail — das Konto bleibt dann unbestätigt.";
+    ? `The link${input.code ? " and code are" : " is"} valid for ${input.expiresInHours} hours. After that, you can simply request a new confirmation in the app.`
+    : "This address was added without your doing? Ignore this email — the account will then stay unconfirmed.";
 
   const html = renderLayout({
     preheader: introText,
     heading: escapeHtml(heading),
     bodyHtml,
-    ctaLabel: "E-Mail bestätigen",
+    ctaLabel: "Confirm email",
     ctaUrl: input.verifyUrl,
     footnoteHtml,
     recipientEmail: input.to,
@@ -84,12 +84,12 @@ export function emailVerificationEmail(
     "",
     introText,
     "",
-    `E-Mail bestätigen: ${input.verifyUrl}`,
+    `Confirm email: ${input.verifyUrl}`,
     ...(input.code ? [`Code: ${input.code}`] : []),
     "",
     input.expiresInHours
-      ? `Gültig für ${input.expiresInHours} Stunden.`
-      : "Wenn du das nicht warst, kannst du diese Mail ignorieren.",
+      ? `Valid for ${input.expiresInHours} hours.`
+      : "If this wasn't you, you can ignore this email.",
   ].join("\n");
 
   return { subject, html, text };

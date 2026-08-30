@@ -53,14 +53,14 @@ function allAttrs(doc: PMDoc): Record<string, unknown>[] {
 }
 
 describe("toPlainDoc", () => {
-  test("ProseMirror liefert Attribute ohne Prototyp — die Annahme des Tests", () => {
+  test("ProseMirror returns attrs without a prototype — the assumption behind this test", () => {
     const attrs = allAttrs(fromEditor());
     expect(attrs.length).toBeGreaterThan(0);
     // Exactly what React rejects when crossing over to the server.
     expect(attrs.every((a) => Object.getPrototypeOf(a) === null)).toBe(true);
   });
 
-  test("macht daraus Objekte mit gewöhnlichem Prototyp", () => {
+  test("turns them into objects with a normal prototype", () => {
     const attrs = allAttrs(toPlainDoc(fromEditor()));
     expect(attrs.length).toBeGreaterThan(0);
     expect(
@@ -68,7 +68,7 @@ describe("toPlainDoc", () => {
     ).toBe(true);
   });
 
-  test("lässt den Inhalt dabei unangetastet", () => {
+  test("leaves the content untouched in the process", () => {
     const plain = toPlainDoc(fromEditor());
     // Values identical — only the prototypes differ.
     expect(JSON.stringify(plain)).toBe(JSON.stringify(fromEditor()));
@@ -82,7 +82,7 @@ describe("toPlainDoc", () => {
     });
   });
 
-  test("erfasst auch tief verschachtelte Attribute", () => {
+  test("also catches deeply nested attrs", () => {
     const doc = PMNode.fromJSON(schema, {
       type: "doc",
       content: [

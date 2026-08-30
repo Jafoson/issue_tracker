@@ -26,25 +26,25 @@ export interface NotificationEmailInput {
 }
 
 const HEADING: Record<NotificationEvent, string> = {
-  assigned: "Dir wurde ein Issue zugewiesen",
-  mentioned: "Du wurdest erwähnt",
-  comment: "Neuer Kommentar",
-  commentReply: "Antwort auf deinen Kommentar",
-  status: "Status geändert",
-  invite: "Du bist jetzt Mitglied",
-  role: "Deine Rolle wurde geändert",
-  issueShared: "Ein Issue wurde mit dir geteilt",
+  assigned: "You were assigned an issue",
+  mentioned: "You were mentioned",
+  comment: "New comment",
+  commentReply: "Reply to your comment",
+  status: "Status changed",
+  invite: "You're now a member",
+  role: "Your role was changed",
+  issueShared: "An issue was shared with you",
 };
 
 const CTA_LABEL: Record<NotificationEvent, string> = {
-  assigned: "Issue öffnen",
-  mentioned: "Issue öffnen",
-  comment: "Issue öffnen",
-  commentReply: "Issue öffnen",
-  status: "Issue öffnen",
-  invite: "Mitglieder ansehen",
-  role: "Mitglieder ansehen",
-  issueShared: "Issue öffnen",
+  assigned: "Open issue",
+  mentioned: "Open issue",
+  comment: "Open issue",
+  commentReply: "Open issue",
+  status: "Open issue",
+  invite: "View members",
+  role: "View members",
+  issueShared: "Open issue",
 };
 
 const SUBJECT: Record<
@@ -52,24 +52,21 @@ const SUBJECT: Record<
   (input: NotificationEmailInput) => string
 > = {
   assigned: (i) =>
-    i.issue ? `${i.issue.identifier} wurde dir zugewiesen` : HEADING.assigned,
+    i.issue ? `${i.issue.identifier} was assigned to you` : HEADING.assigned,
   mentioned: (i) =>
-    i.issue ? `Du wurdest in ${i.issue.identifier} erwähnt` : HEADING.mentioned,
+    i.issue ? `You were mentioned in ${i.issue.identifier}` : HEADING.mentioned,
   comment: (i) =>
-    i.issue ? `Neuer Kommentar zu ${i.issue.identifier}` : HEADING.comment,
+    i.issue ? `New comment on ${i.issue.identifier}` : HEADING.comment,
   commentReply: (i) =>
     i.issue
-      ? `Antwort auf deinen Kommentar in ${i.issue.identifier}`
+      ? `Reply to your comment in ${i.issue.identifier}`
       : HEADING.commentReply,
   status: (i) =>
-    i.issue ? `Status geändert: ${i.issue.identifier}` : HEADING.status,
-  invite: (i) =>
-    `Du bist jetzt Mitglied von ${i.project?.name ?? i.workspaceName}`,
+    i.issue ? `Status changed: ${i.issue.identifier}` : HEADING.status,
+  invite: (i) => `You're now a member of ${i.project?.name ?? i.workspaceName}`,
   role: () => HEADING.role,
   issueShared: (i) =>
-    i.issue
-      ? `${i.issue.identifier} wurde mit dir geteilt`
-      : HEADING.issueShared,
+    i.issue ? `${i.issue.identifier} was shared with you` : HEADING.issueShared,
 };
 
 /** The intro under the heading, in plain text (default path). */
@@ -81,21 +78,21 @@ function defaultIntro(input: NotificationEmailInput): string {
 
   switch (input.type) {
     case "assigned":
-      return `${input.actorLabel} hat dir gerade ${issueLabel} zugewiesen.`;
+      return `${input.actorLabel} just assigned ${issueLabel} to you.`;
     case "mentioned":
-      return `${input.actorLabel} hat dich in ${issueLabel} erwähnt.`;
+      return `${input.actorLabel} mentioned you in ${issueLabel}.`;
     case "comment":
-      return `${input.actorLabel} hat ${issueLabel} kommentiert.`;
+      return `${input.actorLabel} commented on ${issueLabel}.`;
     case "commentReply":
-      return `${input.actorLabel} hat auf deinen Kommentar in ${issueLabel} geantwortet.`;
+      return `${input.actorLabel} replied to your comment in ${issueLabel}.`;
     case "status":
-      return `${input.actorLabel} hat den Status von ${issueLabel} auf ${humanizeKey(input.text)} geändert.`;
+      return `${input.actorLabel} changed the status of ${issueLabel} to ${humanizeKey(input.text)}.`;
     case "invite":
-      return `${input.actorLabel} hat dich als ${input.text} zu ${target} hinzugefügt.`;
+      return `${input.actorLabel} added you to ${target} as ${input.text}.`;
     case "role":
-      return `${input.actorLabel} hat deine Rolle in ${target} auf ${input.text} geändert.`;
+      return `${input.actorLabel} changed your role in ${target} to ${input.text}.`;
     case "issueShared":
-      return `${input.actorLabel} hat ${issueLabel} mit dir geteilt.`;
+      return `${input.actorLabel} shared ${issueLabel} with you.`;
   }
 }
 
@@ -162,7 +159,7 @@ export function notificationEmail(
 
   const quote = quoteFor(input);
   const quoteHtml = quote
-    ? `<p style="margin: 12px 0 0; padding-left: 12px; border-left: 3px solid #e4e4e4; color: #6b6b6b; font-style: italic;">„${escapeHtml(quote)}“</p>`
+    ? `<p style="margin: 12px 0 0; padding-left: 12px; border-left: 3px solid #e4e4e4; color: #6b6b6b; font-style: italic;">"${escapeHtml(quote)}"</p>`
     : "";
 
   const bodyHtml = `<p style="margin: 0;">${escapeHtml(introText)}</p>${issueCardHtml}${quoteHtml}`;
@@ -182,9 +179,9 @@ export function notificationEmail(
     "",
     introText,
     ...(input.issue
-      ? [`${input.issue.identifier} „${input.issue.title}“`]
+      ? [`${input.issue.identifier} "${input.issue.title}"`]
       : []),
-    ...(quote ? [`„${quote}“`] : []),
+    ...(quote ? [`"${quote}"`] : []),
     "",
     `${CTA_LABEL[input.type]}: ${input.url}`,
   ].join("\n");

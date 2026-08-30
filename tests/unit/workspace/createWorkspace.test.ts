@@ -93,8 +93,8 @@ describe("createWorkspace()", () => {
     );
   });
 
-  describe("Auth-Prüfung", () => {
-    it("gibt Fehler zurück wenn User nicht eingeloggt ist", async () => {
+  describe("Auth check", () => {
+    it("returns an error when the user is not logged in", async () => {
       mockGetSession.mockResolvedValue(null);
       const result = await createWorkspace(
         makeFormData({ name: "My WS", slug: "my-ws" }),
@@ -102,31 +102,31 @@ describe("createWorkspace()", () => {
       expect(result).toEqual({ error: "You must be logged in." });
     });
 
-    it("führt keine DB-Operationen durch wenn nicht eingeloggt", async () => {
+    it("performs no DB operations when not logged in", async () => {
       mockGetSession.mockResolvedValue(null);
       await createWorkspace(makeFormData({ name: "My WS", slug: "my-ws" }));
       expect(mockTransaction).not.toHaveBeenCalled();
     });
   });
 
-  describe("Validierung", () => {
+  describe("Validation", () => {
     beforeEach(() => {
       mockGetSession.mockResolvedValue({ userId: "user-1" });
     });
 
-    it("gibt Fehler zurück wenn Name fehlt", async () => {
+    it("returns an error when the name is missing", async () => {
       const result = await createWorkspace(makeFormData({ slug: "my-ws" }));
       expect(result).toEqual({ error: "Name and slug are required." });
     });
 
-    it("gibt Fehler zurück wenn Slug fehlt", async () => {
+    it("returns an error when the slug is missing", async () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace" }),
       );
       expect(result).toEqual({ error: "Name and slug are required." });
     });
 
-    it("gibt Fehler zurück wenn Slug Großbuchstaben enthält", async () => {
+    it("returns an error when the slug contains uppercase letters", async () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "My-Workspace" }),
       );
@@ -135,7 +135,7 @@ describe("createWorkspace()", () => {
       });
     });
 
-    it("gibt Fehler zurück wenn Slug Sonderzeichen enthält", async () => {
+    it("returns an error when the slug contains special characters", async () => {
       const result = await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my_workspace!" }),
       );
@@ -144,7 +144,7 @@ describe("createWorkspace()", () => {
       });
     });
 
-    it("hängt eine Nummer an wenn der Slug bereits vergeben ist", async () => {
+    it("appends a number when the slug is already taken", async () => {
       mockWorkspaceFindUnique.mockImplementation(
         async ({ where }: { where: { slug: string } }) =>
           where.slug === "existing" ? { id: "existing" } : null,
@@ -155,7 +155,7 @@ describe("createWorkspace()", () => {
       expect((result as { redirectTo: string }).redirectTo).toBe("/existing1");
     });
 
-    it("zählt weiter hoch wenn auch der erste Fallback-Slug vergeben ist", async () => {
+    it("keeps counting up when the first fallback slug is also taken", async () => {
       const taken = new Set(["existing", "existing1"]);
       mockWorkspaceFindUnique.mockImplementation(
         async ({ where }: { where: { slug: string } }) =>
@@ -168,12 +168,12 @@ describe("createWorkspace()", () => {
     });
   });
 
-  describe("Erfolgreiche Workspace-Erstellung", () => {
+  describe("Successful workspace creation", () => {
     beforeEach(() => {
       mockGetSession.mockResolvedValue({ userId: "user-1" });
     });
 
-    it("gibt redirectTo zurück nach erfolgreicher Erstellung", async () => {
+    it("returns redirectTo after successful creation", async () => {
       const result = await createWorkspace(
         makeFormData({
           name: "My Workspace",
@@ -184,7 +184,7 @@ describe("createWorkspace()", () => {
       expect(result).toMatchObject({ redirectTo: expect.any(String) });
     });
 
-    it("leitet zum Workspace weiter mit korrektem Workspace-Slug", async () => {
+    it("redirects to the workspace with the correct workspace slug", async () => {
       const result = await createWorkspace(
         makeFormData({
           name: "My Workspace",
@@ -197,14 +197,14 @@ describe("createWorkspace()", () => {
       );
     });
 
-    it("erstellt Workspace in einer Transaktion", async () => {
+    it("creates the workspace in a transaction", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
       expect(mockTransaction).toHaveBeenCalledTimes(1);
     });
 
-    it("erstellt den User als Owner-Mitglied", async () => {
+    it("creates the user as an owner member", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
@@ -221,7 +221,7 @@ describe("createWorkspace()", () => {
       );
     });
 
-    it("erstellt Standard-Statuses, Prioritäten und Typen", async () => {
+    it("creates default statuses, priorities, and types", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
@@ -230,21 +230,21 @@ describe("createWorkspace()", () => {
       expect(mockTx.workspaceIssueType.createMany).toHaveBeenCalled();
     });
 
-    it("provisioniert keine Rollen mehr — die Defaults sind geteilt", async () => {
+    it("no longer provisions roles — the defaults are shared", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
       expect(mockProvisionRbac).not.toHaveBeenCalled();
     });
 
-    it("erstellt ein initiales Projekt", async () => {
+    it("creates an initial project", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );
       expect(mockTx.project.create).toHaveBeenCalledTimes(1);
     });
 
-    it("trägt den Ersteller als Project Admin im initialen Projekt ein", async () => {
+    it("enters the creator as project admin in the initial project", async () => {
       await createWorkspace(
         makeFormData({ name: "My Workspace", slug: "my-workspace" }),
       );

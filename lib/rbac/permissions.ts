@@ -65,23 +65,23 @@ const WORKSPACE_AND_PROJECT = ["WORKSPACE", "PROJECT"] as const;
 export const PERMISSIONS = {
   // ── Platform ───────────────────────────────────────────────────────────────
   "platform.access": {
-    desc: "Zugang zum Plattform-Bereich (/admin)",
+    desc: "Access the platform area (/admin)",
     scopes: PLATFORM_ONLY,
   },
   "user.manage": {
-    desc: "Benutzerkonten plattformweit verwalten: Plattform-Rolle setzen, Konten stilllegen",
+    desc: "Manage user accounts platform-wide: set platform role, deactivate accounts",
     scopes: PLATFORM_ONLY,
   },
   "tenant.access": {
-    desc: "Inhalte aller Workspaces einsehen und bearbeiten (Support-Zugriff)",
+    desc: "View and edit the content of every workspace (support access)",
     scopes: PLATFORM_ONLY,
   },
   "workspace.suspend": {
-    desc: "Workspaces sperren und entsperren",
+    desc: "Suspend and unsuspend workspaces",
     scopes: PLATFORM_ONLY,
   },
   "mail.template.manage": {
-    desc: "Betreff, Überschrift und Einleitungstext der Mail-Vorlagen bearbeiten",
+    desc: "Edit the subject, heading, and intro text of the mail templates",
     scopes: PLATFORM_ONLY,
   },
 
@@ -103,29 +103,29 @@ export const PERMISSIONS = {
   // appears in the project's member list like anyone else — visible to
   // everyone working there.
   "project.metadata.view": {
-    desc: "Stammdaten aller Projekte sehen, auch privater — ohne deren Inhalte",
+    desc: "View the master data of every project, including private ones — without their content",
     scopes: PLATFORM_ONLY,
   },
   "project.metadata.manage": {
-    desc: "Stammdaten eines Projekts ändern: Besitzer neu zuordnen, stilllegen — weiterhin ohne Blick hinein",
+    desc: "Change a project's master data: reassign owner, archive it — still without seeing inside",
     scopes: PLATFORM_ONLY,
   },
   "project.breakglass": {
-    desc: "Notfall-Zugriff: sich selbst mit Begründung in ein fremdes Projekt eintragen (wird protokolliert)",
+    desc: "Emergency access: add yourself to a foreign project with a justification (gets logged)",
     scopes: PLATFORM_ONLY,
   },
 
   // ── Workspace ────────────────────────────────────────────────────────────────
   "workspace.update": {
-    desc: "Name, Farbe und Slug des Workspace ändern",
+    desc: "Change the workspace's name, color, and slug",
     scopes: WORKSPACE_ONLY,
   },
   "workspace.delete": {
-    desc: "Workspace unwiderruflich löschen",
+    desc: "Delete the workspace irrevocably",
     scopes: ["PLATFORM", "WORKSPACE"],
   },
   "config.manage": {
-    desc: "Status, Prioritäten und Issue-Typen verwalten",
+    desc: "Manage statuses, priorities, and issue types",
     scopes: WORKSPACE_ONLY,
   },
   // The same key in all three scopes, three slices of the same log: the
@@ -133,13 +133,13 @@ export const PERMISSIONS = {
   // only what happened there in the project. The permission doesn't set the
   // slice — the query does (`lib/audit/index.ts`).
   "audit.view": {
-    desc: "Audit-Log einsehen",
+    desc: "View the audit log",
     scopes: ["PLATFORM", "WORKSPACE", "PROJECT"],
   },
 
   // ── Roles ───────────────────────────────────────────────────────────────────
   "role.manage": {
-    desc: "Rollen dieses Scopes definieren und Berechtigungen zuweisen",
+    desc: "Define roles of this scope and assign permissions",
     scopes: ROLE_SCOPES,
   },
 
@@ -152,45 +152,45 @@ export const PERMISSIONS = {
   // project member list doesn't depend on it — there's (still) no dedicated
   // gate for that.
   "member.view": {
-    desc: "Die Mitgliederliste des Workspace sehen",
+    desc: "View the workspace's member list",
     scopes: WORKSPACE_ONLY,
   },
   "member.invite": {
-    desc: "Mitglieder hinzufügen und einladen",
+    desc: "Add and invite members",
     scopes: WORKSPACE_AND_PROJECT,
   },
   "member.remove": {
-    desc: "Mitglieder entfernen",
+    desc: "Remove members",
     scopes: WORKSPACE_AND_PROJECT,
   },
   "member.role.update": {
-    desc: "Rolle eines anderen Mitglieds ändern",
+    desc: "Change another member's role",
     scopes: WORKSPACE_AND_PROJECT,
   },
 
   // ── Projects ────────────────────────────────────────────────────────────────
   "project.create": {
-    desc: "Neues Projekt im Workspace anlegen",
+    desc: "Create a new project in the workspace",
     scopes: WORKSPACE_ONLY,
   },
   "project.view": {
-    desc: "Projekt sehen (relevant für private Projekte)",
+    desc: "See the project (relevant for private projects)",
     scopes: PROJECT_ONLY,
   },
   "project.view.all": {
-    desc: "Alle Projekte des Workspace lesend sehen, auch ohne Mitgliedschaft",
+    desc: "See every project of the workspace read-only, even without membership",
     scopes: WORKSPACE_ONLY,
   },
   "project.admin.all": {
-    desc: "In jedem Projekt des Workspace alle Rechte haben, ohne Mitglied zu sein",
+    desc: "Have every permission in every project of the workspace without being a member",
     scopes: WORKSPACE_ONLY,
   },
   "project.update": {
-    desc: "Projektname, Präfix und Farbe ändern",
+    desc: "Change the project name, prefix, and color",
     scopes: PROJECT_ONLY,
   },
   "project.delete": {
-    desc: "Projekt löschen",
+    desc: "Delete the project",
     scopes: PROJECT_ONLY,
   },
 
@@ -201,7 +201,7 @@ export const PERMISSIONS = {
   // rather than blocked numbers, see `getProjectDashboard` /
   // `getWorkspaceDashboard`.
   "dashboard.view.all": {
-    desc: "Sieht die Dashboard-Zahlen des ganzen Projekts bzw. Workspace, nicht nur die eigenen",
+    desc: "Sees the dashboard numbers of the whole project/workspace, not just their own",
     scopes: WORKSPACE_AND_PROJECT,
   },
 
@@ -211,28 +211,28 @@ export const PERMISSIONS = {
   // yourself (`getWorkspaceTeamsView`) — not a hidden gate, but a filtered
   // rather than empty list, unlike `member.view` for the members tab.
   "team.view.all": {
-    desc: "Alle Teams des Workspace sehen, nicht nur die eigenen",
+    desc: "See every team of the workspace, not just your own",
     scopes: WORKSPACE_ONLY,
   },
-  "team.create": { desc: "Team erstellen", scopes: WORKSPACE_ONLY },
+  "team.create": { desc: "Create a team", scopes: WORKSPACE_ONLY },
   "team.update": {
-    desc: "Team-Name, Farbe und Lead ändern",
+    desc: "Change a team's name, color, and lead",
     scopes: WORKSPACE_ONLY,
   },
-  "team.delete": { desc: "Team löschen", scopes: WORKSPACE_ONLY },
+  "team.delete": { desc: "Delete a team", scopes: WORKSPACE_ONLY },
   "team.member.manage": {
-    desc: "Mitglieder zu Teams hinzufügen oder entfernen",
+    desc: "Add or remove members from teams",
     scopes: WORKSPACE_ONLY,
   },
   "team.project.manage": {
-    desc: "Projekte Teams zuordnen oder entfernen",
+    desc: "Link or unlink projects to teams",
     scopes: WORKSPACE_ONLY,
   },
 
   // ── Labels ──────────────────────────────────────────────────────────────────
-  "label.create": { desc: "Label anlegen", scopes: WORKSPACE_AND_PROJECT },
-  "label.update": { desc: "Label bearbeiten", scopes: WORKSPACE_AND_PROJECT },
-  "label.delete": { desc: "Label löschen", scopes: WORKSPACE_AND_PROJECT },
+  "label.create": { desc: "Create a label", scopes: WORKSPACE_AND_PROJECT },
+  "label.update": { desc: "Edit a label", scopes: WORKSPACE_AND_PROJECT },
+  "label.delete": { desc: "Delete a label", scopes: WORKSPACE_AND_PROJECT },
 
   // ── Issues ──────────────────────────────────────────────────────────────────
   //
@@ -240,55 +240,55 @@ export const PERMISSIONS = {
   // Setting status and priority is covered by `issue.update.*`; which
   // statuses and priorities exist at all is governed by `config.manage` in
   // the workspace.
-  "issue.create": { desc: "Issue erstellen", scopes: PROJECT_ONLY },
+  "issue.create": { desc: "Create an issue", scopes: PROJECT_ONLY },
   "issue.update.any": {
-    desc: "Beliebige Issues bearbeiten (Status, Priorität, Labels, Text)",
+    desc: "Edit any issue (status, priority, labels, text)",
     scopes: PROJECT_ONLY,
   },
   "issue.update.own": {
-    desc: "Nur eigene Issues bearbeiten (Reporter oder Assignee)",
+    desc: "Edit only your own issues (reporter or assignee)",
     scopes: PROJECT_ONLY,
   },
   "issue.delete.any": {
-    desc: "Beliebige Issues löschen",
+    desc: "Delete any issue",
     scopes: PROJECT_ONLY,
   },
   "issue.delete.own": {
-    desc: "Nur eigene Issues löschen",
+    desc: "Delete only your own issues",
     scopes: PROJECT_ONLY,
   },
   "issue.assign": {
-    desc: "Issues anderen Mitgliedern zuweisen",
+    desc: "Assign issues to other members",
     scopes: PROJECT_ONLY,
   },
   "issue.share.manage": {
-    desc: "Öffentlichen Lese-Link für ein Issue erstellen und widerrufen",
+    desc: "Create and revoke the public read link for an issue",
     scopes: PROJECT_ONLY,
   },
 
   // ── Comments ────────────────────────────────────────────────────────────────
   "comment.create": {
-    desc: "Kommentar zu einem Issue schreiben",
+    desc: "Write a comment on an issue",
     scopes: PROJECT_ONLY,
   },
   "comment.delete.any": {
-    desc: "Beliebige Kommentare löschen",
+    desc: "Delete any comment",
     scopes: PROJECT_ONLY,
   },
   "comment.delete.own": {
-    desc: "Nur eigene Kommentare löschen",
+    desc: "Delete only your own comments",
     scopes: PROJECT_ONLY,
   },
   "comment.update.any": {
-    desc: "Beliebige Kommentare bearbeiten",
+    desc: "Edit any comment",
     scopes: PROJECT_ONLY,
   },
   "comment.update.own": {
-    desc: "Nur eigene Kommentare bearbeiten",
+    desc: "Edit only your own comments",
     scopes: PROJECT_ONLY,
   },
   "comment.react": {
-    desc: "Auf Kommentare reagieren",
+    desc: "React to comments",
     scopes: PROJECT_ONLY,
   },
 } as const satisfies Record<string, PermissionDef>;

@@ -1,10 +1,10 @@
 /**
- * Das Datenmodell der Tabelle — ohne Hooks, ohne `"use client"`.
+ * The table's data model — no hooks, no `"use client"`.
  *
- * `Table` rendert server- wie clientseitig, `useTableDnd` läuft nur im Browser.
- * Beide lesen dieselben Typen, dürfen sich aber nicht gegenseitig importieren:
- * ein Wert aus einem Client-Modul wäre im Server-Render nur eine Referenz, kein
- * String. Deshalb liegt das Gemeinsame hier.
+ * `Table` renders both server- and client-side, `useTableDnd` only runs in
+ * the browser. Both read the same types, but must not import each other:
+ * a value from a client module would only be a reference in server render,
+ * not a string. That's why the shared parts live here.
  */
 
 import type { ReactNode } from "react";
@@ -12,40 +12,40 @@ import type { ReactNode } from "react";
 export type TableAlign = "start" | "center" | "end";
 
 export interface TableColumn<T> {
-  /** Stabile Spalten-ID — dient zugleich als React-Key der Zellen. */
+  /** Stable column ID — also serves as the React key of the cells. */
   id: string;
   /**
-   * Titel in der Kopfzeile. Definiert keine Spalte einen, entfällt die
-   * Kopfzeile komplett — Listenansichten kommen oft ohne aus.
+   * Title in the header row. If no column defines one, the header row is
+   * omitted entirely — list views often do without it.
    */
   header?: ReactNode;
   /**
-   * Grid-Track der Spalte: `"auto"`, `"max-content"`, `"minmax(0, 1fr)"`,
-   * `"88px"` … Inhaltsbasierte Werte messen über *alle* Zeilen hinweg, weil die
-   * Zeilen `subgrid` sind. Genau eine Spalte sollte `minmax(0, 1fr)` bekommen —
-   * sie schluckt den Rest und kürzt ihren Inhalt.
+   * The column's grid track: `"auto"`, `"max-content"`, `"minmax(0, 1fr)"`,
+   * `"88px"` … Content-based values measure across *all* rows, because rows
+   * are `subgrid`. Exactly one column should get `minmax(0, 1fr)` — it
+   * absorbs the rest and truncates its content.
    */
   width?: string;
   align?: TableAlign;
   cell: (row: T) => ReactNode;
   /**
-   * Macht die Spalte sortierbar — und zwar über den Wert, nicht über die Zelle:
-   * gerendert wird dort ein Avatar, ein Label oder eine Plakette, und keines
-   * davon lässt sich vergleichen.
+   * Makes the column sortable — by the value, not by the cell: what renders
+   * there is an avatar, a label, or a badge, and none of those can be
+   * compared.
    *
-   * Erst zusammen mit `useTableSort` entsteht daraus ein Kopf zum Anklicken.
-   * Eine Spalte ohne diese Funktion bleibt eine Überschrift — was sich nicht
-   * sinnvoll ordnen lässt (Aktionen, Avatare, freie Textwolken), soll auch
-   * nicht so aussehen.
+   * Only together with `useTableSort` does this become a clickable header.
+   * A column without this function stays a plain heading — whatever can't
+   * be meaningfully ordered (actions, avatars, free-form text blobs)
+   * shouldn't look like it can either.
    */
   sortValue?: (row: T) => TableSortValue;
 }
 
 /**
- * Woran sortiert wird. `Date` und Zahlen vergleicht die Größe, Strings die
- * Sprache des Browsers; leer (`null`, `undefined`, `""`) landet immer unten —
- * in beiden Richtungen, denn "nichts" ist kein kleiner Wert, sondern ein
- * fehlender.
+ * What's sorted on. `Date` and numbers compare by magnitude, strings by the
+ * browser's language; empty (`null`, `undefined`, `""`) always ends up at
+ * the bottom — in both directions, because "nothing" isn't a small value,
+ * it's a missing one.
  */
 export type TableSortValue = string | number | Date | null | undefined;
 
@@ -53,21 +53,21 @@ export type TableSortDirection = "asc" | "desc";
 
 export interface TableGroup<T> {
   id: string;
-  /** Sichtbarer Gruppenkopf — bleibt beim Scrollen oben stehen. */
+  /** Visible group header — stays pinned at the top while scrolling. */
   header?: ReactNode;
-  /** Name der Gruppe für Screenreader, wenn `header` vor allem Grafik ist. */
+  /** Group name for screen readers, when `header` is mostly graphical. */
   label?: string;
   /**
-   * Blendet die Zeilen aus, der Kopf bleibt stehen. Den Zustand hält der
-   * Aufrufer — er rendert den Kopf und damit auch dessen Umschalter.
+   * Hides the rows, the header stays. The caller holds the state — it
+   * renders the header and thereby its toggle too.
    */
   collapsed?: boolean;
   rows: T[];
 }
 
 /**
- * Gruppen-ID der flachen Tabelle. Eine Tabelle ohne `groups` ist intern die
- * Gruppe "alle Zeilen" — beim Sortieren per Drag & Drop taucht diese ID als
- * Ziel wieder auf.
+ * Group ID of the flat table. A table without `groups` is internally the
+ * group "all rows" — this ID shows up again as the target when sorting via
+ * drag & drop.
  */
 export const FLAT_GROUP_ID = "rows";

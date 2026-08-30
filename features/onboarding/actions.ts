@@ -11,12 +11,12 @@ const NOT_LOGGED_IN = "You must be logged in.";
 const HANDLE_PATTERN = /^[a-z0-9][a-z0-9-]{1,29}$/;
 
 /**
- * Schließt das Onboarding ab: Benutzername und Vorname sind Pflicht,
- * Nachname bleibt optional.
+ * Completes onboarding: username and first name are required, last name
+ * stays optional.
  *
- * Nur für selbst angemeldete Konten erreichbar (`app/[locale]/page.tsx`
- * leitet nur um, wenn `onboardedAt` noch leer ist) — eingeladene Konten haben
- * das Feld schon bei der Einladung gesetzt und laufen nie hier durch.
+ * Only reachable for self-registered accounts (`app/[locale]/page.tsx` only
+ * redirects when `onboardedAt` is still empty) — invited accounts already
+ * have the field set at invitation time and never pass through here.
  */
 export async function completeOnboarding(data: {
   handle: string;

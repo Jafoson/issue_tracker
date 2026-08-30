@@ -30,24 +30,24 @@ type LoadMoreLabels = (
 
 interface Props extends WorkspaceLabelsView {
   workspaceId: string;
-  /** Lädt die nächste Seite der eigenen Labels (`loadMoreWorkspaceLabels`,
-   * `features/workspaces/actions.ts`, an `workspaceId` gebunden). */
+  /** Loads the next page of the workspace's own labels (`loadMoreWorkspaceLabels`,
+   * `features/workspaces/actions.ts`, bound to `workspaceId`). */
   loadMoreOwn: LoadMoreLabels;
-  /** Spiegelbild von `loadMoreOwn`, für die geerbten Projekt-Labels
+  /** Mirror image of `loadMoreOwn`, for the inherited project labels
    * (`loadMoreWorkspaceProjectLabels`). */
   loadMoreFromProjects: LoadMoreLabels;
 }
 
 /**
- * Die Labels des Workspace, in zwei Listen.
+ * The workspace's labels, in two lists.
  *
- * Oben, was überall gilt und sich hier ändern lässt. Darunter, was einzelnen
- * Projekten gehört: dieselben Spalten, aber ohne Knöpfe — eine Umbenennung von
- * hier aus schlüge in einem Projekt durch, das diese Seite gar nicht meint. Die
- * Zeile führt deshalb dorthin, wo das Label hingehört.
+ * On top, what applies everywhere and can be changed here. Below, what
+ * belongs to individual projects: the same columns, but without buttons —
+ * renaming from here would bleed into a project this page doesn't even
+ * mean. The row therefore leads to wherever the label actually belongs.
  *
- * Das Gegenstück zu `ProjectLabels`, eine Ebene höher: dort wird die geerbte
- * Liste angezeigt und ausgeblendet, hier wird sie gepflegt.
+ * The counterpart to `ProjectLabels`, one level up: there, the inherited
+ * list is displayed and hidden; here, it's maintained.
  */
 export function WorkspaceLabels({
   own,
@@ -93,8 +93,9 @@ export function WorkspaceLabels({
     ));
 
   const remove = async (row: WorkspaceLabelRow) => {
-    // Ein Workspace-Label hängt an Aufgaben aus mehreren Projekten. Die Zahl in
-    // der Rückfrage ist die über alle — sie sagt, was hier verloren geht.
+    // A workspace label is attached to tasks across multiple projects. The
+    // number in the confirmation dialog is the total across all of them —
+    // it says what would be lost here.
     const ok = await confirm({
       title: t("projectLabels.deleteTitle", { name: row.name }),
       description: t("workspaceLabels.deleteDesc", { count: row.issueCount }),
@@ -156,9 +157,9 @@ export function WorkspaceLabels({
       cell: usageCell,
     },
     {
-      // Ein Projekt darf ein Workspace-Label bei sich ausblenden. Dass davon
-      // Gebrauch gemacht wird, gehört hierher: es erklärt, warum ein Label
-      // anderswo fehlt, ohne dass jemand es gelöscht hätte.
+      // A project is allowed to hide a workspace label for itself. That
+      // this happens belongs here: it explains why a label is missing
+      // elsewhere without anyone having deleted it.
       id: "hidden",
       header: t("workspaceLabels.colHidden"),
       width: "minmax(140px, max-content)",
@@ -234,8 +235,8 @@ export function WorkspaceLabels({
     },
   ];
 
-  // Zwei Listen, zwei Sortierungen — die geerbten Projekt-Labels sind eine
-  // eigene Tabelle und sollen sich nicht mitdrehen.
+  // Two lists, two sort states — the inherited project labels are a
+  // separate table and shouldn't sort along with the other one.
   const ownSort = useTableSort(ownColumns);
   const projectSort = useTableSort(projectColumns);
 
@@ -300,8 +301,8 @@ export function WorkspaceLabels({
               rows={projectSort.sortRows(fromProjectsScroll.items)}
               sort={projectSort.sort}
               getRowKey={(row) => row.id}
-              // Geändert wird ein Projekt-Label dort, wo es hingehört — die
-              // Zeile bringt einen hin, statt den Weg nur zu behaupten.
+              // A project label is changed wherever it belongs — the row
+              // takes you there instead of just claiming the path exists.
               rowOverlay={(row) =>
                 row.projectSlug ? (
                   <Link

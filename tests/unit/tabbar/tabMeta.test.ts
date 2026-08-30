@@ -60,21 +60,21 @@ const dict: Record<string, string> = {
 const t = ((key: string) => dict[key] ?? key) as unknown as Translator;
 
 describe("tabTitle()", () => {
-  it("gibt den Projektnamen für eine Projekt-Board-URL zurück", () => {
+  it("returns the project name for a project board URL", () => {
     expect(tabTitle(`${BASE}/project/fuchsly`, projects, t)).toBe("Fuchsly");
   });
 
-  it("löst den Slug mit Bindestrichen korrekt auf", () => {
+  it("resolves a slug with hyphens correctly", () => {
     expect(tabTitle(`${BASE}/project/side-project`, projects, t)).toBe(
       "Side Project",
     );
   });
 
-  it("fällt auf 'Board' zurück wenn das Projekt unbekannt ist", () => {
+  it("falls back to 'Board' when the project is unknown", () => {
     expect(tabTitle(`${BASE}/project/unbekannt`, projects, t)).toBe("Board");
   });
 
-  it("mappt die übrigen Navigationsrouten auf ihre Übersetzung", () => {
+  it("maps the remaining navigation routes to their translation", () => {
     expect(tabTitle(`${BASE}/my`, projects, t)).toBe("Meine Aufgaben");
     expect(tabTitle(`${BASE}/inbox`, projects, t)).toBe("Posteingang");
     expect(tabTitle(`${BASE}/members`, projects, t)).toBe("Mitglieder");
@@ -85,15 +85,15 @@ describe("tabTitle()", () => {
 });
 
 describe("tabIcon()", () => {
-  it("nutzt das Listen-Icon für die /list-Ansicht eines Projekts", () => {
+  it("uses the list icon for a project's /list view", () => {
     expect(tabIcon(`${BASE}/project/fuchsly/list`)).toBe("lucide:list");
   });
 
-  it("nutzt das Board-Icon für die Board-Ansicht eines Projekts", () => {
+  it("uses the board icon for a project's board view", () => {
     expect(tabIcon(`${BASE}/project/fuchsly`)).toBe("lucide:square-kanban");
   });
 
-  it("nutzt das Übersichts-Icon für die Startseite eines Projekts", () => {
+  it("uses the overview icon for a project's home page", () => {
     // Board and Overview once shared the same icon — now that both exist,
     // you need to be able to tell them apart in the tab.
     expect(tabIcon(`${BASE}/project/fuchsly/overview`)).toBe(
@@ -101,15 +101,15 @@ describe("tabIcon()", () => {
     );
   });
 
-  it("nutzt das Mitglieder-Icon für die Mitglieder-Ansicht eines Projekts", () => {
+  it("uses the members icon for a project's members view", () => {
     expect(tabIcon(`${BASE}/project/fuchsly/members`)).toBe("lucide:users");
   });
 
-  it("nutzt das Zahnrad für den Kopf der Projekteinstellungen", () => {
+  it("uses the gear for the head of the project settings", () => {
     expect(tabIcon(`${BASE}/project/fuchsly/settings`)).toBe("lucide:settings");
   });
 
-  it("nutzt das Icon des jeweiligen Einstellungs-Bereichs", () => {
+  it("uses the icon of the respective settings section", () => {
     expect(tabIcon(`${BASE}/project/fuchsly/settings/roles`)).toBe(
       "lucide:shield-check",
     );
@@ -118,13 +118,13 @@ describe("tabIcon()", () => {
     );
   });
 
-  it("fällt für unbekannte Einstellungs-Bereiche aufs Zahnrad zurück", () => {
+  it("falls back to the gear for unknown settings sections", () => {
     expect(tabIcon(`${BASE}/project/fuchsly/settings/gibtsnicht`)).toBe(
       "lucide:settings",
     );
   });
 
-  it("fällt für unbekannte Unterseiten aufs Übersichts-Icon zurück", () => {
+  it("falls back to the overview icon for unknown subpages", () => {
     // Overview is the page a project resolves to by default — even knowing
     // nothing else about an address, you at least know it belongs there.
     expect(tabIcon(`${BASE}/project/fuchsly/gibtsnicht`)).toBe(
@@ -133,45 +133,45 @@ describe("tabIcon()", () => {
   });
 });
 
-describe("Admin-Routen", () => {
-  it("mappt /admin auf die Übersicht", () => {
+describe("Admin routes", () => {
+  it("maps /admin to the overview", () => {
     expect(tabTitle("/admin", projects, t)).toBe("Übersicht");
     expect(tabIcon("/admin")).toBe("lucide:layout-dashboard");
   });
 
-  it("mappt /admin/users", () => {
+  it("maps /admin/users", () => {
     expect(tabTitle("/admin/users", projects, t)).toBe("Benutzer");
     expect(tabIcon("/admin/users")).toBe("lucide:users");
   });
 
-  it("mappt /admin/workspaces", () => {
+  it("maps /admin/workspaces", () => {
     expect(tabTitle("/admin/workspaces", projects, t)).toBe("Workspaces");
     expect(tabIcon("/admin/workspaces")).toBe("lucide:building-2");
   });
 
-  it("mappt /admin/projects", () => {
+  it("maps /admin/projects", () => {
     expect(tabTitle("/admin/projects", projects, t)).toBe("Projekte");
     expect(tabIcon("/admin/projects")).toBe("lucide:folders");
   });
 
-  it("mappt /admin/audit", () => {
+  it("maps /admin/audit", () => {
     expect(tabTitle("/admin/audit", projects, t)).toBe("Protokoll");
     expect(tabIcon("/admin/audit")).toBe("lucide:scroll-text");
   });
 
-  it("mappt /admin/roles", () => {
+  it("maps /admin/roles", () => {
     expect(tabTitle("/admin/roles", projects, t)).toBe("Rollen & Rechte");
     expect(tabIcon("/admin/roles")).toBe("lucide:shield-check");
   });
 
-  it("hat für Admin nie eine Projektfarbe", () => {
+  it("never has a project color for admin", () => {
     expect(tabColor("/admin", projects)).toBeNull();
     expect(tabColor("/admin/users", projects)).toBeNull();
   });
 });
 
 describe("tabMeta()", () => {
-  it("entfernt den Query-String bevor Titel/Farbe/Icon abgeleitet werden", () => {
+  it("strips the query string before deriving title/color/icon", () => {
     const meta = tabMeta(
       `${BASE}/project/fuchsly?status=todo&priority=2`,
       projects,
@@ -183,25 +183,25 @@ describe("tabMeta()", () => {
     expect(meta.icon).toBeNull();
   });
 
-  it("hängt das (Aufgaben)-Suffix bei der Listen-Ansicht an", () => {
+  it("appends the (Issues) suffix for the list view", () => {
     expect(tabMeta(`${BASE}/project/fuchsly/list`, projects, t).title).toBe(
       "Fuchsly (Aufgaben)",
     );
   });
 
-  it("behält das Suffix auch mit aktiven Filtern im Query-String", () => {
+  it("keeps the suffix even with active filters in the query string", () => {
     expect(
       tabMeta(`${BASE}/project/fuchsly/list?status=done`, projects, t).title,
     ).toBe("Fuchsly (Aufgaben)");
   });
 
-  it("hängt das (Mitglieder)-Suffix bei der Mitglieder-Ansicht an", () => {
+  it("appends the (Members) suffix for the members view", () => {
     expect(tabMeta(`${BASE}/project/fuchsly/members`, projects, t).title).toBe(
       "Fuchsly (Mitglieder)",
     );
   });
 
-  it("hängt (Einstellungen) an den Kopf der Projekteinstellungen an", () => {
+  it("appends (Settings) to the head of the project settings", () => {
     expect(tabMeta(`${BASE}/project/fuchsly/settings`, projects, t).title).toBe(
       "Fuchsly (Einstellungen)",
     );
@@ -209,7 +209,7 @@ describe("tabMeta()", () => {
 
   // Both sections live under /settings. If they carried the same suffix,
   // tabs sitting next to each other couldn't be told apart.
-  it("nennt den Bereich statt (Einstellungen), sobald es einen gibt", () => {
+  it("names the section instead of (Settings) as soon as there is one", () => {
     expect(
       tabMeta(`${BASE}/project/fuchsly/settings/roles`, projects, t).title,
     ).toBe("Fuchsly (Rollen & Rechte)");
@@ -218,19 +218,19 @@ describe("tabMeta()", () => {
     ).toBe("Fuchsly (Labels)");
   });
 
-  it("fällt für einen unbekannten Bereich auf (Einstellungen) zurück", () => {
+  it("falls back to (Settings) for an unknown section", () => {
     expect(
       tabMeta(`${BASE}/project/fuchsly/settings/gibtsnicht`, projects, t).title,
     ).toBe("Fuchsly (Einstellungen)");
   });
 
-  it("hängt KEIN Suffix bei der Board-Ansicht an", () => {
+  it("appends NO suffix for the board view", () => {
     expect(
       tabMeta(`${BASE}/project/fuchsly?status=done`, projects, t).title,
     ).toBe("Fuchsly");
   });
 
-  it("gibt für Nicht-Projekt-Routen ein Icon und keine Farbe zurück", () => {
+  it("returns an icon and no color for non-project routes", () => {
     const meta = tabMeta(`${BASE}/my`, projects, t);
     expect(meta.title).toBe("Meine Aufgaben");
     expect(meta.color).toBeNull();
@@ -240,14 +240,14 @@ describe("tabMeta()", () => {
 
 // "My issues" has the same two views as a project. Without special handling,
 // both tabs would be named the same and carry the same icon.
-describe("Meine Aufgaben", () => {
-  it("lässt das Board unverändert", () => {
+describe("My issues", () => {
+  it("leaves the board unchanged", () => {
     const meta = tabMeta(`${BASE}/my?status=todo`, projects, t);
     expect(meta.title).toBe("Meine Aufgaben");
     expect(meta.icon).toBe("lucide:user");
   });
 
-  it("nennt die Liste im Suffix und zeigt deren Zeichen", () => {
+  it("names the list in the suffix and shows its icon", () => {
     const meta = tabMeta(`${BASE}/my/list`, projects, t);
     expect(meta.title).toBe("Meine Aufgaben (Aufgaben)");
     expect(meta.icon).toBe("lucide:list");
@@ -257,14 +257,14 @@ describe("Meine Aufgaben", () => {
 // A user's own settings live under /<workspace>/account. The section
 // doesn't belong to any workspace, but hangs under one — without special
 // handling, all five tabs would be named "Account" and carry the same icon.
-describe("Konto-Routen", () => {
-  it("nennt den Kopf 'Konto' und zeigt das Personen-Zeichen", () => {
+describe("Account routes", () => {
+  it("names the head 'Account' and shows the person icon", () => {
     expect(tabTitle(`${BASE}/account`, projects, t)).toBe("Konto");
     expect(tabIcon(`${BASE}/account`)).toBe("lucide:user");
     expect(tabMeta(`${BASE}/account`, projects, t).title).toBe("Konto");
   });
 
-  it("nennt den Bereich, sobald es einen gibt", () => {
+  it("names the section as soon as there is one", () => {
     expect(tabMeta(`${BASE}/account/appearance`, projects, t).title).toBe(
       "Konto (Aussehen)",
     );
@@ -276,21 +276,21 @@ describe("Konto-Routen", () => {
     );
   });
 
-  it("gibt jedem Bereich sein eigenes Zeichen", () => {
+  it("gives each section its own icon", () => {
     expect(tabIcon(`${BASE}/account/appearance`)).toBe("lucide:palette");
     expect(tabIcon(`${BASE}/account/notifications`)).toBe("lucide:bell");
     expect(tabIcon(`${BASE}/account/security`)).toBe("lucide:shield-check");
     expect(tabIcon(`${BASE}/account/connections`)).toBe("lucide:link");
   });
 
-  it("fällt für einen unbekannten Bereich auf Konto zurück", () => {
+  it("falls back to Account for an unknown section", () => {
     expect(tabMeta(`${BASE}/account/gibtsnicht`, projects, t).title).toBe(
       "Konto",
     );
     expect(tabIcon(`${BASE}/account/gibtsnicht`)).toBe("lucide:circle-user");
   });
 
-  it("hat nie eine Projektfarbe", () => {
+  it("never has a project color", () => {
     expect(tabColor(`${BASE}/account`, projects)).toBeNull();
     expect(tabMeta(`${BASE}/account/security`, projects, t).icon).toBe(
       "lucide:shield-check",
@@ -299,18 +299,18 @@ describe("Konto-Routen", () => {
 });
 
 describe("workspaceIdFromPath()", () => {
-  it("liefert die Workspace-ID für Workspace-Routen", () => {
+  it("returns the workspace ID for workspace routes", () => {
     expect(workspaceIdFromPath(`${BASE}/my`)).toBe("fuchsly");
     expect(workspaceIdFromPath(`${BASE}/project/fuchsly/list`)).toBe("fuchsly");
   });
 
-  it("liefert null für Admin-Routen", () => {
+  it("returns null for admin routes", () => {
     expect(workspaceIdFromPath("/admin")).toBeNull();
     expect(workspaceIdFromPath("/admin/members")).toBeNull();
   });
 });
 
-describe("Projekte mit gleichem Namen aber unterschiedlichem Slug", () => {
+describe("Projects with the same name but different slugs", () => {
   const dupeProjects: Project[] = [
     {
       id: "p-fuch",
@@ -330,15 +330,15 @@ describe("Projekte mit gleichem Namen aber unterschiedlichem Slug", () => {
     },
   ];
 
-  it("löst /project/fuchsly auf das erste Projekt auf", () => {
+  it("resolves /project/fuchsly to the first project", () => {
     expect(tabColor(`${BASE}/project/fuchsly`, dupeProjects)).toBe("#f59e0b");
   });
 
-  it("löst /project/fuchsly-1 auf das zweite Projekt auf", () => {
+  it("resolves /project/fuchsly-1 to the second project", () => {
     expect(tabColor(`${BASE}/project/fuchsly-1`, dupeProjects)).toBe("#a78bfa");
   });
 
-  it("verwechselt fuchsly und fuchsly-1 nicht", () => {
+  it("does not confuse fuchsly and fuchsly-1", () => {
     const metaFuch = tabMeta(`${BASE}/project/fuchsly`, dupeProjects, t);
     const metaFuc1 = tabMeta(`${BASE}/project/fuchsly-1`, dupeProjects, t);
     expect(metaFuch.color).toBe("#f59e0b");
@@ -346,7 +346,7 @@ describe("Projekte mit gleichem Namen aber unterschiedlichem Slug", () => {
     expect(metaFuch.color).not.toBe(metaFuc1.color);
   });
 
-  it("List-View von fuchsly-1 wird nicht als fuchsly erkannt", () => {
+  it("the list view of fuchsly-1 is not mistaken for fuchsly", () => {
     expect(tabColor(`${BASE}/project/fuchsly-1/list`, dupeProjects)).toBe(
       "#a78bfa",
     );
@@ -355,7 +355,7 @@ describe("Projekte mit gleichem Namen aber unterschiedlichem Slug", () => {
     );
   });
 
-  it("tabTitle gibt den richtigen Namen zurück (beide heißen Fuchsly)", () => {
+  it("tabTitle returns the correct name (both are named Fuchsly)", () => {
     expect(tabTitle(`${BASE}/project/fuchsly`, dupeProjects, t)).toBe(
       "Fuchsly",
     );

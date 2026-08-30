@@ -36,17 +36,17 @@ export function issueShareEmail(
   };
 
   const subject = resolveText(
-    `${input.actorName} hat dir „${input.issueTitle}“ geteilt`,
+    `${input.actorName} shared "${input.issueTitle}" with you`,
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    "Ein Issue wurde mit dir geteilt",
+    "An issue was shared with you",
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
-    `${input.actorName} hat dir den öffentlichen Link zu ${input.issueIdentifier} geschickt.`,
+    `${input.actorName} sent you the public link to ${input.issueIdentifier}.`,
     override?.bodyText,
     placeholders,
   );
@@ -62,7 +62,7 @@ export function issueShareEmail(
     </table>`;
 
   const quoteHtml = input.text
-    ? `<p style="margin: 12px 0 0; padding-left: 12px; border-left: 3px solid #e4e4e4; color: #6b6b6b; font-style: italic;">„${escapeHtml(input.text)}“</p>`
+    ? `<p style="margin: 12px 0 0; padding-left: 12px; border-left: 3px solid #e4e4e4; color: #6b6b6b; font-style: italic;">"${escapeHtml(input.text)}"</p>`
     : "";
 
   const bodyHtml = `<p style="margin: 0;">${escapeHtml(introText)}</p>${issueCardHtml}${quoteHtml}`;
@@ -71,7 +71,7 @@ export function issueShareEmail(
     preheader: introText,
     heading: escapeHtml(heading),
     bodyHtml,
-    ctaLabel: "Issue ansehen",
+    ctaLabel: "View issue",
     ctaUrl: input.url,
     recipientEmail: input.to,
   });
@@ -80,10 +80,10 @@ export function issueShareEmail(
     heading,
     "",
     introText,
-    `${input.issueIdentifier} „${input.issueTitle}“`,
-    ...(input.text ? [`„${input.text}“`] : []),
+    `${input.issueIdentifier} "${input.issueTitle}"`,
+    ...(input.text ? [`"${input.text}"`] : []),
     "",
-    `Issue ansehen: ${input.url}`,
+    `View issue: ${input.url}`,
   ].join("\n");
 
   return { subject, html, text };

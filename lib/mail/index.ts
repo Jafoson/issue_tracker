@@ -89,7 +89,7 @@ export async function sendInvitationEmail(
         roleName: input.roleName,
         inviterName: inviter
           ? `${inviter.firstName} ${inviter.lastName}`.trim()
-          : "Jemand",
+          : "Someone",
         expiresAt: input.expiresAt,
         inviteUrl: input.inviteUrl,
       },
@@ -97,7 +97,7 @@ export async function sendInvitationEmail(
     );
     await sendMail({ to: input.to, subject, html, text });
   } catch (error) {
-    console.error("[mail] Einladung nicht verschickt:", error);
+    console.error("[mail] Invitation not sent:", error);
   }
 }
 
@@ -163,7 +163,7 @@ export async function sendMemberRemovedEmail(
     );
     await sendMail({ to: user.email, subject, html, text });
   } catch (error) {
-    console.error("[mail] Entfernen nicht verschickt:", error);
+    console.error("[mail] Removal notice not sent:", error);
   }
 }
 
@@ -213,6 +213,6 @@ export async function sendIssueShareLinkEmail(
     );
     await sendMail({ to: input.to, subject, html, text });
   } catch (error) {
-    console.error("[mail] Geteilter Link nicht verschickt:", error);
+    console.error("[mail] Shared link not sent:", error);
   }
 }

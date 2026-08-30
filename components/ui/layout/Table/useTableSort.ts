@@ -3,41 +3,41 @@
 import { useState } from "react";
 import type { TableColumn, TableSortDirection, TableSortValue } from "./types";
 
-/** Was `<Table sort={…}>` erwartet. Erzeugt wird es allein von `useTableSort`. */
+/** What `<Table sort={…}>` expects. Only ever produced by `useTableSort`. */
 export interface TableSort {
-  /** Spalte, nach der gerade geordnet ist — `null`, solange keine gewählt ist. */
+  /** Column currently sorted by — `null` as long as none is chosen. */
   columnId: string | null;
   direction: TableSortDirection;
-  /** Schaltet den Kopf weiter: aufwärts → abwärts → wieder Grundordnung. */
+  /** Advances the header: ascending → descending → back to the base order. */
   toggle: (columnId: string) => void;
 }
 
 export interface TableSortOptions {
   /**
-   * Spalte, nach der die Tabelle von Anfang an ordnet. Ohne Angabe bleibt die
-   * Reihenfolge, in der die Zeilen hereinkommen — die ist meist schon die
-   * sinnvolle (die Abfrage hat sortiert), und ein Server, der anders ordnet als
-   * der Browser gleich danach, führt zu einem Sprung beim ersten Rendern.
+   * Column the table sorts by from the start. Without one, the order the
+   * rows arrive in is kept — that's usually already the sensible one (the
+   * query has sorted), and a server ordering differently from what the
+   * browser does right after leads to a jump on the first render.
    */
   columnId?: string;
   direction?: TableSortDirection;
 }
 
-/** Der Zustand ohne den Umschalter — das, was ein Klick verändert. */
+/** The state without the toggle — what a click changes. */
 export interface TableSortState {
   columnId: string | null;
   direction: TableSortDirection;
 }
 
 /**
- * Was ein Klick auf einen Spaltenkopf aus dem bisherigen Zustand macht.
+ * What a click on a column header makes of the previous state.
  *
- * Drei Stufen, nicht zwei: der dritte Klick stellt die Grundordnung wieder her.
- * Sie ist selbst eine Aussage — die Abfrage hat sie gewählt — und ohne Rückweg
- * käme man nie wieder an sie heran.
+ * Three stages, not two: the third click restores the base order. It's a
+ * statement in its own right — the query chose it — and without a way back
+ * you could never reach it again.
  *
- * Steht außerhalb des Hooks, weil sie nichts von React braucht: eine Ansicht,
- * die ihre Sortierung anderswo hält, kommt an dieselbe Regel.
+ * Lives outside the hook because it needs nothing from React: a view that
+ * holds its sorting elsewhere gets the same rule.
  */
 export function nextSortState(
   current: TableSortState,
@@ -52,9 +52,9 @@ const isEmpty = (value: TableSortValue) =>
   value === null || value === undefined || value === "";
 
 /**
- * Vergleicht zwei Zellwerte. Zahlen und Daten der Größe nach, alles andere als
- * Text — mit `numeric`, damit „Sprint 2" vor „Sprint 10" steht, und ohne
- * Rücksicht auf Groß- und Kleinschreibung.
+ * Compares two cell values. Numbers and dates by magnitude, everything else
+ * as text — with `numeric`, so "Sprint 2" sits before "Sprint 10", and
+ * case-insensitively.
  */
 function compare(a: TableSortValue, b: TableSortValue): number {
   if (typeof a === "number" || a instanceof Date) return Number(a) - Number(b);
@@ -65,21 +65,20 @@ function compare(a: TableSortValue, b: TableSortValue): number {
 }
 
 /**
- * Sortierung für eine Tabelle mit Kopfzeile.
+ * Sorting for a table with a header row.
  *
- * Der Zustand ist absichtlich klein und lokal: eine Spalte und eine Richtung,
- * gehalten von der Ansicht, die die Tabelle rendert. Nichts davon gehört in die
- * URL — eine Sortierung ist ein Blick auf eine Liste, kein Ort, den man teilt
- * oder wiederfindet.
+ * The state is deliberately small and local: one column and one direction,
+ * held by the view that renders the table. None of it belongs in the URL —
+ * a sort is a way of looking at a list, not a place you share or return to.
  *
  * ```tsx
  * const { sort, sortRows } = useTableSort(columns);
  * <Table columns={columns} rows={sortRows(rows)} sort={sort} … />
  * ```
  *
- * `sortRows` ist bewusst eine Funktion und kein zweiter Rückgabewert: eine
- * Tabelle mit Bändern ruft sie je Band auf und behält damit ihre Gruppierung —
- * sortiert wird innerhalb einer Gruppe, nicht über sie hinweg.
+ * `sortRows` is deliberately a function and not a second return value: a
+ * table with bands calls it per band and thereby keeps its grouping —
+ * sorting happens within a group, not across them.
  */
 export function useTableSort<T>(
   columns: TableColumn<T>[],
@@ -101,10 +100,10 @@ export function useTableSort<T>(
     const sortValue = active?.sortValue;
     if (!sortValue) return rows;
 
-    // Kopie: `sort` arbeitet an Ort und Stelle, und die Zeilen gehören dem
-    // Aufrufer. Der Vergleich ist stabil, gleiche Werte behalten also die
-    // Grundordnung — zwei Projekte mit je drei Aufgaben stehen weiter
-    // alphabetisch.
+    // Copy: `sort` operates in place, and the rows belong to the caller.
+    // The comparison is stable, so equal values keep the base order — two
+    // projects with three issues each stay alphabetical relative to each
+    // other.
     return [...rows].sort((a, b) => {
       const left = sortValue(a);
       const right = sortValue(b);

@@ -48,7 +48,7 @@ function reset() {
 describe("requestAttachmentUpload()", () => {
   beforeEach(reset);
 
-  it("lehnt ohne Konfiguration ab", async () => {
+  it("rejects without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     const result = await requestAttachmentUpload({
       issueId: "i-1",
@@ -62,7 +62,7 @@ describe("requestAttachmentUpload()", () => {
     expect(mockPresignPutUrl).not.toHaveBeenCalled();
   });
 
-  it("lehnt ohne S3_BUCKET_ISSUES ab, selbst wenn Avatare konfiguriert sind", async () => {
+  it("rejects without S3_BUCKET_ISSUES, even when avatars are configured", async () => {
     mockStorageConfig.mockReturnValue({ ...CONFIG, bucketIssues: null });
     const result = await requestAttachmentUpload({
       issueId: "i-1",
@@ -76,7 +76,7 @@ describe("requestAttachmentUpload()", () => {
     expect(mockPresignPutUrl).not.toHaveBeenCalled();
   });
 
-  it("lehnt zu große Dateien ab", async () => {
+  it("rejects files that are too large", async () => {
     const result = await requestAttachmentUpload({
       issueId: "i-1",
       fileName: "video.mp4",
@@ -87,7 +87,7 @@ describe("requestAttachmentUpload()", () => {
     expect(mockPresignPutUrl).not.toHaveBeenCalled();
   });
 
-  it("erlaubt jeden Dateityp — keine MIME-Allowlist wie bei Avataren", async () => {
+  it("allows any file type — no MIME allowlist like for avatars", async () => {
     mockPresignPutUrl.mockResolvedValue("https://s3.example/put");
     const result = await requestAttachmentUpload({
       issueId: "i-1",
@@ -98,7 +98,7 @@ describe("requestAttachmentUpload()", () => {
     expect(result).toMatchObject({ ok: true });
   });
 
-  it("baut einen Key nach dem Issue-Schema und signiert ihn", async () => {
+  it("builds a key following the issue schema and signs it", async () => {
     mockPresignPutUrl.mockResolvedValue("https://s3.example/put");
 
     const result = await requestAttachmentUpload({
@@ -119,7 +119,7 @@ describe("requestAttachmentUpload()", () => {
     });
   });
 
-  it("fällt auf 'bin' zurück, wenn der Dateiname keine Endung trägt", async () => {
+  it("falls back to 'bin' when the filename has no extension", async () => {
     mockPresignPutUrl.mockResolvedValue("https://s3.example/put");
     const result = await requestAttachmentUpload({
       issueId: "i-1",
@@ -135,7 +135,7 @@ describe("requestAttachmentUpload()", () => {
 describe("finalizeAttachmentUpload()", () => {
   beforeEach(reset);
 
-  it("lehnt einen Key ab, der nicht zum Issue gehört", async () => {
+  it("rejects a key that doesn't belong to the issue", async () => {
     const result = await finalizeAttachmentUpload(
       "i-1",
       "attachments/i-2/x.png",
@@ -144,7 +144,7 @@ describe("finalizeAttachmentUpload()", () => {
     expect(mockObjectExists).not.toHaveBeenCalled();
   });
 
-  it("lehnt ohne Konfiguration ab", async () => {
+  it("rejects without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     const result = await finalizeAttachmentUpload(
       "i-1",
@@ -155,7 +155,7 @@ describe("finalizeAttachmentUpload()", () => {
     });
   });
 
-  it("lehnt ab, wenn das Objekt nicht existiert", async () => {
+  it("rejects when the object doesn't exist", async () => {
     mockObjectExists.mockResolvedValue({ exists: false });
     const result = await finalizeAttachmentUpload(
       "i-1",
@@ -164,7 +164,7 @@ describe("finalizeAttachmentUpload()", () => {
     expect(result).toEqual({ error: "Upload not found — please try again." });
   });
 
-  it("löscht und lehnt ab, wenn die Datei zu groß ist", async () => {
+  it("deletes and rejects when the file is too large", async () => {
     mockObjectExists.mockResolvedValue({
       exists: true,
       size: 101 * 1024 * 1024,
@@ -180,7 +180,7 @@ describe("finalizeAttachmentUpload()", () => {
     );
   });
 
-  it("bestätigt ein gültiges Upload und liefert die tatsächliche Größe", async () => {
+  it("confirms a valid upload and returns the actual size", async () => {
     mockObjectExists.mockResolvedValue({ exists: true, size: 4096 });
     const result = await finalizeAttachmentUpload(
       "i-1",
@@ -194,19 +194,19 @@ describe("finalizeAttachmentUpload()", () => {
 describe("deleteAttachmentObject()", () => {
   beforeEach(reset);
 
-  it("tut nichts ohne Key", async () => {
+  it("does nothing without a key", async () => {
     await deleteAttachmentObject(null);
     await deleteAttachmentObject(undefined);
     expect(mockDeleteObjectSafely).not.toHaveBeenCalled();
   });
 
-  it("tut nichts ohne Konfiguration", async () => {
+  it("does nothing without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     await deleteAttachmentObject("attachments/i-1/x.png");
     expect(mockDeleteObjectSafely).not.toHaveBeenCalled();
   });
 
-  it("löscht über den Issues-Bucket", async () => {
+  it("deletes via the issues bucket", async () => {
     await deleteAttachmentObject("attachments/i-1/x.png");
     expect(mockDeleteObjectSafely).toHaveBeenCalledWith(
       "issues",
@@ -218,17 +218,17 @@ describe("deleteAttachmentObject()", () => {
 describe("resolveAttachmentUrl()", () => {
   beforeEach(reset);
 
-  it("ist null ohne Key", async () => {
+  it("is null without a key", async () => {
     expect(await resolveAttachmentUrl(null)).toBeNull();
     expect(await resolveAttachmentUrl(undefined)).toBeNull();
   });
 
-  it("ist null ohne Konfiguration", async () => {
+  it("is null without configuration", async () => {
     mockStorageConfig.mockReturnValue(null);
     expect(await resolveAttachmentUrl("attachments/i-1/x.png")).toBeNull();
   });
 
-  it("signiert eine GET-URL über den Issues-Bucket", async () => {
+  it("signs a GET URL via the issues bucket", async () => {
     mockPresignGetUrl.mockResolvedValue("https://s3.example/get");
     expect(await resolveAttachmentUrl("attachments/i-1/x.png")).toBe(
       "https://s3.example/get",

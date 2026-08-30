@@ -23,14 +23,14 @@ export interface MagicLinkEmailInput {
  * alterable via admin override.
  */
 export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
-  const heading = "Dein Anmeldelink für Orbit";
+  const heading = "Your sign-in link for Orbit";
   const introText =
-    "Mit diesem Link meldest du dich an — er funktioniert nur einmal und läuft danach ab.";
+    "This link signs you in — it only works once and expires afterward.";
   const formattedCode = `${input.code.slice(0, 4)}-${input.code.slice(4)}`;
 
   const bodyHtml = `
     <p style="margin: 0;">${escapeHtml(introText)}</p>
-    <p style="margin: 20px 0 0; font-size: 13px; color: #6b6b6b;">Auf einem anderen Gerät geöffnet? Gib stattdessen diesen Code auf der Anmeldeseite ein:</p>
+    <p style="margin: 20px 0 0; font-size: 13px; color: #6b6b6b;">Opened this on another device? Enter this code on the sign-in page instead:</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 8px 0 0;">
       <tr>
         <td style="border-radius: 6px; background: #eef1e8; padding: 10px 18px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: #1c1c1c;">
@@ -43,9 +43,9 @@ export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
     preheader: introText,
     heading,
     bodyHtml,
-    ctaLabel: "Jetzt anmelden",
+    ctaLabel: "Sign in now",
     ctaUrl: input.url,
-    footnoteHtml: `Link und Code laufen in ${input.expiresInMinutes} Minuten ab. Hast du das nicht angefordert? Dann ignorier diese Mail — niemand kommt ohne diesen Link oder Code in dein Konto.`,
+    footnoteHtml: `The link and code expire in ${input.expiresInMinutes} minutes. Didn't request this? Then ignore this email — nobody can get into your account without this link or code.`,
     recipientEmail: input.to,
   });
 
@@ -54,10 +54,10 @@ export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
     "",
     introText,
     "",
-    `Jetzt anmelden: ${input.url}`,
+    `Sign in now: ${input.url}`,
     `Code: ${formattedCode}`,
-    `Läuft in ${input.expiresInMinutes} Minuten ab.`,
+    `Expires in ${input.expiresInMinutes} minutes.`,
   ].join("\n");
 
-  return { subject: "Dein Anmeldelink für Orbit", html, text };
+  return { subject: "Your sign-in link for Orbit", html, text };
 }

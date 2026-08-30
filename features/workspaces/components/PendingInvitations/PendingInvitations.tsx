@@ -25,21 +25,22 @@ interface Props {
   rows: PendingInvitationRow[];
   canManage: boolean;
   nextCursor: string | null;
-  /** Lädt die nächste Seite ab einem Token (`loadMorePendingWorkspaceInvitations`
-   * bzw. das Projekt-Äquivalent, an die jeweilige Id gebunden). */
+  /** Loads the next page from a token (`loadMorePendingWorkspaceInvitations`
+   * or the project equivalent, bound to the respective id). */
   loadMore: (
     cursor: string,
   ) => Promise<{ items: PendingInvitationRow[]; nextCursor: string | null }>;
 }
 
 /**
- * Offene Einladungen — noch nicht angenommen, egal ob schon abgelaufen.
+ * Pending invitations — not yet accepted, regardless of whether they've
+ * already expired.
  *
- * Anders als die Mitgliederliste (`WorkspaceMembers`/`ProjectMembers`) zeigt
- * diese Tabelle nur den Zwischenzustand: sobald jemand die Einladung annimmt,
- * verschwindet die Zeile hier und taucht dort auf. `Erneut senden` und
- * `Zurückziehen` sind die einzigen Handlungen — Rolle oder Adresse ändert
- * niemand nachträglich, dafür gibt es die neue Einladung.
+ * Unlike the member list (`WorkspaceMembers`/`ProjectMembers`), this table
+ * shows only the intermediate state: as soon as someone accepts the
+ * invitation, the row disappears here and shows up there instead. "Resend"
+ * and "Revoke" are the only actions — nobody changes a role or address
+ * after the fact, that's what a new invitation is for.
  */
 export function PendingInvitations({
   rows,
@@ -105,11 +106,11 @@ export function PendingInvitations({
     {
       id: "email",
       header: t("pendingInvitations.colEmail"),
-      // Feste Untergrenze statt `minmax(0, …)`: bei vielen schmalen
-      // Nachbarspalten (Rolle, eingeladen von/am, läuft ab, Aktionen) drückte
-      // eine Untergrenze von 0 diese Spalte sonst auf wenige Pixel zusammen —
-      // die Adresse ist die Zeile, um die es geht, sie darf nicht die
-      // nachgebende sein.
+      // Fixed lower bound instead of `minmax(0, …)`: with many narrow
+      // neighboring columns (role, invited by/on, expires, actions), a
+      // lower bound of 0 would otherwise squeeze this column down to a few
+      // pixels — the address is the row's main subject and mustn't be the
+      // one that gives way.
       width: "minmax(200px, 1fr)",
       sortValue: (row) => row.email,
       cell: (row) => (
@@ -170,9 +171,9 @@ export function PendingInvitations({
             {t("pendingInvitations.expired")}
           </span>
         ) : (
-          // `timeAgo` erzählt, wie lange etwas her ist — für ein Datum in der
-          // Zukunft wäre das falschherum ("gerade eben" für "in 14 Tagen").
-          // Ein absolutes Datum sagt hier das Richtige.
+          // `timeAgo` tells how long ago something happened — for a date in
+          // the future that would be backwards ("just now" for "in 14
+          // days"). An absolute date says the right thing here.
           <time
             dateTime={row.expires.toISOString()}
             title={row.expires.toLocaleString()}

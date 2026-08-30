@@ -1,5 +1,5 @@
-/* Panel, Header und Footer kommen aus components/ui/layout/Modal —
-   hier stehen nur die Inhalte. */
+/* Panel, header, and footer come from components/ui/layout/Modal —
+   only the content lives here. */
 
 .body {
   gap: 16px;
@@ -30,7 +30,7 @@
   color: var(--on-surface-variant);
 }
 
-/* Wie in der Mitgliedertabelle: der Pfeil steht neben der Rolle, nicht in ihr. */
+/* As in the members table: the arrow sits next to the role, not inside it. */
 .roleTrigger {
   display: inline-flex;
   align-items: center;
@@ -77,9 +77,8 @@
   color: var(--outline);
 }
 
-/* Eine Zeile pro E-Mail — dieselbe zweistufige Modal-UX (Formular →
-   Bestätigung) wie beim Einzel-Invite, nur mit mehreren Ergebnissen statt
-   einem. */
+/* One row per email — the same two-step modal UX (form → confirmation) as
+   the single invite, just with multiple results instead of one. */
 .resultList {
   display: flex;
   flex-direction: column;

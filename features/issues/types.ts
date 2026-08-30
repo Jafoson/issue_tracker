@@ -10,11 +10,12 @@ import type {
 } from "@/types";
 
 /**
- * Nachschlagedaten, mit denen eine Issue-Karte die IDs am Issue auflöst:
- * Projekt-Prefix, Assignee, Labelnamen, Typfarbe.
+ * Lookup data an issue card uses to resolve the IDs on the issue: project
+ * prefix, assignee, label names, type color.
  *
- * Bewusst als Bündel statt als Einzel-Props — das Board und seine Spalten
- * benutzen nichts davon selbst, sie reichen es nur bis zur Karte durch.
+ * Deliberately a single bundle rather than individual props — the board
+ * and its columns don't use any of it themselves, they only pass it
+ * through to the card.
  */
 export interface IssueLookups {
   projects: Project[];
@@ -24,12 +25,12 @@ export interface IssueLookups {
 }
 
 /**
- * Workspace-Daten, die eine Bearbeitungsoberfläche für ein Issue braucht:
- * jeder Picker (Status, Priorität, Assignee, Label, Projekt) arbeitet auf einer
- * dieser Listen, und `me` steht am erzeugten Datensatz.
+ * Workspace data an editing UI for an issue needs: every picker (status,
+ * priority, assignee, label, project) operates on one of these lists, and
+ * `me` identifies the record making the edit.
  *
- * Wird von einer Server Component geholt und als Prop hereingereicht — Modals
- * werden aus Client-Kontexten heraus geöffnet und können nicht selbst abfragen.
+ * Fetched by a server component and passed down as a prop — modals are
+ * opened from client contexts and can't query for themselves.
  */
 export interface IssueEditorData {
   workspaceId: string;
@@ -39,31 +40,32 @@ export interface IssueEditorData {
   labels: Label[];
   statuses: Status[];
   priorities: Priority[];
-  /** Für den `#`-Trigger im Editor — Issues des Workspace zum Verlinken. */
+  /** For the `#` trigger in the editor — the workspace's issues to link to. */
   searchIssues: SearchableIssue[];
 }
 
-/** Der Composer braucht zusätzlich die Issue-Typen für seinen Typ-Picker. */
+/** The composer additionally needs the issue types for its type picker. */
 export interface IssueComposerData extends IssueEditorData {
   issueTypes: IssueType[];
   /**
-   * Projekte, in denen der Benutzer `issue.create` hat — die Teilmenge von
-   * `projects`, in der ein neues Issue entstehen darf.
+   * Projects where the user has `issue.create` — the subset of `projects`
+   * a new issue can actually be created in.
    *
-   * Bewusst eine eigene Liste und keine Filterung von `projects`: die dient auch
-   * als Nachschlagetabelle für bestehende Issues (Prefix, Farbe). Wer sie
-   * kürzte, um Knöpfe zu verstecken, hätte Karten ohne Projektnamen.
+   * Deliberately its own list rather than a filtered version of `projects`:
+   * that list also serves as the lookup table for existing issues (prefix,
+   * color). Trimming it to hide buttons would leave cards without project
+   * names.
    *
-   * Leer heißt: kein „Neues Issue" — nirgends. Entschieden wird das in
-   * `features/issues/editor-data.ts`, nicht in den vier Knöpfen.
+   * Empty means: no "New issue" — anywhere. That's decided in
+   * `features/issues/editor-data.ts`, not in the four individual buttons.
    */
   creatableProjectIds: string[];
 }
 
 /**
- * Teiländerung an einem Issue — genau die Felder, die `updateIssue` schreibt.
- * Jede Oberfläche, die einen Picker anbietet (Liste, Board, Detailansicht),
- * reicht darüber ihre Änderung durch.
+ * A partial change to an issue — exactly the fields `updateIssue` writes.
+ * Every UI that offers a picker (list, board, detail view) passes its
+ * change through this.
  */
 export interface IssuePatch {
   status?: string;

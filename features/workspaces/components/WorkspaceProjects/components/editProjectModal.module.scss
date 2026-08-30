@@ -1,6 +1,6 @@
-/* Panel, Header und Footer kommen aus components/ui/layout/Modal —
-   hier stehen nur die Formularfelder. Dieselben Maße wie im Anlege-Dialog
-   (`CreateProjectModal`): es sind dieselben Felder, nur mit Inhalt. */
+/* Panel, header, and footer come from components/ui/layout/Modal —
+   only the form fields live here. Same measurements as in the creation
+   dialog (`CreateProjectModal`): these are the same fields, just populated. */
 
 .body {
   gap: 18px;
@@ -23,8 +23,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Erklärt die Folge der Auswahl darüber — dieselbe Rolle wie `hint` am Input,
-   deshalb auch dessen Ton. */
+/* Explains the consequence of the selection above — same role as `hint` on
+   the Input, hence the same tone. */
 .hint {
   font-size: var(--text-xs);
   color: var(--on-surface-variant);

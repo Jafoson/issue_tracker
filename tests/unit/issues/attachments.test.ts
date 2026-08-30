@@ -89,7 +89,7 @@ function reset() {
 describe("requestIssueAttachmentUpload()", () => {
   beforeEach(reset);
 
-  it("prüft dieselbe Berechtigung wie updateIssue", async () => {
+  it("checks the same permission as updateIssue", async () => {
     mockRequestAttachmentUpload.mockResolvedValue({
       ok: true,
       key: "attachments/i1/x.png",
@@ -112,7 +112,7 @@ describe("requestIssueAttachmentUpload()", () => {
     ]);
   });
 
-  it("reicht das Ergebnis der Storage-Schicht unverändert durch", async () => {
+  it("passes the storage layer's result through unchanged", async () => {
     mockRequestAttachmentUpload.mockResolvedValue({
       error: "File is too large (max. 100 MB).",
     });
@@ -132,7 +132,7 @@ describe("requestIssueAttachmentUpload()", () => {
     });
   });
 
-  it("lehnt ohne Berechtigung ab, bevor die Storage-Schicht läuft", async () => {
+  it("rejects without permission before the storage layer runs", async () => {
     mockRequirePermissionOr.mockRejectedValue(new Error("denied"));
     await expect(
       requestIssueAttachmentUpload(ISSUE_ID, {
@@ -148,7 +148,7 @@ describe("requestIssueAttachmentUpload()", () => {
 describe("confirmIssueAttachmentUpload()", () => {
   beforeEach(reset);
 
-  it("legt bei einem Fehler der Storage-Schicht keine Zeile an", async () => {
+  it("doesn't create a row when the storage layer errors", async () => {
     mockFinalizeAttachmentUpload.mockResolvedValue({
       error: "Upload not found — please try again.",
     });
@@ -165,7 +165,7 @@ describe("confirmIssueAttachmentUpload()", () => {
     expect(mockAttachmentCreate).not.toHaveBeenCalled();
   });
 
-  it("legt die Zeile mit der tatsächlichen Größe an und löst die URL auf", async () => {
+  it("creates the row with the actual size and resolves the URL", async () => {
     mockFinalizeAttachmentUpload.mockResolvedValue({ ok: true, size: 4096 });
     mockAttachmentCreate.mockResolvedValue({
       id: "att-1",
@@ -214,7 +214,7 @@ describe("confirmIssueAttachmentUpload()", () => {
 describe("addIssueLinkAttachment()", () => {
   beforeEach(reset);
 
-  it("lehnt eine Adresse ohne http(s) ab", async () => {
+  it("rejects a URL without http(s)", async () => {
     const result = await addIssueLinkAttachment(ISSUE_ID, {
       url: "javascript:alert(1)",
     });
@@ -222,7 +222,7 @@ describe("addIssueLinkAttachment()", () => {
     expect(mockAttachmentCreate).not.toHaveBeenCalled();
   });
 
-  it("übernimmt den angegebenen Namen", async () => {
+  it("adopts the given name", async () => {
     mockAttachmentCreate.mockResolvedValue({
       id: "att-2",
       name: "Figma",
@@ -251,7 +251,7 @@ describe("addIssueLinkAttachment()", () => {
     expect(result.attachment.size).toBeNull();
   });
 
-  it("reicht einen geratenen Bild-MIME-Type durch", async () => {
+  it("passes a guessed image MIME type through", async () => {
     mockAttachmentCreate.mockResolvedValue({
       id: "att-img",
       name: "photo.png",
@@ -273,7 +273,7 @@ describe("addIssueLinkAttachment()", () => {
     expect(result.attachment.mimeType).toBe("image/png");
   });
 
-  it("leitet den Namen aus dem Hostnamen ab, wenn keiner angegeben ist", async () => {
+  it("derives the name from the hostname when none is given", async () => {
     mockAttachmentCreate.mockResolvedValue({
       id: "att-3",
       name: "figma.com",
@@ -295,14 +295,14 @@ describe("addIssueLinkAttachment()", () => {
 describe("deleteIssueAttachment()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn die Zeile nicht existiert", async () => {
+  it("rejects when the row doesn't exist", async () => {
     mockAttachmentFindUnique.mockResolvedValue(null);
     const result = await deleteIssueAttachment(ISSUE_ID, "att-x");
     expect(result).toEqual({ error: "Not found." });
     expect(mockAttachmentDelete).not.toHaveBeenCalled();
   });
 
-  it("lehnt ab, wenn die Zeile zu einem anderen Issue gehört", async () => {
+  it("rejects when the row belongs to another issue", async () => {
     mockAttachmentFindUnique.mockResolvedValue({
       id: "att-1",
       issueId: "i-other",
@@ -314,7 +314,7 @@ describe("deleteIssueAttachment()", () => {
     expect(mockAttachmentDelete).not.toHaveBeenCalled();
   });
 
-  it("löscht eine Datei-Zeile samt S3-Objekt", async () => {
+  it("deletes a file row along with its S3 object", async () => {
     mockAttachmentFindUnique.mockResolvedValue({
       id: "att-1",
       issueId: ISSUE_ID,
@@ -331,7 +331,7 @@ describe("deleteIssueAttachment()", () => {
     );
   });
 
-  it("löscht eine Link-Zeile ohne S3-Aufruf", async () => {
+  it("deletes a link row without an S3 call", async () => {
     mockAttachmentFindUnique.mockResolvedValue({
       id: "att-2",
       issueId: ISSUE_ID,

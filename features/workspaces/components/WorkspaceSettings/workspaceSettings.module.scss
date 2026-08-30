@@ -1,14 +1,14 @@
-/* Dieselbe Aufteilung wie in den Projekteinstellungen: die Seite scrollt, die
-   Karten darin nicht — und beide nehmen die volle Breite. Das Aussehen der
-   Listen kommt aus `components/ui/layout/Table` (Variante `card`); hier steht
-   nur, was die Zellen füllt.
+/* Same layout as in the project settings: the page scrolls, the cards
+   inside it don't — and both take the full width. The list's appearance
+   comes from `components/ui/layout/Table` (the `card` variant); this file
+   only defines what fills the cells.
 
-   Drei Werte weichen von der Vorgabe der Tabelle ab. Eine Einstellung ist keine
-   Liste gleichartiger Datensätze, sondern ein Formular: die Zeile trägt zwei
-   Textzeilen und ein Bedienelement, also braucht sie Höhe; sie ist von der
-   nächsten getrennt, weil hier jede Zeile für sich steht; und sie leuchtet
-   nicht auf, wenn der Zeiger sie überfährt — anzuklicken gibt es nur das
-   Bedienelement rechts. */
+   Three values deviate from the table's default. A setting isn't a list of
+   uniform records, but a form: the row carries two lines of text and a
+   control, so it needs height; it's separated from the next one because
+   here every row stands on its own; and it doesn't light up when the
+   pointer passes over it — the only clickable thing is the control on the
+   right. */
 .content {
   --table-row-height: 62px;
   --table-divider: var(--outline-variant);
@@ -52,9 +52,9 @@
   gap: 8px;
 }
 
-/* Kein `Table` und keine Karte: Chips brauchen keine Fläche, sie tragen ihre
-   eigene. Der „Hinzufügen“-Chip steht in derselben Reihe wie die vorhandenen
-   Links — ein Chip mehr, keine Zeile für sich. */
+/* No `Table` and no card: chips don't need a surface, they carry their
+   own. The "Add" chip sits in the same row as the existing links — one
+   more chip, not a row of its own. */
 .linksRow {
   display: flex;
   flex-wrap: wrap;
@@ -88,17 +88,17 @@
   line-height: var(--leading-normal);
 }
 
-/* Alle Eingabefelder gleich breit, damit ihre rechten Kanten eine Linie bilden.
-   `flex: none`, weil die Zelle der Tabelle ein Flex-Container ist und das Feld
-   sonst auf die Breite der Farbpalette mitwüchse. */
+/* All input fields the same width, so their right edges form a line.
+   `flex: none` because the table cell is a flex container and the field
+   would otherwise grow to the width of the color palette. */
 .control {
   flex: none;
   width: 280px;
   max-width: 100%;
 }
 
-/* Die einzige Ausnahme: hier steht eine ganze Adresse samt Host, und die soll
-   lesbar sein und nicht im eigenen Kasten scrollen. */
+/* The one exception: this holds a full address including host, and it
+   should be readable without scrolling inside its own box. */
 .urlControl {
   width: 460px;
 }
@@ -110,8 +110,9 @@
   border-radius: var(--radius-sm);
 }
 
-/* Für die Farbwahl im Kopf (`SettingsIdentity`) — sie hat kein eigenes
-   `label`-Prop wie `Input`, also dieselbe Beschriftung von Hand daneben. */
+/* For the color picker in the header (`SettingsIdentity`) — it has no
+   `label` prop of its own like `Input`, so the same label is added by hand
+   next to it. */
 .field {
   display: flex;
   flex-direction: column;
@@ -124,9 +125,9 @@
   color: var(--on-surface-variant);
 }
 
-/* Eine Zahl statt eines Bedienelements — sie steht an derselben Kante wie die
-   Felder darüber und wird in derselben Größe gelesen wie eine Überschrift, weil
-   sie hier die eigentliche Auskunft ist. */
+/* A number instead of a control — it sits at the same edge as the fields
+   above it and reads at the same size as a heading, because here it's the
+   actual point being made. */
 .stat {
   font-size: var(--text-lg);
   font-weight: 600;
@@ -147,10 +148,10 @@
   gap: 6px;
 }
 
-/* Löschen ist nicht rückholbar, also trägt die Karte die Warnfarbe schon im
-   Rahmen. Doppelt benannt, um die Spezifität zu heben: der Rahmen kommt aus
-   `table.module.scss`, und bei gleicher Spezifität entschiede die Reihenfolge
-   der Stylesheets. */
+/* Deletion can't be undone, so the card already carries the warning color
+   in its border. Named twice to raise specificity: the border comes from
+   `table.module.scss`, and at equal specificity the stylesheet order would
+   decide. */
 .dangerCard.dangerCard {
   --table-surface: var(--surface);
 

@@ -54,7 +54,7 @@ function reset() {
 describe("requestAvatarUploadUrl()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(
       await requestAvatarUploadUrl({
@@ -65,7 +65,7 @@ describe("requestAvatarUploadUrl()", () => {
     expect(mockRequestAvatarUpload).not.toHaveBeenCalled();
   });
 
-  it("fragt lib/storage für die eigene Nutzer-Id an", async () => {
+  it("asks lib/storage for the user's own id", async () => {
     mockRequestAvatarUpload.mockResolvedValue({
       ok: true,
       key: "users/u-me/new.png",
@@ -94,7 +94,7 @@ describe("requestAvatarUploadUrl()", () => {
 describe("confirmAvatarUpload()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await confirmAvatarUpload("users/u-me/new.png")).toEqual({
       error: "You must be logged in.",
@@ -102,7 +102,7 @@ describe("confirmAvatarUpload()", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("gibt den Fehler von finalizeAvatarUpload weiter, ohne die DB zu ändern", async () => {
+  it("passes through the error from finalizeAvatarUpload without changing the DB", async () => {
     mockFinalizeAvatarUpload.mockResolvedValue({
       error: "Invalid upload key.",
     });
@@ -112,7 +112,7 @@ describe("confirmAvatarUpload()", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("hinterlegt den neuen Key und löscht den alten best-effort", async () => {
+  it("stores the new key and deletes the old one best-effort", async () => {
     expect(await confirmAvatarUpload("users/u-me/new.png")).toEqual({
       ok: true,
     });
@@ -127,13 +127,13 @@ describe("confirmAvatarUpload()", () => {
 describe("removeAvatar()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await removeAvatar()).toEqual({ error: "You must be logged in." });
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("setzt den Key auf null und löscht das alte Objekt", async () => {
+  it("sets the key to null and deletes the old object", async () => {
     expect(await removeAvatar()).toEqual({ ok: true });
     expect(mockUserUpdate).toHaveBeenCalledWith({
       where: { id: ME },

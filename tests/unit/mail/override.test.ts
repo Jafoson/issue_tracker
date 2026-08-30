@@ -2,19 +2,19 @@ import { describe, expect, it } from "bun:test";
 import { applyPlaceholders, resolveText } from "@/lib/mail/templates/override";
 
 describe("applyPlaceholders()", () => {
-  it("ersetzt bekannte Platzhalter", () => {
+  it("replaces known placeholders", () => {
     expect(
       applyPlaceholders("Hallo {{firstName}}!", { firstName: "Ada" }),
     ).toBe("Hallo Ada!");
   });
 
-  it("lässt einen unbekannten Platzhalter wörtlich stehen", () => {
+  it("leaves an unknown placeholder as literal text", () => {
     expect(applyPlaceholders("Hallo {{unknown}}!", { firstName: "Ada" })).toBe(
       "Hallo {{unknown}}!",
     );
   });
 
-  it("ersetzt denselben Platzhalter mehrfach", () => {
+  it("replaces the same placeholder multiple times", () => {
     expect(
       applyPlaceholders("{{name}} und nochmal {{name}}", { name: "Ada" }),
     ).toBe("Ada und nochmal Ada");
@@ -22,18 +22,18 @@ describe("applyPlaceholders()", () => {
 });
 
 describe("resolveText()", () => {
-  it("nimmt den Default, wenn kein Override gesetzt ist", () => {
+  it("takes the default when no override is set", () => {
     expect(resolveText("Default", undefined, {})).toBe("Default");
   });
 
-  it("nimmt den Default auch bei einem leeren Override-Feld", () => {
+  it("takes the default for an empty override field too", () => {
     // Otherwise, filling in just one field in the admin editor would pull
     // the other, still-empty fields to empty instead of leaving them at
     // their default.
     expect(resolveText("Default", "", {})).toBe("Default");
   });
 
-  it("nimmt den platzhalter-ersetzten Override, wenn einer gesetzt ist", () => {
+  it("takes the placeholder-substituted override when one is set", () => {
     expect(
       resolveText("Default", "Hallo {{firstName}}", { firstName: "Ada" }),
     ).toBe("Hallo Ada");

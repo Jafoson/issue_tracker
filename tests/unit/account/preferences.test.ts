@@ -27,7 +27,7 @@ function reset() {
 describe("updateAppearance()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await updateAppearance({ theme: "light" })).toEqual({
       error: "You must be logged in.",
@@ -37,7 +37,7 @@ describe("updateAppearance()", () => {
 
   // The value ends up as `data-theme` on the document — whatever got through
   // here would end up in the HTML.
-  it("lässt nur bekannte Werte durch", async () => {
+  it("only lets known values through", async () => {
     expect(
       await updateAppearance({ theme: "neon" as unknown as "dark" }),
     ).toEqual({ error: "Unknown theme." });
@@ -46,7 +46,7 @@ describe("updateAppearance()", () => {
 
   // The row is only created on the first change; anything not specified stays
   // at the `@default` from the schema.
-  it("legt die Zeile an, wenn es noch keine gibt", async () => {
+  it("creates the row if there isn't one yet", async () => {
     expect(await updateAppearance({ theme: "system" })).toEqual({ ok: true });
     expect(mockUpsert).toHaveBeenCalledWith({
       where: { userId: ME },
@@ -56,7 +56,7 @@ describe("updateAppearance()", () => {
   });
 
   // Nothing to change is not an error — the row stays as it is.
-  it("schreibt nichts, wenn kein Wert kommt", async () => {
+  it("writes nothing when no value is given", async () => {
     expect(await updateAppearance({})).toEqual({ ok: true });
     expect(mockUpsert.mock.calls[0][0].update).toEqual({});
   });
@@ -65,7 +65,7 @@ describe("updateAppearance()", () => {
 describe("setNotification()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await setNotification("assignedInApp", false)).toEqual({
       error: "You must be logged in.",
@@ -75,7 +75,7 @@ describe("setNotification()", () => {
 
   // The key becomes the column name — anything not in the table
   // is left out.
-  it("lässt nur bekannte Schalter durch", async () => {
+  it("only lets known toggles through", async () => {
     expect(
       await setNotification("passwordHash" as NotificationKey, true),
     ).toEqual({ error: "Unknown setting." });
@@ -85,7 +85,7 @@ describe("setNotification()", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  it("schreibt genau den einen Schalter", async () => {
+  it("writes exactly the one toggle", async () => {
     expect(await setNotification("commentEmail", true)).toEqual({ ok: true });
     expect(mockUpsert).toHaveBeenCalledWith({
       where: { userId: ME },
@@ -94,7 +94,7 @@ describe("setNotification()", () => {
     });
   });
 
-  it("kennt jeden Anlass in beiden Kanälen", async () => {
+  it("knows every occasion in both channels", async () => {
     const keys: NotificationKey[] = [
       "assignedInApp",
       "assignedEmail",

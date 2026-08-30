@@ -11,47 +11,47 @@ import {
 // diverges, a shared link opens something different for the recipient than
 // what the sender saw.
 
-describe("Die Vorgabe", () => {
-  it("ist der Steckbrief", () => {
+describe("The default", () => {
+  it("is the profile", () => {
     // It answers "what is this" — the question of someone opening a project
     // for the first time.
     expect(DEFAULT_PROJECT_VIEW).toBe("profile");
     expect(PROJECT_VIEWS).toContain(DEFAULT_PROJECT_VIEW);
   });
 
-  it("gilt, wenn gar nichts hereinkommt", () => {
+  it("applies when nothing comes in at all", () => {
     expect(toProjectView()).toBe("profile");
     expect(toProjectView(undefined, null)).toBe("profile");
   });
 });
 
-describe("Die Rangfolge", () => {
-  it("nimmt den ersten bekannten Wert", () => {
+describe("The precedence", () => {
+  it("takes the first known value", () => {
     expect(toProjectView("dashboard", "profile")).toBe("dashboard");
     expect(toProjectView("profile", "dashboard")).toBe("profile");
   });
 
-  it("überspringt, was fehlt, und nimmt den nächsten", () => {
+  it("skips what's missing and takes the next one", () => {
     // The everyday case: no URL, but a note in the account.
     expect(toProjectView(undefined, "dashboard")).toBe("dashboard");
     expect(toProjectView(null, "dashboard")).toBe("dashboard");
   });
 
-  it("lässt die Adresse über den Vermerk im Konto siegen", () => {
+  it("lets the URL win over the note in the account", () => {
     // A shared link should show what the sender saw.
     expect(toProjectView("profile", "dashboard")).toBe("profile");
   });
 });
 
-describe("Unbekannte Werte", () => {
-  it("fallen durch, statt zu werfen", () => {
+describe("Unknown values", () => {
+  it("fall through instead of throwing", () => {
     // A typo in a parameter that only selects the presentation is no reason
     // for a 404.
     expect(toProjectView("gibtsnicht")).toBe("profile");
     expect(toProjectView("")).toBe("profile");
   });
 
-  it("halten den nächsten Kandidaten nicht auf", () => {
+  it("don't hold up the next candidate", () => {
     expect(toProjectView("gibtsnicht", "dashboard")).toBe("dashboard");
   });
 });

@@ -12,17 +12,15 @@ import styles from "./addLinkDialog.module.scss";
 
 interface Props {
   close: () => void;
-  /** Trägt den fertigen Link in die Liste des aufrufenden Formulars ein — der
-   * Dialog selbst schreibt nichts, das Formular speichert erst beim eigenen
-   * „Speichern“. */
+  /** Adds the finished link to the calling form's list — the dialog itself
+   * writes nothing, the form only saves on its own "Save". */
   onAdd: (link: { label: string; url: string }) => void;
 }
 
 /**
- * „Link hinzufügen“ als eigener Dialog statt einer weiteren Zeile im
- * Formular — zwei Felder, eine Absicht, dann zu. Die Liste der Einstellungen
- * bleibt dadurch eine Liste aus fertigen Chips statt eines wachsenden Stapels
- * halb ausgefüllter Eingabezeilen.
+ * "Add link" as its own dialog instead of another row in the form — two
+ * fields, one intent, then closed. This keeps the settings list a list of
+ * finished chips instead of a growing stack of half-filled input rows.
  */
 export function AddLinkDialog({ close, onAdd }: Props) {
   const t = useTranslations();

@@ -8,8 +8,8 @@ import type {
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
-/** Wie `NotificationFilter` in eine zusätzliche `where`-Bedingung übersetzt
- *  wird — `"all"` schränkt nichts weiter ein. */
+/** How `NotificationFilter` translates into an additional `where` condition
+ *  — `"all"` doesn't restrict anything further. */
 function scopeWhere(filter: NotificationFilter) {
   if (filter === "workspace") return { projectId: null };
   if (filter === "project") return { projectId: { not: null } };
@@ -17,12 +17,12 @@ function scopeWhere(filter: NotificationFilter) {
 }
 
 /**
- * Die Inbox des eingeloggten Users im aktiven Workspace, neueste zuerst.
+ * The logged-in user's inbox in the active workspace, newest first.
  *
- * `project`/`issue` sind bei jeder Zeile konsistent: `Notification.projectId`
- * ist bei Issue-Ereignissen immer das Projekt des Issues, also liefert die
- * eine Relation `project` alles, was `identifier` (`PREFIX-KEY`) braucht, ohne
- * zusätzlich über `issue.project` zu gehen.
+ * `project`/`issue` are consistent on every row: `Notification.projectId`
+ * is always the issue's project for issue events, so the single `project`
+ * relation supplies everything `identifier` (`PREFIX-KEY`) needs, without
+ * additionally going through `issue.project`.
  */
 export const getNotifications = cache(
   async (
@@ -74,8 +74,8 @@ export const getNotifications = cache(
   },
 );
 
-/** Wie viele ungelesene Benachrichtigungen im aktiven Workspace warten — für
- *  das Badge an der Glocke im UserMenu. */
+/** How many unread notifications are waiting in the active workspace — for
+ *  the badge on the bell in UserMenu. */
 export const getUnreadNotificationCount = cache(
   async (workspaceId: string): Promise<number> => {
     const session = await getSession();

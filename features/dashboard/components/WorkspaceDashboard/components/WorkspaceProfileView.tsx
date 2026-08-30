@@ -23,7 +23,7 @@ import { fullName } from "@/lib/utils/string";
 import styles from "./workspaceProfileView.module.scss";
 
 interface Props {
-  /** Name, Farbe und Id stehen in der Kopfkarte bzw. brauchen die Dialoge zum Anlegen. */
+  /** Name, color, and id are used in the header card, or needed by the creation dialogs. */
   workspace: {
     id: string;
     name: string;
@@ -33,17 +33,17 @@ interface Props {
   workspaceSlug: string;
   profile: WorkspaceProfile;
   stats: DashboardStats;
-  /** Adressen der Nachbarbereiche — die Kachelreihe unten verlinkt sie. */
+  /** Addresses of the neighboring areas — the tile row below links to them. */
   links: {
     projects: string;
     members: string;
     teams: string;
     settings: string;
-    /** Die volle, filterbare Liste — die Karte unten zeigt nur einen Ausschnitt. */
+    /** The full, filterable list — the card below shows only an excerpt. */
     activity: string;
   };
-  /** Ausschnitt des Aktivitäts-Protokolls — ohne `audit.view` schon auf die
-   * eigenen Einträge gefiltert (`getWorkspaceActivity`). */
+  /** Excerpt of the activity log — without `audit.view` already filtered to
+   * your own entries (`getWorkspaceActivity`). */
   activity: ActivityView;
 }
 
@@ -51,24 +51,24 @@ interface CardProps {
   title: string;
   count?: number;
   empty?: boolean;
-  /** Gestrichelter Rahmen unabhängig vom Inhalt — für Listen-Cards, die immer
-   * so aussehen sollen, nicht nur wenn sie leer sind. */
+  /** Dashed border regardless of content — for list cards that should
+   * always look this way, not only when empty. */
   dashed?: boolean;
-  /** Knopf oben rechts neben Titel und Zahl, z. B. zum Anlegen. */
+  /** Button top-right next to title and count, e.g. to create something. */
   action?: ReactNode;
   /**
-   * Für die Mitgliederkarte: der Inhalt scrollt in sich selbst, statt die
-   * Karte (und mit ihr die ganze Seite) beliebig in die Länge zu ziehen — bei
-   * vielen Mitgliedern bleiben Titel und „Alle Mitglieder" so erreichbar, ohne
-   * dass man sich erst an ihnen vorbeischrollen muss.
+   * For the members card: the content scrolls within itself instead of
+   * stretching the card (and with it the whole page) arbitrarily long — with
+   * many members, the title and "all members" stay reachable this way,
+   * without having to scroll past them first.
    */
   scrollBody?: boolean;
   /**
-   * Für die Aktivitäts-Karte: sie nimmt sich den Platz, der nach Kopfkarte,
-   * Eckdaten und Teams/Projekte in `.main` noch übrig ist. `.main` ist eine
-   * Flex-Spalte ohne fremdbestimmte Höhe — anders als `.side`, das `.page`
-   * per `align-items: stretch` automatisch dehnt. Ergibt nur zusammen mit
-   * `scrollBody` einen Sinn.
+   * For the activity card: it claims whatever space is left over in `.main`
+   * after the header card, key facts, and teams/projects. `.main` is a flex
+   * column with no externally determined height — unlike `.side`, which
+   * `.page` stretches automatically via `align-items: stretch`. Only makes
+   * sense together with `scrollBody`.
    */
   grow?: boolean;
   footer?: ReactNode;
@@ -108,10 +108,11 @@ function Card({
       data-scroll={scrollBody || undefined}
       data-grow={grow || undefined}
     >
-      {/* Scrollt als Ganzes (Kopf, Liste, Fuß) statt nur die Zeilen dazwischen
-          — sonst deckt der Scrollbalken nicht die ganze Höhe der Karte ab.
-          Kopf und Fuß bleiben trotzdem stehen: `position: sticky`, siehe
-          `.card[data-scroll] .cardHead`/`.cardLink` im Stylesheet. */}
+      {/* Scrolls as a whole (header, list, footer) instead of just the rows
+          in between — otherwise the scrollbar wouldn't cover the card's
+          full height. Header and footer still stay in place:
+          `position: sticky`, see `.card[data-scroll] .cardHead`/`.cardLink`
+          in the stylesheet. */}
       {scrollBody ? (
         <div className={styles.cardScroll}>{content}</div>
       ) : (
@@ -122,12 +123,12 @@ function Card({
 }
 
 /**
- * Der Steckbrief des Workspace: was er ist, wem er gehört, woraus er besteht.
+ * The workspace's profile card: what it is, who owns it, what it consists of.
  *
- * Dieselbe Anordnung wie `ProjectProfileView` eine Ebene tiefer — Kopfkarte,
- * Eckdaten, zwei Karten, Wege hinaus —, nur ohne Zweck-Satz und Kürzel: der
- * Workspace kennt beides nicht. An die Stelle der Labels rückt seine Liste der
- * Projekte, die hier die Frage „woraus besteht das hier" beantwortet.
+ * The same layout as `ProjectProfileView` one level down — header card, key
+ * facts, two cards, ways out — just without a purpose sentence and prefix:
+ * the workspace has neither. In place of labels, its list of projects steps
+ * in, answering the question "what does this consist of" here.
  */
 export function WorkspaceProfileView({
   workspace,
@@ -142,9 +143,10 @@ export function WorkspaceProfileView({
   const router = useRouter();
   const { openModal } = useModal();
 
-  // Kandidaten für den Team-Dialog sind die Workspace-Mitglieder — hier schon
-  // als flache Liste da, weil der Steckbrief sie ohnehin nach Rolle gruppiert
-  // geladen hat; eine eigene Abfrage nur für den Dialog wäre doppelt.
+  // Candidates for the team dialog are the workspace members — already
+  // available here as a flat list, because the profile card has loaded
+  // them grouped by role anyway; a separate query just for the dialog
+  // would be redundant.
   const candidates = profile.roles.flatMap((role) => role.members);
 
   const openNewTeam = () =>
@@ -189,10 +191,10 @@ export function WorkspaceProfileView({
     },
   ];
 
-  // Ohne member.view führte die Kachel geradewegs in ein 404 — die Seite
-  // dahinter ist jetzt genauso gesperrt wie der Tab (`getWorkspaceMembersView`).
-  // Ohne canViewSettings bliebe die Kachel sonst die einzige Tür zu den
-  // Einstellungen, obwohl der Sidebar-Tab dafür längst ausgeblendet ist.
+  // Without member.view, the tile would lead straight into a 404 — the
+  // page behind it is now just as locked as the tab (`getWorkspaceMembersView`).
+  // Without canViewSettings, the tile would otherwise remain the only door
+  // to settings, even though the sidebar tab for it is already hidden.
   const shortcuts = (
     [
       { key: "projects", icon: "lucide:folders", href: links.projects },
@@ -212,7 +214,7 @@ export function WorkspaceProfileView({
   return (
     <div className={styles.page}>
       <div className={styles.main}>
-        {/* ── 1. Wer bin ich ── */}
+        {/* ── 1. Who am I ── */}
         <header className={styles.hero}>
           <Avatar
             avatar={{
@@ -229,9 +231,9 @@ export function WorkspaceProfileView({
             {profile.desc ? (
               <p className={styles.desc}>{profile.desc}</p>
             ) : (
-              // Wie in `ProjectProfileView`: ohne `canUpdate` gibt es keinen
-              // „Bearbeiten"-Knopf, zu dem der Platzhalter einladen könnte —
-              // dann bleibt nur der Name.
+              // As in `ProjectProfileView`: without `canUpdate` there's no
+              // "edit" button the placeholder could invite you to — then
+              // only the name remains.
               profile.canUpdate && (
                 <p className={styles.descEmpty}>
                   {t("dashboard.noDescription")}
@@ -248,9 +250,9 @@ export function WorkspaceProfileView({
           )}
         </header>
 
-        {/* Wichtige Adressen direkt unter der Kopfkarte — große Chips statt
-            einer weiteren Karte, weil es keine Liste von Datensätzen ist,
-            sondern eine Handvoll Wege nach draußen. */}
+        {/* Important addresses directly below the header card — large chips
+            instead of another card, because it isn't a list of records but
+            a handful of ways out. */}
         {profile.links.length > 0 && (
           <ul className={styles.links}>
             {profile.links.map((link) => (
@@ -275,7 +277,7 @@ export function WorkspaceProfileView({
           </ul>
         )}
 
-        {/* ── 2. Die Eckdaten ── */}
+        {/* ── 2. The key facts ── */}
         <dl className={styles.facts}>
           {facts.map((fact) => (
             <div key={fact.key} className={styles.fact}>
@@ -293,7 +295,7 @@ export function WorkspaceProfileView({
           ))}
         </dl>
 
-        {/* ── 3. Teams und Projekte ── */}
+        {/* ── 3. Teams and projects ── */}
         <div className={styles.columns}>
           <Card
             title={t("nav.teams")}
@@ -377,9 +379,9 @@ export function WorkspaceProfileView({
           </Card>
         </div>
 
-        {/* ── Aktivität ── Wer hat welches Projekt angelegt, wen aufgenommen,
-            usw. Immer sichtbar, aber ohne `audit.view` schon serverseitig auf
-            die eigenen Einträge gefiltert (`getWorkspaceActivity`). */}
+        {/* ── Activity ── Who created which project, who was added, etc.
+            Always visible, but without `audit.view` already filtered
+            server-side to your own entries (`getWorkspaceActivity`). */}
         <Card
           title={t("nav.activity")}
           count={activity.entries.length}
@@ -407,13 +409,14 @@ export function WorkspaceProfileView({
         </Card>
       </div>
 
-      {/* Die Mitglieder als eigene Spalte rechts. Ohne `member.view` bleibt nur
-          die Leitung (`named`) und der Plattform-Zugriff übrig — `profile.roles`
-          ist dafür serverseitig schon gefiltert (`wsProfileFor`). Ganz weg fällt
-          die Spalte erst, wenn wirklich nichts davon übrig bleibt. Kopfzahl und
-          Link zur vollen Liste bleiben an `canViewMembers` hängen: die Seite
-          dahinter ist ohne das Recht ohnehin gesperrt, und die Zahl verriete die
-          volle Besetzung, die genau hier nicht gezeigt werden soll. */}
+      {/* Members as their own column on the right. Without `member.view`,
+          only leadership (`named`) and platform access remain —
+          `profile.roles` is already filtered server-side for that
+          (`wsProfileFor`). The column disappears entirely only once truly
+          nothing is left of it. The header count and the link to the full
+          list stay tied to `canViewMembers`: the page behind it is locked
+          without that permission anyway, and the count would reveal the
+          full roster, which is precisely what shouldn't be shown here. */}
       {(profile.canViewMembers ||
         named.length > 0 ||
         profile.platformStaff.length > 0) && (
@@ -535,7 +538,7 @@ export function WorkspaceProfileView({
         </aside>
       )}
 
-      {/* ── 4. Die Wege hinaus ── */}
+      {/* ── 4. The ways out ── */}
       <nav className={styles.next} aria-label={t("dashboard.goOn")}>
         <span className={styles.subLabel}>{t("dashboard.goOn")}</span>
         <ul className={styles.tiles}>

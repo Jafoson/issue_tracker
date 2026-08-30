@@ -30,7 +30,7 @@ function reset() {
 beforeEach(reset);
 
 describe("sendMail()", () => {
-  it("verschickt nichts, wenn kein SMTP konfiguriert ist", async () => {
+  it("sends nothing when SMTP is not configured", async () => {
     mockMailConfig.mockReturnValue(null);
     mockGetTransport.mockReturnValue(null);
 
@@ -39,7 +39,7 @@ describe("sendMail()", () => {
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("übergibt Absender und Nachricht an den Transport", async () => {
+  it("passes sender and message to the transport", async () => {
     mockMailConfig.mockReturnValue({
       host: "smtp.example.com",
       port: 587,
@@ -60,7 +60,7 @@ describe("sendMail()", () => {
     });
   });
 
-  it("schluckt einen Versandfehler, statt ihn weiterzureichen", async () => {
+  it("swallows a send error instead of propagating it", async () => {
     mockMailConfig.mockReturnValue({
       host: "smtp.example.com",
       port: 587,

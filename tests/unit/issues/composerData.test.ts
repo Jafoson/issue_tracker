@@ -55,26 +55,26 @@ function allowIn(...projectIds: string[]) {
   );
 }
 
-describe("getIssueComposerData() — wo darf angelegt werden", () => {
+describe("getIssueComposerData() — where creation is allowed", () => {
   beforeEach(() => {
     mockGetMe.mockReset();
     mockGetMe.mockResolvedValue(ME);
     mockHasPermission.mockReset();
   });
 
-  it("nennt nur die Projekte mit issue.create", async () => {
+  it("names only the projects with issue.create", async () => {
     allowIn("p-1", "p-3");
     const data = await getIssueComposerData();
     expect(data?.creatableProjectIds).toEqual(["p-1", "p-3"]);
   });
 
-  it("gibt eine leere Liste, wenn nirgends etwas entstehen darf", async () => {
+  it("returns an empty list when nothing may be created anywhere", async () => {
     allowIn();
     const data = await getIssueComposerData();
     expect(data?.creatableProjectIds).toEqual([]);
   });
 
-  it("fragt je sichtbarem Projekt im Projekt-Kontext", async () => {
+  it("asks once per visible project in the project context", async () => {
     allowIn("p-1");
     await getIssueComposerData();
     expect(mockHasPermission.mock.calls).toEqual([
@@ -86,13 +86,13 @@ describe("getIssueComposerData() — wo darf angelegt werden", () => {
 
   // `projects` also serves as the lookup table for existing issues (prefix,
   // color). Trimming it to hide buttons would leave cards without a project.
-  it("kürzt die Projektliste selbst nicht", async () => {
+  it("doesn't trim the project list itself", async () => {
     allowIn("p-1");
     const data = await getIssueComposerData();
     expect(data?.projects).toHaveLength(3);
   });
 
-  it("gibt null ohne Session — daran hängt die ganze Oberfläche", async () => {
+  it("returns null without a session — the whole UI depends on it", async () => {
     mockGetMe.mockResolvedValue(null);
     allowIn("p-1");
     expect(await getIssueComposerData()).toBeNull();

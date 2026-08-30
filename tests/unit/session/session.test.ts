@@ -15,25 +15,25 @@ describe("getSession()", () => {
     mockAuth.mockReset();
   });
 
-  it("gibt userId zurück wenn eine Session mit user.id existiert", async () => {
+  it("returns userId when a session with user.id exists", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-123" } });
     const session = await getSession();
     expect(session).toEqual({ userId: "user-123" });
   });
 
-  it("gibt null zurück wenn keine Session vorhanden ist", async () => {
+  it("returns null when no session exists", async () => {
     mockAuth.mockResolvedValue(null);
     const session = await getSession();
     expect(session).toBeNull();
   });
 
-  it("gibt null zurück wenn die Session keinen user hat", async () => {
+  it("returns null when the session has no user", async () => {
     mockAuth.mockResolvedValue({});
     const session = await getSession();
     expect(session).toBeNull();
   });
 
-  it("gibt null zurück wenn user.id fehlt", async () => {
+  it("returns null when user.id is missing", async () => {
     mockAuth.mockResolvedValue({ user: { name: "Ada" } });
     const session = await getSession();
     expect(session).toBeNull();

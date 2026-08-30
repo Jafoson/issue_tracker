@@ -129,27 +129,27 @@ function reset() {
 describe("createWorkspaceInviteLink()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await createWorkspaceInviteLink(WS, "member")).toEqual({
       error: "You must be logged in.",
     });
   });
 
-  it("verlangt member.invite im Workspace", async () => {
+  it("requires member.invite in the workspace", async () => {
     mockCan.mockResolvedValue(false);
     expect(await createWorkspaceInviteLink(WS, "member")).toEqual({
       error: "You are not allowed to invite people to this workspace.",
     });
   });
 
-  it("vergibt die Owner-Rolle nicht", async () => {
+  it("does not hand out the owner role", async () => {
     expect(await createWorkspaceInviteLink(WS, "owner")).toEqual({
       error: "The owner role cannot be handed out.",
     });
   });
 
-  it("vergibt keine Rolle über dem eigenen Rang", async () => {
+  it("does not assign a role above one's own rank", async () => {
     mockAccessFor.mockResolvedValue(access(2));
     mockRoleFindFirst.mockResolvedValue({ id: "sys:WORKSPACE:admin", rank: 5 });
     expect(await createWorkspaceInviteLink(WS, "admin")).toEqual({
@@ -157,7 +157,7 @@ describe("createWorkspaceInviteLink()", () => {
     });
   });
 
-  it("erzeugt einen Link und widerruft einen vorherigen für denselben Scope", async () => {
+  it("creates a link and revokes a previous one for the same scope", async () => {
     const result = await createWorkspaceInviteLink(WS, "member");
 
     expect(result).toMatchObject({ ok: true });
@@ -182,7 +182,7 @@ describe("createWorkspaceInviteLink()", () => {
     });
   });
 
-  it("trägt eine Ablauffrist ein, wenn übergeben", async () => {
+  it("sets an expiry date when one is passed", async () => {
     const expiresAt = new Date("2030-01-01");
     const result = await createWorkspaceInviteLink(WS, "member", expiresAt);
     expect(result).toMatchObject({ ok: true, expiresAt });
@@ -192,21 +192,21 @@ describe("createWorkspaceInviteLink()", () => {
 describe("revokeInviteLink()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await revokeInviteLink(TOKEN)).toEqual({
       error: "You must be logged in.",
     });
   });
 
-  it("meldet einen unbekannten Link", async () => {
+  it("reports an unknown link", async () => {
     mockInviteLinkFindUnique.mockResolvedValue(null);
     expect(await revokeInviteLink(TOKEN)).toEqual({
       error: "This link no longer exists.",
     });
   });
 
-  it("verlangt member.invite im Workspace für einen Workspace-Link", async () => {
+  it("requires member.invite in the workspace for a workspace link", async () => {
     mockInviteLinkFindUnique.mockResolvedValue({
       workspaceId: WS,
       projectId: null,
@@ -218,7 +218,7 @@ describe("revokeInviteLink()", () => {
     expect(mockInviteLinkUpdate).not.toHaveBeenCalled();
   });
 
-  it("verlangt member.invite im Projekt für einen Projekt-Link", async () => {
+  it("requires member.invite in the project for a project link", async () => {
     mockInviteLinkFindUnique.mockResolvedValue({
       workspaceId: WS,
       projectId: "p-1",
@@ -229,7 +229,7 @@ describe("revokeInviteLink()", () => {
     });
   });
 
-  it("setzt revokedAt", async () => {
+  it("sets revokedAt", async () => {
     mockInviteLinkFindUnique.mockResolvedValue({
       workspaceId: WS,
       projectId: null,
@@ -257,21 +257,21 @@ describe("joinViaInviteLink()", () => {
     role: { key: "member", name: "Member" },
   };
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await joinViaInviteLink(TOKEN)).toEqual({
       error: "You must be logged in.",
     });
   });
 
-  it("meldet einen ungültigen Link", async () => {
+  it("reports an invalid link", async () => {
     mockInviteLinkFindUnique.mockResolvedValue(null);
     expect(await joinViaInviteLink(TOKEN)).toEqual({
       error: "This invite link is no longer valid. Ask for a new one.",
     });
   });
 
-  it("meldet einen widerrufenen Link", async () => {
+  it("reports a revoked link", async () => {
     mockInviteLinkFindUnique.mockResolvedValue({
       ...validLink,
       revokedAt: new Date(),
@@ -281,7 +281,7 @@ describe("joinViaInviteLink()", () => {
     });
   });
 
-  it("meldet einen abgelaufenen Link", async () => {
+  it("reports an expired link", async () => {
     mockInviteLinkFindUnique.mockResolvedValue({
       ...validLink,
       expiresAt: new Date("2000-01-01"),
@@ -291,7 +291,7 @@ describe("joinViaInviteLink()", () => {
     });
   });
 
-  it("tritt als neues Mitglied bei und wird in öffentliche Projekte aufgenommen", async () => {
+  it("joins as a new member and is enrolled in public projects", async () => {
     mockInviteLinkFindUnique.mockResolvedValue(validLink);
 
     const result = await joinViaInviteLink(TOKEN);
@@ -311,7 +311,7 @@ describe("joinViaInviteLink()", () => {
     });
   });
 
-  it("ist idempotent — schon Mitglied bleibt unangetastet", async () => {
+  it("is idempotent — an existing member stays untouched", async () => {
     mockInviteLinkFindUnique.mockResolvedValue(validLink);
     mockTxWorkspaceMemberFindUnique.mockResolvedValue({ userId: ACTOR });
 

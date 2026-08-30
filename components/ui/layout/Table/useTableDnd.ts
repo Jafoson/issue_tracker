@@ -5,30 +5,30 @@ import { useRef, useState } from "react";
 import { FLAT_GROUP_ID, type TableGroup } from "./types";
 
 /**
- * Wohin eine gezogene Zeile fallen gelassen wurde.
+ * Where a dragged row was dropped.
  *
- * Bewusst nicht als "neuer Index in der Gesamtliste": die Nachbarn sind das,
- * woraus ein Aufrufer mit Rangspalte seinen neuen Rang bildet (Mitte zwischen
- * beiden), und `groupId` sagt ihm, welches Feld die Gruppe abbildet.
+ * Deliberately not "new index in the overall list": the neighbors are what
+ * a caller with a rank column builds its new rank from (midpoint between
+ * both), and `groupId` tells it which field the group maps to.
  */
 export interface TableDrop<T> {
   row: T;
-  /** Zielgruppe — bei einer Tabelle ohne Gruppen immer `"rows"`. */
+  /** Target group — always `"rows"` for a table without groups. */
   groupId: string;
-  /** Einfügeposition in der Zielgruppe, die gezogene Zeile herausgerechnet. */
+  /** Insert position in the target group, with the dragged row excluded. */
   index: number;
-  /** Die künftigen Nachbarn der Zeile; `null` am Anfang bzw. Ende der Gruppe. */
+  /** The row's future neighbors; `null` at the start/end of the group. */
   previous: T | null;
   next: T | null;
 }
 
 export type TableDndPhase = "grabbed" | "moved" | "dropped" | "cancelled";
 
-/** Bausteine einer Ansage — den Satz formuliert der Aufrufer, er hat die Sprache. */
+/** Building blocks of an announcement — the caller phrases the sentence, it has the language. */
 export interface TableDndAnnouncement<T> {
   row: T;
   groupId: string;
-  /** Zählt ab 1 — die Zahl geht so, wie sie ist, an Menschen. */
+  /** Counts from 1 — the number goes to humans as-is. */
   position: number;
   total: number;
   phase: TableDndPhase;
@@ -37,22 +37,22 @@ export interface TableDndAnnouncement<T> {
 export interface TableDndOptions<T> {
   getRowKey: (row: T) => string;
   /**
-   * Meldet die neue Position. Das Wegschreiben (und das optimistische
-   * Umsortieren) gehört dem Aufrufer — die Tabelle besitzt die Daten nicht.
+   * Reports the new position. Writing it back (and the optimistic
+   * reordering) belongs to the caller — the table doesn't own the data.
    */
   onDrop: (target: TableDrop<T>) => void;
-  /** Dieselben Zeilen wie an `Table` — flach oder in Gruppen. */
+  /** Same rows as passed to `Table` — flat or in groups. */
   rows?: T[];
   groups?: TableGroup<T>[];
-  /** Zeilen, die liegen bleiben sollen. Ohne Angabe ist jede Zeile ziehbar. */
+  /** Rows that should stay put. Without this, every row is draggable. */
   canDrag?: (row: T) => boolean;
-  /** Benennt die Zeile am Griff, z. B. "ABC-12 Login schlägt fehl verschieben". */
+  /** Names the row at the handle, e.g. "Move ABC-12 Login fails". */
   rowLabel?: (row: T) => string;
-  /** Formuliert die Ansage; ohne sie bleibt die Live-Region stumm. */
+  /** Phrases the announcement; without it, the live region stays silent. */
   announce?: (announcement: TableDndAnnouncement<T>) => string;
 }
 
-/** Was `Table` an ein `<tr>` hängt. */
+/** What `Table` attaches to a `<tr>`. */
 export interface TableRowDnd {
   draggable: boolean;
   onDragStart: (event: DragEvent) => void;
@@ -62,7 +62,7 @@ export interface TableRowDnd {
   "data-drop"?: "above" | "below";
 }
 
-/** Was `Table` an den Griff der Zeile hängt. */
+/** What `Table` attaches to the row's handle. */
 export interface TableHandleDnd {
   "aria-label"?: string;
   "aria-pressed": boolean;
@@ -82,18 +82,18 @@ export interface TableRootDnd {
   onDragLeave: (event: DragEvent) => void;
 }
 
-/** Was `<Table dnd={…}>` erwartet. Erzeugt wird es allein von `useTableDnd`. */
+/** What `<Table dnd={…}>` expects. Only ever produced by `useTableDnd`. */
 export interface TableDnd<T> {
   row: (row: T, groupId: string) => TableRowDnd;
-  /** `null`, wenn die Zeile nicht ziehbar ist — dann bleibt die Gasse leer. */
+  /** `null` if the row isn't draggable — then the lane stays empty. */
   handle: (row: T, groupId: string) => TableHandleDnd | null;
   groupHeader: (groupId: string) => TableGroupDnd;
   root: TableRootDnd;
-  /** Text der Live-Region; leer, solange nichts angesagt wurde. */
+  /** Text of the live region; empty as long as nothing was announced. */
   status: string;
 }
 
-/** Einfügestelle: Gruppe plus Position *ohne* die gezogene Zeile. */
+/** Insertion point: group plus position *without* the dragged row. */
 interface Slot {
   groupId: string;
   index: number;
@@ -103,7 +103,7 @@ interface Dragged<T> {
   row: T;
   key: string;
   groupId: string;
-  /** Ausgangsposition — daran erkennt der Abwurf, ob sich überhaupt etwas ändert. */
+  /** Starting position — this is how a drop tells whether anything changed at all. */
   index: number;
 }
 
@@ -111,13 +111,13 @@ const between = (value: number, max: number) =>
   Math.min(Math.max(value, 0), max);
 
 /**
- * Sortieren per Drag & Drop für `Table` — Maus und Tastatur.
+ * Drag-and-drop sorting for `Table` — mouse and keyboard.
  *
- * Die Rechnung ist überall dieselbe: eine Einfügestelle ist eine Gruppe plus
- * ein Index in deren Zeilen *ohne* die gezogene. So gibt es keine Sonderfälle
- * für "eins nach unten" (wo die eigene Lücke den Index verschiebt), die Linie
- * lässt sich direkt daraus zeichnen, und beim Abwurf stehen die neuen Nachbarn
- * ohne weitere Umrechnung da.
+ * The math is the same everywhere: an insertion point is a group plus an
+ * index into its rows *without* the dragged one. That way there are no
+ * special cases for "one down" (where your own gap shifts the index), the
+ * line can be drawn straight from it, and on drop the new neighbors are
+ * right there with no further recalculation.
  *
  * ```tsx
  * const dnd = useTableDnd<Issue>({
@@ -133,8 +133,8 @@ const between = (value: number, max: number) =>
 export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
   const { getRowKey, onDrop, canDrag, rowLabel, announce } = options;
 
-  // Flache Zeilen sind auch hier die Gruppe "alle Zeilen" — dieselbe Lesart wie
-  // in `Table`, damit die gemeldete `groupId` zu dem passt, was dort steht.
+  // Flat rows are the group "all rows" here too — the same reading as in
+  // `Table`, so the reported `groupId` matches what's there.
   const sections: TableGroup<T>[] = options.groups ?? [
     { id: FLAT_GROUP_ID, rows: options.rows ?? [] },
   ];
@@ -144,8 +144,8 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
   const [slot, setSlot] = useState<Slot | null>(null);
   const [status, setStatus] = useState("");
 
-  // Der Abwurf liest, was das letzte `dragover` gesetzt hat — dafür ist der
-  // gerenderte Zustand womöglich noch nicht durch. Refs sind immer aktuell.
+  // The drop reads what the last `dragover` set — the rendered state may
+  // not have caught up to that yet. Refs are always current.
   const dragRef = useRef<Dragged<T> | null>(null);
   const slotRef = useRef<Slot | null>(null);
   const grabbedRef = useRef(false);
@@ -157,7 +157,7 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
 
   const sectionOf = (groupId: string) => sections.find((s) => s.id === groupId);
 
-  /** Die Zeilen einer Gruppe ohne die gezogene — der Bezug jeder Einfügestelle. */
+  /** A group's rows without the dragged one — the reference for every insertion point. */
   const restOf = (groupId: string, key: string | null) =>
     (sectionOf(groupId)?.rows ?? []).filter((row) => getRowKey(row) !== key);
 
@@ -207,8 +207,8 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
     if (dragged && target) {
       const rest = restOf(target.groupId, dragged.key);
       const index = between(target.index, rest.length);
-      // Zurück an dieselbe Stelle ist keine Änderung — den Aufrufer damit zu
-      // behelligen hieße, ihn eine Serveraktion für nichts auslösen zu lassen.
+      // Back to the same spot isn't a change — bothering the caller with it
+      // would mean triggering a server action for nothing.
       if (target.groupId !== dragged.groupId || index !== dragged.index) {
         onDrop({
           row: dragged.row,
@@ -229,9 +229,9 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
   };
 
   /**
-   * Alle Einfügestellen von oben nach unten — der Weg, den die Pfeiltasten
-   * abschreiten. Eingeklappte Gruppen bekommen genau eine: sichtbare Zeilen
-   * gibt es dort nicht, erreichbar bleibt die Gruppe trotzdem.
+   * All insertion points from top to bottom — the path the arrow keys walk.
+   * Collapsed groups get exactly one: there are no visible rows there, but
+   * the group stays reachable regardless.
    */
   const slots = (key: string): Slot[] =>
     sections.flatMap((section) => {
@@ -254,21 +254,21 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
     );
     if (at === -1) return;
     const next = all[between(at + direction, all.length - 1)];
-    // Am Anfang und am Ende der Liste läuft der Weg aus — dort bleibt es beim
-    // bisherigen Platz, statt still an die andere Seite zu springen.
+    // The path runs out at the start and end of the list — it stays at the
+    // current spot there instead of silently jumping to the other side.
     if (!next || next === all[at]) return;
     moveSlot(next);
     say("moved", next);
   };
 
-  /** Seite, an der die Einfügelinie an dieser Zeile sitzt. */
+  /** Side the insertion line sits on for this row. */
   const edge = (row: T, groupId: string) => {
     if (!slot || !dragKey || slot.groupId !== groupId) return undefined;
     const rest = restOf(groupId, dragKey);
     if (rest.length === 0) return undefined;
     const key = getRowKey(row);
-    // Hinter der letzten Zeile gibt es keine Zeile mehr, über der die Linie
-    // liegen könnte — dann hängt sie unter der letzten.
+    // Behind the last row there's no more row for the line to sit above —
+    // then it hangs below the last one.
     if (slot.index >= rest.length)
       return getRowKey(rest[rest.length - 1]) === key ? "below" : undefined;
     return getRowKey(rest[slot.index]) === key ? "above" : undefined;
@@ -283,24 +283,25 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
         draggable: draggable(row),
         onDragStart: (event) => {
           event.dataTransfer.effectAllowed = "move";
-          // Ohne Nutzlast startet Firefox keinen Zug. Ein eigener Typ statt
-          // `text/plain`, damit die Zeile nicht in fremden Eingabefeldern landet.
+          // Firefox won't start a drag without a payload. A dedicated type
+          // instead of `text/plain`, so the row doesn't end up in unrelated
+          // input fields.
           event.dataTransfer.setData("application/x-table-row", key);
           pickUp(row, groupId);
         },
         onDragEnd: reset,
         onDragOver: (event) => {
           const dragged = dragRef.current;
-          // Nichts von uns unterwegs: Finger weg, sonst nähme die Tabelle
-          // fremden Zügen (Dateien, Text) das Abwurfverbot.
+          // Nothing of ours in flight: hands off, otherwise the table would
+          // take away the drop prohibition for foreign drags (files, text).
           if (!dragged) return;
           event.preventDefault();
-          // Die Zeile ist genauer als die Gruppe darunter — deren Handler darf
-          // das Ergebnis nicht überschreiben.
+          // The row is more specific than the group beneath it — its
+          // handler must not overwrite the result.
           event.stopPropagation();
           const rest = restOf(groupId, dragged.key);
           const index = rest.findIndex((other) => getRowKey(other) === key);
-          if (index === -1) return; // die gezogene Zeile selbst
+          if (index === -1) return; // the dragged row itself
           const box = event.currentTarget.getBoundingClientRect();
           const above = event.clientY < box.top + box.height / 2;
           moveSlot({ groupId, index: above ? index : index + 1 });
@@ -338,14 +339,14 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
             return;
           }
           if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            // Erst ab hier — ohne aufgenommene Zeile bleiben die Pfeiltasten
-            // beim Scrollen.
+            // Only from here on — without a grabbed row, the arrow keys
+            // stay with scrolling.
             event.preventDefault();
             step(event.key === "ArrowDown" ? 1 : -1);
           }
         },
-        // Wandert der Fokus weg, ist die Zeile nicht mehr zu steuern. Sie in der
-        // Schwebe zu lassen wäre ein Zustand, den niemand mehr auflösen kann.
+        // Once focus moves away, the row can no longer be controlled.
+        // Leaving it in limbo would be a state nobody could resolve anymore.
         onBlur: () => {
           if (grabbedRef.current) cancel();
         },
@@ -359,8 +360,8 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
         event.stopPropagation();
         moveSlot({ groupId, index: 0 });
       },
-      // Die Linie unter dem Kopf ist der einzige Anhalt, solange die Gruppe
-      // keine sichtbare Zeile hat.
+      // The line under the header is the only anchor as long as the group
+      // has no visible row.
       "data-drop":
         slot?.groupId === groupId &&
         dragKey &&
@@ -370,8 +371,8 @@ export function useTableDnd<T>(options: TableDndOptions<T>): TableDnd<T> {
     }),
 
     root: {
-      // Fängt alles, was zwischen den Zeilen liegt — ohne ein `preventDefault`
-      // hier verbietet der Browser dort den Abwurf.
+      // Catches everything that lies between the rows — without a
+      // `preventDefault` here, the browser forbids dropping there.
       onDragOver: (event) => {
         if (dragRef.current) event.preventDefault();
       },

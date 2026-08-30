@@ -26,7 +26,7 @@ interface IssuePeekProps {
 
 /**
  * Shows the detail view as a docked side panel as soon as `?issue=` is in
- * the URL — the list, board, inbox, and “My issues” set the parameter on a
+ * the URL — the list, board, inbox, and "My issues" set the parameter on a
  * row or card click.
  *
  * The URL is the single source of truth here: the panel follows it, and

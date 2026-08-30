@@ -49,8 +49,8 @@ beforeEach(() => {
   mockWorkspaceFindMany.mockResolvedValue([]);
 });
 
-describe("Schreiben", () => {
-  it("friert Name und Adresse des Handelnden ein", async () => {
+describe("Writing", () => {
+  it("freezes the name and address of the actor", async () => {
     await recordAudit({ action: "auth.login", actorId: "u1" });
 
     expect(mockAuditCreate.mock.calls[0][0].data.actorLabel).toBe(
@@ -58,12 +58,12 @@ describe("Schreiben", () => {
     );
   });
 
-  it("friert die Kontofarbe für den Avatar ein", async () => {
+  it("freezes the account color for the avatar", async () => {
     await recordAudit({ action: "auth.login", actorId: "u1" });
     expect(mockAuditCreate.mock.calls[0][0].data.actorColor).toBe("#6e63e6");
   });
 
-  it("nimmt ohne Id die mitgegebene Beschriftung", async () => {
+  it("uses the given label when there's no id", async () => {
     // The failed login attempt: no one is identified yet, only a typed
     // address.
     await recordAudit({
@@ -77,7 +77,7 @@ describe("Schreiben", () => {
     expect(mockUserFindUnique).not.toHaveBeenCalled();
   });
 
-  it("behilft sich, wenn das Konto schon weg ist", async () => {
+  it("makes do when the account is already gone", async () => {
     mockUserFindUnique.mockResolvedValue(null);
 
     await recordAudit({ action: "user.deactivated", actorId: "geloescht" });
@@ -88,12 +88,12 @@ describe("Schreiben", () => {
     expect(entry.actorColor).toBeNull();
   });
 
-  it("macht aus einer leeren Begründung kein leeres Feld", async () => {
+  it("doesn't turn an empty justification into an empty field", async () => {
     await recordAudit({ action: "auth.login", actorId: "u1", reason: "   " });
     expect(mockAuditCreate.mock.calls[0][0].data.reason).toBeNull();
   });
 
-  it("lässt die Handlung nicht scheitern, wenn das Protokoll klemmt", async () => {
+  it("doesn't let the action fail when the log jams", async () => {
     // A login shouldn't fail just because the audit log table happens to
     // be unreachable.
     const error = console.error;
@@ -107,7 +107,7 @@ describe("Schreiben", () => {
     console.error = error;
   });
 
-  it("reicht den Fehler durch, wo der Eintrag die Bedingung ist", async () => {
+  it("passes the error through where the entry is the condition", async () => {
     // `recordAuditIn` runs inside the caller's transaction. If it swallowed
     // the error here, it would create exactly the state it's meant to
     // prevent: access without a trace.
@@ -130,13 +130,13 @@ describe("Schreiben", () => {
   });
 });
 
-describe("Lesen", () => {
-  it("begrenzt die Menge, auch wenn jemand mehr verlangt", async () => {
+describe("Reading", () => {
+  it("caps the amount even when someone asks for more", async () => {
     await listAudit({ limit: 10_000 });
     expect(mockAuditFindMany.mock.calls[0][0].take).toBe(500);
   });
 
-  it("liest neueste zuerst, inklusive `meta` für Status-/Prioritäts-/Label-Icons", async () => {
+  it("reads newest first, including `meta` for status/priority/label icons", async () => {
     await listAudit();
 
     const args = mockAuditFindMany.mock.calls[0][0];
@@ -146,7 +146,7 @@ describe("Lesen", () => {
     expect(args.select.actorColor).toBe(true);
   });
 
-  it("schränkt auf einen Workspace ein und blendet Projekt-Tagesgeschäft aus", async () => {
+  it("restricts to one workspace and hides routine project activity", async () => {
     // Without projectId this is the workspace feed: issues and
     // project-bound labels belong to a single project, not to the workspace
     // as a whole, even though they carry `workspaceId` (see `whereFor`).
@@ -161,7 +161,7 @@ describe("Lesen", () => {
     });
   });
 
-  it("lässt Issue- und Label-Vorgänge im Projekt-Feed unberührt", async () => {
+  it("leaves issue and label actions untouched in the project feed", async () => {
     // With projectId (project feed) the workspace exclusion doesn't apply —
     // that's exactly where issues and labels belong.
     await listAudit({ projectId: "p1" });
@@ -170,12 +170,12 @@ describe("Lesen", () => {
     });
   });
 
-  it("filtert ohne Angaben gar nicht", async () => {
+  it("doesn't filter at all without any filters given", async () => {
     await listAudit();
     expect(mockAuditFindMany.mock.calls[0][0].where).toEqual({});
   });
 
-  it("ergänzt die aktuelle Farbe für Zeilen ohne eingefrorene", async () => {
+  it("fills in the current color for rows without a frozen one", async () => {
     // Rows created before the `actorColor` column existed — the list should
     // still be able to show an avatar instead of staying on the placeholder
     // forever.
@@ -198,7 +198,7 @@ describe("Lesen", () => {
     ]);
   });
 
-  it("fragt für die Farbe nicht erneut nach, wenn jede Zeile schon eine trägt — nur noch für den Avatar", async () => {
+  it("doesn't ask again for the color when every row already has one — only still for the avatar", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen" },
     ]);
@@ -215,7 +215,7 @@ describe("Lesen", () => {
     });
   });
 
-  it("löst Profilbild, Farbe, Slug und Name des Projekts hinter `projectId` auf", async () => {
+  it("resolves avatar, color, slug, and name of the project behind `projectId`", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: "p1" },
     ]);
@@ -234,7 +234,7 @@ describe("Lesen", () => {
     });
   });
 
-  it("löst Profilbild, Farbe, Slug und Name des Workspace hinter `workspaceId` auf", async () => {
+  it("resolves avatar, color, slug, and name of the workspace behind `workspaceId`", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen", workspaceId: "ws1" },
     ]);
@@ -253,7 +253,7 @@ describe("Lesen", () => {
     });
   });
 
-  it("lässt `workspaceRef` leer, wenn der Workspace inzwischen gelöscht ist", async () => {
+  it("leaves `workspaceRef` empty when the workspace has since been deleted", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen", workspaceId: "ws-weg" },
     ]);
@@ -264,7 +264,7 @@ describe("Lesen", () => {
     expect(entries[0].workspaceRef).toBeNull();
   });
 
-  it("lässt `projectRef` leer, wenn keine Zeile eine `projectId` trägt", async () => {
+  it("leaves `projectRef` empty when no row carries a `projectId`", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: null },
     ]);
@@ -275,7 +275,7 @@ describe("Lesen", () => {
     expect(entries[0].projectRef).toBeNull();
   });
 
-  it("lässt `projectRef` leer, wenn das Projekt inzwischen gelöscht ist", async () => {
+  it("leaves `projectRef` empty when the project has since been deleted", async () => {
     mockAuditFindMany.mockResolvedValue([
       { id: "a1", actorId: "u1", actorColor: "#frozen", projectId: "p-weg" },
     ]);
@@ -287,23 +287,23 @@ describe("Lesen", () => {
   });
 });
 
-describe("Schlüssel", () => {
-  it("erkennt bekannte Vorgänge", () => {
+describe("Keys", () => {
+  it("recognizes known actions", () => {
     expect(toAuditAction("project.breakglass")).toBe("project.breakglass");
   });
 
-  it("gibt bei einem unbekannten null zurück", () => {
+  it("returns null for an unknown one", () => {
     // The audit log is older than any version of the UI.
     expect(toAuditAction("etwas.ganz.neues")).toBeNull();
   });
 
-  it("führt jeden Vorgang genau einmal", () => {
+  it("lists every action exactly once", () => {
     expect(new Set(AUDIT_ACTION_KEYS).size).toBe(AUDIT_ACTION_KEYS.length);
   });
 });
 
 describe("parseTargetLabel", () => {
-  it("zerlegt Kürzel und Alt-Neu", () => {
+  it("splits the ref code and old/new values", () => {
     expect(parseTargetLabel("MOB-1: Offen → In Arbeit")).toEqual({
       ref: "MOB-1",
       before: "Offen",
@@ -311,24 +311,24 @@ describe("parseTargetLabel", () => {
     });
   });
 
-  it("zerlegt Kürzel ohne Rest", () => {
+  it("splits the ref code without a remainder", () => {
     expect(parseTargetLabel("MOB-1")).toEqual({ ref: "MOB-1" });
   });
 
-  it("zerlegt Kürzel mit Rest ohne Pfeil", () => {
+  it("splits the ref code with a remainder but no arrow", () => {
     expect(parseTargetLabel("MOB-1: Fix login bug")).toEqual({
       ref: "MOB-1",
       after: "Fix login bug",
     });
   });
 
-  it("lässt Text ohne erkennbares Kürzel unangetastet", () => {
+  it("leaves text without a recognizable ref code untouched", () => {
     expect(parseTargetLabel("Ada Lovelace")).toEqual({
       after: "Ada Lovelace",
     });
   });
 
-  it("erkennt ein einstelliges Kürzel genauso wie ein vierstelliges", () => {
+  it("recognizes a one-character ref code just as well as a four-character one", () => {
     expect(parseTargetLabel("A-1: Titel")).toEqual({
       ref: "A-1",
       after: "Titel",

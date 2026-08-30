@@ -68,12 +68,12 @@ export function weeklyDigestEmail(
   };
 
   const subject = resolveText(
-    `Deine Woche in ${input.workspaceName}: ${input.completedCount} erledigt`,
+    `Your week in ${input.workspaceName}: ${input.completedCount} completed`,
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    `Deine Woche in ${input.workspaceName}`,
+    `Your week in ${input.workspaceName}`,
     override?.heading,
     placeholders,
   );
@@ -101,9 +101,9 @@ export function weeklyDigestEmail(
 
   const bodyHtml = `
     <p style="margin: 0 0 16px; color: #6b6b6b;">${escapeHtml(introText)}</p>
-    ${statTile(String(input.completedCount), "Erledigt")}
-    ${statTile(String(input.assignedOpenCount), "Dir zugewiesen, offen")}
-    ${statTile(String(input.createdCount), "Neu angelegt")}
+    ${statTile(String(input.completedCount), "Completed")}
+    ${statTile(String(input.assignedOpenCount), "Assigned to you, open")}
+    ${statTile(String(input.createdCount), "Newly created")}
     ${
       highlightsHtml
         ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 8px;">${highlightsHtml}</table>`
@@ -111,10 +111,10 @@ export function weeklyDigestEmail(
     }`;
 
   const html = renderLayout({
-    preheader: `${input.completedCount} erledigt, ${input.assignedOpenCount} offen zugewiesen — ${input.workspaceName}`,
+    preheader: `${input.completedCount} completed, ${input.assignedOpenCount} open and assigned — ${input.workspaceName}`,
     heading: escapeHtml(heading),
     bodyHtml,
-    ctaLabel: "Meine Aufgaben ansehen",
+    ctaLabel: "View my issues",
     ctaUrl: input.url,
     manageUrl: input.manageUrl,
     recipientEmail: input.to,
@@ -128,15 +128,15 @@ export function weeklyDigestEmail(
   const text = [
     heading,
     "",
-    `Hallo ${input.firstName},`,
+    `Hi ${input.firstName},`,
     "",
     introText,
-    `Erledigt: ${input.completedCount}`,
-    `Dir zugewiesen, offen: ${input.assignedOpenCount}`,
-    `Neu angelegt: ${input.createdCount}`,
+    `Completed: ${input.completedCount}`,
+    `Assigned to you, open: ${input.assignedOpenCount}`,
+    `Newly created: ${input.createdCount}`,
     ...(highlightsText ? ["", highlightsText] : []),
     "",
-    `Meine Aufgaben ansehen: ${input.url}`,
+    `View my issues: ${input.url}`,
   ].join("\n");
 
   return { subject, html, text };

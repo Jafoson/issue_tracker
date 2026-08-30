@@ -16,9 +16,9 @@ export async function UserMenu() {
   if (!session?.user) {
     me = { firstName: "", lastName: "", color: "var(--secondary)" };
   } else {
-    // `handle` steht nicht im Token (siehe `global.d.ts`) — Name und Kürzel
-    // sind beide optional (`features/onboarding`), ein frisches Konto ohne
-    // beides braucht den Benutzernamen als einzigen verlässlichen Anzeigewert.
+    // `handle` isn't in the token (see `global.d.ts`) — name and handle are
+    // both optional (`features/onboarding`), and a fresh account with
+    // neither needs the username as the only reliably available display value.
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: { handle: true, avatarKey: true },
@@ -32,11 +32,11 @@ export async function UserMenu() {
     };
   }
 
-  // Die eigenen Einstellungen hängen unter einem Workspace — sie brauchen die
-  // Hülle drumherum (Seitenleiste, Reiter, Weg zurück), nicht dessen Daten. Im
-  // Admin-Bereich gibt es keinen aktiven Workspace; dann führt der Eintrag in
-  // den ersten eigenen. Wer in gar keinem ist, bekommt ihn nicht — ein Link ins
-  // Leere ist schlechter als kein Link.
+  // Account settings live under a workspace — they need the shell around
+  // them (sidebar, tabs, back path), not that workspace's data. In the
+  // admin area there is no active workspace; then the entry leads into the
+  // first one the user is in. Whoever isn't in any workspace at all doesn't
+  // get the entry — a link into nowhere is worse than no link.
   const workspaceId =
     getCurrentWorkspaceId() ?? (await getMyWorkspaces())[0]?.id ?? null;
 
@@ -44,11 +44,12 @@ export async function UserMenu() {
     ? await getUnreadNotificationCount(workspaceId)
     : 0;
 
-  // Der Weg in die Plattformverwaltung — nur für die, die `platform.access`
-  // tragen. Für alle anderen gibt es ihn nicht: das Layout unter `/admin`
-  // antwortet auf einen Aufruf ohne dieses Recht mit `notFound`, damit die
-  // bloße Existenz des Bereichs nicht verrät, wer ihn öffnen darf. Ein
-  // sichtbarer Eintrag, der ins Nichts führt, wäre genau diese Verrat-Lücke.
+  // The path into platform administration — only for those who carry
+  // `platform.access`. For everyone else it doesn't exist: the layout
+  // under `/admin` responds to a request without this permission with
+  // `notFound`, so the mere existence of the section doesn't reveal who is
+  // allowed to open it. A visible entry leading to nothing would be
+  // exactly that leak.
   const access = await getAccess(PLATFORM);
   const adminHref = access.has("platform.access") ? adminPath("") : null;
 

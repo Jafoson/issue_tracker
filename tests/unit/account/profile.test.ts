@@ -52,7 +52,7 @@ function reset() {
 describe("updateProfile()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await updateProfile(INPUT)).toEqual({
       error: "You must be logged in.",
@@ -60,7 +60,7 @@ describe("updateProfile()", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("schreibt immer nur das eigene Konto", async () => {
+  it("always writes only the user's own account", async () => {
     expect(await updateProfile(INPUT)).toEqual({ ok: true });
     expect(mockUserUpdate).toHaveBeenCalledWith({
       where: { id: ME },
@@ -73,26 +73,26 @@ describe("updateProfile()", () => {
     });
   });
 
-  it("verlangt einen Vornamen", async () => {
+  it("requires a first name", async () => {
     expect(await updateProfile({ ...INPUT, firstName: "  " })).toEqual({
       error: "First name is required.",
     });
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("lässt den Nachnamen leer — er ist optional", async () => {
+  it("leaves the last name empty — it's optional", async () => {
     expect(await updateProfile({ ...INPUT, lastName: "" })).toEqual({
       ok: true,
     });
     expect(mockUserUpdate.mock.calls[0][0].data.lastName).toBe("");
   });
 
-  it("normalisiert den Benutzernamen auf Kleinbuchstaben", async () => {
+  it("normalizes the username to lowercase", async () => {
     await updateProfile({ ...INPUT, handle: "  MaraV  " });
     expect(mockUserUpdate.mock.calls[0][0].data.handle).toBe("marav");
   });
 
-  it("lehnt Benutzernamen mit unerlaubten Zeichen ab", async () => {
+  it("rejects usernames with disallowed characters", async () => {
     for (const handle of ["m", "mara vogt", "mara_vogt", "-mara", "mära"]) {
       const result = await updateProfile({ ...INPUT, handle });
       expect(result).toHaveProperty("error");
@@ -100,7 +100,7 @@ describe("updateProfile()", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("lehnt einen Benutzernamen ab, den jemand anderes trägt", async () => {
+  it("rejects a username someone else already has", async () => {
     mockUserFindUnique.mockResolvedValue({ id: "u-someone-else" });
     expect(await updateProfile(INPUT)).toEqual({
       error: "This username is already taken.",
@@ -108,13 +108,13 @@ describe("updateProfile()", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("stört sich nicht am eigenen, unveränderten Benutzernamen", async () => {
+  it("doesn't mind the user's own, unchanged username", async () => {
     mockUserFindUnique.mockResolvedValue({ id: ME });
     expect(await updateProfile(INPUT)).toEqual({ ok: true });
     expect(mockUserUpdate).toHaveBeenCalled();
   });
 
-  it("zieht Name und Farbe im Sitzungs-Token nach", async () => {
+  it("updates name and color in the session token", async () => {
     await updateProfile(INPUT);
     expect(mockUnstableUpdate).toHaveBeenCalledWith({
       user: { firstName: "Mara", lastName: "Vogt", color: "#6e63e6" },

@@ -39,35 +39,35 @@ function reset() {
 beforeEach(reset);
 
 describe("getNotifications()", () => {
-  it("liefert nichts ohne Sitzung", async () => {
+  it("returns nothing without a session", async () => {
     mockGetSession.mockResolvedValue(null);
 
     expect(await getNotifications(WS, "all")).toEqual([]);
     expect(mockNotificationFindMany).not.toHaveBeenCalled();
   });
 
-  it("filtert nicht weiter zusätzlich bei 'all'", async () => {
+  it("adds no further filtering for 'all'", async () => {
     await getNotifications(WS, "all");
 
     const where = mockNotificationFindMany.mock.calls[0][0].where;
     expect(where).toEqual({ userId: ME, workspaceId: WS });
   });
 
-  it("schränkt bei 'workspace' auf projektlose Zeilen ein", async () => {
+  it("restricts to project-less rows for 'workspace'", async () => {
     await getNotifications(WS, "workspace");
 
     const where = mockNotificationFindMany.mock.calls[0][0].where;
     expect(where.projectId).toBeNull();
   });
 
-  it("schränkt bei 'project' auf projekt-gebundene Zeilen ein", async () => {
+  it("restricts to project-bound rows for 'project'", async () => {
     await getNotifications(WS, "project");
 
     const where = mockNotificationFindMany.mock.calls[0][0].where;
     expect(where.projectId).toEqual({ not: null });
   });
 
-  it("baut den Issue-Identifier aus dem Projekt-Prefix und dem Issue-Key", async () => {
+  it("builds the issue identifier from the project prefix and the issue key", async () => {
     mockNotificationFindMany.mockResolvedValue([
       {
         id: "n-1",
@@ -90,7 +90,7 @@ describe("getNotifications()", () => {
     expect(row.read).toBe(false);
   });
 
-  it("liest eine gesetzte readAt als gelesen", async () => {
+  it("reads a set readAt as read", async () => {
     mockNotificationFindMany.mockResolvedValue([
       {
         id: "n-1",
@@ -112,14 +112,14 @@ describe("getNotifications()", () => {
 });
 
 describe("getUnreadNotificationCount()", () => {
-  it("liefert 0 ohne Sitzung", async () => {
+  it("returns 0 without a session", async () => {
     mockGetSession.mockResolvedValue(null);
 
     expect(await getUnreadNotificationCount(WS)).toBe(0);
     expect(mockNotificationCount).not.toHaveBeenCalled();
   });
 
-  it("zählt nur ungelesene der eigenen Sitzung im aktiven Workspace", async () => {
+  it("counts only unread rows of the current session in the active workspace", async () => {
     mockNotificationCount.mockResolvedValue(3);
 
     expect(await getUnreadNotificationCount(WS)).toBe(3);

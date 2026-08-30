@@ -72,8 +72,8 @@ beforeEach(() => {
   workspace();
 });
 
-describe("Sperren", () => {
-  it("verlangt workspace.suspend", async () => {
+describe("Suspending", () => {
+  it("requires workspace.suspend", async () => {
     allow("platform.access", "user.manage");
 
     const result = await setWorkspaceSuspended("nimbus", true);
@@ -82,7 +82,7 @@ describe("Sperren", () => {
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("setzt das Flag und protokolliert, wen es trifft", async () => {
+  it("sets the flag and logs who it affects", async () => {
     allow("workspace.suspend");
 
     const result = await setWorkspaceSuspended(
@@ -105,7 +105,7 @@ describe("Sperren", () => {
     expect(entry.meta).toEqual({ members: 7 });
   });
 
-  it("gibt mit demselben Weg wieder frei", async () => {
+  it("releases it again through the same path", async () => {
     allow("workspace.suspend");
     workspace({ suspended: true });
 
@@ -120,8 +120,8 @@ describe("Sperren", () => {
   });
 });
 
-describe("Löschen", () => {
-  it("verlangt workspace.delete", async () => {
+describe("Deleting", () => {
+  it("requires workspace.delete", async () => {
     allow("workspace.suspend");
     workspace({ suspended: true });
 
@@ -131,7 +131,7 @@ describe("Löschen", () => {
     expect(mockWorkspaceDelete).not.toHaveBeenCalled();
   });
 
-  it("weigert sich, solange der Mandant läuft", async () => {
+  it("refuses as long as the tenant is active", async () => {
     // The actual safeguard: suspend first, then delete. A deliberate second
     // action lies between the two steps.
     allow("workspace.delete");
@@ -146,7 +146,7 @@ describe("Löschen", () => {
     expect(mockIssueDeleteMany).not.toHaveBeenCalled();
   });
 
-  it("weigert sich bei einem falsch getippten Namen", async () => {
+  it("refuses when the name is typed incorrectly", async () => {
     allow("workspace.delete");
     workspace({ suspended: true });
 
@@ -156,7 +156,7 @@ describe("Löschen", () => {
     expect(mockWorkspaceDelete).not.toHaveBeenCalled();
   });
 
-  it("löscht die Aufgaben vor dem Workspace", async () => {
+  it("deletes the issues before the workspace", async () => {
     // `Issue.projectId` is set to `Restrict` — the other way round, the
     // project couldn't be deleted at all.
     allow("workspace.delete");
@@ -172,7 +172,7 @@ describe("Löschen", () => {
     );
   });
 
-  it("hält im Protokoll fest, was verloren ging", async () => {
+  it("records in the log what was lost", async () => {
     allow("workspace.delete");
     workspace({ suspended: true });
 

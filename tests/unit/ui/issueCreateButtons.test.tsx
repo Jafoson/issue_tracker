@@ -133,8 +133,8 @@ const plusCount = (html: string) =>
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("NewIssueButton (Seitenleiste)", () => {
-  it("erscheint, wenn irgendwo ein Issue entstehen darf", () => {
+describe("NewIssueButton (sidebar)", () => {
+  it("appears when an issue may be created somewhere", () => {
     const html = renderToStaticMarkup(
       <NewIssueButton data={composer("p-1")} />,
     );
@@ -142,14 +142,14 @@ describe("NewIssueButton (Seitenleiste)", () => {
     expect(html).toContain("actions.newIssue");
   });
 
-  it("verschwindet ganz, wenn nirgends etwas entstehen darf", () => {
+  it("disappears entirely when nothing may be created anywhere", () => {
     const html = renderToStaticMarkup(<NewIssueButton data={composer()} />);
     expect(html).toBe("");
   });
 
   // The button defaults to the route's project. If nothing may be created
   // there, it falls back to the first allowed project instead of disappearing.
-  it("erscheint auch, wenn nur ein anderes Projekt erlaubt ist", () => {
+  it("appears even when only a different project is allowed", () => {
     const html = renderToStaticMarkup(
       <NewIssueButton data={composer("p-2")} />,
     );
@@ -158,36 +158,36 @@ describe("NewIssueButton (Seitenleiste)", () => {
 });
 
 describe("BoardColumn", () => {
-  it("zeigt Plus im Kopf und die Zeile am Ende, wenn erlaubt", () => {
+  it("shows a plus in the header and the row at the end when allowed", () => {
     // Two triggers: the plus in the column header and the card below it.
     expect(plusCount(column(composer("p-1")))).toBe(2);
   });
 
-  it("zeigt beide nicht, wenn issue.create in diesem Projekt fehlt", () => {
+  it("shows neither when issue.create is missing for this project", () => {
     expect(plusCount(column(composer()))).toBe(0);
   });
 
-  it("prüft das Projekt der Spalte, nicht irgendeines", () => {
+  it("checks the column's project, not just any project", () => {
     // p-2 is allowed, but the column belongs to p-1.
     expect(plusCount(column(composer("p-2")))).toBe(0);
   });
 
-  it("bleibt als Spalte bestehen — nur die Auslöser fehlen", () => {
+  it("remains a column — only the triggers are missing", () => {
     const html = column(composer());
     expect(html).toContain("Backlog");
   });
 });
 
 describe("ListGroupHeader", () => {
-  it("zeigt das Plus, wenn erlaubt", () => {
+  it("shows the plus when allowed", () => {
     expect(plusCount(groupHeader(composer("p-1")))).toBe(1);
   });
 
-  it("zeigt es nicht, wenn issue.create fehlt", () => {
+  it("does not show it when issue.create is missing", () => {
     expect(plusCount(groupHeader(composer()))).toBe(0);
   });
 
-  it("behält den Gruppenkopf samt Einklapp-Pfeil", () => {
+  it("keeps the group header along with its collapse arrow", () => {
     const html = groupHeader(composer());
     expect(html).toContain("Backlog");
     expect(html).toContain('data-icon="lucide:chevron-down"');

@@ -17,13 +17,13 @@ function clearEnv() {
 afterEach(clearEnv);
 
 describe("mailConfig()", () => {
-  it("ist null ohne SMTP_HOST — kein Mailversand ohne Konfiguration", () => {
+  it("is null without SMTP_HOST — no mail sending without configuration", () => {
     clearEnv();
     expect(mailConfig()).toBeNull();
     expect(isMailConfigured()).toBe(false);
   });
 
-  it("liest Host, Port und Zugangsdaten aus der Umgebung", () => {
+  it("reads host, port, and credentials from the environment", () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_PORT = "2525";
     process.env.SMTP_SECURE = "true";
@@ -42,7 +42,7 @@ describe("mailConfig()", () => {
     expect(isMailConfigured()).toBe(true);
   });
 
-  it("fällt ohne SMTP_PORT/SMTP_FROM auf 587 und eine abgeleitete Absenderadresse zurück", () => {
+  it("falls back to 587 and a derived sender address without SMTP_PORT/SMTP_FROM", () => {
     process.env.SMTP_HOST = "smtp.example.com";
 
     const config = mailConfig();

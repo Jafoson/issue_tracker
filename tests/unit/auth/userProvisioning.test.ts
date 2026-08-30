@@ -42,7 +42,7 @@ describe("provisionNewUser()", () => {
     mockProjectFindMany.mockResolvedValue([]);
   });
 
-  it("tritt automatisch bei, wenn die Domain beansprucht ist", async () => {
+  it("joins automatically when the domain is claimed", async () => {
     mockWorkspaceDomainFindUnique.mockResolvedValue({ workspaceId: "acme" });
 
     await provisionNewUser(tx, { userId: "u-new", email: "new@acme.com" });
@@ -64,7 +64,7 @@ describe("provisionNewUser()", () => {
     });
   });
 
-  it("lässt Konten ohne passende Domain unangetastet", async () => {
+  it("leaves accounts without a matching domain untouched", async () => {
     mockWorkspaceDomainFindUnique.mockResolvedValue(null);
 
     await provisionNewUser(tx, { userId: "u-new", email: "new@example.com" });

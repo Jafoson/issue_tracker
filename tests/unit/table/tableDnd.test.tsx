@@ -56,12 +56,12 @@ const Sortable = (options?: Partial<TableDndOptions<Row>>) => {
   return renderToStaticMarkup(<Fixture />);
 };
 
-describe("Table ohne dnd", () => {
+describe("Table without dnd", () => {
   const markup = renderToStaticMarkup(
     <Table rows={rows} columns={columns} getRowKey={(row) => row.id} />,
   );
 
-  test("bleibt eine Ansicht ohne Griff und ohne Ziehen", () => {
+  test("stays a plain view without a handle and without dragging", () => {
     expect(markup).not.toContain("draggable");
     expect(markup).not.toContain("data-dnd");
     expect(markup).not.toContain("<button");
@@ -69,14 +69,14 @@ describe("Table ohne dnd", () => {
   });
 });
 
-describe("Table mit dnd", () => {
-  test("markiert die Tabelle und macht jede Zeile ziehbar", () => {
+describe("Table with dnd", () => {
+  test("marks the table and makes every row draggable", () => {
     const markup = Sortable();
     expect(markup).toContain('data-dnd=""');
     expect(markup.match(/draggable="true"/g)).toHaveLength(rows.length);
   });
 
-  test("gibt jeder Zeile einen benannten Griff", () => {
+  test("gives every row a named handle", () => {
     const markup = Sortable();
     expect(markup).toContain('aria-label="Alpha verschieben"');
     expect(markup).toContain('aria-label="Beta verschieben"');
@@ -85,11 +85,11 @@ describe("Table mit dnd", () => {
     expect(markup).not.toContain("data-grabbed");
   });
 
-  test("hält eine stumme Live-Region für die Ansagen bereit", () => {
+  test("keeps a silent live region ready for announcements", () => {
     expect(Sortable()).toContain('<caption class="status" role="status">');
   });
 
-  test("lässt Zeilen liegen, für die `canDrag` verneint", () => {
+  test("leaves rows alone when `canDrag` says no", () => {
     const markup = Sortable({ canDrag: (row) => row.id !== "b" });
     expect(markup).toContain('aria-label="Alpha verschieben"');
     expect(markup).not.toContain('aria-label="Beta verschieben"');
@@ -98,7 +98,7 @@ describe("Table mit dnd", () => {
     expect(markup.match(/draggable="true"/g)).toHaveLength(1);
   });
 
-  test("zeigt ohne Zug keine Einfügelinie — auch nicht in Gruppen", () => {
+  test("shows no insertion line without a drag — not even in groups", () => {
     const markup = Sortable({ groups });
     expect(markup).toContain("Offen");
     expect(markup).toContain("Erledigt");

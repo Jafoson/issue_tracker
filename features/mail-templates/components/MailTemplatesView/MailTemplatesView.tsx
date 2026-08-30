@@ -9,7 +9,7 @@ import styles from "./mailTemplatesView.module.scss";
 
 interface Props {
   rows: MailTemplateRow[];
-  /** Vorschlag fürs „Testmail senden“-Feld — die eigene Adresse. */
+  /** Suggestion for the "Send test mail" field — the user's own address. */
   defaultTestEmail: string;
 }
 
@@ -24,10 +24,11 @@ function groupBy(rows: MailTemplateRow[]): Map<string, MailTemplateRow[]> {
 }
 
 /**
- * Betreff, Überschrift und Einleitungstext jeder Mail-Vorlage einsehen und
- * bearbeiten — Liste links, Editor mit Live-Vorschau rechts. Layout,
- * Detailtabellen und Knopftext bleiben Code (`lib/mail/templates/`); hier
- * ändert sich nur, was in `MailTemplate` steht (`features/mail-templates`).
+ * View and edit the subject, heading, and intro text of every mail
+ * template — list on the left, editor with a live preview on the right.
+ * Layout, detail tables, and button text stay in code
+ * (`lib/mail/templates/`); only what's in `MailTemplate`
+ * (`features/mail-templates`) changes here.
  */
 export function MailTemplatesView({ rows, defaultTestEmail }: Props) {
   const [selectedKey, setSelectedKey] = useState<MailTemplateKey>(rows[0]?.key);
@@ -37,8 +38,8 @@ export function MailTemplatesView({ rows, defaultTestEmail }: Props) {
   return (
     <div className={styles.wrap}>
       <PageHeader
-        title="Mail-Vorlagen"
-        description="Betreff, Überschrift und Einleitungstext — Layout und Knopf bleiben unverändert."
+        title="Mail templates"
+        description="Subject, heading, and intro text — layout and button stay unchanged."
         className={styles.pageHeader}
       />
       <div className={styles.body}>
@@ -56,7 +57,7 @@ export function MailTemplatesView({ rows, defaultTestEmail }: Props) {
                 >
                   <span className={styles.itemLabel}>{row.meta.label}</span>
                   {row.override && (
-                    <span className={styles.dot} title="Angepasst" />
+                    <span className={styles.dot} title="Customized" />
                   )}
                 </button>
               ))}

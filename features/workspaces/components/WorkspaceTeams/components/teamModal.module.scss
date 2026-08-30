@@ -1,5 +1,5 @@
-/* Panel, Header und Footer kommen aus components/ui/layout/Modal —
-   hier stehen nur die Felder und die beiden Auswahllisten. */
+/* Panel, header, and footer come from components/ui/layout/Modal —
+   only the fields and the two selection lists live here. */
 
 .headerIcon {
   color: var(--on-surface-variant);
@@ -12,8 +12,9 @@
   padding: 18px var(--modal-pad-x);
 }
 
-/* Name und Kürzel gehören zusammen und stehen deshalb in einer Zeile: das
-   Kürzel wird aus dem Namen vorgeschlagen, das sieht man so beim Tippen. */
+/* Name and short code belong together and therefore sit in one row: the
+   short code is suggested from the name, and this way you can see that
+   while typing. */
 .row {
   display: flex;
   align-items: flex-start;
@@ -25,7 +26,7 @@
   min-width: 0;
 }
 
-/* Vier Zeichen brauchen kein volles Feld. */
+/* Four characters don't need a full-width field. */
 .keyInput {
   width: 96px;
   flex: none;
@@ -47,8 +48,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Feste Höhe: der Dialog soll beim Tippen im Suchfeld nicht springen, während
-   die Trefferliste schrumpft. */
+/* Fixed height: the dialog shouldn't jump around while typing in the search
+   field as the results list shrinks. */
 .list {
   display: flex;
   flex-direction: column;
@@ -74,7 +75,7 @@
     background: var(--surface-container-high);
   }
 
-  /* Ausgewählt heißt: bleibt hervorgehoben, auch ohne Zeiger darüber. */
+  /* Selected means: stays highlighted, even without the pointer over it. */
   &[aria-pressed="true"] {
     background: var(--surface-container-high);
   }
@@ -103,8 +104,8 @@
   flex: none;
 }
 
-/* Auslöser des Projekte-Dropdowns steht neben der Überschrift — Hinzufügen
-   ist eine Geste, keine eigene Zeile. */
+/* The projects dropdown trigger sits next to the heading — adding is a
+   gesture, not a row of its own. */
 .projectsHead {
   display: flex;
   align-items: center;
@@ -128,8 +129,8 @@
   }
 }
 
-/* Ausgewählte Projekte stehen als Liste: eine Zeile je Projekt mit Rolle und
-   Entfernen-Knopf — anders als eine Chip-Wolke bleibt so Platz für die Rolle. */
+/* Selected projects appear as a list: one row per project with a role and
+   a remove button — unlike a cloud of chips, this leaves room for the role. */
 .projectList {
   display: flex;
   flex-direction: column;

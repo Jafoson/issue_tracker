@@ -15,13 +15,13 @@ import {
 
 const DEFAULT_ORDER = WIDGETS.map((widget) => widget.key);
 
-describe("Die Registry", () => {
-  it("beschreibt jeden Schlüssel genau einmal", () => {
+describe("The registry", () => {
+  it("describes every key exactly once", () => {
     expect(DEFAULT_ORDER).toEqual([...WIDGET_KEYS]);
     expect(new Set(DEFAULT_ORDER).size).toBe(DEFAULT_ORDER.length);
   });
 
-  it("hat genau einen Baustein, der bleiben muss", () => {
+  it("has exactly one widget that must stay", () => {
     // More than one would no longer be customization, and zero would allow
     // an empty dashboard that no one could find their way back from.
     const permanent = WIDGETS.filter((widget) => widget.permanent);
@@ -29,12 +29,12 @@ describe("Die Registry", () => {
   });
 });
 
-describe("Ohne gespeicherte Einstellung", () => {
-  it("gilt die Vorgabe, vollständig und in ihrer Reihenfolge", () => {
+describe("Without a saved setting", () => {
+  it("the default applies, complete and in its order", () => {
     expect(resolveLayout()).toEqual({ visible: DEFAULT_ORDER, hidden: [] });
   });
 
-  it("kommt auch mit leeren Listen zurecht", () => {
+  it("copes with empty lists too", () => {
     expect(resolveLayout([], [])).toEqual({
       visible: DEFAULT_ORDER,
       hidden: [],
@@ -42,40 +42,40 @@ describe("Ohne gespeicherte Einstellung", () => {
   });
 });
 
-describe("Die gespeicherte Reihenfolge", () => {
-  it("führt, soweit sie reicht", () => {
+describe("The saved order", () => {
+  it("leads, as far as it reaches", () => {
     const { visible } = resolveLayout(["attention", "workload"]);
     expect(visible.slice(0, 2)).toEqual(["attention", "workload"]);
   });
 
-  it("ergänzt den Rest aus der Vorgabe, ohne etwas zu verlieren", () => {
+  it("fills in the rest from the default without losing anything", () => {
     const { visible } = resolveLayout(["attention"]);
     expect(new Set(visible)).toEqual(new Set(DEFAULT_ORDER));
     expect(visible).toHaveLength(DEFAULT_ORDER.length);
   });
 
-  it("zeigt einen später ergänzten Baustein trotzdem an", () => {
+  it("still shows a widget added later", () => {
     // The actual reason for the incomplete stored data: a row from a time
     // when "attention" didn't exist yet.
     const stored = DEFAULT_ORDER.filter((key) => key !== "attention");
     expect(resolveLayout(stored).visible).toContain("attention");
   });
 
-  it("überspringt Unbekanntes statt daran zu scheitern", () => {
+  it("skips the unknown instead of failing on it", () => {
     const { visible } = resolveLayout(["burndown", "attention"]);
     expect(visible).not.toContain("burndown" as WidgetKey);
     expect(visible[0]).toBe("attention");
   });
 
-  it("nimmt eine doppelt gespeicherte Zeile nur einmal", () => {
+  it("takes a row stored twice only once", () => {
     const { visible } = resolveLayout(["attention", "attention", "workload"]);
     expect(visible.filter((key) => key === "attention")).toHaveLength(1);
     expect(visible).toHaveLength(DEFAULT_ORDER.length);
   });
 });
 
-describe("Ausgeblendete Bausteine", () => {
-  it("stehen nicht in der sichtbaren Liste, aber in der anderen", () => {
+describe("Hidden widgets", () => {
+  it("aren't in the visible list, but are in the other one", () => {
     const { visible, hidden } = resolveLayout([], ["workload", "priority"]);
     expect(visible).not.toContain("workload");
     // In the resolved order, not the order they were stored in: `hidden` is a
@@ -84,7 +84,7 @@ describe("Ausgeblendete Bausteine", () => {
     expect(hidden).toEqual(["priority", "workload"]);
   });
 
-  it("behalten ihren Platz in der Reihenfolge", () => {
+  it("keep their place in the order", () => {
     // Brought back, the widget is where it was again — that's why
     // `resolveLayout` maintains one order across all of them, not just the
     // visible ones.
@@ -95,23 +95,23 @@ describe("Ausgeblendete Bausteine", () => {
     expect(hidden).toEqual(["workload"]);
   });
 
-  it("können den Anker nicht treffen", () => {
+  it("can't target the anchor", () => {
     // An old row can date from a time when that was still possible.
     const { visible, hidden } = resolveLayout([], ["stats"]);
     expect(visible).toContain("stats");
     expect(hidden).not.toContain("stats");
   });
 
-  it("ignorieren Unbekanntes", () => {
+  it("ignore the unknown", () => {
     const { visible } = resolveLayout([], ["burndown"]);
     expect(visible).toEqual(DEFAULT_ORDER);
   });
 });
 
-describe("Verschieben", () => {
+describe("Moving", () => {
   const order: WidgetKey[] = ["stats", "status", "throughput"];
 
-  it("tauscht mit dem Nachbarn", () => {
+  it("swaps with its neighbor", () => {
     expect(moveWidget(order, "status", -1)).toEqual([
       "status",
       "stats",
@@ -124,29 +124,29 @@ describe("Verschieben", () => {
     ]);
   });
 
-  it("tut am Rand nichts", () => {
+  it("does nothing at the edge", () => {
     expect(moveWidget(order, "stats", -1)).toEqual(order);
     expect(moveWidget(order, "throughput", 1)).toEqual(order);
   });
 
-  it("lässt die Eingabe unangetastet", () => {
+  it("leaves the input untouched", () => {
     const before = [...order];
     moveWidget(order, "status", 1);
     expect(order).toEqual(before);
   });
 
-  it("tut nichts für einen Schlüssel, der nicht in der Liste steht", () => {
+  it("does nothing for a key that isn't in the list", () => {
     expect(moveWidget(order, "attention", -1)).toEqual(order);
   });
 });
 
-describe("Ein einzelner Baustein", () => {
-  it("kennt seine Breite", () => {
+describe("A single widget", () => {
+  it("knows its width", () => {
     expect(widgetDef("stats").span).toBe("full");
     expect(widgetDef("status").span).toBe("half");
   });
 
-  it("wirft bei einem Schlüssel, den es nicht gibt", () => {
+  it("throws for a key that doesn't exist", () => {
     // Can only happen if someone lets `WIDGET_KEYS` and `WIDGETS` drift apart
     // — and then it should blow up loudly, not silently render nothing.
     expect(() => widgetDef("burndown" as WidgetKey)).toThrow();

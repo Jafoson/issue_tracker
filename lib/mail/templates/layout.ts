@@ -81,7 +81,7 @@ function renderFooter(input: LayoutInput): string {
   const links: string[] = [];
   if (input.manageUrl) {
     links.push(
-      `<a href="${escapeHtml(input.manageUrl)}" style="color: ${MUTED};">Benachrichtigungen verwalten</a>`,
+      `<a href="${escapeHtml(input.manageUrl)}" style="color: ${MUTED};">Manage notifications</a>`,
     );
   }
   if (company || links.length > 0) {
@@ -92,7 +92,7 @@ function renderFooter(input: LayoutInput): string {
 
   if (input.recipientEmail) {
     lines.push(
-      `<p style="margin: 8px 0 0; font-family: ${FONT}; font-size: 11px; color: ${MUTED}; text-align: center;">Diese E-Mail wurde an ${escapeHtml(input.recipientEmail)} gesendet.</p>`,
+      `<p style="margin: 8px 0 0; font-family: ${FONT}; font-size: 11px; color: ${MUTED}; text-align: center;">This email was sent to ${escapeHtml(input.recipientEmail)}.</p>`,
     );
   }
 
@@ -108,7 +108,7 @@ function renderFooter(input: LayoutInput): string {
 
 export function renderLayout(input: LayoutInput): string {
   return `<!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

@@ -25,8 +25,8 @@
   }
 }
 
-/* Der Punkt vor dem Icon markiert Ungelesenes — der fette Satz macht es an
-   Zeilen mit vielen Einträgen auch beim schnellen Scrollen sichtbar. */
+/* The dot before the icon marks unread items — the bold sentence keeps it
+   visible even while scrolling quickly through rows with many entries. */
 .unread {
   .sentence {
     font-weight: 600;

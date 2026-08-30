@@ -1,13 +1,13 @@
 /* ============================================================
-   Table — ein Raster, viele Zeilen.
+   Table — one raster, many rows.
 
-   Die <table> spannt das Grid auf, <tr> greift es per `subgrid` wieder ab.
-   Nur so messen inhaltsbasierte Spalten ("auto", "max-content") über alle
-   Gruppen hinweg und stehen trotzdem exakt untereinander.
+   The <table> spans the grid, <tr> picks it up again via `subgrid`. That's
+   the only way content-based columns ("auto", "max-content") measure
+   across all groups and still line up exactly underneath each other.
    ============================================================ */
 
 .table {
-  /* Abstand der Zeilen zum Rand — ohne ihn liefen die runden Ecken ins Leere. */
+  /* Distance of the rows to the edge — without it, the rounded corners would run into nothing. */
   --table-inset: 16px;
   --table-pad: 12px;
   --table-gap: 10px;
@@ -20,18 +20,18 @@
   column-gap: var(--table-gap);
   align-content: start;
   width: 100%;
-  /* Seiten und Fuß polstern innen, der Abstand nach oben liegt bewusst
-     außerhalb des Scrollbereichs: Klebepunkte rechnen gegen dessen Innenkante,
-     eine Polsterung oben wäre also ein Fenster, durch das gescrollte Zeilen
-     über dem Gruppenkopf hindurchwandern. */
+  /* Sides and foot are padded inward, the gap at the top deliberately sits
+     outside the scroll area: sticky elements measure against its inner
+     edge, so padding at the top would be a window that scrolled rows could
+     drift through above the group header. */
   margin-block-start: var(--table-inset);
   padding: 0 var(--table-inset) var(--table-inset);
   text-indent: 0;
   border-spacing: 0;
 }
 
-/* Füllt die verbleibende Höhe einer Flex-Spalte und scrollt selbst — der Rest
-   der Seite (Topbar & Co.) bleibt stehen. */
+/* Fills the remaining height of a flex column and scrolls itself — the
+   rest of the page (topbar & co.) stays put. */
 .fill {
   flex: 1;
   min-height: 0;
@@ -39,8 +39,8 @@
   overflow-x: hidden;
 }
 
-/* Steht anstelle der Tabelle, nicht darin — sonst würde die Botschaft in der
-   ersten Spalte des Rasters kleben statt mittig zu stehen. */
+/* Stands in place of the table, not inside it — otherwise the message
+   would stick to the raster's first column instead of sitting centered. */
 .empty {
   display: flex;
   flex-direction: column;
@@ -52,20 +52,21 @@
   font-size: var(--text-base);
 }
 
-/* <thead> strukturiert nur — seine Zeile gehört unmittelbar ins Raster der
-   Tabelle. Genau deshalb kann sie über die ganze Tabelle hinweg oben kleben:
-   ihr Bezugsrahmen ist die Tabelle selbst. */
+/* <thead> only structures — its row belongs directly in the table's
+   raster. That's exactly why it can stick to the top across the entire
+   table: its reference frame is the table itself. */
 .group {
   display: contents;
 }
 
-/* Eine Gruppe ist dagegen ein eigener Kasten, der die Spalten der Tabelle per
-   `subgrid` weiterreicht — die Spalten messen dadurch weiterhin über alle
-   Gruppen hinweg. Der Kasten ist der Bezugsrahmen ihres klebenden Kopfes: ohne
-   ihn (`display: contents`) wäre es die ganze Tabelle, jeder Kopf bliebe bis
-   zum Ende oben kleben und die Bänder stapelten sich sichtbar übereinander. So
-   endet ein Kopf dort, wo seine Gruppe endet, und der nächste schiebt ihn
-   hinaus — es steht immer genau ein Band oben. */
+/* A group, on the other hand, is its own box that passes the table's
+   columns through via `subgrid` — the columns keep measuring across all
+   groups because of it. The box is the reference frame for its sticky
+   header: without it (`display: contents`) it would be the whole table,
+   every header would stick to the top until the end, and the bands would
+   visibly stack on top of each other. This way a header ends where its
+   group ends, and the next one pushes it out — there's always exactly one
+   band on top. */
 tbody.group {
   grid-column: 1 / -1;
   display: grid;
@@ -96,16 +97,17 @@ tbody.group {
   color: var(--on-surface-variant);
 }
 
-/* Der Kopf einer sortierbaren Spalte. Er sieht aus wie der Titel daneben und
-   verrät sich erst unter dem Zeiger — eine Kopfzeile voller Knöpfe wäre lauter
-   als die Liste darunter, um die es geht. Die Schrift erbt er vom <th>, sonst
-   stünde er in Größe und Laufweite aus der Reihe. */
+/* The header of a sortable column. It looks like the title next to it and
+   only gives itself away under the pointer — a header row full of buttons
+   would be louder than the list underneath, which is what it's actually
+   about. It inherits its font from the <th>, otherwise it would stand out
+   in size and letter spacing. */
 .sortButton {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  /* Etwas höher als die Schrift, ohne die Kopfzeile zu dehnen: ein Ziel von
-     knapp 30px trifft man auch mit dem Trackpad. */
+  /* Slightly taller than the text, without stretching the header row: a
+     target of nearly 30px is also hit with a trackpad. */
   margin-block: -7px;
   padding-block: 7px;
   font: inherit;
@@ -122,23 +124,23 @@ tbody.group {
   }
 }
 
-/* Rechtsbündige Spalten (Zahlen) tragen den Pfeil links vom Wort — außen bleibt
-   die Kante, an der die Ziffern darunter ausgerichtet sind. */
+/* Right-aligned columns (numbers) carry the arrow to the left of the word
+   — the outer edge stays the one the digits below line up against. */
 .end .sortButton {
   flex-direction: row-reverse;
 }
 
-/* Die Marke steht von Anfang an da. Eine Sortierung, die man erst beim
-   Überfahren entdeckt, gibt es für alle nicht, die nicht zufällig dort
-   entlangfahren — und auf einem Tastfeld gibt es kein „darüber". Sie ist
-   deshalb dauerhaft sichtbar, nur zurückgenommen genug, um die Kopfzeile nicht
-   lauter zu machen als die Liste darunter. */
+/* The mark is there from the start. A sort you'd only discover on hover
+   doesn't exist at all for anyone who doesn't happen to move the pointer
+   over it — and there's no "hover" on a touchscreen. It's therefore
+   permanently visible, just dialed back enough not to make the header row
+   louder than the list underneath. */
 .sortArrow {
   width: 10px;
   height: 14px;
   flex: none;
-  /* Zurückgenommen, solange sie nur die Möglichkeit anzeigt — die Kopfzeile
-     soll nicht lauter werden als die Liste darunter. */
+  /* Dialed back as long as it only indicates the possibility — the header
+     row shouldn't get louder than the list underneath. */
   opacity: 0.32;
   transition: opacity 0.12s;
 
@@ -147,16 +149,16 @@ tbody.group {
     opacity: 0.55;
   }
 
-  /* Sortiert: ein Pfeil, voll sichtbar. Welche Richtung gilt, ist eine Aussage
-     über die Liste und keine Andeutung. */
+  /* Sorted: one arrow, fully visible. Which direction applies is a
+     statement about the list, not a hint. */
   &[data-direction] {
     opacity: 1;
   }
 }
 
-/* Die Zeile für `footer` (`LoadMoreSentinel`) — anders als `.groupRow` nicht
-   klebend: sie steht am Ende der Liste und soll dort bleiben, nicht oben
-   hängen. */
+/* The row for `footer` (`LoadMoreSentinel`) — unlike `.groupRow`, not
+   sticky: it sits at the end of the list and should stay there, not hang
+   at the top. */
 .footerGroup {
   display: contents;
 }
@@ -180,7 +182,7 @@ tbody.group {
   gap: 8px;
   min-height: 34px;
   padding-inline: var(--table-pad);
-  /* Deckend, sonst scheinen die Zeilen durch, die darunter durchscrollen. */
+  /* Opaque, otherwise the rows scrolling underneath would show through. */
   background: var(--surface-container);
   border-radius: var(--table-radius);
   font-size: var(--text-sm);
@@ -188,62 +190,63 @@ tbody.group {
   color: var(--on-surface);
 }
 
-/* Der Kopfinhalt wird direkt zum Flex-Kind der Zeile; `font`/`text-align`
-   erben sonst die Vorgaben des <th>. */
+/* The header content becomes a direct flex child of the row; `font`/
+   `text-align` would otherwise inherit the <th>'s defaults. */
 .groupCell {
   display: contents;
   font: inherit;
   text-align: inherit;
 }
 
-/* Gibt es eine Kopfzeile, docken die Gruppenköpfe darunter an statt sie zu
-   überdecken. */
+/* If there's a header row, the group headers dock underneath it instead
+   of covering it. */
 .table:has(.headRow) .groupRow {
   top: var(--table-head-h);
 }
 
 .row {
   position: relative;
-  /* Eigener Stapelkontext: sonst schöben sich die Bedienelemente der Zeile
-     (z-index 2) beim Scrollen über den klebenden Gruppenkopf. */
+  /* Its own stacking context: otherwise the row's controls (z-index 2)
+     would slide over the sticky group header while scrolling. */
   z-index: 0;
-  /* Die Vorgabe kommt aus der Variante; `--table-row-height` ist der Griff für
-     den Aufrufer, wenn eine Liste es enger oder luftiger braucht. */
+  /* The default comes from the variant; `--table-row-height` is the hook
+     for the caller when a list needs to be tighter or airier. */
   min-height: var(--table-row-height, var(--table-row-h));
-  /* Die Mindesthöhe gilt für einzeilige Zellen. Bringt eine Zelle zwei Zeilen
-     mit (Name über E-Mail), wächst die Zeile — und das Polster hält den Inhalt
-     von der Trennlinie der Nachbarzeile weg. */
+  /* The minimum height applies to single-line cells. If a cell brings two
+     lines (name over email), the row grows — and the padding keeps the
+     content away from the neighboring row's divider. */
   padding-block: 4px;
   border-radius: var(--table-radius);
-  /* Bewusst ohne Trennlinie: die Zeilen trennen sich über Rhythmus und Hover,
-     Linien zwischen jedem Wert machen die Liste nur unruhig. */
+  /* Deliberately without a divider: the rows separate through rhythm and
+     hover, lines between every value would just make the list restless. */
   color: var(--on-surface);
   transition: background 0.1s;
 
-  /* Eine Stufe heller als das Band der Gruppe — sonst sähe eine überfahrene
-     Zeile aus wie ein Gruppenkopf.
+  /* One step lighter than the group's band — otherwise a hovered row
+     would look like a group header.
 
-     Listen, in denen die Zeile selbst nichts auslöst — Einstellungen etwa —
-     schalten die Rückmeldung mit `--table-hover: transparent` ab: dort
-     verspricht sie einen Klick, den es nicht gibt. */
+     Lists where the row itself triggers nothing — settings, for instance —
+     turn the feedback off with `--table-hover: transparent`: there it
+     would promise a click that doesn't exist. */
   &:hover {
     background: var(--table-hover, rgb(from var(--on-surface) r g b / 0.12));
   }
 
-  /* Tastaturfokus auf dem Zeilen-Link hebt die ganze Zeile hervor. */
+  /* Keyboard focus on the row's link highlights the whole row. */
   &:has(.overlay :focus-visible),
   &[data-active="true"] {
     background: var(--surface-container-high);
   }
 
-  /* Die Zeile, die gerade im Seitenpanel steht. Der Balken kommt zur
-     aufgehellten Fläche dazu, weil die für sich zu wenig sagt: sie sieht aus
-     wie „überfahren“ — und ausgerechnet beim zweiten Klick, der das Panel
-     wieder schließt, liegt der Zeiger auf genau dieser Zeile.
+  /* The row that's currently open in the side panel. The bar is added on
+     top of the lightened background because that alone says too little:
+     it looks like "hovered" — and on the second click, of all things, the
+     one that closes the panel again, the pointer sits on exactly this
+     row.
 
-     Als Innenschatten und nicht als `::before`: die Pseudo-Elemente der Zeile
-     gehören schon dem Ablage-Indikator (`data-drop`), und zwei Regeln um
-     dasselbe Element streiten sich nur. */
+     As an inset shadow rather than a `::before`: the row's pseudo-elements
+     already belong to the drop indicator (`data-drop`), and two rules
+     around the same element would only conflict. */
   &[data-active="true"] {
     box-shadow: inset 2px 0 0 0 var(--tertiary);
   }
@@ -257,15 +260,17 @@ tbody.group {
   font-weight: inherit;
   text-align: start;
 
-  /* Bedienbare Zellinhalte liegen über dem Zeilen-Overlay — sonst würde der
-     Link jeden Klick abfangen. Auch verschachtelte: Aktionsknöpfe stehen fast
-     immer zu zweit in einem Wrapper, und der darf ihnen das Ziel nicht nehmen.
+  /* Operable cell content sits above the row overlay — otherwise the link
+     would intercept every click. Nested ones too: action buttons are
+     almost always found in pairs inside a wrapper, and that wrapper must
+     not take their target away from them.
 
-     Ausgenommen ist der Link des Overlays selbst — er soll unten bleiben. Er
-     müsste es zwar auch so: das Overlay ist positioniert und hat einen
-     z-index, bildet also einen eigenen Stapelkontext, aus dem sein Kind nicht
-     herauskommt. Die Ausnahme steht trotzdem da, weil die Regel sonst von
-     einer Eigenschaft abhinge, die man ihr nicht ansieht. */
+     The overlay's own link is excluded — it's meant to stay at the
+     bottom. It would have to anyway: the overlay is positioned and has a
+     z-index, so it forms its own stacking context that its child can't
+     escape. The exception is still written out, because otherwise the
+     rule would depend on a property you can't see just by looking at
+     it. */
   :is(button, a, input, select, [role="button"]):not(.overlay *) {
     position: relative;
     z-index: 2;
@@ -280,7 +285,7 @@ tbody.group {
   justify-content: flex-end;
 }
 
-/* Der zeilenfüllende Link: liegt über den Textzellen, unter den Bedienelementen. */
+/* The row-filling link: sits above the text cells, below the controls. */
 .overlay {
   position: absolute;
   inset: 0;
@@ -299,15 +304,16 @@ tbody.group {
 }
 
 /* ============================================================
-   Sortieren per Drag & Drop.
+   Drag-and-drop sorting.
 
-   Zwei Dinge kommen hinzu, sobald `dnd` gesetzt ist: eine schmale Gasse links
-   für den Griff und eine Linie, die zeigt, wo die Zeile landet.
+   Two things get added as soon as `dnd` is set: a narrow lane on the left
+   for the handle, and a line showing where the row will land.
    ============================================================ */
 
-/* Die Gasse entsteht als Polsterung *aller* Zeilenarten — Kopf, Gruppenband und
-   Zeile gleichermaßen. Bei `subgrid` verkürzt eine Polsterung die erste Spur;
-   nur wenn sie überall gleich ausfällt, stehen die Spalten weiter untereinander. */
+/* The lane is created as padding on *every* kind of row — header, group
+   band, and row alike. With `subgrid`, a padding shortens the first
+   track; only if it's the same everywhere do the columns keep lining up
+   underneath each other. */
 .table[data-dnd] {
   --table-handle: 16px;
 
@@ -316,9 +322,10 @@ tbody.group {
   }
 }
 
-/* Sitzt in der Gasse, greift aber bis an die Kante der Zeile: sichtbar sind
-   16px, anfassen lassen sich rund 30 — ein Ziel, das man nicht suchen muss.
-   Bezug ist die Polsterungsbox der Zeile, deshalb beginnt `0` vor dem Polster. */
+/* Sits in the lane, but reaches all the way to the row's edge: 16px are
+   visible, roughly 30 can be grabbed — a target you don't have to hunt
+   for. The reference is the row's padding box, which is why `0` starts
+   before the padding. */
 .cell > .handle {
   position: absolute;
   inset-block: 0;
@@ -330,8 +337,8 @@ tbody.group {
   width: calc(var(--table-pad) + var(--table-handle, 16px));
   color: var(--outline);
   cursor: grab;
-  /* Unsichtbar, bis die Zeile gemeint ist — eine Liste voller Griffe wäre
-     unruhig, und die ganze Zeile ist ohnehin ziehbar. */
+  /* Invisible until the row is meant — a list full of handles would be
+     restless, and the whole row is draggable anyway. */
   opacity: 0;
   transition: opacity 0.12s, color 0.12s;
 
@@ -340,22 +347,22 @@ tbody.group {
     color: var(--on-surface);
   }
 
-  /* Farbe wie der globale Fokusring, nur nach innen versetzt: der Griff sitzt
-     an der Kante der Karte, außen läge der Ring im Beschnitt. */
+  /* Color like the global focus ring, just inset: the handle sits at the
+     card's edge, an outer ring would land in the clip. */
   &:focus-visible {
     outline-offset: -2px;
     border-radius: var(--radius-sm);
   }
 }
 
-/* Sichtbar, sobald die Zeile gemeint ist: überfahren, fokussiert, aufgenommen. */
+/* Visible as soon as the row is meant: hovered, focused, grabbed. */
 .row:hover .handle,
 .handle:focus-visible,
 .handle[data-grabbed] {
   opacity: 1;
 }
 
-/* Aufgenommen — die Tastatur führt die Zeile, bis sie abgelegt wird. */
+/* Grabbed — the keyboard drives the row until it's dropped. */
 .handle[data-grabbed] {
   color: var(--primary);
   cursor: grabbing;
@@ -368,15 +375,15 @@ tbody.group {
   pointer-events: none;
 }
 
-/* Die gezogene Zeile bleibt an ihrem Platz stehen und tritt zurück — so bleibt
-   die Liste ruhig, während die Linie die neue Stelle zeigt. */
+/* The dragged row stays in place and steps back — that way the list stays
+   calm while the line shows the new spot. */
 .row[data-dragging] {
   opacity: 0.4;
 }
 
-/* Die Einfügelinie — dieselbe Sprache wie die des Boards. Sie liegt innerhalb
-   der Zeile statt auf der Fuge dazwischen: dort würde der klebende Gruppenkopf
-   der folgenden Gruppe sie überdecken. */
+/* The insertion line — the same visual language as the board's. It sits
+   inside the row instead of on the seam between rows: there, the
+   following group's sticky header would cover it. */
 .row[data-drop]::before,
 .groupRow[data-drop]::before {
   content: '';
@@ -389,9 +396,9 @@ tbody.group {
   pointer-events: none;
 }
 
-/* Der Punkt am Anfang der Linie — er fängt den Blick, wo die Linie allein zu
-   dünn wäre. Bündig am Zeilenanfang statt darüber hinaus: die Karte beschneidet
-   ihre Ränder, ein Überstand würde abgeschnitten. */
+/* The dot at the start of the line — it catches the eye where the line
+   alone would be too thin. Flush with the row's start rather than beyond
+   it: the card clips its edges, an overhang would get cut off. */
 .row[data-drop]::after,
 .groupRow[data-drop]::after {
   content: '';
@@ -416,9 +423,9 @@ tbody.group {
   &::after { bottom: -2px; }
 }
 
-/* Die Live-Region: für Screenreader da, für Augen nicht. `display: none` wäre
-   still, deshalb der übliche Zuschnitt auf einen Pixel. Absolut positioniert
-   belegt sie außerdem keine Spur im Raster. */
+/* The live region: there for screen readers, not for eyes. `display: none`
+   would be silent, hence the usual crop down to a single pixel. Absolutely
+   positioned, it also takes up no track in the raster. */
 .status {
   position: absolute;
   width: 1px;
@@ -431,36 +438,38 @@ tbody.group {
 }
 
 /* ============================================================
-   Karten-Variante — die Tabelle als abgeschlossener Block.
+   Card variant — the table as a self-contained block.
 
-   Statt schwebender Zeilen eine umrandete Fläche: das trägt Spaltenköpfe, die
-   nicht die ganze Seite überschreiben, und macht klar, wo die Liste endet. Der
-   Rahmen beschneidet die erste und letzte Zeile, deshalb verlieren die Zeilen
-   hier ihren eigenen Radius.
+   A bordered area instead of floating rows: that carries column headers
+   that don't span the whole page, and makes clear where the list ends.
+   The border clips the first and last row, so the rows lose their own
+   radius here.
 
-   Die Zeilen liegen auf dem Grund der Seite und kommen ohne Trennlinien aus —
-   gegliedert wird über Rhythmus, Hover und die Bänder der Gruppen. Jede Liste
-   der App sieht damit gleich aus, ganz gleich was in den Zeilen steht.
+   The rows sit on the page's base surface and get by without dividers —
+   structured through rhythm, hover, and the groups' bands. Every list in
+   the app looks the same this way, no matter what's in the rows.
    ============================================================ */
 
-/* Die Hülle gilt für beides — die Tabelle wie den Ersatzinhalt, der an ihrer
-   Stelle steht. Sonst stünde ein leerer Zustand rahmenlos im Nichts.
+/* The shell applies to both — the table and the fallback content that
+   stands in its place. Otherwise an empty state would sit borderless in
+   nothing.
 
-   Vier Stellschrauben stehen dem Aufrufer offen, falls eine Liste doch abweichen
-   muss: `--table-surface` (Grundfläche), `--table-divider` (Trenner zwischen den
-   Zeilen), `--table-row-height` (Zeilenhöhe) und `--table-hover` (Fläche unter
-   dem Zeiger). Alle vier erben, gesetzt werden sie also auf dem Wrapper. */
+   Four knobs are open to the caller in case a list still needs to differ:
+   `--table-surface` (base surface), `--table-divider` (divider between
+   rows), `--table-row-height` (row height), and `--table-hover` (area
+   under the pointer). All four are inherited, so they're set on the
+   wrapper. */
 .card {
-  /* Beschneidet die Ecken der ersten und letzten Zeile am Rahmen. */
+  /* Clips the corners of the first and last row at the border. */
   overflow: hidden;
   background: var(--table-surface, var(--background));
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-lg);
 }
 
-/* Der Rahmen ist jetzt die Kante der Tabelle — die Zeilen brauchen weder
-   Einzug noch eigene Radien. Bewusst nur für die Tabelle: die Polsterung des
-   Ersatzinhalts bleibt davon unberührt. */
+/* The border is now the table's edge — the rows need neither an inset nor
+   their own radii. Deliberately only for the table: the fallback
+   content's padding stays unaffected by it. */
 .table.card {
   --table-inset: 0;
   --table-pad: 14px;
@@ -472,27 +481,28 @@ tbody.group {
   padding: 0;
 }
 
-/* Ohne dieses `flex-shrink: 0` presste ein Flex-Vorfahre (z. B. `.content` der
-   Einstellungsseiten) die Karte unter ihre Inhaltshöhe zusammen, sobald genug
-   Zeilen zusammenkamen: `overflow: hidden` auf `.card` setzt die automatische
-   Mindesthöhe eines Flex-Elements laut Spezifikation auf 0, und ohne eigenen
-   `flex-shrink` schrumpfte die Karte dann klaglos unter ihren Inhalt — spätere
-   Zeilen standen zwar im DOM, aber unsichtbar hinter dem beschnittenen Rand.
-   Nicht für `.fill`: die soll gerade schrumpfen und selbst scrollen dürfen. */
+/* Without this `flex-shrink: 0`, a flex ancestor (e.g. the settings pages'
+   `.content`) would squeeze the card below its content height once enough
+   rows accumulated: `overflow: hidden` on `.card` sets a flex item's
+   automatic minimum height to 0 per spec, and without its own
+   `flex-shrink` the card would then shrink below its content without
+   complaint — later rows were in the DOM, but invisible behind the
+   clipped edge. Not for `.fill`: that one is meant to shrink and scroll
+   itself. */
 .card:not(.fill) {
   flex-shrink: 0;
 }
 
-/* Soll die Karte die Ansicht füllen, muss sie selbst scrollen — `hidden` würde
-   das verhindern. `auto` beschneidet die Ecken genauso. */
+/* If the card is meant to fill the view, it has to scroll itself —
+   `hidden` would prevent that. `auto` clips the corners just the same. */
 .card.fill {
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .card .headRow {
-  /* Bleibt oben in der Karte stehen — sie scrollt als Ganzes mit der Seite,
-     ein klebender Kopf hätte hier nichts, wovor er sich schieben könnte. */
+  /* Stays at the top of the card — it scrolls as a whole with the page, a
+     sticky header would have nothing here to slide in front of. */
   position: static;
   background: var(--surface-container-low);
   border-bottom: 1px solid var(--outline-variant);
@@ -504,42 +514,45 @@ tbody.group {
   border-bottom: 1px solid var(--outline-variant);
 }
 
-/* Ein Band ist oben wie unten begrenzt. Die obere Linie bekommt es aber nur,
-   wenn davor Zeilen standen — folgt es direkt auf ein anderes Band, ist dessen
-   untere Linie schon da und eine zweite ergäbe einen doppelten Strich. Beim
-   ersten Band übernimmt der Kartenrahmen bzw. die Kopfzeile diese Rolle.
-   Die Linien der Bänder sind bewusst fest: sie gliedern die Liste auch dann,
-   wenn der Aufrufer die Trenner zwischen den Zeilen abgeschaltet hat. */
+/* A band is bounded both top and bottom. But it only gets the top line
+   when rows preceded it — if it directly follows another band, that
+   band's bottom line is already there, and a second one would produce a
+   double stroke. For the first band, the card's border or the header row
+   takes over this role. The bands' lines are deliberately fixed: they
+   structure the list even when the caller has turned off the dividers
+   between rows. */
 .card tbody:has(.row) + tbody .groupRow {
   border-top: 1px solid var(--outline-variant);
 }
 
-/* Scrollt die Karte selbst, gibt es wieder etwas, wovor sich die Köpfe schieben
-   können — dann kleben sie auch hier. Bei einer Karte, die mit der Seite
-   mitscrollt, bleibt es beim ruhigen `static` von oben. */
+/* If the card scrolls itself, there's something again for the headers to
+   slide in front of — so they stick here too. For a card that scrolls
+   along with the page, it stays the calm `static` from above. */
 .card.fill :is(.headRow, .groupRow) {
   position: sticky;
 }
 
-/* Ohne Linie dazwischen bleibt eine lange Liste ruhig — wer sie doch braucht,
-   setzt `--table-divider`. Die Linie sitzt oben statt unten: so bleibt die
-   letzte Zeile ohne Abschlussstrich, ganz gleich in welcher Gruppe sie steht.
-   Die transparente Vorgabe hält die Zeilenhöhe in beiden Fällen gleich. */
+/* Without a line in between, a long list stays calm — whoever needs one
+   sets `--table-divider`. The line sits on top rather than at the bottom:
+   that way the last row stays without a closing line, no matter which
+   group it's in. The transparent default keeps the row height the same in
+   both cases. */
 .card .row + .row,
 .card tbody + tbody .row:first-child {
   border-top: 1px solid var(--table-divider, transparent);
 }
 
-/* Ohne Kopfzeile stünde über der ersten Zeile eine Linie direkt am Rahmen. */
+/* Without a header row, a line would sit directly at the border above the first row. */
 .card:not(:has(.headRow)) tbody:first-of-type .row:first-child {
   border-top: none;
 }
 
-/* Scrollt eine Karte selbst (`.card.fill`), dürfen Rundung und Scrollbalken
-   nicht auf demselben Element liegen: den nativen Balken rundet der Browser
-   nicht mit, die Karte sähe rechts eckig aus, sobald sie überläuft. Dieser
-   Rahmen übernimmt Rand, Grund und Rundung von außen und beschneidet — er
-   scrollt selbst nicht, das bleibt Sache der Karte darin. */
+/* If a card scrolls itself (`.card.fill`), rounding and the scrollbar must
+   not sit on the same element: the browser doesn't round the native bar
+   along with it, so the card would look square on the right the moment it
+   overflows. This frame takes over the border, base surface, and rounding
+   from the outside and clips — it doesn't scroll itself, that stays the
+   job of the card inside it. */
 .cardFrame {
   display: flex;
   flex-direction: column;
@@ -551,8 +564,9 @@ tbody.group {
   border-radius: var(--radius-lg);
 }
 
-/* Die Karte darin liefert nur noch den Scrollbereich — Rand, Grund und
-   Rundung trägt jetzt der Rahmen, sonst stünde ein doppelter Rand da. */
+/* The card inside now only supplies the scroll area — the border, base
+   surface, and rounding are now carried by the frame, otherwise there'd
+   be a doubled border. */
 .cardFrame > :is(.card, .empty) {
   flex: 1;
   min-height: 0;
@@ -560,4 +574,3 @@ tbody.group {
   border: none;
   border-radius: 0;
 }
-

@@ -1,6 +1,6 @@
-/* Nicht die Seite scrollt, sondern jede Tabelle für sich (`fill`) — beide
-   Abschnitte teilen sich die verfügbare Höhe gleich auf (zwei `flex: 1`-Kinder
-   in derselben Spalte), unabhängig davon, wie viele Zeilen jede gerade zeigt. */
+/* It's not the page that scrolls, but each table on its own (`fill`) — both
+   sections split the available height evenly (two `flex: 1` children in the
+   same column), regardless of how many rows each currently shows. */
 .content {
   flex: 1;
   min-height: 0;
@@ -15,15 +15,15 @@
   color: var(--on-surface-variant);
 }
 
-/* Ein unbenutztes Label ist kein Fehler, nur eine Randnotiz — vor allem beim
-   Aufräumen. Es bleibt deshalb blasser als eine echte Zahl. */
+/* An unused label isn't an error, just a side note — mainly useful when
+   cleaning up. It therefore stays fainter than an actual number. */
 .unused {
   font-size: var(--text-sm);
   color: var(--outline);
 }
 
-/* Wem das Label gehört. Ruhiger als der Label-Name daneben: die Auskunft ist,
-   dass es woanders hingehört, nicht wohin genau. */
+/* Who the label belongs to. Quieter than the label name next to it: the
+   point is that it belongs elsewhere, not exactly where. */
 .owner {
   font-size: var(--text-sm);
   color: var(--on-surface-variant);
@@ -43,7 +43,7 @@
   gap: 4px;
 }
 
-/* Wie in „Allgemein": Gruppenüberschrift über der Karte, nicht in ihr. */
+/* As in "General": group heading above the card, not inside it. */
 .groupTitle {
   margin: 8px 0 0;
   font-size: var(--text-md);

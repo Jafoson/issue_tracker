@@ -87,10 +87,10 @@ function reset() {
   mockCommentCreate.mockResolvedValue({});
 }
 
-describe("addComment() — Antworten", () => {
+describe("addComment() — Replies", () => {
   beforeEach(reset);
 
-  it("setzt parentId, wenn der Elternkommentar zum selben Issue gehört", async () => {
+  it("sets parentId when the parent comment belongs to the same issue", async () => {
     mockCommentFindUnique.mockResolvedValue({ issueId: ISSUE_ID });
 
     await addComment(ISSUE_ID, emptyDoc(), ACTOR, "c-parent");
@@ -104,7 +104,7 @@ describe("addComment() — Antworten", () => {
     });
   });
 
-  it("lehnt eine Antwort auf einen Kommentar eines anderen Issues ab", async () => {
+  it("rejects a reply to a comment on another issue", async () => {
     mockCommentFindUnique.mockResolvedValue({ issueId: "i-other" });
 
     await expect(
@@ -113,7 +113,7 @@ describe("addComment() — Antworten", () => {
     expect(mockCommentCreate).not.toHaveBeenCalled();
   });
 
-  it("lehnt ab, wenn der angegebene Elternkommentar gar nicht existiert", async () => {
+  it("rejects when the given parent comment doesn't exist at all", async () => {
     mockCommentFindUnique.mockResolvedValue(null);
 
     await expect(
@@ -122,7 +122,7 @@ describe("addComment() — Antworten", () => {
     expect(mockCommentCreate).not.toHaveBeenCalled();
   });
 
-  it("lässt parentId weg, wenn keins übergeben wird (Top-Level)", async () => {
+  it("omits parentId when none is passed (top-level)", async () => {
     await addComment(ISSUE_ID, emptyDoc(), ACTOR);
 
     expect(mockCommentFindUnique).not.toHaveBeenCalled();
@@ -131,7 +131,7 @@ describe("addComment() — Antworten", () => {
     });
   });
 
-  it("benachrichtigt den Elternautor mit `commentReply`, nicht mit `comment` — auch wenn er zufällig Bearbeiter ist", async () => {
+  it("notifies the parent author with `commentReply`, not `comment` — even if they happen to be the assignee", async () => {
     // Assignee = parent author: without the exclusion logic in `addComment`,
     // this person would get both notifications for the same reply.
     mockIssueFindUnique.mockResolvedValue(
@@ -156,7 +156,7 @@ describe("addComment() — Antworten", () => {
     expect(mockNotify).toHaveBeenCalledTimes(1);
   });
 
-  it("benachrichtigt niemanden, wenn man auf den eigenen Kommentar antwortet", async () => {
+  it("notifies no one when replying to one's own comment", async () => {
     mockCommentFindUnique.mockResolvedValue({
       issueId: ISSUE_ID,
       authorId: ACTOR,
@@ -168,10 +168,10 @@ describe("addComment() — Antworten", () => {
   });
 });
 
-describe("updateComment() — Bearbeiten", () => {
+describe("updateComment() — Editing", () => {
   beforeEach(reset);
 
-  it("prüft dieselbe Berechtigung wie deleteComment, nur für update", async () => {
+  it("checks the same permission as deleteComment, just for update", async () => {
     mockCommentFindUnique.mockResolvedValue({
       authorId: "u-author",
       issue: { projectId: "p1" },
@@ -189,7 +189,7 @@ describe("updateComment() — Bearbeiten", () => {
     ]);
   });
 
-  it("schreibt Body, abgeleiteten Text und den Bearbeitet-Zeitstempel", async () => {
+  it("writes body, derived text, and the edited timestamp", async () => {
     mockCommentFindUnique.mockResolvedValue({
       authorId: ACTOR,
       issue: { projectId: "p1" },
@@ -205,7 +205,7 @@ describe("updateComment() — Bearbeiten", () => {
     });
   });
 
-  it("lehnt ab, wenn der Kommentar nicht existiert", async () => {
+  it("rejects when the comment doesn't exist", async () => {
     mockCommentFindUnique.mockResolvedValue(null);
 
     await expect(updateComment("c-missing", emptyDoc())).rejects.toThrow();
@@ -213,10 +213,10 @@ describe("updateComment() — Bearbeiten", () => {
   });
 });
 
-describe("toggleCommentReaction() — Reaktionen", () => {
+describe("toggleCommentReaction() — Reactions", () => {
   beforeEach(reset);
 
-  it("legt eine Reaktion an, wenn noch keine existiert", async () => {
+  it("creates a reaction when none exists yet", async () => {
     mockCommentFindUnique.mockResolvedValue({
       issue: { projectId: "p1" },
     });
@@ -234,7 +234,7 @@ describe("toggleCommentReaction() — Reaktionen", () => {
     expect(mockCommentReactionDelete).not.toHaveBeenCalled();
   });
 
-  it("entfernt die Reaktion wieder, wenn sie schon existiert (P2002)", async () => {
+  it("removes the reaction again when it already exists (P2002)", async () => {
     mockCommentFindUnique.mockResolvedValue({
       issue: { projectId: "p1" },
     });
@@ -259,7 +259,7 @@ describe("toggleCommentReaction() — Reaktionen", () => {
     });
   });
 
-  it("wirft andere Fehler unverändert weiter, statt sie als Umschalten zu lesen", async () => {
+  it("rethrows other errors unchanged instead of reading them as a toggle", async () => {
     mockCommentFindUnique.mockResolvedValue({
       issue: { projectId: "p1" },
     });

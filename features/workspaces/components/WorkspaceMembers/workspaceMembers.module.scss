@@ -1,6 +1,6 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). Eine
-   Mitgliederzeile trägt zwei Textzeilen neben dem Avatar und bekommt deshalb
-   deutlich mehr Luft als die einzeilige Vorgabe der Tabelle. */
+/* It's not the page that scrolls, but the table itself (`fill`). A member
+   row carries two lines of text next to the avatar and therefore gets
+   noticeably more breathing room than the table's single-line default. */
 .content {
   --table-row-height: 64px;
   --table-divider: var(--outline-variant);
@@ -13,8 +13,8 @@
   gap: 12px;
 }
 
-/* Auslöser des Rollen-Menüs: der Pfeil steht neben der Rolle, nicht in ihr —
-   die Farbfläche gehört der Rolle, das Aufklappen ist eine eigene Geste. */
+/* Trigger for the role menu: the arrow sits next to the role, not inside
+   it — the colored fill belongs to the role, expanding is its own gesture. */
 .roleTrigger {
   display: inline-flex;
   align-items: center;
@@ -52,8 +52,8 @@
   font-size: var(--text-base);
 }
 
-/* Eine offene Einladung ist ein Zwischenzustand, kein aktiver Zugang — deshalb
-   die gleiche Warnfarbe wie andere „noch nicht fertig"-Marker. */
+/* A pending invitation is an intermediate state, not active access — hence
+   the same warning color as other "not yet done" markers. */
 .statusInvited {
   display: inline-flex;
   align-items: center;

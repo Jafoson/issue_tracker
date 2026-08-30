@@ -36,19 +36,19 @@ export function memberRemovedEmail(
   };
 
   const subject = resolveText(
-    `Du wurdest aus ${target} entfernt`,
+    `You were removed from ${target}`,
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    `Du bist nicht mehr Teil von ${target}`,
+    `You're no longer part of ${target}`,
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
     input.projectName
-      ? `${input.actorName} hat dich aus dem Projekt ${input.projectName} entfernt. Der Workspace ${input.workspaceName} bleibt dir erhalten.`
-      : `${input.actorName} hat dich aus dem Workspace ${input.workspaceName} entfernt. Du hast dort keinen Zugriff mehr.`,
+      ? `${input.actorName} removed you from the project ${input.projectName}. You keep access to the workspace ${input.workspaceName}.`
+      : `${input.actorName} removed you from the workspace ${input.workspaceName}. You no longer have access there.`,
     override?.bodyText,
     placeholders,
   );

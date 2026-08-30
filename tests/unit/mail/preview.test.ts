@@ -3,7 +3,7 @@ import { MAIL_TEMPLATE_KEYS } from "@/features/mail-templates/catalog";
 import { renderMailPreview } from "@/features/mail-templates/preview";
 
 describe("renderMailPreview()", () => {
-  it("rendert jeden Katalog-Schlüssel mit Beispieldaten, ohne zu werfen", () => {
+  it("renders every catalog key with sample data, without throwing", () => {
     for (const key of MAIL_TEMPLATE_KEYS) {
       const { subject, html, text } = renderMailPreview(key);
       expect(subject.length).toBeGreaterThan(0);
@@ -12,7 +12,7 @@ describe("renderMailPreview()", () => {
     }
   });
 
-  it("wendet einen Override auf die Vorschau an", () => {
+  it("applies an override to the preview", () => {
     const { subject } = renderMailPreview("invitation", {
       subject: "Test-Betreff für {{workspaceName}}",
       heading: "H",

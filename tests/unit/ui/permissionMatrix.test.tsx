@@ -75,7 +75,7 @@ function cells(html: string, permissionKey: string): string[] {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("PermissionMatrix", () => {
-  it("stellt jede Rolle als eigene Spalte auf", () => {
+  it("lays out every role as its own column", () => {
     const html = render([role({ id: "admin" }), role({ id: "viewer" })]);
 
     expect(html).toContain("admin");
@@ -84,7 +84,7 @@ describe("PermissionMatrix", () => {
     expect(html.split('class="roleHead"').length - 1).toBe(2);
   });
 
-  it("zeigt je Zelle an, ob die Rolle das Recht hat", () => {
+  it("shows per cell whether the role has the permission", () => {
     const html = render([
       role({ id: "admin", grants: ["issue.create"] }),
       role({ id: "viewer" }),
@@ -95,7 +95,7 @@ describe("PermissionMatrix", () => {
     expect(viewer).not.toContain("data-granted");
   });
 
-  it("führt die Zelle als Schalter mit zwei Zuständen", () => {
+  it("renders the cell as a switch with two states", () => {
     // There's no third "explicitly denied" state anymore: not being listed
     // already is the denial, since in this context only this one role counts.
     const html = render([role({ id: "admin", grants: ["issue.create"] })]);
@@ -107,7 +107,7 @@ describe("PermissionMatrix", () => {
     expect(notGranted).toContain('aria-checked="false"');
   });
 
-  it("sperrt den Schalter, wo der Handelnde das Recht selbst nicht hat", () => {
+  it("locks the switch where the actor doesn't have the permission themselves", () => {
     // Revoking stays possible — that never expands anyone's permissions.
     const html = render([role({ id: "admin", grants: ["issue.create"] })], {
       grantable: [],
@@ -119,7 +119,7 @@ describe("PermissionMatrix", () => {
     expect(granted).not.toContain("disabled");
   });
 
-  it("sperrt geteilte Rollen: Anzeige statt Knopf", () => {
+  it("locks shared roles: display instead of a button", () => {
     const html = render([
       role({ id: "member", system: true, manageable: false }),
       role({ id: "custom" }),
@@ -131,7 +131,7 @@ describe("PermissionMatrix", () => {
     expect(custom).toContain("<button");
   });
 
-  it("bündelt die Zeilen nach dem Objekt des Keys", () => {
+  it("groups the rows by the key's object", () => {
     const html = render([role({ id: "admin" })]);
 
     // One section for `issue.*`, one for `comment.*` — not three.
@@ -141,7 +141,7 @@ describe("PermissionMatrix", () => {
     );
   });
 
-  it("beschriftet den Knopf mit Recht, Rolle und Zustand", () => {
+  it("labels the button with permission, role, and state", () => {
     const html = render([
       role({ id: "admin", name: "Admin", grants: ["issue.create"] }),
     ]);
@@ -151,14 +151,14 @@ describe("PermissionMatrix", () => {
   });
 });
 
-describe("Offene Änderungen", () => {
-  it("hält die Speicherleiste zurück, solange nichts offen ist", () => {
+describe("Pending changes", () => {
+  it("holds back the save bar as long as nothing is pending", () => {
     const html = render([role({ id: "admin" })]);
     expect(html).not.toContain("roles.unsavedCount");
     expect(html).not.toContain("actions.save");
   });
 
-  it("stellt Speichern und Verwerfen auf, sobald eine Zelle offen ist", () => {
+  it("brings up Save and Discard as soon as one cell is pending", () => {
     const html = render([role({ id: "admin" })], {
       changed: new Set([cellId("admin", "issue.create")]),
     });
@@ -168,7 +168,7 @@ describe("Offene Änderungen", () => {
     expect(html).toContain("actions.discard");
   });
 
-  it("markiert genau die Zellen, die noch nicht geschrieben sind", () => {
+  it("marks exactly the cells that haven't been written yet", () => {
     const html = render(
       [role({ id: "admin", grants: ["issue.create"] }), role({ id: "viewer" })],
       { changed: new Set([cellId("admin", "issue.create")]) },
@@ -181,7 +181,7 @@ describe("Offene Änderungen", () => {
     expect(admin).toContain("data-granted");
   });
 
-  it("zählt auch Änderungen an ausgeblendeten Spalten mit", () => {
+  it("also counts changes on hidden columns", () => {
     // `changed` describes the whole batch, `roles` only the visible columns.
     // On save, the hidden one would still go along with it.
     const html = render([role({ id: "admin" })], {

@@ -32,7 +32,7 @@ const RESOLVED: Record<string, ResolvedAttachmentRef> = {
 };
 
 describe("withResolvedAttachments()", () => {
-  test("reichert einen bekannten Anhang um url/name/mimeType/size an", () => {
+  test("enriches a known attachment with url/name/mimeType/size", () => {
     const doc = docWith({ id: "att-1" });
     const resolved = withResolvedAttachments(doc, RESOLVED);
     expect(resolved.content?.[1].attrs).toEqual({
@@ -45,7 +45,7 @@ describe("withResolvedAttachments()", () => {
     });
   });
 
-  test("lässt einen unbekannten Anhang ohne url — gelöschter Anhang", () => {
+  test("leaves an unknown attachment without a url — deleted attachment", () => {
     const doc = docWith({ id: "att-gone" });
     const resolved = withResolvedAttachments(doc, RESOLVED);
     expect(resolved.content?.[1].attrs).toEqual({
@@ -58,13 +58,13 @@ describe("withResolvedAttachments()", () => {
     });
   });
 
-  test("übernimmt die im Dokument gespeicherte Breite unverändert", () => {
+  test("keeps the width stored in the document unchanged", () => {
     const doc = docWith({ id: "att-1", width: 480 });
     const resolved = withResolvedAttachments(doc, RESOLVED);
     expect(resolved.content?.[1].attrs?.width).toBe(480);
   });
 
-  test("läuft rekursiv durch verschachtelte Knoten (z.B. in einem Zitat)", () => {
+  test("recurses through nested nodes (e.g. inside a blockquote)", () => {
     const doc: PMDoc = {
       type: "doc",
       content: [
@@ -80,7 +80,7 @@ describe("withResolvedAttachments()", () => {
     );
   });
 
-  test("lässt andere Knotentypen unverändert", () => {
+  test("leaves other node types unchanged", () => {
     const doc: PMDoc = {
       type: "doc",
       content: [{ type: "paragraph", content: [{ type: "text", text: "Hi" }] }],
@@ -90,7 +90,7 @@ describe("withResolvedAttachments()", () => {
 });
 
 describe("stripAttachmentAttrs()", () => {
-  test("wirft alles außer id und width ab — auch versehentlich mitgeschickte Attribute", () => {
+  test("strips everything except id and width — even accidentally included attributes", () => {
     const doc = docWith({
       id: "att-1",
       url: "https://s3.example/attachments/i-1/x.png",
@@ -102,13 +102,13 @@ describe("stripAttachmentAttrs()", () => {
     expect(stripped.content?.[1].attrs).toEqual({ id: "att-1", width: null });
   });
 
-  test("behält eine gesetzte Breite", () => {
+  test("keeps a width that is set", () => {
     const doc = docWith({ id: "att-1", width: 480 });
     const stripped = stripAttachmentAttrs(doc);
     expect(stripped.content?.[1].attrs).toEqual({ id: "att-1", width: 480 });
   });
 
-  test("läuft rekursiv durch verschachtelte Knoten", () => {
+  test("recurses through nested nodes", () => {
     const doc: PMDoc = {
       type: "doc",
       content: [
@@ -131,20 +131,20 @@ describe("stripAttachmentAttrs()", () => {
 });
 
 describe("clampAttachmentWidth()", () => {
-  test("übernimmt einen Wert innerhalb der Spanne", () => {
+  test("keeps a value that is within range", () => {
     expect(clampAttachmentWidth(400)).toBe(400);
   });
 
-  test("rundet auf ganze Pixel", () => {
+  test("rounds to whole pixels", () => {
     expect(clampAttachmentWidth(400.6)).toBe(401);
   });
 
-  test("deckelt nach unten und oben", () => {
+  test("clamps at the lower and upper bound", () => {
     expect(clampAttachmentWidth(10)).toBe(ATTACHMENT_IMAGE_MIN_WIDTH);
     expect(clampAttachmentWidth(5000)).toBe(ATTACHMENT_IMAGE_MAX_WIDTH);
   });
 
-  test("fällt auf die Standardbreite zurück — fehlender oder ungültiger Wert", () => {
+  test("falls back to the default width — missing or invalid value", () => {
     expect(clampAttachmentWidth(null)).toBe(ATTACHMENT_IMAGE_DEFAULT_WIDTH);
     expect(clampAttachmentWidth(undefined)).toBe(
       ATTACHMENT_IMAGE_DEFAULT_WIDTH,
@@ -157,11 +157,11 @@ describe("clampAttachmentWidth()", () => {
 });
 
 describe("formatBytes()", () => {
-  test("zeigt Bytes unter 1 KB direkt", () => {
+  test("shows bytes under 1 KB directly", () => {
     expect(formatBytes(512)).toBe("512 B");
   });
 
-  test("rechnet in KB/MB/GB um", () => {
+  test("converts to KB/MB/GB", () => {
     expect(formatBytes(2048)).toBe("2.0 KB");
     expect(formatBytes(5 * 1024 * 1024)).toBe("5.0 MB");
     expect(formatBytes(2.5 * 1024 * 1024 * 1024)).toBe("2.5 GB");

@@ -26,12 +26,12 @@ import styles from "./teamModal.module.scss";
 
 interface Props {
   workspaceId: string;
-  /** Gesetzt = bearbeiten, offen = anlegen. */
+  /** Set = editing, unset = creating. */
   team?: WorkspaceTeamRow;
-  /** Mitglieder des Workspace — nur sie können in ein Team. */
+  /** Members of the workspace — only they can join a team. */
   candidates: User[];
   projects: { id: string; name: string; color: string }[];
-  /** Rollen, die sich einem Projekt zuweisen lassen — siehe Typ-Kommentar. */
+  /** Roles assignable to a project — see the type comment. */
   assignableProjectRoles: { key: string; name: string; rank: number }[];
   canManageMembers: boolean;
   canManageProjects: boolean;
@@ -39,7 +39,7 @@ interface Props {
   close: () => void;
 }
 
-/** Kürzel wie beim Projekt: bis zu vier Zeichen, Buchstaben und Ziffern. */
+/** Short code like for a project: up to four characters, letters and digits. */
 function suggestKey(value: string) {
   return value
     .replace(/[^a-zA-Z0-9]/g, "")
@@ -54,21 +54,21 @@ function toggle(set: ReadonlySet<string>, id: string): Set<string> {
 }
 
 /**
- * Anlegen und Bearbeiten in einem Dialog — es sind dieselben Felder.
+ * Create and edit in one dialog — they're the same fields.
  *
- * Vier Angaben machen das Team (Name, Kürzel, Farbe, Lead), zwei Listen füllen
- * es (Mitglieder, Projekte). Die Listen stehen nur da, wo sie auch bedienbar
- * sind: `team.member.manage` und `team.project.manage` sind eigene Rechte, und
- * eine Auswahl, die beim Speichern stillschweigend verfällt, wäre eine Lüge.
+ * Four fields make up the team (name, short code, color, lead), two lists
+ * fill it (members, projects). The lists only appear where they're also
+ * editable: `team.member.manage` and `team.project.manage` are separate
+ * permissions, and a selection that silently expires on save would be a lie.
  *
- * Der Lead ist zugleich Mitglied — der Server nimmt ihn ohnehin in die Liste
- * auf, hier steht er deshalb schon markiert.
+ * The lead is also a member — the server adds them to the list regardless,
+ * so here they're already marked as such.
  *
- * Ein gewähltes Projekt trägt zusätzlich eine Rolle (oder keine, für reine
- * Gruppierung) — sie ist es, die Mitglieder des Teams dort bekommen
- * (`syncProjectTeamRoles`, lib/project-membership.ts). Neu gewählte Projekte
- * starten ohne Rolle: wer eine vergeben will, wählt sie ausdrücklich, statt
- * dass ein Häkchen im Vorbeigehen Zugriff verleiht.
+ * A chosen project additionally carries a role (or none, for pure
+ * grouping) — that's what team members receive there
+ * (`syncProjectTeamRoles`, lib/project-membership.ts). Newly picked
+ * projects start without a role: whoever wants to grant one selects it
+ * explicitly, instead of a checkbox handing out access in passing.
  */
 export function TeamModal({
   workspaceId,
@@ -95,8 +95,8 @@ export function TeamModal({
   const [members, setMembers] = useState<ReadonlySet<string>>(
     new Set(team?.members.map((m) => m.id) ?? []),
   );
-  // Projekt-Id → Rollen-Key, oder `null` für reine Gruppierung ohne Rolle. Wer
-  // in der Map steht, ist ausgewählt — das ersetzt das frühere `Set`.
+  // Project id → role key, or `null` for pure grouping without a role.
+  // Whoever's in the map is selected — this replaces the former `Set`.
   const [projectRoles, setProjectRoles] = useState<
     ReadonlyMap<string, string | null>
   >(new Map(team?.projects.map((p) => [p.id, p.role?.key ?? null]) ?? []));
@@ -104,11 +104,11 @@ export function TeamModal({
   const [error, setError] = useState("");
 
   const trimmed = name.trim();
-  // Solange das Kürzel nicht von Hand angefasst wurde, folgt es dem Namen.
+  // As long as the short code hasn't been touched by hand, it follows the name.
   const effectiveKey = keyTouched ? key : suggestKey(trimmed);
-  // Der bisherige Lead steht als Rückfall daneben: er kann den Workspace
-  // verlassen haben und fehlt dann in der Auswahl — der Auslöser soll trotzdem
-  // sagen, wer eingetragen ist, statt „Person wählen" zu zeigen.
+  // The previous lead is kept as a fallback: they may have left the
+  // workspace and then be missing from the candidate list — the trigger
+  // should still say who's set, instead of showing "pick a person".
   const lead = candidates.find((c) => c.id === leadId) ?? team?.lead ?? null;
 
   const needle = query.trim().toLowerCase();
@@ -119,8 +119,8 @@ export function TeamModal({
     : candidates;
 
   const projectById = new Map(projects.map((p) => [p.id, p]));
-  // Nur, was noch nicht dabei ist, taugt als Angebot im Dropdown — ein
-  // Projekt steht im Team höchstens einmal.
+  // Only what isn't already in there qualifies as an offering in the
+  // dropdown — a project appears in the team at most once.
   const availableProjects = projects.filter((p) => !projectRoles.has(p.id));
 
   const submit = () => {
@@ -233,8 +233,8 @@ export function TeamModal({
                 onPick={(value) => {
                   const next = String(value);
                   setLeadId(next);
-                  // Wer führt, ist dabei — sonst stünde in der Zeile ein
-                  // Verantwortlicher, der nicht zum Team gehört.
+                  // Whoever leads is a member — otherwise the row would
+                  // have a person in charge who doesn't belong to the team.
                   setMembers((prev) => new Set(prev).add(next));
                   closePicker();
                 }}
@@ -322,8 +322,8 @@ export function TeamModal({
                       }))}
                       value=""
                       onPick={(value) => {
-                        // Neu hinzugefügt heißt ohne Rolle: wer eine vergeben
-                        // will, wählt sie im nächsten Schritt ausdrücklich.
+                        // Newly added means without a role: whoever wants
+                        // to grant one selects it explicitly in the next step.
                         setProjectRoles((prev) =>
                           new Map(prev).set(String(value), null),
                         );

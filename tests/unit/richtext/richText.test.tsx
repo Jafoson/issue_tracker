@@ -15,7 +15,7 @@ const p = (text: string, marks?: PMNode["marks"]): PMNode => ({
 });
 
 describe("RichText", () => {
-  test("rendert Überschriften auf ihrer Ebene", () => {
+  test("renders headings at their level", () => {
     expect(
       render(
         doc({
@@ -37,7 +37,7 @@ describe("RichText", () => {
     ).toContain("<h3>Drei</h3>");
   });
 
-  test("begrenzt unsinnige Überschriftenebenen auf h1–h6", () => {
+  test("clamps nonsensical heading levels to h1–h6", () => {
     const html = render(
       doc({
         type: "heading",
@@ -48,7 +48,7 @@ describe("RichText", () => {
     expect(html).toContain("<h6>Tief</h6>");
   });
 
-  test("legt Auszeichnungen um den Text", () => {
+  test("wraps marks around the text", () => {
     expect(render(doc(p("fett", [{ type: "bold" }])))).toContain(
       "<strong>fett</strong>",
     );
@@ -63,14 +63,14 @@ describe("RichText", () => {
     );
   });
 
-  test("schachtelt mehrere Auszeichnungen ineinander", () => {
+  test("nests multiple marks inside one another", () => {
     const html = render(
       doc(p("beides", [{ type: "bold" }, { type: "italic" }])),
     );
     expect(html).toContain("<em><strong>beides</strong></em>");
   });
 
-  test("rendert beide Listenarten", () => {
+  test("renders both list types", () => {
     const item = (text: string): PMNode => ({
       type: "listItem",
       content: [p(text)],
@@ -85,7 +85,7 @@ describe("RichText", () => {
     ).toContain("<ol><li><p>a</p></li></ol>");
   });
 
-  test("rendert Checklisten mit ihrem Zustand", () => {
+  test("renders checklists with their state", () => {
     const html = render(
       doc({
         type: "taskList",
@@ -109,7 +109,7 @@ describe("RichText", () => {
     expect(html).toContain("disabled");
   });
 
-  test("rendert Zitat, Codeblock und Trennlinie", () => {
+  test("renders blockquote, code block, and horizontal rule", () => {
     expect(
       render(doc({ type: "blockquote", content: [p("zitiert")] })),
     ).toContain("<blockquote><p>zitiert</p></blockquote>");
@@ -129,7 +129,7 @@ describe("RichText", () => {
     expect(render(doc({ type: "horizontalRule" }))).toContain("<hr/>");
   });
 
-  test("rendert die Chips mit ihren Attributen", () => {
+  test("renders the chips with their attributes", () => {
     const html = render(
       doc({
         type: "paragraph",
@@ -152,7 +152,7 @@ describe("RichText", () => {
     expect(html).toContain("🚀");
   });
 
-  test("rendert Panels nach ihrer Art", () => {
+  test("renders panels according to their type", () => {
     const html = render(
       doc({
         type: "panel",
@@ -164,7 +164,7 @@ describe("RichText", () => {
     expect(html).toContain("<p>Achtung</p>");
   });
 
-  test("rendert Tabellen in einem scrollenden Rahmen", () => {
+  test("renders tables inside a scrolling wrapper", () => {
     const html = render(
       doc({
         type: "table",
@@ -183,7 +183,7 @@ describe("RichText", () => {
     expect(html).toContain("<td><p>Zelle</p></td>");
   });
 
-  test("lässt gefährliche Adressen nicht ins Dokument", () => {
+  test("keeps dangerous URLs out of the document", () => {
     const html = render(
       doc(
         p("klick", [{ type: "link", attrs: { href: "javascript:alert(1)" } }]),
@@ -195,7 +195,7 @@ describe("RichText", () => {
     expect(html).not.toContain("<a");
   });
 
-  test("lässt harmlose Adressen durch und öffnet sie sicher", () => {
+  test("lets harmless URLs through and opens them safely", () => {
     const html = render(
       doc(p("hin", [{ type: "link", attrs: { href: "https://example.com" } }])),
     );
@@ -203,7 +203,7 @@ describe("RichText", () => {
     expect(html).toContain('rel="noopener noreferrer"');
   });
 
-  test("verwirft Bilder mit unsicherer Quelle", () => {
+  test("discards images with an unsafe source", () => {
     expect(
       render(doc({ type: "image", attrs: { src: "javascript:x", alt: "a" } })),
     ).not.toContain("<img");
@@ -213,7 +213,7 @@ describe("RichText", () => {
     ).toContain('src="/bild.png"');
   });
 
-  test("überlebt kaputte Eingaben", () => {
+  test("survives broken input", () => {
     // Whatever doesn't look like a document becomes an empty document — a
     // single empty paragraph, no crash, and no foreign content.
     for (const bad of [
@@ -233,7 +233,7 @@ describe("RichText", () => {
     );
   });
 
-  test("zeigt den Inhalt unbekannter Knoten trotzdem an", () => {
+  test("still shows the content of unknown nodes", () => {
     const html = render(
       doc({ type: "somethingNew", content: [p("bleibt lesbar")] }),
     );
@@ -254,13 +254,13 @@ describe("RichText — Chips", () => {
       />,
     );
 
-  test("zeigt beim Mitglied ein @ vor dem Namen", () => {
+  test("shows an @ before the name for a member", () => {
     const html = mention({ id: "u1", label: "Anna Weber" });
     expect(html).toContain("@");
     expect(html).toContain("Anna Weber");
   });
 
-  test("zeigt das Datum lesbar und behält den ISO-Wert im Attribut", () => {
+  test("shows the date in a readable format and keeps the ISO value in the attribute", () => {
     const html = renderToStaticMarkup(
       <RichText
         value={{
@@ -281,7 +281,7 @@ describe("RichText — Chips", () => {
   });
 });
 
-describe("RichText — Adresse beim Überfahren", () => {
+describe("RichText — URL on hover", () => {
   const render = (node: PMNode) =>
     renderToStaticMarkup(
       <RichText
@@ -292,7 +292,7 @@ describe("RichText — Adresse beim Überfahren", () => {
       />,
     );
 
-  test("der Link im Fließtext trägt seine Adresse als Titel", () => {
+  test("the inline link carries its URL as the title", () => {
     // Otherwise you can't tell from the word alone where it leads.
     const html = render({
       type: "text",
@@ -302,7 +302,7 @@ describe("RichText — Adresse beim Überfahren", () => {
     expect(html).toContain('title="https://example.com/tief"');
   });
 
-  test("der Link-Chip ebenso — er zeigt ja nur den Namen", () => {
+  test("the link chip too — it only shows the name after all", () => {
     const html = render({
       type: "linkChip",
       attrs: { href: "https://example.com/a", label: "Mein Link" },
@@ -311,7 +311,7 @@ describe("RichText — Adresse beim Überfahren", () => {
     expect(html).toContain("Mein Link");
   });
 
-  test("ohne gültige Adresse entsteht auch kein Titel", () => {
+  test("without a valid URL, no title is created either", () => {
     expect(
       render({ type: "linkChip", attrs: { href: "javascript:alert(1)" } }),
     ).not.toContain("javascript:");
@@ -345,36 +345,36 @@ describe("RichText — Codeblock", () => {
       />,
     );
 
-  test("nennt die Programmiersprache im Kopf", () => {
+  test("names the programming language in the header", () => {
     expect(codeBlock("x", "ts")).toContain("TypeScript");
     expect(codeBlock("x", "py")).toContain("Python");
     // Found via an alternate spelling.
     expect(codeBlock("x", "golang")).toContain("Go");
   });
 
-  test("reicht eine unbekannte Angabe durch, statt sie zu verwerfen", () => {
+  test("passes an unknown language through instead of discarding it", () => {
     // It may have come from pasted Markdown — the information is worth more
     // than a clean list.
     expect(codeBlock("x", "brainfuck")).toContain("brainfuck");
   });
 
-  test("nennt ihn ohne Angabe schlicht Plain", () => {
+  test("simply calls it Plain when nothing is specified", () => {
     expect(codeBlock("x")).toContain("Plain");
   });
 
-  test("gibt jeder Zeile ein eigenes Element für die Nummer", () => {
+  test("gives each line its own element for the line number", () => {
     const html = codeBlock("eins\nzwei\ndrei");
     expect(html.match(/class="codeLine"/g)).toHaveLength(3);
   });
 
-  test("zählt einen abschließenden Umbruch nicht als weitere Zeile", () => {
+  test("does not count a trailing line break as another line", () => {
     // Otherwise there'd be an empty line number under the last character.
     expect(codeBlock("eins\nzwei\n").match(/class="codeLine"/g)).toHaveLength(
       2,
     );
   });
 
-  test("hält die Zeilennummern aus dem Text heraus", () => {
+  test("keeps line numbers out of the text", () => {
     // They live in CSS (`::before`) — otherwise they'd get copied along with
     // the code. Checked against the plain text: nothing may appear there but
     // the code itself.
@@ -383,7 +383,7 @@ describe("RichText — Codeblock", () => {
     expect(textOf(html)).not.toMatch(/1.*2.*3/);
   });
 
-  test("färbt ein, ohne den Code zu verändern", () => {
+  test("applies coloring without changing the code", () => {
     const quelle = 'const a = "hallo" // hi';
     const html = codeBlock(quelle, "ts");
     expect(html).toContain("hljs-keyword");

@@ -46,17 +46,17 @@ export function issueUpdateEmail(
   };
 
   const subject = resolveText(
-    `${input.issue.identifier} wurde aktualisiert`,
+    `${input.issue.identifier} was updated`,
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    `${input.issue.identifier} wurde aktualisiert`,
+    `${input.issue.identifier} was updated`,
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
-    `${input.actorLabel} hat ${input.issue.identifier} „${input.issue.title}“ geändert:`,
+    `${input.actorLabel} changed ${input.issue.identifier} "${input.issue.title}":`,
     override?.bodyText,
     placeholders,
   );
@@ -79,10 +79,10 @@ export function issueUpdateEmail(
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${changeRows}</table>`;
 
   const html = renderLayout({
-    preheader: `${input.actorLabel} hat ${input.issue.identifier} geändert.`,
+    preheader: `${input.actorLabel} changed ${input.issue.identifier}.`,
     heading: escapeHtml(heading),
     bodyHtml,
-    ctaLabel: "Issue öffnen",
+    ctaLabel: "Open issue",
     ctaUrl: input.url,
     manageUrl: input.manageUrl,
     recipientEmail: input.to,
@@ -92,7 +92,7 @@ export function issueUpdateEmail(
     .map((c) => `- ${c.field}: ${c.from ? `${c.from} → ${c.to}` : c.to}`)
     .join("\n");
 
-  const text = `${heading}\n\n${introText}\n\n${changesText}\n\nIssue öffnen: ${input.url}`;
+  const text = `${heading}\n\n${introText}\n\n${changesText}\n\nOpen issue: ${input.url}`;
 
   return { subject, html, text };
 }

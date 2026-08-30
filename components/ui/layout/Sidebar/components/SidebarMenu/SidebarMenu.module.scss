@@ -1,7 +1,7 @@
-/* Der Name kommt von außen und kann beliebig lang sein. Kürzen darf ihn nur
-   dieser Text: `min-width: 0` nimmt ihm die Inhaltsbreite als Untergrenze,
-   sonst gäbe stattdessen alles daneben nach — bei einem Flex-Element ist das
-   die Voraussetzung dafür, dass `text-overflow` überhaupt greift. */
+/* The name comes from outside and can be arbitrarily long. Only this text
+   may be truncated: `min-width: 0` removes its content width as a floor,
+   otherwise everything beside it would yield instead — for a flex item,
+   that's the precondition for `text-overflow` to take effect at all. */
 .title{
     min-width: 0;
     font-Weight: 600;

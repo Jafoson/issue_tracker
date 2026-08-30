@@ -21,8 +21,8 @@ interface Props {
   activeLink: ActiveInviteLink | null;
   assignableRoles: Role[];
   canManage: boolean;
-  /** `createWorkspaceInviteLink`/`createProjectInviteLink`, an die jeweilige
-   * Id gebunden — der einzige Unterschied zwischen den beiden Scopes. */
+  /** `createWorkspaceInviteLink`/`createProjectInviteLink`, bound to the
+   * respective id — the only difference between the two scopes. */
   create: (
     role: string,
     expiresAt?: Date,
@@ -32,10 +32,10 @@ interface Props {
 }
 
 /**
- * Der teilbare Einladungslink eines Scopes — ein Link pro Rolle-Kombination
- * gleichzeitig aktiv (`createInviteLink` widerruft den vorherigen). Neu
- * erzeugen ersetzt den bestehenden Link stillschweigend; Widerrufen macht ihn
- * ohne Ersatz ungültig.
+ * The shareable invite link of a scope — one link per role combination
+ * active at a time (`createInviteLink` revokes the previous one).
+ * Generating a new one silently replaces the existing link; revoking
+ * invalidates it without a replacement.
  */
 export function InviteLinkPanel({
   activeLink,

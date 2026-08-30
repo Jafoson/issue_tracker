@@ -60,14 +60,14 @@ function reset() {
 describe("addWorkspaceDomain()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await addWorkspaceDomain(WS, "acme.com")).toEqual({
       error: "You must be logged in.",
     });
   });
 
-  it("verlangt workspace.update", async () => {
+  it("requires workspace.update", async () => {
     mockCan.mockResolvedValue(false);
     expect(await addWorkspaceDomain(WS, "acme.com")).toEqual({
       error: "You are not allowed to change this workspace.",
@@ -75,35 +75,35 @@ describe("addWorkspaceDomain()", () => {
     expect(mockWorkspaceDomainCreate).not.toHaveBeenCalled();
   });
 
-  it("normalisiert Groß-/Kleinschreibung und ein führendes @", async () => {
+  it("normalizes case and a leading @", async () => {
     await addWorkspaceDomain(WS, "  @Acme.COM ");
     expect(mockWorkspaceDomainCreate).toHaveBeenCalledWith({
       data: { domain: "acme.com", workspaceId: WS },
     });
   });
 
-  it("lehnt ein ungültiges Format ab", async () => {
+  it("rejects an invalid format", async () => {
     expect(await addWorkspaceDomain(WS, "nicht so")).toEqual({
       error: "Please enter a valid domain, e.g. acme.com.",
     });
     expect(mockWorkspaceDomainCreate).not.toHaveBeenCalled();
   });
 
-  it("lehnt bekannte Freemail-Domains ab", async () => {
+  it("rejects known freemail domains", async () => {
     expect(await addWorkspaceDomain(WS, "gmail.com")).toEqual({
       error: "This is a public email provider and cannot be claimed.",
     });
     expect(mockWorkspaceDomainCreate).not.toHaveBeenCalled();
   });
 
-  it("meldet, wenn der eigene Workspace die Domain schon hat", async () => {
+  it("reports when the own workspace already has the domain", async () => {
     mockWorkspaceDomainFindUnique.mockResolvedValue({ workspaceId: WS });
     expect(await addWorkspaceDomain(WS, "acme.com")).toEqual({
       error: "This domain is already added.",
     });
   });
 
-  it("meldet, wenn ein anderer Workspace die Domain schon hat", async () => {
+  it("reports when another workspace already has the domain", async () => {
     mockWorkspaceDomainFindUnique.mockResolvedValue({ workspaceId: "andere" });
     expect(await addWorkspaceDomain(WS, "acme.com")).toEqual({
       error: "Another workspace already uses this domain.",
@@ -111,7 +111,7 @@ describe("addWorkspaceDomain()", () => {
     expect(mockWorkspaceDomainCreate).not.toHaveBeenCalled();
   });
 
-  it("legt die Domain an", async () => {
+  it("creates the domain", async () => {
     expect(await addWorkspaceDomain(WS, "acme.com")).toEqual({ ok: true });
   });
 });
@@ -119,7 +119,7 @@ describe("addWorkspaceDomain()", () => {
 describe("removeWorkspaceDomain()", () => {
   beforeEach(reset);
 
-  it("verlangt workspace.update", async () => {
+  it("requires workspace.update", async () => {
     mockCan.mockResolvedValue(false);
     expect(await removeWorkspaceDomain(WS, "acme.com")).toEqual({
       error: "You are not allowed to change this workspace.",
@@ -127,7 +127,7 @@ describe("removeWorkspaceDomain()", () => {
     expect(mockWorkspaceDomainDeleteMany).not.toHaveBeenCalled();
   });
 
-  it("löscht die Domain, auf den eigenen Workspace begrenzt", async () => {
+  it("deletes the domain, scoped to the own workspace", async () => {
     expect(await removeWorkspaceDomain(WS, "acme.com")).toEqual({ ok: true });
     expect(mockWorkspaceDomainDeleteMany).toHaveBeenCalledWith({
       where: { domain: "acme.com", workspaceId: WS },

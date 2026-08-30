@@ -22,17 +22,17 @@ export function welcomeEmail(
   const placeholders = { firstName: input.firstName };
 
   const subject = resolveText(
-    "Willkommen beim Issue Tracker",
+    "Welcome to Issue Tracker",
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    `Willkommen, ${input.firstName}`,
+    `Welcome, ${input.firstName}`,
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
-    "dein Konto ist eingerichtet — du kannst dich ab sofort anmelden.",
+    "your account is set up — you can sign in right away.",
     override?.bodyText,
     placeholders,
   );
@@ -43,12 +43,12 @@ export function welcomeEmail(
     preheader: introText,
     heading: escapeHtml(heading),
     bodyHtml,
-    ctaLabel: "Jetzt anmelden",
+    ctaLabel: "Sign in now",
     ctaUrl: input.loginUrl,
     recipientEmail: input.to,
   });
 
-  const text = `${heading}\n\n${introText}\n\nJetzt anmelden: ${input.loginUrl}`;
+  const text = `${heading}\n\n${introText}\n\nSign in now: ${input.loginUrl}`;
 
   return { subject, html, text };
 }

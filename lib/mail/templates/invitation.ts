@@ -1,4 +1,4 @@
-import { escapeHtml, formatDateDe } from "@/lib/mail/templates/html";
+import { escapeHtml, formatDate } from "@/lib/mail/templates/html";
 import { renderDetailTable, renderLayout } from "@/lib/mail/templates/layout";
 import {
   resolveText,
@@ -40,17 +40,17 @@ export function invitationEmail(
   };
 
   const subject = resolveText(
-    `Einladung zu ${target}`,
+    `Invitation to ${target}`,
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    `${input.inviterName} hat dich zu ${target} eingeladen`,
+    `${input.inviterName} invited you to ${target}`,
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
-    `${input.inviterName} hat dich eingeladen — hier die Details:`,
+    `${input.inviterName} invited you — here are the details:`,
     override?.bodyText,
     placeholders,
   );
@@ -58,10 +58,10 @@ export function invitationEmail(
   const rows = [
     { label: "Workspace", value: escapeHtml(input.workspaceName) },
     ...(input.projectName
-      ? [{ label: "Projekt", value: escapeHtml(input.projectName) }]
+      ? [{ label: "Project", value: escapeHtml(input.projectName) }]
       : []),
-    { label: "Rolle", value: escapeHtml(input.roleName) },
-    { label: "Eingeladen von", value: escapeHtml(input.inviterName) },
+    { label: "Role", value: escapeHtml(input.roleName) },
+    { label: "Invited by", value: escapeHtml(input.inviterName) },
   ];
 
   const bodyHtml = `<p style="margin: 0 0 12px;">${escapeHtml(introText)}</p>${renderDetailTable(rows)}`;
@@ -70,9 +70,9 @@ export function invitationEmail(
     preheader: introText,
     heading: escapeHtml(heading),
     bodyHtml,
-    ctaLabel: "Einladung annehmen",
+    ctaLabel: "Accept invitation",
     ctaUrl: input.inviteUrl,
-    footnoteHtml: `Die Einladung ist bis zum ${formatDateDe(input.expiresAt)} gültig. Kennst du ${escapeHtml(input.inviterName)} nicht? Dann ignorier diese Mail — ohne Klick auf den Knopf passiert nichts.`,
+    footnoteHtml: `This invitation is valid until ${formatDate(input.expiresAt)}. Don't know ${escapeHtml(input.inviterName)}? Then ignore this email — nothing happens unless you click the button.`,
     recipientEmail: input.to,
   });
 
@@ -82,12 +82,12 @@ export function invitationEmail(
     introText,
     "",
     `Workspace: ${input.workspaceName}`,
-    ...(input.projectName ? [`Projekt: ${input.projectName}`] : []),
-    `Rolle: ${input.roleName}`,
-    `Eingeladen von: ${input.inviterName}`,
+    ...(input.projectName ? [`Project: ${input.projectName}`] : []),
+    `Role: ${input.roleName}`,
+    `Invited by: ${input.inviterName}`,
     "",
-    `Einladung annehmen: ${input.inviteUrl}`,
-    `Gültig bis ${formatDateDe(input.expiresAt)}.`,
+    `Accept invitation: ${input.inviteUrl}`,
+    `Valid until ${formatDate(input.expiresAt)}.`,
   ].join("\n");
 
   return { subject, html, text };

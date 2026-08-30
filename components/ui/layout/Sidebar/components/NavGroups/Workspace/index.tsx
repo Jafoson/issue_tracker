@@ -5,10 +5,10 @@ import { getAccess } from "@/lib/permissions";
 import TabList, { type TabGroup } from "../components/TabList";
 
 /**
- * Gefiltert nach dem, was die Workspace-Rolle hergibt — dieselbe Höflichkeit
- * wie bei `NavGroupAdmin`: kein Eintrag, der beim Anklicken auf ein 404 führt.
- * Die eigentliche Prüfung sitzt in den Abfragen dahinter
- * (`getWorkspaceMembersView`, `getWorkspaceSettingsView`, …).
+ * Filtered by what the workspace role grants — the same courtesy as in
+ * `NavGroupAdmin`: no entry that leads to a 404 when clicked. The actual
+ * check sits in the queries behind it (`getWorkspaceMembersView`,
+ * `getWorkspaceSettingsView`, …).
  */
 async function NavGroupWorkspace() {
   const t = await getTranslations("nav");
@@ -31,9 +31,9 @@ async function NavGroupWorkspace() {
         entry.section === "settings"
           ? t("workspaceSettings")
           : t(entry.labelKey),
-      // Die Einstellungen haben eine zweite Ebene (Projekte, Labels, Teams,
-      // Rollen …). Ohne den Bereich darunter verlöre der Eintrag seine
-      // Markierung, sobald man dort etwas anklickt.
+      // Settings has a second level (projects, labels, teams, roles …).
+      // Without the section below, the entry would lose its active marking
+      // as soon as something in it is clicked.
       ...(entry.section === "settings" ? { activeHref: `${href}/*` } : {}),
     };
   });

@@ -65,22 +65,22 @@ beforeEach(() => {
   });
 });
 
-describe("Plattform-Rolle setzen", () => {
-  it("verlangt user.manage", async () => {
+describe("Setting the platform role", () => {
+  it("requires user.manage", async () => {
     allow("platform.access");
     const result = await setPlatformRole("u2", "pf:admin");
     expect(result).toEqual({ error: "You are not allowed to do this." });
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("lehnt die eigene Zeile ab", async () => {
+  it("rejects the user's own row", async () => {
     allow("user.manage");
     const result = await setPlatformRole("admin1", "pf:admin");
     expect("error" in result).toBe(true);
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("lehnt eine Rolle ab, die kein Plattform-Scope hat", async () => {
+  it("rejects a role that doesn't have platform scope", async () => {
     allow("user.manage");
     mockRoleFindUnique.mockResolvedValue({
       key: "admin",
@@ -94,7 +94,7 @@ describe("Plattform-Rolle setzen", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("vergibt keine Rolle über dem eigenen Rang", async () => {
+  it("doesn't grant a role above the user's own rank", async () => {
     allow("user.manage");
     ceiling = 1;
 
@@ -103,7 +103,7 @@ describe("Plattform-Rolle setzen", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("fasst niemanden an, der höher steht als man selbst", async () => {
+  it("doesn't touch anyone ranked higher than oneself", async () => {
     allow("user.manage");
     ceiling = 1;
     target({ key: "platform_admin", rank: 2 });
@@ -119,7 +119,7 @@ describe("Plattform-Rolle setzen", () => {
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("setzt die Rolle und protokolliert alte wie neue", async () => {
+  it("sets the role and logs both old and new", async () => {
     allow("user.manage");
 
     const result = await setPlatformRole("u2", "pf:admin");
@@ -140,22 +140,22 @@ describe("Plattform-Rolle setzen", () => {
   });
 });
 
-describe("Konto stilllegen", () => {
-  it("verlangt user.manage", async () => {
+describe("Suspending an account", () => {
+  it("requires user.manage", async () => {
     allow("platform.access");
     const result = await setUserActive("u2", false);
     expect(result).toEqual({ error: "You are not allowed to do this." });
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("lässt niemanden sich selbst stilllegen", async () => {
+  it("doesn't let anyone suspend themselves", async () => {
     allow("user.manage");
     const result = await setUserActive("admin1", false);
     expect("error" in result).toBe(true);
     expect(mockUserUpdate).not.toHaveBeenCalled();
   });
 
-  it("setzt einen Zeitpunkt und protokolliert die Begründung", async () => {
+  it("sets a timestamp and logs the justification", async () => {
     allow("user.manage");
 
     const result = await setUserActive("u2", false, "Austritt zum 31.08.");
@@ -170,7 +170,7 @@ describe("Konto stilllegen", () => {
     });
   });
 
-  it("gibt wieder frei, indem es den Zeitpunkt löscht", async () => {
+  it("reinstates it by clearing the timestamp", async () => {
     allow("user.manage");
 
     await setUserActive("u2", true);

@@ -11,10 +11,10 @@ import {
 } from "@/lib/nav";
 import type { Project } from "@/types";
 
-// Der Tab-Set ist global — Tabs verschiedener Bereiche liegen zusammen. Der
-// Kontext einer URL wird deshalb aus der URL selbst abgeleitet, nicht von außen
-// gereicht: das erste Pfad-Segment ist der Bereich ("admin" oder eine
-// Workspace-ID), das zweite die Sektion ("my", "project", "members", …).
+// The tab set is global — tabs from different areas sit together. The
+// context of a URL is therefore derived from the URL itself, not passed in
+// from outside: the first path segment is the area ("admin" or a workspace
+// ID), the second the section ("my", "project", "members", …).
 function segments(path: string): { root: string; section: string } {
   const parts = path.split("/");
   return { root: parts[1] ?? "", section: parts[2] ?? "" };
@@ -48,12 +48,11 @@ function projectSection(path: string): string {
 }
 
 /**
- * Der Bereich innerhalb der Projekteinstellungen — `""` für Allgemein,
- * `"members"`, `"roles"`, `"labels"`. `null`, wenn der Pfad gar nicht in den
- * Einstellungen liegt.
+ * The section within the project settings — `""` for general, `"members"`,
+ * `"roles"`, `"labels"`. `null` when the path isn't in the settings at all.
  *
- * Ohne diese Unterscheidung hießen alle vier Reiter „Projekt (Einstellungen)"
- * und wären nebeneinander nicht auseinanderzuhalten.
+ * Without this distinction, all four tabs would be called "Project
+ * (Settings)" and couldn't be told apart next to each other.
  */
 function projectSettingsSection(path: string): string | null {
   const parts = path.split("/");
@@ -61,11 +60,11 @@ function projectSettingsSection(path: string): string | null {
 }
 
 /**
- * Der Bereich innerhalb der Workspace-Einstellungen — `""` für Allgemein,
- * `"projects"`, `"labels"`, `"teams"`, … `null`, wenn der Pfad gar nicht dort
- * liegt. Dieselbe Unterscheidung wie beim Projekt, eine Ebene höher: ohne sie
- * hießen alle Bereiche „Einstellungen" und wären nebeneinander nicht
- * auseinanderzuhalten.
+ * The section within the workspace settings — `""` for general,
+ * `"projects"`, `"labels"`, `"teams"`, … `null` when the path isn't there at
+ * all. The same distinction as for the project, one level up: without it
+ * every section would be called "Settings" and couldn't be told apart next
+ * to each other.
  */
 function workspaceSettingsSection(path: string): string | null {
   const parts = path.split("/");
@@ -74,10 +73,10 @@ function workspaceSettingsSection(path: string): string | null {
 }
 
 /**
- * Die Ansicht innerhalb der eigenen Aufgaben — `""` für das Board, `"list"` für
- * die Liste. `null`, wenn der Pfad gar nicht dort liegt. Dieselben zwei
- * Ansichten wie im Projekt, deshalb dieselbe Unterscheidung: sonst hießen beide
- * Reiter „Meine Aufgaben".
+ * The view within My Issues — `""` for the board, `"list"` for the list.
+ * `null` when the path isn't there at all. The same two views as in a
+ * project, hence the same distinction: otherwise both tabs would be called
+ * "My Issues".
  */
 function myIssuesSection(path: string): string | null {
   const parts = path.split("/");
@@ -86,10 +85,10 @@ function myIssuesSection(path: string): string | null {
 }
 
 /**
- * Der Bereich innerhalb der eigenen Einstellungen — `""` für Allgemein,
- * `"appearance"`, `"security"`, … `null`, wenn der Pfad nicht dort liegt.
- * Dieselbe Unterscheidung wie bei Workspace und Projekt: ohne sie hießen alle
- * fünf Reiter „Konto".
+ * The section within your own account settings — `""` for general,
+ * `"appearance"`, `"security"`, … `null` when the path isn't there. The same
+ * distinction as for workspace and project: without it all five tabs would
+ * be called "Account".
  */
 function accountSection(path: string): string | null {
   const parts = path.split("/");
@@ -137,8 +136,8 @@ export function tabIcon(path: string): string {
   }
 
   if (section === "project") {
-    // Wie beim Titel: die Einstellungen haben eine zweite Ebene, und die trägt
-    // ihr eigenes Icon. Ohne diesen Zweig bekämen alle vier das Zahnrad.
+    // Like the title: the settings have a second level, and that carries
+    // its own icon. Without this branch, all four would get the gear.
     const settingsSection = projectSettingsSection(path);
     if (settingsSection !== null) {
       return (
@@ -153,13 +152,13 @@ export function tabIcon(path: string): string {
     );
   }
 
-  // Die eigenen Aufgaben haben zwei Ansichten wie ein Projekt — die Liste trägt
-  // deren Zeichen, das Board bleibt beim Zeichen des Bereichs.
+  // My Issues has two views like a project — the list carries its icon,
+  // the board stays with the area's icon.
   if (myIssuesSection(path) === "list") {
     return findBySection(PROJECT_NAV, "list")?.icon ?? "lucide:list";
   }
 
-  // Dieselbe zweite Ebene, nur für die eigenen Einstellungen.
+  // Same second level, just for your own account settings.
   const account = accountSection(path);
   if (account !== null) {
     return (
@@ -167,8 +166,8 @@ export function tabIcon(path: string): string {
     );
   }
 
-  // Wie beim Projekt: die Einstellungen haben eine zweite Ebene, und die trägt
-  // ihr eigenes Icon. Ohne diesen Zweig bekäme jeder Bereich das Zahnrad.
+  // Like the project: the settings have a second level, and that carries
+  // its own icon. Without this branch, every section would get the gear.
   const workspaceSection = workspaceSettingsSection(path);
   if (workspaceSection !== null) {
     return (
@@ -195,8 +194,8 @@ export interface TabMeta {
  *
  * The href may carry a query string (filters/sort, e.g. `?status=todo`) which
  * is stripped before deriving title/color/icon. Sub-views of a project get a
- * `Projektname (Aufgaben)` suffix so they stay distinct from its board tab; the
- * icon is omitted when a project color dot is shown instead.
+ * `Project Name (Issues)` suffix so they stay distinct from its board tab;
+ * the icon is omitted when a project color dot is shown instead.
  */
 export function tabMeta(
   href: string,
@@ -208,15 +207,15 @@ export function tabMeta(
   const image = tabImage(path, projects);
 
   let title = tabTitle(path, projects, t);
-  // Das Board ist die Hauptansicht und trägt den Projektnamen unverändert —
-  // jede Unterseite sagt im Suffix, welche sie ist.
+  // The board is the main view and carries the project name unchanged —
+  // every sub-page says in a suffix which one it is.
   const inProject = path.includes("/project/");
   const settingsSection = inProject ? projectSettingsSection(path) : null;
 
   if (settingsSection !== null) {
-    // Die Einstellungen haben eine zweite Ebene. Ihr Kopf heißt im Reiter
-    // „Einstellungen", die Bereiche darunter tragen ihren eigenen Namen —
-    // „Mitglieder" sagt mehr als „Einstellungen" und ist ebenso eindeutig.
+    // The settings have a second level. Its head is called "Settings" in
+    // the tab, the sections below it carry their own name — "Members" says
+    // more than "Settings" and is just as unambiguous.
     const sub = findBySection(PROJECT_SETTINGS_NAV, settingsSection);
     const label =
       sub && sub.section ? t(`nav.${sub.labelKey}`) : t("nav.settings");
@@ -225,18 +224,18 @@ export function tabMeta(
     const entry = findBySection(PROJECT_SECTIONS, projectSection(path));
     if (entry?.section) title = `${title} (${t(`nav.${entry.labelKey}`)})`;
   } else {
-    // Dieselbe Regel für den Workspace: der Kopf heißt „Einstellungen", die
-    // Bereiche darunter tragen ihren eigenen Namen.
+    // The same rule for the workspace: the head is called "Settings", the
+    // sections below it carry their own name.
     const section = workspaceSettingsSection(path);
     const sub = section ? findBySection(WORKSPACE_SETTINGS_NAV, section) : null;
     if (sub) title = `${title} (${t(`nav.${sub.labelKey}`)})`;
 
-    // Und noch einmal für die eigenen Aufgaben: das Board ist die Hauptansicht
-    // und trägt den Namen unverändert, die Liste sagt es im Suffix.
+    // And once more for your own issues: the board is the main view and
+    // carries the name unchanged, the list says so in a suffix.
     if (myIssuesSection(path) === "list")
       title = `${title} (${t("nav.issues")})`;
 
-    // Und noch einmal für die eigenen Einstellungen.
+    // And once more for your own account settings.
     const account = accountSection(path);
     const accountSub = account
       ? findBySection(ACCOUNT_SETTINGS_NAV, account)

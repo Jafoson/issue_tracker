@@ -23,11 +23,11 @@ interface Props {
 const EMPTY = { subject: "", heading: "", bodyText: "" };
 
 /**
- * Betreff, Überschrift und Einleitungstext einer Vorlage — mit Live-Vorschau.
+ * Subject, heading, and intro text of a template — with a live preview.
  *
- * Ein leeres Feld fällt beim Rendern auf den Code-Default zurück
- * (`resolveText` in `lib/mail/templates/override.ts`): wer nur den Betreff
- * ändert, muss nicht auch Überschrift und Text abschreiben.
+ * An empty field falls back to the code default when rendering
+ * (`resolveText` in `lib/mail/templates/override.ts`): whoever only changes
+ * the subject doesn't also have to copy the heading and text.
  */
 export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
   const router = useRouter();
@@ -66,10 +66,10 @@ export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
 
   const reset = async () => {
     const ok = await confirm({
-      title: "Vorlage zurücksetzen?",
-      description: `„${row.meta.label}“ fällt zurück auf den Standardtext.`,
-      confirmLabel: "Zurücksetzen",
-      cancelLabel: "Abbrechen",
+      title: "Reset template?",
+      description: `"${row.meta.label}" will fall back to the default text.`,
+      confirmLabel: "Reset",
+      cancelLabel: "Cancel",
       danger: true,
     });
     if (!ok) return;
@@ -101,29 +101,28 @@ export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
           {!row.meta.wired && (
             <span className={styles.unwired}>
               <Icon icon="lucide:info" width={13} />
-              Noch nicht verdrahtet — diese Vorlage hat noch keinen
-              Versandpunkt.
+              Not wired up yet — this template has no send point yet.
             </span>
           )}
         </div>
 
         <Input
-          label="Betreff"
-          placeholder="Standard verwenden"
+          label="Subject"
+          placeholder="Use default"
           value={draft.subject}
           onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
         />
         <Input
-          label="Überschrift"
-          placeholder="Standard verwenden"
+          label="Heading"
+          placeholder="Use default"
           value={draft.heading}
           onChange={(e) => setDraft({ ...draft, heading: e.target.value })}
         />
         <label className={styles.field}>
-          <span className={styles.label}>Einleitungstext</span>
+          <span className={styles.label}>Intro text</span>
           <textarea
             className={styles.textarea}
-            placeholder="Standard verwenden"
+            placeholder="Use default"
             rows={4}
             value={draft.bodyText}
             onChange={(e) => setDraft({ ...draft, bodyText: e.target.value })}
@@ -131,7 +130,7 @@ export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
         </label>
 
         <div className={styles.placeholders}>
-          <span className={styles.label}>Verfügbare Platzhalter</span>
+          <span className={styles.label}>Available placeholders</span>
           <div className={styles.chips}>
             {row.meta.placeholders.map((p) => (
               <code key={p.key} className={styles.chip} title={p.description}>
@@ -149,27 +148,27 @@ export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
             onClick={save}
             disabled={!isDirty || isPending}
           >
-            Speichern
+            Save
           </Button>
           <Button
             variant="text"
             onClick={reset}
             disabled={isPending || (!row.override && !isDirty)}
           >
-            Auf Standard zurücksetzen
+            Reset to default
           </Button>
         </div>
       </div>
 
       <div className={styles.previewPane}>
         <div className={styles.previewHead}>
-          <span className={styles.label}>Vorschau — Beispieldaten</span>
+          <span className={styles.label}>Preview — sample data</span>
           <div className={styles.testSend}>
             <Input
               size="sm"
               inputMode="email"
-              aria-label="Adresse für Testmail"
-              placeholder="du@example.com"
+              aria-label="Address for test mail"
+              placeholder="you@example.com"
               className={styles.testInput}
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
@@ -181,7 +180,7 @@ export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
               onClick={sendTest}
               disabled={isSendingTest || !testEmail}
             >
-              Testmail senden
+              Send test mail
             </Button>
           </div>
         </div>
@@ -193,12 +192,12 @@ export function MailTemplateEditor({ row, defaultTestEmail }: Props) {
           >
             {"error" in testResult
               ? testResult.error
-              : `Testmail an ${testResult.to} verschickt.`}
+              : `Test mail sent to ${testResult.to}.`}
           </p>
         )}
         <iframe
           key={row.key}
-          title={`Vorschau: ${row.meta.label}`}
+          title={`Preview: ${row.meta.label}`}
           srcDoc={preview.html}
           className={styles.preview}
         />

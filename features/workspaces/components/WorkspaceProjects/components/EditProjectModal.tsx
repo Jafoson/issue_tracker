@@ -26,11 +26,12 @@ interface Props {
 }
 
 /**
- * Die Stammdaten eines Projekts aus der Übersicht heraus ändern.
+ * Change a project's core data from the overview.
  *
- * Dieselben vier Felder wie unter „Allgemein" im Projekt selbst — hier in einem
- * Dialog, damit man dafür die Liste nicht verlassen muss. Der Slug fehlt in
- * beiden: er steht in jeder geteilten Adresse und bleibt deshalb, wie er ist.
+ * The same four fields as under "General" in the project itself — here in
+ * a dialog, so the list doesn't need to be left for it. The slug is
+ * missing in both: it appears in every shared address and therefore stays
+ * as it is.
  */
 export function EditProjectModal({ project, onDone, close }: Props) {
   const t = useTranslations();

@@ -1,4 +1,4 @@
-/* Nicht die Seite scrollt, sondern jede Tabelle für sich (`fill`). */
+/* It's not the page that scrolls, but each table on its own (`fill`). */
 .content {
   --table-row-height: 56px;
   --table-divider: var(--outline-variant);
@@ -25,8 +25,8 @@
   text-overflow: ellipsis;
 }
 
-/* Das Kürzel steht in jeder Aufgaben-Id (WEB-123) und wird deshalb wie eine
-   Kennung gesetzt: einfarbig, monospace, hinter dem Namen. */
+/* The prefix appears in every task id (WEB-123) and is therefore styled
+   like an identifier: single color, monospace, after the name. */
 .prefix {
   flex: none;
   font-family: var(--font-mono);
@@ -34,9 +34,9 @@
   color: var(--outline);
 }
 
-/* Öffentlich und privat als zwei Abschnitte — dieselbe Gliederung wie auf der
-   Label-Seite (`workspaceLabels.module.scss`): Überschrift über der Karte, nicht
-   in ihr. */
+/* Public and private as two sections — the same structure as on the
+   labels page (`workspaceLabels.module.scss`): heading above the card, not
+   inside it. */
 .group {
   flex: 1;
   min-height: 0;
@@ -60,8 +60,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Die Zahl gehört zur Überschrift, ist aber nicht Teil des Titels — deshalb
-   leiser und in der Ziffernschrift. */
+/* The count belongs to the heading but isn't part of the title — hence
+   quieter and in the numeric typeface. */
 .groupCount {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -81,9 +81,8 @@
   color: var(--on-surface-variant);
 }
 
-/* Avatare und Zahl in einer Zelle — die Gesichter zuerst, die Zahl schließt die
-   Spalte rechtsbündig ab, damit sie über alle Zeilen hinweg untereinander
-   steht. */
+/* Avatars and count in one cell — the faces first, the count closes off
+   the column right-aligned, so it lines up vertically across all rows. */
 .members {
   display: inline-flex;
   align-items: center;

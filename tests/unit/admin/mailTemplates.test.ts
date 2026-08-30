@@ -78,14 +78,14 @@ function reset() {
 beforeEach(reset);
 
 describe("getMailTemplates()", () => {
-  it("prüft die Berechtigung", async () => {
+  it("checks the permission", async () => {
     await getMailTemplates();
     expect(mockRequirePermission).toHaveBeenCalledWith("mail.template.manage", {
       scope: "platform",
     });
   });
 
-  it("liefert jeden Katalog-Schlüssel genau einmal, ohne Override", async () => {
+  it("returns every catalog key exactly once, without an override", async () => {
     mockMailTemplateFindMany.mockResolvedValue([]);
 
     const rows = await getMailTemplates();
@@ -100,7 +100,7 @@ describe("getMailTemplates()", () => {
     }
   });
 
-  it("merged eine vorhandene DB-Zeile in den passenden Katalog-Eintrag", async () => {
+  it("merges an existing DB row into the matching catalog entry", async () => {
     const updatedAt = new Date("2026-08-14T10:00:00Z");
     mockMailTemplateFindMany.mockResolvedValue([
       {
@@ -125,7 +125,7 @@ describe("getMailTemplates()", () => {
 });
 
 describe("getCurrentAdminEmail()", () => {
-  it("prüft die Berechtigung und liefert die eigene Adresse", async () => {
+  it("checks the permission and returns the user's own address", async () => {
     mockUserFindUnique.mockResolvedValue({ email: "ada@example.com" });
 
     const email = await getCurrentAdminEmail();
@@ -140,14 +140,14 @@ describe("getCurrentAdminEmail()", () => {
     expect(email).toBe("ada@example.com");
   });
 
-  it("gibt einen leeren String zurück, wenn das Konto nicht mehr existiert", async () => {
+  it("returns an empty string when the account no longer exists", async () => {
     mockUserFindUnique.mockResolvedValue(null);
     expect(await getCurrentAdminEmail()).toBe("");
   });
 });
 
 describe("saveMailTemplate()", () => {
-  it("prüft die Berechtigung, bevor irgendetwas geschrieben wird", async () => {
+  it("checks the permission before anything is written", async () => {
     mockRequirePermission.mockRejectedValue(new Error("verboten"));
 
     await expect(
@@ -160,18 +160,18 @@ describe("saveMailTemplate()", () => {
     expect(mockMailTemplateUpsert).not.toHaveBeenCalled();
   });
 
-  it("lehnt einen unbekannten Schlüssel ab", async () => {
+  it("rejects an unknown key", async () => {
     const result = await saveMailTemplate("does-not-exist", {
       subject: "S",
       heading: "H",
       bodyText: "B",
     });
 
-    expect(result).toEqual({ error: "Unbekannte Vorlage." });
+    expect(result).toEqual({ error: "Unknown template." });
     expect(mockMailTemplateUpsert).not.toHaveBeenCalled();
   });
 
-  it("upsert't die Zeile und protokolliert den Vorgang", async () => {
+  it("upserts the row and logs the action", async () => {
     const data = { subject: "S", heading: "H", bodyText: "B" };
     const result = await saveMailTemplate("invitation", data);
 
@@ -190,7 +190,7 @@ describe("saveMailTemplate()", () => {
 });
 
 describe("resetMailTemplate()", () => {
-  it("löscht die Override-Zeile und protokolliert den Vorgang", async () => {
+  it("deletes the override row and logs the action", async () => {
     const result = await resetMailTemplate("invitation");
 
     expect(result).toEqual({ ok: true });
@@ -204,10 +204,10 @@ describe("resetMailTemplate()", () => {
     });
   });
 
-  it("lehnt einen unbekannten Schlüssel ab", async () => {
+  it("rejects an unknown key", async () => {
     const result = await resetMailTemplate("does-not-exist");
 
-    expect(result).toEqual({ error: "Unbekannte Vorlage." });
+    expect(result).toEqual({ error: "Unknown template." });
     expect(mockMailTemplateDeleteMany).not.toHaveBeenCalled();
   });
 });
@@ -215,7 +215,7 @@ describe("resetMailTemplate()", () => {
 describe("sendTestMailTemplate()", () => {
   const draft = { subject: "", heading: "", bodyText: "" };
 
-  it("prüft die Berechtigung", async () => {
+  it("checks the permission", async () => {
     mockRequirePermission.mockRejectedValue(new Error("verboten"));
 
     await expect(
@@ -224,29 +224,29 @@ describe("sendTestMailTemplate()", () => {
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("lehnt einen unbekannten Schlüssel ab", async () => {
+  it("rejects an unknown key", async () => {
     const result = await sendTestMailTemplate(
       "does-not-exist",
       draft,
       "mara@example.com",
     );
-    expect(result).toEqual({ error: "Unbekannte Vorlage." });
+    expect(result).toEqual({ error: "Unknown template." });
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("lehnt eine ungültige Adresse ab", async () => {
+  it("rejects an invalid address", async () => {
     const result = await sendTestMailTemplate(
       "invitation",
       draft,
       "keine-adresse",
     );
     expect(result).toEqual({
-      error: "Bitte eine gültige E-Mail-Adresse angeben.",
+      error: "Please provide a valid email address.",
     });
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("meldet fehlende SMTP-Konfiguration, statt es zu versuchen", async () => {
+  it("reports missing SMTP configuration instead of attempting it", async () => {
     mockIsMailConfigured.mockReturnValue(false);
 
     const result = await sendTestMailTemplate(
@@ -256,12 +256,12 @@ describe("sendTestMailTemplate()", () => {
     );
 
     expect(result).toEqual({
-      error: "SMTP ist nicht konfiguriert (SMTP_HOST fehlt).",
+      error: "SMTP is not configured (SMTP_HOST is missing).",
     });
     expect(mockSendMail).not.toHaveBeenCalled();
   });
 
-  it("verschickt die Vorschau mit Beispieldaten, Betreff mit [Test]-Vorsatz", async () => {
+  it("sends the preview with sample data, subject prefixed with [Test]", async () => {
     const result = await sendTestMailTemplate(
       "invitation",
       draft,
@@ -276,7 +276,7 @@ describe("sendTestMailTemplate()", () => {
     expect(call.html).toContain("<!doctype html>");
   });
 
-  it("verschickt den ungespeicherten Entwurf, nicht nur den Standard", async () => {
+  it("sends the unsaved draft, not just the default", async () => {
     await sendTestMailTemplate(
       "invitation",
       {
@@ -291,7 +291,7 @@ describe("sendTestMailTemplate()", () => {
     expect(call.subject).toBe("[Test] Mein Entwurf für Acme");
   });
 
-  it("speichert nichts", async () => {
+  it("saves nothing", async () => {
     await sendTestMailTemplate("invitation", draft, "mara@example.com");
     expect(mockMailTemplateUpsert).not.toHaveBeenCalled();
   });

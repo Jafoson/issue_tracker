@@ -70,8 +70,8 @@ beforeEach(() => {
   mockAuditCreate.mockResolvedValue({});
 });
 
-describe("Notfall-Zugriff", () => {
-  it("verlangt das Recht", async () => {
+describe("Emergency access", () => {
+  it("requires the permission", async () => {
     allow("platform.access", "user.manage");
 
     const result = await breakGlassJoinProject({
@@ -84,7 +84,7 @@ describe("Notfall-Zugriff", () => {
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("verlangt eine Begründung", async () => {
+  it("requires a justification", async () => {
     allow("project.breakglass");
 
     const result = await breakGlassJoinProject({ projectId: "p1", reason: "" });
@@ -93,7 +93,7 @@ describe("Notfall-Zugriff", () => {
     expect(mockProjectMemberCreate).not.toHaveBeenCalled();
   });
 
-  it("lässt eine zu kurze Begründung nicht durchgehen", async () => {
+  it("doesn't let a too-short justification through", async () => {
     allow("project.breakglass");
 
     const result = await breakGlassJoinProject({
@@ -105,7 +105,7 @@ describe("Notfall-Zugriff", () => {
     expect(mockProjectMemberCreate).not.toHaveBeenCalled();
   });
 
-  it("trägt ein und protokolliert — beides oder nichts", async () => {
+  it("records and logs it — both or nothing", async () => {
     allow("project.breakglass");
 
     const result = await breakGlassJoinProject({
@@ -137,7 +137,7 @@ describe("Notfall-Zugriff", () => {
     expect(entry.targetLabel).toBe("Kündigungen Q3");
   });
 
-  it("weist ab, wer ohnehin schon Mitglied ist", async () => {
+  it("rejects someone who is already a member anyway", async () => {
     allow("project.breakglass");
     mockProjectMemberFindUnique.mockResolvedValue({ userId: "admin1" });
 
@@ -151,7 +151,7 @@ describe("Notfall-Zugriff", () => {
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("weist ab, wenn es das Projekt nicht mehr gibt", async () => {
+  it("rejects it when the project no longer exists", async () => {
     allow("project.breakglass");
     mockProjectFindUnique.mockResolvedValue(null);
 

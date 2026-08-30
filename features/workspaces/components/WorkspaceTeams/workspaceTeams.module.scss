@@ -1,6 +1,6 @@
-/* Nicht die Seite scrollt, sondern die Tabelle selbst (`fill`). Eine
-   Teamzeile trägt Avatare und zwei Textzeilen und bekommt deshalb mehr Luft
-   als die einzeilige Vorgabe. */
+/* It's not the page that scrolls, but the table itself (`fill`). A team
+   row carries avatars and two lines of text and therefore gets more
+   breathing room than the single-line default. */
 .content {
   --table-row-height: 62px;
   --table-divider: var(--outline-variant);
@@ -41,7 +41,7 @@
   text-overflow: ellipsis;
 }
 
-/* Das Kürzel ist die Kennung des Teams — wie beim Projekt monospace und ruhig. */
+/* The short code is the team's identifier — like a project's, monospace and quiet. */
 .key {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -60,8 +60,8 @@
   flex-wrap: nowrap;
 }
 
-/* Ab dem dritten Projekt nur noch die Zahl: die Spalte soll die Zeile nicht
-   aufspannen, und welche es genau sind, steht im Dialog. */
+/* From the third project on, just the number: the column shouldn't stretch
+   the row, and which ones exactly is shown in the dialog. */
 .more {
   font-size: var(--text-sm);
   color: var(--outline);

@@ -15,9 +15,9 @@ import { StatusFilter } from "./StatusFilter";
 interface TopbarFiltersProps {
   filters: FilterState;
   filterCount: number;
-  /** Woraufhin die Ansicht zeigt — entscheidet über die letzte Chip-Stelle. */
+  /** What the view is showing — determines the last chip slot. */
   area: IssueArea;
-  /** Leer im Bereich „Meine Aufgaben“: dort gibt es kein einzelnes Projekt. */
+  /** Empty in the "My issues" area: there is no single project there. */
   projectId: string;
   projectName: string;
   workspaceId: string;
@@ -63,9 +63,9 @@ export function TopbarFilters({
         onToggle={(id) => onToggle("priority", id)}
         onClear={() => onClear("priority")}
       />
-      {/* Die letzte Stelle beantwortet, was der Bereich offen lässt: im Projekt
-          ist das die Zuständigkeit, bei den eigenen Aufgaben das Projekt — die
-          jeweils andere Frage ist dort schon entschieden. */}
+      {/* The last slot answers whatever the area leaves open: within a
+          project that's the assignee, for my issues it's the project — the
+          other question is already settled in each case. */}
       {area === "project" ? (
         <AssigneeFilter
           value={filters.assignee}

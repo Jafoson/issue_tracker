@@ -71,13 +71,13 @@ export function navEntryAllowed(
 }
 
 /**
- * Die Startseite des Workspace, in zwei Ansichten — `/<workspaceId>` (leere
- * Sektion) und `/<workspaceId>/dashboard`. Anders als beim Projekt
- * (`PROJECT_OVERVIEW_NAV`, das unter `/overview` steht, weil die Wurzel dort
- * schon das Board ist) hat der Workspace keine Wurzel, die ihm streitig macht —
- * die Übersicht bekommt sie deshalb direkt. Beide Ansichten stehen als eigener
- * Navlink in der Seitenleiste: es gibt keine Zeile, die beide meint und sich
- * merken müsste, welche zuletzt offen war.
+ * The workspace's home page, in two views — `/<workspaceId>` (empty
+ * section) and `/<workspaceId>/dashboard`. Unlike the project
+ * (`PROJECT_OVERVIEW_NAV`, which lives under `/overview` because the root
+ * there is already the board), the workspace has no root competing for the
+ * spot — the overview gets it directly for that reason. Both views are
+ * their own nav link in the sidebar: there's no single row meaning both
+ * that would have to remember which one was open last.
  */
 export const WORKSPACE_OVERVIEW_NAV: NavEntry = {
   section: "",
@@ -98,12 +98,12 @@ export const GLOBAL_NAV: NavEntry[] = [
 ];
 
 /**
- * Wer eines dieser Rechte trägt, kann in den Einstellungen des jeweiligen
- * Scopes etwas ändern — sonst wären sie nur schreibgeschützte Ansichten.
- * Dieselbe Regel entscheidet über den Tab in der Seitenleiste
- * (`WORKSPACE_NAV`/`PROJECT_NAV`) UND über das Segment im Umschalter
- * (`SettingsHeader`, siehe die drei `settings/layout.tsx`) — eine Quelle für
- * beide, statt die Liste zweimal zu pflegen.
+ * Whoever holds one of these permissions can change something in the
+ * settings of the respective scope — otherwise they'd just be read-only
+ * views. The same rule decides both the tab in the sidebar
+ * (`WORKSPACE_NAV`/`PROJECT_NAV`) AND the segment in the switcher
+ * (`SettingsHeader`, see the three `settings/layout.tsx`) — one source for
+ * both, instead of maintaining the list twice.
  */
 export const WORKSPACE_SETTINGS_PERMISSIONS: Permission[] = [
   "role.manage",
@@ -119,10 +119,10 @@ export const PROJECT_SETTINGS_PERMISSIONS: Permission[] = [
 /**
  * Sidebar "Workspace" group — workspace administration.
  *
- * Rollen stehen hier nicht mehr: sie sind eine Einrichtungsfrage und liegen in
- * den Einstellungen (`WORKSPACE_SETTINGS_NAV`). Mitglieder und Teams bleiben,
- * weil man sie im Alltag nachschlägt — beide sind zusätzlich in den
- * Einstellungen erreichbar, dieselbe Ansicht in einem anderen Rahmen.
+ * Roles no longer live here: that's a setup question and belongs in the
+ * settings (`WORKSPACE_SETTINGS_NAV`). Members and teams stay, because
+ * people look them up in everyday use — both are also reachable from the
+ * settings, the same view in a different frame.
  */
 export const WORKSPACE_NAV: NavEntry[] = [
   {
@@ -131,9 +131,9 @@ export const WORKSPACE_NAV: NavEntry[] = [
     labelKey: "members",
     permission: "member.view",
   },
-  // Teams bekommen kein Gate: ohne team.view.all sieht man die eigenen statt
-  // aller (`getWorkspaceTeamsView`) — der Tab bleibt sichtbar, nur der Inhalt
-  // ist gefiltert.
+  // Teams get no gate: without team.view.all you see your own instead of
+  // all of them (`getWorkspaceTeamsView`) — the tab stays visible, only the
+  // content is filtered.
   { section: "teams", icon: "lucide:users-round", labelKey: "teams" },
   {
     section: "settings",
@@ -151,9 +151,9 @@ export const INBOX_NAV: NavEntry = {
 };
 
 /**
- * Die Rollen-Seite gibt es weiter unter `/<workspaceId>/roles` — sie steht nur
- * nicht mehr in der Seitenleiste. Der Eintrag bleibt, damit ein offener Reiter
- * oder ein geteilter Link seinen Namen und sein Zeichen behält.
+ * The roles page still exists under `/<workspaceId>/roles` — it's just no
+ * longer in the sidebar. The entry stays so that an open tab or a shared
+ * link keeps its name and its icon.
  */
 export const ROLES_NAV: NavEntry = {
   section: "roles",
@@ -162,17 +162,17 @@ export const ROLES_NAV: NavEntry = {
 };
 
 /**
- * Die eigenen Einstellungen — `/<workspaceId>/account/…`.
+ * Your own account settings — `/<workspaceId>/account/…`.
  *
- * Sie stehen in keiner Seitenleiste: erreichbar sind sie über das eigene Menü
- * unten links, dort, wo der eigene Name steht. Der Eintrag existiert trotzdem,
- * weil ein offener Reiter und ein geteilter Link einen Namen und ein Zeichen
- * brauchen — dieselbe Rolle wie `ROLES_NAV`.
+ * They live in no sidebar: they're reached via your own menu in the bottom
+ * left, where your own name sits. The entry exists anyway, because an open
+ * tab and a shared link need a name and an icon — the same role as
+ * `ROLES_NAV`.
  *
- * Der Bereich hängt unter dem Workspace, obwohl nichts darin dem Workspace
- * gehört: die App kennt außerhalb der Workspace-Hülle keine Seitenleiste, keine
- * Reiterleiste und keinen Weg zurück. Welcher Workspace in der Adresse steht,
- * ist für den Inhalt ohne Bedeutung.
+ * The section hangs under the workspace even though nothing in it belongs
+ * to the workspace: outside the workspace shell, the app has no sidebar, no
+ * tab bar, and no way back. Which workspace is in the address is
+ * meaningless for the content.
  */
 export const ACCOUNT_NAV: NavEntry = {
   section: "account",
@@ -192,18 +192,19 @@ export const WORKSPACE_SECTIONS: NavEntry[] = [
 ];
 
 /**
- * Die Bereiche der Plattformverwaltung — `/admin` (leere Sektion = Übersicht)
- * oder `/admin/<section>`.
+ * The sections of platform administration — `/admin` (empty section =
+ * overview) or `/admin/<section>`.
  *
- * Die Reihenfolge ist die des Zugriffs, von innen nach außen: erst der Zustand
- * der Plattform, dann die Konten, dann die Projekte, die ihnen gehören, dann die
- * Rollen, die alles davon regeln — und am Ende das Protokoll, in dem steht, was
- * hier getan wurde.
+ * The order follows the order of access, inside out: first the state of
+ * the platform, then the accounts, then the projects that belong to them,
+ * then the roles that govern all of that — and last the log of what was
+ * done here.
  *
- * Was in dieser Liste steht, ist die Hülle des Systems: Konten, Stammdaten,
- * Rechte, Protokoll. Inhalte — Aufgaben, Kommentare, Anhänge — stehen bewusst
- * nicht darin und sind von hier aus auch nicht erreichbar. Wer hineinsehen muss,
- * geht über den Notfall-Zugriff (`features/admin/actions.ts`).
+ * What's in this list is the shell of the system: accounts, master data,
+ * permissions, log. Content — issues, comments, attachments — deliberately
+ * doesn't live in it and isn't reachable from here either. Whoever needs to
+ * look inside goes through the emergency access
+ * (`features/admin/actions.ts`).
  */
 export const ADMIN_NAV: NavEntry[] = [
   { section: "", icon: "lucide:layout-dashboard", labelKey: "overview" },
@@ -214,9 +215,10 @@ export const ADMIN_NAV: NavEntry[] = [
     permission: "user.manage",
   },
   {
-    // Ohne eigene Leseberechtigung: die Mandantenliste zeigt nichts, was das
-    // Dashboard nicht schon zeigt. Was man mit einem Workspace *tun* darf,
-    // entscheiden `workspace.suspend` und `workspace.delete` in der Ansicht.
+    // No dedicated read permission: the tenant list shows nothing the
+    // dashboard doesn't already show. What you're allowed to *do* with a
+    // workspace is decided by `workspace.suspend` and `workspace.delete` in
+    // the view.
     section: "workspaces",
     icon: "lucide:building-2",
     labelKey: "workspaces",
@@ -251,10 +253,10 @@ export const ADMIN_NAV: NavEntry[] = [
  * Per-project sub-nav — `/<workspaceId>/project/<slug>` (empty section = board)
  * or `/<workspaceId>/project/<slug>/<section>`.
  *
- * Mitglieder stehen hier und nicht in den Einstellungen: wer im Projekt
- * arbeitet, schlägt dort nach, wen er ansprechen kann — das ist eine Frage des
- * Alltags, keine Einstellung. Rollen und Labels sind es, und sie hängen deshalb
- * unter `settings` (`PROJECT_SETTINGS_NAV`).
+ * Members live here and not in the settings: whoever works in the project
+ * looks them up there to see who they can reach — that's a matter of
+ * everyday use, not a setting. Roles and labels are, which is why they hang
+ * under `settings` (`PROJECT_SETTINGS_NAV`).
  */
 export const PROJECT_NAV: NavEntry[] = [
   { section: "", icon: "lucide:square-kanban", labelKey: "board" },
@@ -269,15 +271,15 @@ export const PROJECT_NAV: NavEntry[] = [
 ];
 
 /**
- * Die Startseite eines Projekts — `…/project/<slug>/overview`.
+ * A project's home page — `…/project/<slug>/overview`.
  *
- * Sie steht in keiner Seitenleiste, denn sie *ist* die Projektzeile: wer ein
- * Projekt anklickt, ohne einen Bereich zu meinen, landet hier. Ein zweiter
- * Eintrag darunter zeigte auf dieselbe Adresse wie die Zeile über ihm.
+ * It lives in no sidebar, because it *is* the project row: whoever clicks a
+ * project without meaning a specific section lands here. A second entry
+ * below it would point at the same address as the row above it.
  *
- * Der Eintrag existiert trotzdem, weil ein offener Reiter und ein geteilter Link
- * einen Namen und ein Zeichen brauchen — dieselbe Rolle wie `ROLES_NAV` und
- * `ACCOUNT_NAV` eine Ebene höher.
+ * The entry exists anyway, because an open tab and a shared link need a
+ * name and an icon — the same role as `ROLES_NAV` and `ACCOUNT_NAV` one
+ * level up.
  */
 export const PROJECT_OVERVIEW_NAV: NavEntry = {
   section: "overview",
@@ -286,9 +288,9 @@ export const PROJECT_OVERVIEW_NAV: NavEntry = {
 };
 
 /**
- * Alle Bereiche unter `…/project/<slug>/…` — die Liste, aus der die Reiterleiste
- * Namen und Zeichen einer beliebigen Projektadresse auflöst. Das Gegenstück zu
- * `WORKSPACE_SECTIONS` eine Ebene tiefer.
+ * All sections under `…/project/<slug>/…` — the list the tab bar resolves
+ * the name and icon of any project address from. The counterpart to
+ * `WORKSPACE_SECTIONS` one level down.
  */
 export const PROJECT_SECTIONS: NavEntry[] = [
   PROJECT_OVERVIEW_NAV,
@@ -296,17 +298,18 @@ export const PROJECT_SECTIONS: NavEntry[] = [
 ];
 
 /**
- * Die Bereiche der Projekteinstellungen — `…/project/<slug>/settings/<section>`,
- * leere Sektion = Allgemein.
+ * The sections of the project settings — `…/project/<slug>/settings/<section>`,
+ * empty section = general.
  *
- * Gerendert wird die Leiste von `ProjectSettingsNav`, die Sichtbarkeit einzelner
- * Einträge entscheidet das Layout anhand der Rechte.
+ * The bar is rendered by `ProjectSettingsNav`; the layout decides the
+ * visibility of individual entries based on permissions.
  */
 export const PROJECT_SETTINGS_NAV: NavEntry[] = [
   { section: "", icon: "lucide:settings", labelKey: "general" },
-  // Dieselbe Seite wie unter `…/project/<slug>/members`: wer Mitglieder sucht,
-  // sucht sie mal beim Projekt und mal in dessen Einstellungen — beides führt
-  // hin. Erst die Leute, dann ihre Rechte, dann die Labels.
+  // The same page as under `…/project/<slug>/members`: whoever's looking
+  // for members sometimes looks under the project and sometimes under its
+  // settings — both lead there. First the people, then their permissions,
+  // then the labels.
   { section: "members", icon: "lucide:users", labelKey: "members" },
   {
     section: "invitations",
@@ -330,14 +333,14 @@ export const PROJECT_SETTINGS_NAV: NavEntry[] = [
 ];
 
 /**
- * Die Bereiche der Workspace-Einstellungen — `/<workspaceId>/settings/<section>`,
- * leere Sektion = Allgemein.
+ * The sections of the workspace settings — `/<workspaceId>/settings/<section>`,
+ * empty section = general.
  *
- * Dieselbe zweite Ebene wie beim Projekt (`PROJECT_SETTINGS_NAV`), eine Stufe
- * höher: hier steht, was für den ganzen Workspace gilt. Mitglieder und Teams
- * sind zusätzlich direkt unter `/<workspaceId>/…` erreichbar — wer im Workspace
- * arbeitet, schlägt sie dort nach, wer ihn einrichtet, findet sie hier neben
- * Rollen und Labels. Geteilt wird die Komponente, nicht die Route.
+ * The same second level as the project (`PROJECT_SETTINGS_NAV`), one step
+ * up: this is what applies to the whole workspace. Members and teams are
+ * additionally reachable directly under `/<workspaceId>/…` — whoever works
+ * in the workspace looks them up there, whoever sets it up finds them here
+ * next to roles and labels. The component is shared, not the route.
  */
 export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
   { section: "", icon: "lucide:settings", labelKey: "general" },
@@ -371,18 +374,18 @@ export const WORKSPACE_SETTINGS_NAV: NavEntry[] = [
 ];
 
 /**
- * Die Bereiche der eigenen Einstellungen — `/<workspaceId>/account/<section>`,
- * leere Sektion = Allgemein.
+ * The sections of your own account settings — `/<workspaceId>/account/<section>`,
+ * empty section = general.
  *
- * Dieselbe zweite Ebene wie beim Workspace und beim Projekt, nur gehört sie
- * niemandem außer dem, der sie öffnet. Die Reihenfolge folgt der Häufigkeit:
- * zuerst, wer man ist, dann wie es aussieht, dann was einen erreicht — und
- * zuletzt, womit man sich anmeldet. Rechte spielen hier keine Rolle: jeder sieht
- * genau seine eigenen Einstellungen.
+ * The same second level as the workspace and the project, only it belongs
+ * to nobody but whoever opens it. The order follows frequency: first who
+ * you are, then what it looks like, then what reaches you — and last, what
+ * you sign in with. Permissions play no role here: everyone sees exactly
+ * their own settings.
  *
- * Eine Ausnahme: "connections" verschwindet, wenn `auth.config.ts` keinen
- * einzigen OAuth-Anbieter aktiviert hat (`account/layout.tsx` filtert das
- * heraus) — ein Tab zu einer Liste, die immer leer wäre, hilft niemandem.
+ * One exception: "connections" disappears when `auth.config.ts` hasn't
+ * enabled a single OAuth provider (`account/layout.tsx` filters that out) —
+ * a tab to a list that would always be empty helps nobody.
  */
 export const ACCOUNT_SETTINGS_NAV: NavEntry[] = [
   { section: "", icon: "lucide:user", labelKey: "general" },
@@ -396,7 +399,7 @@ export function workspacePath(workspaceId: string, section: string): string {
   return section ? `/${workspaceId}/${section}` : `/${workspaceId}`;
 }
 
-/** Ein Bereich der Workspace-Einstellungen. Leere Sektion = Allgemein. */
+/** A section of the workspace settings. Empty section = general. */
 export function workspaceSettingsPath(
   workspaceId: string,
   section: string,
@@ -405,15 +408,16 @@ export function workspaceSettingsPath(
   return section ? `${base}/${section}` : base;
 }
 
-/** Ein Bereich der eigenen Einstellungen. Leere Sektion = Allgemein. */
+/** A section of your own account settings. Empty section = general. */
 export function accountPath(workspaceId: string, section: string): string {
   const base = workspacePath(workspaceId, "account");
   return section ? `${base}/${section}` : base;
 }
 
 /**
- * Die drei Bereiche, in die sich die Einstellungen teilen: was für alle im
- * Workspace gilt, was für ein Projekt gilt, und was nur einen selbst betrifft.
+ * The three areas settings are split into: what applies to everyone in the
+ * workspace, what applies to a project, and what only concerns you
+ * yourself.
  */
 export type SettingsScopeKey = "workspace" | "project" | "account";
 
@@ -422,23 +426,23 @@ export interface SettingsScopeEntry {
   label: string;
   icon: string;
   /**
-   * Wohin der Bereich führt. Fehlt die Adresse — kein Projekt im Kontext —,
-   * fällt der Eintrag bei `visibleSettingsScope()` ganz heraus, statt ihn tot
-   * anzuzeigen.
+   * Where the area leads. If the address is missing — no project in
+   * context — the entry drops out of `visibleSettingsScope()` entirely,
+   * instead of showing it dead.
    */
   href?: string;
 }
 
-/** Wie `SettingsScopeEntry`, nur nach dem Filtern: die Adresse steht fest. */
+/** Like `SettingsScopeEntry`, only after filtering: the address is set. */
 export type VisibleSettingsScopeEntry = SettingsScopeEntry & { href: string };
 
 /**
- * Die Ziele des Bereichsumschalters — jeweils die Allgemein-Seite des Bereichs.
+ * The targets of the scope switcher — each the general page of its area.
  *
- * Bewusst hier und nicht in den drei Layouts: die Adressen sind dieselben, egal
- * aus welchem Bereich man umschaltet, und drei Kopien davon wären drei Orte, an
- * denen eine Route veralten kann. Beschriftungen kommen von außen herein, damit
- * diese Datei ohne i18n auskommt.
+ * Deliberately here and not in the three layouts: the addresses are the
+ * same no matter which area you switch from, and three copies of this
+ * would be three places where a route can go stale. Labels come in from
+ * outside so this file can do without i18n.
  */
 export function settingsScopeItems({
   workspaceId,
@@ -446,18 +450,18 @@ export function settingsScopeItems({
   labels,
 }: {
   workspaceId: string;
-  /** Das Projekt, das der mittlere Bereich öffnet. Ohne eines bleibt er stumpf. */
+  /** The project the middle area opens. Without one it stays inert. */
   projectSlug?: string;
   labels: Record<SettingsScopeKey, string>;
 }): SettingsScopeEntry[] {
-  // Von innen nach außen: erst was nur einen selbst angeht, dann das Projekt,
-  // zuletzt der ganze Workspace. Das ist zugleich die Reihenfolge, in der man
-  // sie braucht — an den eigenen Einstellungen dreht jeder, am Workspace die
-  // wenigsten.
+  // Inside out: first what only concerns yourself, then the project, and
+  // last the whole workspace. That's also the order in which they're
+  // needed — everyone fiddles with their own settings, few with the
+  // workspace's.
   //
-  // Die Zeichen sind dieselben, mit denen die Seitenleiste diese Dinge schon
-  // meint (`GLOBAL_NAV`, `ACCOUNT_NAV`) — ein Bereich soll nicht davon abhängen,
-  // durch welche Tür man ihn betritt.
+  // The icons are the same ones the sidebar already uses for these things
+  // (`GLOBAL_NAV`, `ACCOUNT_NAV`) — an area shouldn't depend on which door
+  // you enter it through.
   return [
     {
       key: "account",
@@ -483,13 +487,14 @@ export function settingsScopeItems({
 }
 
 /**
- * Die Kandidaten aus `settingsScopeItems()` auf das, was wirklich zur Wahl
- * steht: "Persönlich" immer, "Projekt"/"Workspace" nur mit Adresse UND
- * Berechtigung (`WORKSPACE_SETTINGS_PERMISSIONS`/`PROJECT_SETTINGS_PERMISSIONS`,
- * je vom Layout aufgelöst — diese Funktion kennt selbst keine Rechte).
+ * Narrows the candidates from `settingsScopeItems()` down to what's really
+ * up for choosing: "Personal" always, "Project"/"Workspace" only with an
+ * address AND a permission (`WORKSPACE_SETTINGS_PERMISSIONS`/
+ * `PROJECT_SETTINGS_PERMISSIONS`, each resolved by the layout — this
+ * function itself knows no permissions).
  *
- * Bleibt am Ende nur "Persönlich" übrig, hat der Umschalter nichts mehr zum
- * Umschalten — die Layouts lassen `SettingsHeader` dann ganz weg.
+ * If only "Personal" is left in the end, the switcher has nothing left to
+ * switch between — the layouts then leave `SettingsHeader` out entirely.
  */
 export function visibleSettingsScope(
   items: SettingsScopeEntry[],
@@ -515,13 +520,13 @@ export function projectPath(
   return section ? `${base}/${section}` : base;
 }
 
-/** Die Vollseite eines Issues — `/<workspaceId>/issue/<ref>`, klein geschrieben
- * wie überall sonst, wo ein Kürzel in der Adresse steht. */
+/** An issue's full page — `/<workspaceId>/issue/<ref>`, lowercased like
+ *  everywhere else a short code sits in the address. */
 export function issuePath(workspaceId: string, ref: string): string {
   return `/${workspaceId}/issue/${ref.toLowerCase()}`;
 }
 
-/** Ein Bereich der Projekteinstellungen. Leere Sektion = Allgemein. */
+/** A section of the project settings. Empty section = general. */
 export function projectSettingsPath(
   workspaceId: string,
   slug: string,
@@ -532,16 +537,16 @@ export function projectSettingsPath(
 }
 
 /**
- * Ist `pathname` der Eintrag, den `pattern` meint?
+ * Is `pathname` the entry `pattern` refers to?
  *
- * Normalerweise exakt — ein Eintrag ist aktiv, wenn man auf ihm steht. Endet
- * das Muster auf `/*`, gilt auch alles darunter: die „Einstellungen" bleiben
- * markiert, während man in ihren Bereichen blättert, und die Seitenleiste
- * klappt den Zweig nicht unter einem zu.
+ * Normally exact — an entry is active when you're standing on it. If the
+ * pattern ends in `/*`, everything beneath it counts too: "Settings" stays
+ * marked while you browse its sections, and the sidebar doesn't collapse
+ * the branch out from under you.
  *
- * Steht hier statt in der Seitenleiste, weil `NavLink` (Markierung) und
- * `TabList` (Aufklappen) dieselbe Antwort brauchen — zwei Auslegungen desselben
- * Musters wären genau der Fehler, den man erst spät bemerkt.
+ * Lives here instead of in the sidebar, because `NavLink` (marking) and
+ * `TabList` (expanding) need the same answer — two interpretations of the
+ * same pattern would be exactly the kind of bug you only notice late.
  */
 export function isNavActive(
   pathname: string,

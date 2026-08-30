@@ -3,7 +3,7 @@
     width: 100%;
 }
 
-/* Platz rechts freihalten, damit der Name nicht unter dem Bell-Button liegt */
+/* Keep space free on the right so the name doesn't sit under the bell button */
 .trigger {
     padding-right: 44px;
 }
@@ -17,8 +17,8 @@
     text-overflow: ellipsis;
 }
 
-/* Eigener Positions-Wrapper, damit der :active-Transform des Buttons
-   (translateY(1px)) nicht mit der Zentrierung kollidiert */
+/* Own positioning wrapper so the button's :active transform
+   (translateY(1px)) doesn't collide with the centering */
 .bellSlot {
     position: absolute;
     top: 50%;
@@ -27,7 +27,7 @@
     display: flex;
 } 
 
-/* Trennt den Weg weiter (Einstellungen) vom Weg hinaus (Abmelden). */
+/* Separates the path onward (settings) from the path out (sign out). */
 .divider {
     margin: 4px 0;
     border: 0;

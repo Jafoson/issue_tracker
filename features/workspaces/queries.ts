@@ -84,25 +84,25 @@ export const getCurrentWorkspace = cache(
   },
 );
 
-/** Alle Workspaces des eingeloggten Users. */
+/** All workspaces of the logged-in user. */
 export const getMyWorkspaces = cache(async (): Promise<Workspace[]> => {
   const session = await getSession();
   return session ? getUserWorkspaces(session.userId) : [];
 });
 
 /**
- * Jedes Projekt, das der eingeloggte User sehen darf — über alle seine
- * Workspaces hinweg, nicht nur den offenen.
+ * Every project the logged-in user is allowed to see — across all of their
+ * workspaces, not just the current one.
  *
- * Gedacht für Navigationen, die über die Grenze eines Workspace hinausreichen
- * (der Projektwechsler in den Einstellungen). `getProjects` bringt die
- * Sichtbarkeitsregel schon mit: was es liefert, sind genau die Projekte mit
- * `project.view` — dieselbe Hürde, an der die Projekteinstellungen hängen. Was
- * hier steht, ist also auch erreichbar.
+ * Meant for navigation that reaches beyond a single workspace's boundary
+ * (the project switcher in settings). `getProjects` already applies the
+ * visibility rule: what it returns are exactly the projects with
+ * `project.view` — the same hurdle the project settings depend on. So
+ * whatever's listed here is also reachable.
  *
- * Kostet eine Auflösung je Workspace (`accessibleProjectIds`), nicht je Projekt.
- * Wer in vielen Workspaces ist, zahlt das entsprechend oft — beides ist `cache`d
- * und fällt pro Anfrage nur einmal an.
+ * Costs one resolution per workspace (`accessibleProjectIds`), not per
+ * project. Whoever is in many workspaces pays that cost accordingly — both
+ * are `cache`d and incurred only once per request.
  */
 export const getMyProjects = cache(
   async (): Promise<ProjectWithWorkspace[]> => {
@@ -119,16 +119,16 @@ export const getMyProjects = cache(
 );
 
 /**
- * Der eingeloggte User als Mitglied des aktiven Workspace.
+ * The logged-in user as a member of the active workspace.
  *
- * Der Regelfall ist die Zeile aus der Mitgliederliste — sie bringt Rolle und Rang
- * mit. Wer nicht darin steht, ist damit aber nicht niemand: ein Projekt-Gast ist
- * zu genau einem Projekt eingeladen und hat keine Workspace-Mitgliedschaft. Für
- * ihn kommen die Angaben direkt aus seinem Konto, ohne Rolle.
+ * The normal case is the row from the member list — it comes with role and
+ * rank. Whoever isn't in it isn't necessarily nobody, though: a project
+ * guest is invited to exactly one project and has no workspace membership.
+ * For them, the data comes directly from their account, without a role.
  *
- * Ohne diesen zweiten Weg wäre `getMe()` für Gäste `null` — und weil die
- * Issue-Oberfläche daran hängt (`getIssueComposerData`), liefen sie überall in ein
- * 404, obwohl ihr Zugriff auf das Projekt in Ordnung ist.
+ * Without this second path, `getMe()` would be `null` for guests — and
+ * since the issue UI depends on it (`getIssueComposerData`), they'd hit a
+ * 404 everywhere, even though their access to the project is fine.
  */
 export const getMe = cache(async (): Promise<User | null> => {
   const session = await getSession();
@@ -197,18 +197,18 @@ export const getWorkspaceSearchIssues = cache(
   async (): Promise<SearchableIssue[]> => getSearchIssues(requireWorkspaceId()),
 );
 
-// ─── Einstellungen des Workspace ──────────────────────────────────────────────
+// ─── Workspace settings ─────────────────────────────────────────────────────
 //
-// Fünf Ansichten, eine je Bereich der Einstellungsseite. Aufgebaut wie die des
-// Projekts (`features/projects/queries.ts`): jede liefert fertige Zeilen samt
-// der Rechte, die dazu gehören, und `null` heißt „gibt es für dich nicht" —
-// die Seite macht daraus ein 404, ohne zu verraten, ob der Workspace fehlt oder
-// der Zutritt.
+// Five views, one per section of the settings page. Structured like the
+// project's (`features/projects/queries.ts`): each returns ready-made rows
+// along with the permissions that go with them, and `null` means "doesn't
+// exist for you" — the page turns this into a 404 without revealing whether
+// the workspace is missing or entry is denied.
 //
-// Der Zutritt selbst ist keine Permission (siehe `canEnterWorkspace`): wer nicht
-// dazugehört, bekommt hier gar nichts, auch nicht die leere Liste.
+// Entry itself isn't a permission (see `canEnterWorkspace`): whoever doesn't
+// belong gets nothing here at all, not even the empty list.
 
-/** Stammdaten des Workspace samt dem, was an ihm hängt. */
+/** The workspace's core data along with what depends on it. */
 export const getWorkspaceSettingsView = cache(
   async (): Promise<WorkspaceSettingsView | null> => {
     const workspaceId = requireWorkspaceId();
@@ -236,8 +236,8 @@ export const getWorkspaceSettingsView = cache(
     });
     if (!workspace) return null;
 
-    // Die Gesamtzahl, nicht die der sichtbaren Projekte: sie steht in der
-    // Warnung vor dem Löschen und muss deshalb die Wahrheit sagen.
+    // The total count, not the count of visible projects: it appears in the
+    // deletion warning and therefore has to tell the truth.
     const issueCount = await db.issue.count({
       where: { project: { workspaceId } },
     });
@@ -265,12 +265,13 @@ export const getWorkspaceSettingsView = cache(
 );
 
 /**
- * Die Projekte des Workspace als Übersicht — mit den Rechten je Zeile.
+ * The workspace's projects as an overview — with the permissions per row.
  *
- * `project.update` und `project.delete` gelten im Projekt, nicht im Workspace.
- * Sie werden deshalb je Projekt aufgelöst: wer eines leitet, darf noch lange
- * nicht alle ändern. Die Leitung des Workspace greift über `project.admin.all`
- * ohnehin überall durch — auch das entscheidet der Resolver, nicht diese Liste.
+ * `project.update` and `project.delete` apply at the project level, not the
+ * workspace level. They're therefore resolved per project: leading one by
+ * no means grants the right to change all of them. The workspace's
+ * leadership reaches through everywhere anyway via `project.admin.all` —
+ * that too is decided by the resolver, not this list.
  */
 const workspaceProjectSelect = {
   id: true,
@@ -282,8 +283,8 @@ const workspaceProjectSelect = {
   desc: true,
   visibility: true,
   _count: { select: { issues: true, members: true } },
-  // Nur die ersten vier: mehr zeigt der Avatar-Stapel ohnehin nicht, und die
-  // Gesamtzahl steht daneben (`_count.members`).
+  // Only the first four: the avatar stack doesn't show more anyway, and the
+  // total count sits right next to it (`_count.members`).
   members: {
     select: {
       user: {
@@ -353,9 +354,10 @@ export const getWorkspaceProjectsView = cache(
     const userId = await currentUserId();
     const visible = await visibleProjectIds(workspaceId);
     const access = await accessFor(userId, { workspaceId });
-    // Dieselben Generalschlüssel, die `accessibleProjectIds` alle Projekte
-    // aufschließen — nur hier im Workspace-Scope gefragt, wo Support ohnehin
-    // jedes Recht trägt. Wer sie hat, darf die Liste nach Sichtbarkeit trennen.
+    // The same master keys that make `accessibleProjectIds` unlock every
+    // project — just asked here in workspace scope, where support already
+    // holds every permission anyway. Whoever has them may split the list by
+    // visibility.
     const seesAllProjects =
       access.has("project.view.all") || access.has("project.admin.all");
     const canCreate = access.has("project.create");
@@ -427,12 +429,13 @@ export const getWorkspaceProjectsView = cache(
 );
 
 /**
- * Die Labels des Workspace, getrennt von denen seiner Projekte.
+ * The workspace's labels, separated from those of its projects.
  *
- * Oben, was überall gilt und sich hier ändern lässt. Darunter, was einzelnen
- * Projekten gehört: dieselben Spalten, aber nur zum Nachsehen — die
- * `label.*`-Rechte werden hier im Workspace-Scope aufgelöst, und der reicht für
- * ein Projekt-Label nicht (`features/issues/actions.ts`, `labelScope`).
+ * On top, what applies everywhere and can be changed here. Below, what
+ * belongs to individual projects: the same columns, but for reference
+ * only — the `label.*` permissions are resolved here in workspace scope,
+ * and that doesn't cover a project label (`features/issues/actions.ts`,
+ * `labelScope`).
  */
 export const getWorkspaceLabelsView = cache(
   async (
@@ -468,8 +471,8 @@ export const getWorkspaceLabelsView = cache(
           ? { cursor: { id: fromProjectsCursor }, skip: 1 }
           : {}),
       }),
-      // `Issue.labels` ist ein ID-Array ohne Fremdschlüssel — zählen lässt es
-      // sich nur, indem man die Arrays des Workspace einmal durchgeht.
+      // `Issue.labels` is an ID array without a foreign key — the only way
+      // to count is to go through the workspace's arrays once.
       db.issue.findMany({
         where: { project: { workspaceId } },
         select: { labels: true },
@@ -518,14 +521,15 @@ export const getWorkspaceLabelsView = cache(
 );
 
 /**
- * Die Teams des Workspace — wer darin ist, woran sie arbeiten, wie viel offen ist.
+ * The workspace's teams — who's in them, what they're working on, how much
+ * is open.
  *
- * Ein Team gruppiert Menschen und Projekte. Rechte vergibt es nur noch dort,
- * wo eine `TeamProject`-Verknüpfung ausdrücklich eine Rolle trägt — die landet
- * dann ganz normal in `ProjectMember` (`syncProjectTeamRoles`,
- * lib/project-membership.ts) und wirkt über den üblichen Pfad. Für das Lesen
- * hier genügt trotzdem der bloße Zutritt zum Workspace; die fünf `team.*`-
- * Rechte entscheiden nur über das Ändern.
+ * A team groups people and projects. It grants rights only where a
+ * `TeamProject` link explicitly carries a role — that then lands in
+ * `ProjectMember` like any other assignment (`syncProjectTeamRoles`,
+ * lib/project-membership.ts) and takes effect through the usual path. For
+ * reading here, mere entry to the workspace is enough; the five `team.*`
+ * permissions only govern changes.
  */
 export const getWorkspaceTeamsView = cache(
   async (
@@ -537,9 +541,9 @@ export const getWorkspaceTeamsView = cache(
 
     const actorId = await currentUserId();
     const access = await accessFor(actorId, { workspaceId });
-    // Ohne `team.view.all` nur die Teams, in denen man selbst Mitglied ist —
-    // kein Gate wie bei den Mitgliedern, sondern eine gefilterte statt leeren
-    // Liste (`lib/rbac/permissions.ts`).
+    // Without `team.view.all`, only the teams you're a member of yourself —
+    // not a gate like for members, but a filtered list instead of an empty
+    // one (`lib/rbac/permissions.ts`).
     const canViewAllTeams = access.has("team.view.all");
 
     const [teams, members, projects, assignableProjectRoles] =
@@ -571,9 +575,9 @@ export const getWorkspaceTeamsView = cache(
           select: { id: true, name: true, color: true },
           orderBy: { name: "asc" },
         }),
-        // Projektrollen, die in allen Projekten des Workspace gelten — die
-        // einzigen, die sich einem Team ohne Rücksicht auf ein bestimmtes
-        // Projekt anbieten lassen. Siehe Kommentar an
+        // Project roles that apply in every project of the workspace — the
+        // only ones that can be offered for a team without regard to a
+        // specific project. See the comment on
         // `WorkspaceTeamsView.assignableProjectRoles`.
         db.role.findMany({
           where: {
@@ -585,8 +589,8 @@ export const getWorkspaceTeamsView = cache(
         }),
       ]);
 
-    // Eine Abfrage für alle Teams statt einer je Team: die offenen Aufgaben je
-    // Projekt einmal zählen und anschließend zuordnen.
+    // One query for all teams instead of one per team: count the open
+    // tasks per project once, then assign them afterward.
     const openPerProject = await db.issue.groupBy({
       by: ["projectId"],
       where: {
@@ -621,9 +625,10 @@ export const getWorkspaceTeamsView = cache(
           key: team.key,
           color: team.color,
           desc: team.desc,
-          // Der Lead steht über den Fremdschlüssel fest und muss kein
-          // Workspace-Mitglied mehr sein — dann fehlt er in `members`, und die
-          // Zeile nimmt seine Stammdaten direkt aus der Beziehung.
+          // The lead is fixed via the foreign key and doesn't have to still
+          // be a workspace member — in that case they're missing from
+          // `members`, and the row takes their core data directly from the
+          // relation.
           lead: userById.get(team.leadId) ?? {
             id: team.lead.id,
             firstName: team.lead.firstName,
@@ -660,13 +665,14 @@ export const getWorkspaceTeamsView = cache(
 );
 
 /**
- * Die Mitglieder des Workspace mit Rolle, Teams und Status.
+ * The workspace's members with role, teams, and status.
  *
- * Die Rangregeln stehen doppelt: hier für die Oberfläche und in den Actions für
- * die Wirkung (`setMemberRole`, `removeMember`). Verglichen wird beidseitig der
- * Rang der **eigenen Workspace-Rolle** — nicht die Obergrenze aus
- * `assignmentCeiling`. Wer im Workspace gar keine Rolle trägt (Support-Zugriff
- * über `tenant.access`), käme sonst zu einer Auswahl, die jede Action ablehnt.
+ * The rank rules exist twice: here for the UI, and in the actions for
+ * enforcement (`setMemberRole`, `removeMember`). Both sides compare against
+ * the rank of the actor's **own workspace role** — not the ceiling from
+ * `assignmentCeiling`. Someone with no role in the workspace at all
+ * (support access via `tenant.access`) would otherwise end up with a
+ * selection every action then rejects.
  */
 export const getWorkspaceMembersView = cache(
   async (
@@ -752,8 +758,8 @@ export const getWorkspaceMembersView = cache(
           pending: m.pending,
           teams: teamsOf.get(m.userId) ?? [],
           you: m.userId === actorId,
-          // Der Owner bleibt unangetastet — zum Owner führt nur ein
-          // Ownership-Transfer, und aus der Rolle heraus führt kein Knopf.
+          // The owner stays untouchable — only an ownership transfer leads
+          // to owner, and no button leads out of the role.
           manageable:
             (canSetRole || canRemove) &&
             m.userId !== actorId &&
@@ -781,13 +787,15 @@ export const getWorkspaceMembersView = cache(
 );
 
 /**
- * Offene Einladungen des Workspace — noch nicht angenommen, unabhängig davon,
- * ob sie schon abgelaufen sind (die Zeile zeigt das, statt sie auszublenden).
+ * The workspace's pending invitations — not yet accepted, regardless of
+ * whether they've already expired (the row shows that instead of hiding
+ * them).
  *
- * Nur die Workspace-weiten Einladungen: eine mit `projectId` gehört zu einem
- * Projekt-Gast ohne Workspace-Mitgliedschaft (siehe `inviteOneProjectMember`)
- * und läuft über `getPendingProjectInvitationsView` — dieselbe Trennung wie
- * `whereFor()` im Audit-Log zwischen Workspace- und Projekt-Feed.
+ * Only the workspace-wide invitations: one with a `projectId` belongs to a
+ * project guest without workspace membership (see `inviteOneProjectMember`)
+ * and is handled by `getPendingProjectInvitationsView` — the same
+ * separation as `whereFor()` uses in the audit log between the workspace
+ * and project feeds.
  */
 export const getPendingWorkspaceInvitationsView = cache(
   async (
@@ -828,10 +836,10 @@ export const getPendingWorkspaceInvitationsView = cache(
 
     const rows: PendingInvitationRow[] = invitations.map((inv) => ({
       token: inv.token,
-      // Das Schatten-Konto einer Einladung entsteht immer mit der
-      // eingeladenen Adresse (`inviteOneWorkspaceMember`) — anders als ein
-      // Passkey-Erstkonto ist `email` hier nie leer. Der Fallback ist reine
-      // Typsicherheit, kein erwarteter Fall.
+      // An invitation's shadow account is always created with the invited
+      // address (`inviteOneWorkspaceMember`) — unlike a passkey-first
+      // account, `email` here is never empty. The fallback is purely for
+      // type safety, not an expected case.
       email: inv.user.email ?? "",
       firstName: inv.user.firstName,
       lastName: inv.user.lastName,
@@ -855,8 +863,8 @@ export const getPendingWorkspaceInvitationsView = cache(
   },
 );
 
-/** Der teilbare Einladungslink des Workspace, samt der Rollen, die zur
- *  Neuerstellung zur Auswahl stehen. */
+/** The workspace's shareable invitation link, along with the roles
+ *  available for creating a new one. */
 export const getWorkspaceInviteLinkView = cache(
   async (): Promise<InviteLinkView | null> => {
     const workspaceId = requireWorkspaceId();

@@ -1,12 +1,12 @@
-/* ── Die Fläche ───────────────────────────────────────────────────────────────
-   Dasselbe Raster wie `ProjectProfileView` eine Ebene tiefer — siehe dort für
-   die Begründung jeder Regel. */
+/* ── The layout ───────────────────────────────────────────────────────────────
+   The same grid as `ProjectProfileView` one level down — see there for the
+   reasoning behind each rule. */
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 28%);
-  /* `minmax(0, 1fr)` statt nacktem `1fr` — siehe `ProjectProfileView` für die
-     Begründung: die Seite selbst überläuft nicht mehr, lange Listen scrollen
-     stattdessen in `.main` bzw. der Mitgliederkarte (`.card[data-scroll]`). */
+  /* `minmax(0, 1fr)` instead of bare `1fr` — see `ProjectProfileView` for
+     the reasoning: the page itself no longer overflows, long lists scroll
+     instead within `.main` or the members card (`.card[data-scroll]`). */
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 20px 12px;
   align-items: stretch;
@@ -15,8 +15,8 @@
   flex: 1;
 }
 
-/* Scrollt für sich, wenn sie höher wird als die Zeile hergibt — dieselbe Kette
-   wie bei der Mitgliederkarte, nur ohne eigenes Feld. */
+/* Scrolls on its own when it grows taller than the row provides — the same
+   chain as for the members card, just without its own footer. */
 .main {
   display: flex;
   flex-direction: column;
@@ -29,9 +29,9 @@
 .side {
   display: flex;
   min-width: 0;
-  /* Dieselbe Kette wie bei `.card[data-scroll]`: ohne `min-height: 0` bliebe
-     die automatische Mindesthöhe an der Inhaltsgröße hängen und `stretch`
-     liefe ins Leere. */
+  /* The same chain as for `.card[data-scroll]`: without `min-height: 0`,
+     the automatic minimum height would get stuck at the content size and
+     `stretch` would have nothing to act on. */
   min-height: 0;
 }
 
@@ -59,7 +59,7 @@
   color: var(--outline);
 }
 
-/* ── 1. Wer bin ich ── */
+/* ── 1. Who am I ── */
 .hero {
   display: flex;
   align-items: center;
@@ -123,7 +123,7 @@
   color: var(--outline);
 }
 
-/* ── Wichtige Links ── */
+/* ── Important links ── */
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -140,8 +140,8 @@
   text-decoration: none;
 }
 
-/* Kein Zugriff auf die Klasse des verschachtelten Chips (eigenes CSS-Modul) —
-   der Elternselektor greift stattdessen strukturell auf das erzeugte `span`. */
+/* No access to the nested chip's class (its own CSS module) — the parent
+   selector instead targets the rendered `span` structurally. */
 .linkChip:hover > span,
 .linkChip:focus-visible > span {
   background: var(--surface-container-high);
@@ -165,7 +165,7 @@
   }
 }
 
-/* ── 2. Die Eckdaten ── */
+/* ── 2. The key facts ── */
 .facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -211,7 +211,7 @@
   color: var(--outline);
 }
 
-/* ── 3. Teams und Projekte ── */
+/* ── 3. Teams and projects ── */
 .columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -219,9 +219,9 @@
   align-items: start;
 }
 
-/* Seitlich ungepolstert: das Polster sitzt stattdessen auf den scrollenden
-   Kindern selbst (`.cardBody`, `.rows`) — säße es hier, läge der native
-   Scrollbalken mittig in dieser Lücke statt an der Kante der Karte. */
+/* No horizontal padding: the padding instead sits on the scrolling children
+   themselves (`.cardBody`, `.rows`) — if it sat here, the native scrollbar
+   would land in the middle of this gap instead of at the card's edge. */
 .card {
   display: flex;
   flex-direction: column;
@@ -240,16 +240,16 @@
   }
 }
 
-/* Listen-Cards (Teams, Projekte) tragen den gestrichelten Rahmen immer, nicht
-   nur solange sie leer sind — die Liste selbst liefert den Inhalt, die Card
-   bleibt reine Hülle.
+/* List cards (teams, projects) always carry the dashed border, not just
+   while empty — the list itself supplies the content, the card stays a
+   pure shell.
 
-   Dieselbe feste Höhe wie `.rows` (drei Zeilen), unabhängig von der Zahl der
-   Einträge — wie in `ProjectProfileView` (siehe dort für die Begründung). */
-/* Kein eigenes Polster mehr: die Liste (`.rows`) übernimmt es, damit ihr
-   Scrollbalken an der Kante der Karte sitzt statt in einer Lücke davor. Nur
-   ohne `.rows` — im leeren Zustand, wo der Platzhaltersatz direkt hier steht —
-   braucht `.cardBody` das Polster selbst zurück. */
+   Same fixed height as `.rows` (three rows), regardless of the number of
+   entries — as in `ProjectProfileView` (see there for the reasoning). */
+/* No padding of its own anymore: the list (`.rows`) takes it over, so its
+   scrollbar sits at the card's edge instead of in a gap in front of it.
+   Only without `.rows` — in the empty state, where the placeholder sentence
+   sits directly here — does `.cardBody` need the padding back for itself. */
 .card[data-dashed] {
   border-style: dashed;
   background: none;
@@ -269,15 +269,15 @@
   align-items: center;
 }
 
-/* Die Mitgliederkarte: wie in `ProjectProfileView` (siehe dort für die
-   Begründung) hält `min-height: 0` in dieser Kette die Karte bei der Höhe, auf
-   die `align-items: stretch` (`.page`) sie schon dehnt.
-   Scrollen tut jetzt `.cardScroll` — Kopf, Liste *und* Fuß zusammen, statt nur
-   der Ausschnitt dazwischen: der native Balken deckt dadurch die ganze Höhe
-   der Karte ab (abzüglich ihres eigenen Polsters), nicht nur einen Streifen in
-   der Mitte. Titel und „Alle Mitglieder" bleiben trotzdem stehen — sie sind
-   `position: sticky` innerhalb desselben Scrollbereichs statt Geschwister
-   außerhalb davon. */
+/* The members card: as in `ProjectProfileView` (see there for the
+   reasoning), `min-height: 0` in this chain keeps the card at the height
+   `align-items: stretch` (`.page`) already stretches it to.
+   `.cardScroll` now does the scrolling — header, list, *and* footer
+   together, instead of just the section in between: the native scrollbar
+   thereby covers the card's whole height (minus its own padding), not just
+   a strip in the middle. Title and "all members" still stay in place —
+   they're `position: sticky` within the same scroll area instead of
+   siblings outside it. */
 .card[data-scroll] {
   min-height: 0;
 }
@@ -290,8 +290,8 @@
   overflow-y: auto;
 }
 
-/* Braucht einen eigenen, deckenden Grund: sonst schimmern die Zeilen durch,
-   die beim Scrollen unter Kopf bzw. Fuß hindurchwandern. */
+/* Needs an opaque background of its own: otherwise the rows that pass
+   beneath the header or footer while scrolling would show through. */
 .card[data-scroll] .cardHead {
   position: sticky;
   top: 0;
@@ -306,9 +306,9 @@
   background: var(--surface);
 }
 
-/* Die Aktivitäts-Karte: wie in `ProjectProfileView` (siehe dort für die
-   Begründung) — `.main` streckt hier nichts von selbst, deshalb nimmt sich
-   die Karte mit `flex: 1` ausdrücklich den Rest der Spalte. */
+/* The activity card: as in `ProjectProfileView` (see there for the
+   reasoning) — `.main` doesn't stretch anything here on its own, so the
+   card explicitly claims the rest of the column with `flex: 1`. */
 .card[data-grow] {
   flex: 1;
   min-height: 0;
@@ -342,10 +342,11 @@
   color: var(--on-surface-variant);
 }
 
-/* Trägt selbst das Polster, das früher auf `.card` lag — nur so bleibt der
-   Scrollbalken bei `[data-scroll]` (`.cardBody` scrollt hier direkt) an der
-   Kante der Karte statt in einer Lücke davor. `[data-dashed]` nimmt es sich
-   weiter oben wieder weg, weil dort `.rows` das Scrollen übernimmt. */
+/* Carries the padding that used to sit on `.card` itself — only this way
+   does the scrollbar for `[data-scroll]` (`.cardBody` scrolls directly here)
+   stay at the card's edge instead of in a gap in front of it.
+   `[data-dashed]` takes it away again further up, because `.rows` handles
+   the scrolling there. */
 .cardBody {
   display: flex;
   flex-direction: column;
@@ -379,7 +380,7 @@
   }
 }
 
-/* ── Menschen ── */
+/* ── People ── */
 .people {
   display: flex;
   flex-direction: column;
@@ -461,13 +462,13 @@
   white-space: nowrap;
 }
 
-/* ── Teams und Projekte als Liste ──
-   Feste statt maximale Höhe für drei Zeilen — wie in `ProjectProfileView`
-   (siehe dort für die Rechnung und die Begründung, warum fest statt maximal).
-   Ab vier Einträgen scrollt die Liste in sich selbst. */
-/* Trägt das Polster jetzt selbst (statt von `.card` zu erben) — ihr eigener
-   Scrollbalken (ab vier Einträgen) landet dadurch innerhalb dieses Polsters,
-   an der Kante der Karte, statt in einer Lücke davor. */
+/* ── Teams and projects as a list ──
+   Fixed instead of maximum height for three rows — as in `ProjectProfileView`
+   (see there for the calculation and the reasoning behind fixed instead of
+   maximum). From four entries on, the list scrolls within itself. */
+/* Now carries the padding itself (instead of inheriting it from `.card`) —
+   its own scrollbar (from four entries on) thereby lands within this
+   padding, at the card's edge, instead of in a gap in front of it. */
 .rows {
   display: flex;
   flex-direction: column;
@@ -479,9 +480,9 @@
   overflow-y: auto;
 }
 
-/* Jede Zeile wie ein Outline-Button (`Button/button.module.scss` `.outline`):
-   eigener Rahmen statt Trennlinie, damit Teams und Projekte als Reihe
-   greifbarer Kacheln statt als reine Textliste wirken. */
+/* Each row like an outline button (`Button/button.module.scss` `.outline`):
+   its own border instead of a divider line, so teams and projects read as
+   a row of tangible tiles instead of a plain text list. */
 .row {
   display: flex;
   align-items: center;
@@ -495,8 +496,8 @@
   text-decoration: none;
 }
 
-/* Projekt-Zeilen sind Links, Team-Zeilen nicht — nur die anklickbaren
-   bekommen den Hover und den Pfeil. */
+/* Project rows are links, team rows aren't — only the clickable ones get
+   the hover and the arrow. */
 .rowLink {
   transition: background 0.12s, border-color 0.12s;
 }
@@ -530,7 +531,7 @@
   color: #fff;
 }
 
-/* ── 4. Die Wege hinaus ── */
+/* ── 4. The ways out ── */
 .next {
   grid-column: 1 / -1;
   display: flex;

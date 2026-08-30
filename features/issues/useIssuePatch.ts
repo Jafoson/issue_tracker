@@ -5,11 +5,11 @@ import { useTransition } from "react";
 import { updateIssue } from "@/features/issues/actions";
 
 /**
- * Schreibt eine Teiländerung an einem Issue und holt die Ansicht danach neu.
+ * Writes a partial change to an issue and refreshes the view afterward.
  *
- * Jeder Picker bekommt seinen eigenen Übergang — ob in einer Listenzeile oder
- * auf einer Board-Karte: so bleibt der Rest bedienbar, während einer von ihnen
- * seine Änderung wegschreibt.
+ * Every picker gets its own transition — whether in a list row or on a
+ * board card: this keeps the rest interactive while one of them writes its
+ * change out.
  */
 export function useIssuePatch(issueId: string) {
   const router = useRouter();

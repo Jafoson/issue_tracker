@@ -31,9 +31,9 @@ const catalogs = {
   en: en as unknown as Messages,
 };
 
-describe("Schlüsselnamen", () => {
+describe("Key names", () => {
   for (const [locale, messages] of Object.entries(catalogs)) {
-    it(`enthält in ${locale} keinen Punkt im Namen`, () => {
+    it(`has no dot in the name for ${locale}`, () => {
       // next-intl reads the dot as nesting and rejects a catalog that
       // carries one in a name (`INVALID_KEY`). Anyone who needs a key like
       // `project.deleted` writes it flat (`projectDeleted`) and builds the
@@ -44,8 +44,8 @@ describe("Schlüsselnamen", () => {
   }
 });
 
-describe("Beide Sprachen", () => {
-  it("kennen dieselben Schlüssel", () => {
+describe("Both languages", () => {
+  it("know the same keys", () => {
     const german = new Set(paths(catalogs.de));
     const english = new Set(paths(catalogs.en));
 

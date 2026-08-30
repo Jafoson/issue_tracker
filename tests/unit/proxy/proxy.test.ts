@@ -31,34 +31,34 @@ function makeRequest(path: string, options?: { authed?: boolean }) {
   return new NextRequest(`http://localhost${path}`, { headers });
 }
 
-describe("proxy() – Auth-Gate", () => {
-  describe("Geschützte Routen ohne Session", () => {
-    it("leitet zu /login weiter wenn keine Session vorhanden ist", async () => {
+describe("proxy() – Auth Gate", () => {
+  describe("Protected routes without a session", () => {
+    it("redirects to /login when no session exists", async () => {
       const response = await proxy(makeRequest("/de/myworkspace/board"));
       expect(response.status).toBe(307);
       expect(response.headers.get("Location") ?? "").toContain("/de/login");
     });
 
-    it("setzt callbackUrl (ohne Locale-Präfix) im Redirect", async () => {
+    it("sets callbackUrl (without locale prefix) in the redirect", async () => {
       const response = await proxy(makeRequest("/de/workspace/board"));
       const url = new URL(response.headers.get("Location") ?? "");
       expect(url.searchParams.get("callbackUrl")).toBe("/workspace/board");
     });
 
-    it("verwendet die korrekte Locale im Login-Redirect", async () => {
+    it("uses the correct locale in the login redirect", async () => {
       const response = await proxy(makeRequest("/en/workspace/board"));
       expect(response.headers.get("Location") ?? "").toContain("/en/login");
     });
   });
 
-  describe("Öffentliche Routen", () => {
-    it("leitet auf /login NICHT erneut zum Login (kein callbackUrl)", async () => {
+  describe("Public routes", () => {
+    it("does NOT redirect /login to login again (no callbackUrl)", async () => {
       const response = await proxy(makeRequest("/de/login"));
       const location = response.headers.get("Location") ?? "";
       expect(location).not.toContain("callbackUrl");
     });
 
-    it("lässt /register ohne Session passieren (kein Auth-Redirect)", async () => {
+    it("lets /register through without a session (no auth redirect)", async () => {
       const response = await proxy(makeRequest("/de/register"));
       const location = response.headers.get("Location") ?? "";
       expect(location).not.toContain("callbackUrl");
@@ -67,15 +67,15 @@ describe("proxy() – Auth-Gate", () => {
     // The token in the path is the authorization, and whoever accepts an
     // invitation doesn't have a password yet — an auth gate in front of it
     // would be a door with the key locked behind it.
-    it("lässt /invite/<token> ohne Session passieren", async () => {
+    it("lets /invite/<token> through without a session", async () => {
       const response = await proxy(makeRequest("/de/invite/abc123"));
       const location = response.headers.get("Location") ?? "";
       expect(location).not.toContain("callbackUrl");
     });
   });
 
-  describe("Gültige Session", () => {
-    it("leitet eine gültige Session NICHT zum Login um", async () => {
+  describe("Valid session", () => {
+    it("does NOT redirect a valid session to login", async () => {
       const response = await proxy(
         makeRequest("/de/myworkspace/board", { authed: true }),
       );
@@ -88,13 +88,13 @@ describe("config.matcher", () => {
   const matches = (url: string) =>
     unstable_doesMiddlewareMatch({ config, url });
 
-  it("läuft auf App-Routen", () => {
+  it("runs on app routes", () => {
     expect(matches("/de/myworkspace/board")).toBe(true);
     expect(matches("/login")).toBe(true);
     expect(matches("/")).toBe(true);
   });
 
-  it("überspringt API, Next-Internals und Dateien mit Endung", () => {
+  it("skips API, Next internals, and files with an extension", () => {
     expect(matches("/api/issues")).toBe(false);
     expect(matches("/_next/static/chunk.js")).toBe(false);
     expect(matches("/favicon.ico")).toBe(false);

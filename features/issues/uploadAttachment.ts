@@ -9,11 +9,11 @@ export type UploadAttachmentResult =
   | { error: string };
 
 /**
- * Lädt eine Datei direkt gegen S3 hoch (Browser → S3, nicht über den Server)
- * und bestätigt den Upload danach — derselbe zweistufige Ablauf wie bei
- * `AvatarUploader.tsx`, nur für Issue-Anhänge und ohne MIME-Einschränkung.
- * Verwendet sowohl vom Editor-Werkzeugleisten-Knopf/Drag&Drop/Einfügen als
- * auch vom „Anhang hinzufügen"-Knopf der Anhänge-Sektion.
+ * Uploads a file directly to S3 (browser → S3, not through the server) and
+ * confirms the upload afterward — the same two-step flow as
+ * `AvatarUploader.tsx`, just for issue attachments and without a MIME
+ * restriction. Used both by the editor's toolbar button/drag-and-drop/paste
+ * and by the "add attachment" button in the attachments section.
  */
 export async function uploadIssueAttachment(
   issueId: string,
@@ -36,8 +36,8 @@ export async function uploadIssueAttachment(
       body: file,
     });
   } catch {
-    // Netzwerkfehler, CORS-Ablehnung durch den Bucket, o.ä. — `fetch` wirft
-    // in diesen Fällen statt eine Antwort mit Fehlerstatus zu liefern.
+    // Network error, CORS rejection from the bucket, etc. — `fetch` throws
+    // in these cases instead of returning a response with an error status.
     return { error: "Upload failed — please try again." };
   }
   if (!put.ok) return { error: "Upload failed — please try again." };

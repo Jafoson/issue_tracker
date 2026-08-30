@@ -72,7 +72,7 @@ function reset() {
 describe("requestWorkspaceAvatarUploadUrl()", () => {
   beforeEach(reset);
 
-  it("lehnt ab ohne Login", async () => {
+  it("rejects without login", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(
       await requestWorkspaceAvatarUploadUrl(WS, {
@@ -83,7 +83,7 @@ describe("requestWorkspaceAvatarUploadUrl()", () => {
     expect(mockRequestAvatarUpload).not.toHaveBeenCalled();
   });
 
-  it("lehnt ohne workspace.update ab", async () => {
+  it("rejects without workspace.update", async () => {
     mockCan.mockResolvedValue(false);
     expect(
       await requestWorkspaceAvatarUploadUrl(WS, {
@@ -94,7 +94,7 @@ describe("requestWorkspaceAvatarUploadUrl()", () => {
     expect(mockRequestAvatarUpload).not.toHaveBeenCalled();
   });
 
-  it('fragt lib/storage mit kind "workspace" an', async () => {
+  it('asks lib/storage with kind "workspace"', async () => {
     mockRequestAvatarUpload.mockResolvedValue({
       ok: true,
       key: "workspaces/acme/new.png",
@@ -123,7 +123,7 @@ describe("requestWorkspaceAvatarUploadUrl()", () => {
 describe("confirmWorkspaceAvatarUpload()", () => {
   beforeEach(reset);
 
-  it("lehnt ohne workspace.update ab", async () => {
+  it("rejects without workspace.update", async () => {
     mockCan.mockResolvedValue(false);
     expect(
       await confirmWorkspaceAvatarUpload(WS, "workspaces/acme/new.png"),
@@ -131,7 +131,7 @@ describe("confirmWorkspaceAvatarUpload()", () => {
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("gibt den Fehler von finalizeAvatarUpload weiter", async () => {
+  it("passes through the error from finalizeAvatarUpload", async () => {
     mockFinalizeAvatarUpload.mockResolvedValue({
       error: "Invalid upload key.",
     });
@@ -141,7 +141,7 @@ describe("confirmWorkspaceAvatarUpload()", () => {
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("hinterlegt den neuen Key und löscht den alten best-effort", async () => {
+  it("stores the new key and deletes the old one on a best-effort basis", async () => {
     expect(
       await confirmWorkspaceAvatarUpload(WS, "workspaces/acme/new.png"),
     ).toEqual({ ok: true });
@@ -158,7 +158,7 @@ describe("confirmWorkspaceAvatarUpload()", () => {
 describe("removeWorkspaceAvatar()", () => {
   beforeEach(reset);
 
-  it("lehnt ohne workspace.update ab", async () => {
+  it("rejects without workspace.update", async () => {
     mockCan.mockResolvedValue(false);
     expect(await removeWorkspaceAvatar(WS)).toEqual({
       error: "You are not allowed to change this workspace.",
@@ -166,7 +166,7 @@ describe("removeWorkspaceAvatar()", () => {
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("setzt den Key auf null und löscht das alte Objekt", async () => {
+  it("sets the key to null and deletes the old object", async () => {
     expect(await removeWorkspaceAvatar(WS)).toEqual({ ok: true });
     expect(mockWorkspaceUpdate).toHaveBeenCalledWith({
       where: { id: WS },

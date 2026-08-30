@@ -4,10 +4,10 @@ import {
 } from "@/features/workspaces/queries";
 import { TabBarClient } from "./TabBarClient";
 
-// Server Component: bestimmt den Tab-Kontext und reicht ihn an die Client-Logik.
-// - Admin-Bereich: eigener Namespace + `/admin`-Routen, kein Workspace nötig.
-// - Workspace-Shell: Workspace + Projekte serverseitig laden. Ohne aktiven
-//   Workspace (sollte hier nicht vorkommen) wird nichts gerendert.
+// Server Component: determines the tab context and hands it to the client logic.
+// - Admin area: its own namespace + `/admin` routes, no workspace needed.
+// - Workspace shell: load workspace + projects server-side. Without an
+//   active workspace (shouldn't happen here), nothing is rendered.
 export async function TabBar({
   isAdminRoute = false,
 }: {

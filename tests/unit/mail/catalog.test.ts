@@ -6,7 +6,7 @@ import {
 } from "@/features/mail-templates/catalog";
 
 describe("MAIL_TEMPLATE_CATALOG", () => {
-  it("hat für jeden Schlüssel genau einen Eintrag mit passendem `key`", () => {
+  it("has exactly one entry per key, with a matching `key`", () => {
     for (const key of MAIL_TEMPLATE_KEYS) {
       const meta = mailTemplateMeta(key);
       expect(meta.key).toBe(key);
@@ -16,11 +16,11 @@ describe("MAIL_TEMPLATE_CATALOG", () => {
     }
   });
 
-  it("hat keine doppelten Schlüssel", () => {
+  it("has no duplicate keys", () => {
     expect(new Set(MAIL_TEMPLATE_KEYS).size).toBe(MAIL_TEMPLATE_KEYS.length);
   });
 
-  it("stimmt mit den Objekt-Schlüsseln von MAIL_TEMPLATE_CATALOG überein", () => {
+  it("matches the object keys of MAIL_TEMPLATE_CATALOG", () => {
     expect(new Set(Object.keys(MAIL_TEMPLATE_CATALOG))).toEqual(
       new Set(MAIL_TEMPLATE_KEYS),
     );

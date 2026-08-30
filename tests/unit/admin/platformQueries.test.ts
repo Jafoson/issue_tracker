@@ -46,8 +46,8 @@ beforeEach(() => {
   mockProjectFindMany.mockResolvedValue([]);
 });
 
-describe("Projekt-Stammdaten", () => {
-  it("verlangt project.metadata.view", async () => {
+describe("Project master data", () => {
+  it("requires project.metadata.view", async () => {
     await getAllProjects();
     expect(mockRequirePermission).toHaveBeenCalledWith(
       "project.metadata.view",
@@ -55,7 +55,7 @@ describe("Projekt-Stammdaten", () => {
     );
   });
 
-  it("lädt keine Inhalte — Aufgaben und Kommentare nur als Zahl", async () => {
+  it("doesn't load content — issues and comments only as a count", async () => {
     await getAllProjects();
 
     const keys = keysOf(mockProjectFindMany.mock.calls[0][0].select);
@@ -73,7 +73,7 @@ describe("Projekt-Stammdaten", () => {
     }
   });
 
-  it("holt private Projekte mit — sie sind der Grund für die Liste", async () => {
+  it("fetches private projects too — they're the reason for the list", async () => {
     await getAllProjects();
     // No `where` means: all. Orphaned private projects are exactly the ones
     // that nobody else would otherwise notice.
@@ -81,15 +81,15 @@ describe("Projekt-Stammdaten", () => {
   });
 });
 
-describe("Benutzerverwaltung", () => {
-  it("verlangt user.manage", async () => {
+describe("User management", () => {
+  it("requires user.manage", async () => {
     await getAllUsers();
     expect(mockRequirePermission).toHaveBeenCalledWith("user.manage", {
       scope: "platform",
     });
   });
 
-  it("beantwortet die Frage nach dem Passkey über eine Zählung, nie über die Zeile selbst", async () => {
+  it("answers the passkey question via a count, never via the row itself", async () => {
     // No password of its own anymore — `hasPasskey` comes from
     // `_count.select.authenticators`, not from a second query.
     await getAllUsers();

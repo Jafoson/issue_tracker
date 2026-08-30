@@ -55,7 +55,7 @@ describe("getMyIssues()", () => {
     projectFindMany.mockResolvedValue([]);
   });
 
-  it("sucht die eigenen Aufgaben in allen zugänglichen Projekten", async () => {
+  it("searches for the user's own issues across all accessible projects", async () => {
     await getMyIssues("u-1", "ws-1");
 
     expect(lastWhere()).toEqual({
@@ -70,13 +70,13 @@ describe("getMyIssues()", () => {
     ]);
   });
 
-  it("übernimmt den Statusfilter aus der Adresse", async () => {
+  it("takes the status filter from the URL", async () => {
     await getMyIssues("u-1", "ws-1", { status: "todo,in_progress" });
 
     expect(lastWhere().status).toEqual({ in: ["todo", "in_progress"] });
   });
 
-  it("lässt `?assignee=` die Zuständigkeit nicht überschreiben", async () => {
+  it("doesn't let `?assignee=` override who's assigned", async () => {
     userFindMany.mockResolvedValue([{ id: "u-2" }]);
 
     await getMyIssues("u-1", "ws-1", { assignee: "mara" });
@@ -84,7 +84,7 @@ describe("getMyIssues()", () => {
     expect(lastWhere().assigneeId).toBe("u-1");
   });
 
-  it("schneidet den Projektfilter in die zugänglichen Projekte hinein", async () => {
+  it("clips the project filter to the accessible projects", async () => {
     // `p-3` is not accessible — the filter must not be able to pull it in.
     projectFindMany.mockResolvedValue([{ id: "p-2" }, { id: "p-3" }]);
 
@@ -93,14 +93,14 @@ describe("getMyIssues()", () => {
     expect(lastWhere().projectId).toEqual({ in: ["p-2"] });
   });
 
-  it("fragt gar nicht erst, wenn der Projektfilter nichts Zugängliches trifft", async () => {
+  it("doesn't even ask when the project filter matches nothing accessible", async () => {
     projectFindMany.mockResolvedValue([{ id: "p-3" }]);
 
     expect(await getMyIssues("u-1", "ws-1", { project: "geheim" })).toEqual([]);
     expect(issueFindMany).not.toHaveBeenCalled();
   });
 
-  it("übergeht einen Projekt-Slug, den es nicht gibt", async () => {
+  it("ignores a project slug that doesn't exist", async () => {
     projectFindMany.mockResolvedValue([]);
 
     await getMyIssues("u-1", "ws-1", { project: "gibtsnicht" });
@@ -110,7 +110,7 @@ describe("getMyIssues()", () => {
     expect(lastWhere().projectId).toEqual({ in: ["p-1", "p-2"] });
   });
 
-  it("sucht in Titel, Beschreibungstext und Nummer", async () => {
+  it("searches in title, description text, and number", async () => {
     await getMyIssues("u-1", "ws-1", { q: "FUX-12" });
 
     expect(lastWhere().OR).toEqual([

@@ -70,20 +70,21 @@ import type { Project } from "@/types";
 type WorkspaceResult = { redirectTo: string } | { error: string };
 
 /**
- * Ergebnis einer Mitglieder-Aktion. `inviteUrl` steht nur da, wenn ein Konto neu
- * entstanden ist und der Link noch bei jemandem ankommen muss. `mailSent` sagt der
- * Oberfläche, ob die Einladung zusätzlich per Mail rausging (SMTP konfiguriert) —
- * ohne das wäre der Link der einzige Weg, und die Meldung müsste das auch so sagen.
+ * Result of a member action. `inviteUrl` is present only when a new account
+ * was created and the link still needs to reach someone. `mailSent` tells
+ * the UI whether the invitation also went out by mail (SMTP configured) —
+ * without that, the link is the only way in, and the message needs to say
+ * so accordingly.
  */
 type MemberResult =
   | { ok: true; inviteUrl?: string; mailSent?: boolean }
   | { error: string };
 
 /**
- * Projekte für mehrere Workspaces auf einmal, gefiltert auf die Workspaces des
- * eingeloggten Users. Wird von der TabBar aufgerufen: jeder Tab trägt seine
- * eigene Workspace-ID in der URL, auch wenn sie vom gerade aktiven Workspace
- * abweicht — der Client fragt hier gezielt die fehlenden Workspaces nach.
+ * Projects for several workspaces at once, filtered down to the logged-in
+ * user's workspaces. Called by the TabBar: each tab carries its own
+ * workspace id in the URL, even when it differs from the currently active
+ * workspace — the client asks here specifically for the missing workspaces.
  */
 export async function getProjectsForWorkspaces(
   workspaceIds: string[],
@@ -173,8 +174,8 @@ export async function createWorkspace(
           issueTypeId: t.id,
         })),
       });
-      // RBAC braucht hier nichts mehr: die Default-Rollen sind geteilt und
-      // liegen schon in der Datenbank. Der Ersteller wird automatisch Owner.
+      // RBAC needs nothing more here: the default roles are shared and
+      // already exist in the database. The creator automatically becomes Owner.
       await tx.workspaceMember.create({
         data: {
           workspaceId: finalSlug,
@@ -197,14 +198,15 @@ export async function createWorkspace(
           slug: projectSlug,
           prefix,
           color,
-          // Ohne diese Zeile stünde das erste Projekt jedes Workspace vom ersten
-          // Tag an als verwaist in der Plattformverwaltung.
+          // Without this line, every workspace's first project would show
+          // up as orphaned in platform administration from day one.
           createdById: session.userId,
         },
       });
 
-      // Der Ersteller steht damit auch im Projekt — bisher fehlte er in
-      // `ProjectMember`, weil sein Zugriff allein aus der Owner-Rolle kam.
+      // This also puts the creator in the project — previously they were
+      // missing from `ProjectMember`, since their access came solely from
+      // the Owner role.
       await enrollWorkspaceMembers(tx, {
         id: projectId,
         workspaceId: finalSlug,
@@ -216,24 +218,24 @@ export async function createWorkspace(
     return { error: "Something went wrong. Please try again." };
   }
 
-  // Locale-freier Pfad – der Client navigiert über next-intl (auto-Präfix).
+  // Locale-free path – the client navigates via next-intl (auto-prefix).
   return { redirectTo: `/${finalSlug}` };
 }
 
-// ─── Workspace ändern und löschen ─────────────────────────────────────────────
+// ─── Update and delete workspace ───────────────────────────────────────────
 //
-// Diese beiden geben Fehler zurück statt zu werfen: sie hängen an der
-// Einstellungsseite, die den Grund anzeigen soll.
+// These two return errors instead of throwing: they're wired up to the
+// settings page, which is meant to display the reason.
 
 type SettingsResult = { ok: true } | { error: string };
 
 /**
- * Name und Farbe des Workspace.
+ * Name and color of the workspace.
  *
- * Der Slug bleibt, wie er ist — er ist zugleich die Id des Workspace und steht
- * damit in jeder Adresse, in jedem offenen Reiter und in jeder verschickten
- * Einladung. Ihn zu ändern hieße, alles davon ins Leere laufen zu lassen; die
- * Seite zeigt ihn deshalb zum Nachlesen statt als Feld.
+ * The slug stays as it is — it doubles as the workspace's id and therefore
+ * appears in every address, every open tab, and every invitation sent. To
+ * change it would mean running all of that into the void; the page
+ * therefore shows it for reference instead of as an editable field.
  */
 export async function updateWorkspace(
   workspaceId: string,
@@ -242,10 +244,10 @@ export async function updateWorkspace(
     color?: string;
     desc?: string;
     /**
-     * Die ganze Liste, nicht ein Diff — dieselbe Wahl wie bei Teams: der Dialog
-     * zeigt sie ohnehin vollständig, und ein Diff aus Einzelaufrufen wäre
-     * derselbe Vorgang in mehreren Runden. `undefined` heißt „unverändert
-     * lassen", `[]` heißt „alle entfernen".
+     * The entire list, not a diff — the same choice as for teams: the
+     * dialog shows it in full anyway, and a diff built from individual
+     * calls would be the same operation in multiple round trips.
+     * `undefined` means "leave unchanged", `[]` means "remove all".
      */
     links?: { label: string; url: string }[];
   },
@@ -258,9 +260,9 @@ export async function updateWorkspace(
   const name = data.name?.trim();
   if (name !== undefined && !name) return { error: "Name is required." };
 
-  // Leere Zeilen (weder Name noch Adresse) sind kein Link, sondern eine
-  // ungenutzte Reihe im Dialog — sie fallen still weg. Was übrig bleibt, muss
-  // vollständig sein: ein Chip ohne Beschriftung oder ohne Ziel wäre unbedienbar.
+  // Empty rows (neither label nor address) aren't a link, just an unused
+  // row in the dialog — they're silently dropped. What's left has to be
+  // complete: a chip without a label or without a target would be unusable.
   let links: { label: string; url: string }[] | undefined;
   if (data.links !== undefined) {
     links = data.links
@@ -310,8 +312,8 @@ type UploadUrlResult =
   | { ok: true; key: string; uploadUrl: string }
   | { error: string };
 
-/** Erster Schritt des Workspace-Avatar-Uploads: presigned PUT-URL, direkt
- *  gegen S3, nach demselben Muster wie `updateWorkspace`. */
+/** First step of the workspace avatar upload: presigned PUT URL, directly
+ *  against S3, following the same pattern as `updateWorkspace`. */
 export async function requestWorkspaceAvatarUploadUrl(
   workspaceId: string,
   input: { contentType: string; contentLength: number },
@@ -377,12 +379,12 @@ export async function removeWorkspaceAvatar(
 }
 
 /**
- * Löscht den Workspace mit allem, was darin liegt.
+ * Deletes the workspace along with everything inside it.
  *
- * Die Issues gehen zuerst: ihr Fremdschlüssel auf das Projekt steht auf
- * `Restrict`, die Projekte ließen sich sonst gar nicht löschen. Alles Übrige —
- * Projekte, Mitglieder, Teams, Labels, Rollen, Einladungen — kaskadiert vom
- * Workspace aus.
+ * The issues go first: their foreign key to the project is set to
+ * `Restrict`, so the projects couldn't be deleted otherwise. Everything
+ * else — projects, members, teams, labels, roles, invitations — cascades
+ * from the workspace.
  */
 export async function deleteWorkspace(
   workspaceId: string,
@@ -392,8 +394,8 @@ export async function deleteWorkspace(
   if (!(await can(actorId, "workspace.delete", { workspaceId })))
     return { error: "You are not allowed to delete this workspace." };
 
-  // Vor dem Löschen gelesen: danach gibt es nichts mehr zu benennen, und ein
-  // Protokolleintrag über „irgendeinen Workspace" hilft niemandem.
+  // Read before deletion: afterward there's nothing left to name, and an
+  // audit entry about "some workspace" helps nobody.
   const doomed = await db.workspace.findUnique({
     where: { id: workspaceId },
     select: {
@@ -426,18 +428,17 @@ export async function deleteWorkspace(
   return { ok: true };
 }
 
-// ─── Domain-Auto-Join ──────────────────────────────────────────────────────────
+// ─── Domain auto-join ───────────────────────────────────────────────────────
 //
-// Wer mit einer Adresse dieser Domain ein neues Konto anlegt
-// (`provisionNewUser()`, `lib/user-provisioning.ts` — läuft bei jedem neuen
-// Passkey-/OAuth-Konto), tritt automatisch bei — ohne Einladungslink, ohne
-// `pending`. Zwei Wächter gegen Missbrauch: `domain @id` in
-// `WorkspaceDomain` verhindert, dass zwei Workspaces dieselbe Domain
-// beanspruchen; die Sperrliste unten verhindert, dass überhaupt jemand eine
-// öffentliche Freemail-Domain (die Fremde teilen) claimt. Keine
-// DNS-Verifizierung — wer `workspace.update` hat, kann jede nicht gesperrte,
-// noch freie Domain eintragen, auch eine, die ihm nicht gehört. Bekannte
-// Lücke, kein Ausbau in dieser Änderung.
+// Whoever creates a new account with an address on this domain
+// (`provisionNewUser()`, `lib/user-provisioning.ts` — runs on every new
+// passkey/OAuth account) joins automatically — no invitation link, no
+// `pending`. Two guards against abuse: `domain @id` on `WorkspaceDomain`
+// prevents two workspaces from claiming the same domain; the blocklist
+// below prevents anyone from claiming a public freemail domain (shared by
+// strangers) in the first place. No DNS verification — whoever has
+// `workspace.update` can register any not-yet-blocked, still-free domain,
+// even one they don't own. A known gap, not addressed by this change.
 const BLOCKED_EMAIL_DOMAINS = new Set([
   "gmail.com",
   "googlemail.com",
@@ -514,25 +515,25 @@ export async function removeWorkspaceDomain(
   return { ok: true };
 }
 
-// ─── Teams ────────────────────────────────────────────────────────────────────
+// ─── Teams ──────────────────────────────────────────────────────────────────
 //
-// Ein Team gruppiert Menschen und Projekte — und kann seit `TeamProject.roleId`
-// an einem Projekt zusätzlich eine Rolle tragen. Das Team selbst vergibt damit
-// immer noch keine Rechte: was es verleiht, ist genau die Projektrolle, die es
-// trägt, und die landet ganz normal in `ProjectMember`
-// (`syncProjectTeamRoles`, lib/project-membership.ts). Deshalb hängt das Team
-// weiterhin an eigenen Permissions (`team.*`) — nur das Verleihen einer Rolle
-// braucht zusätzlich `member.role.update` im betroffenen Projekt, siehe
+// A team groups people and projects — and since `TeamProject.roleId`, it can
+// additionally carry a role on a project. The team itself still doesn't
+// grant any rights: what it lends out is exactly the project role it
+// carries, and that lands in `ProjectMember` like any other assignment
+// (`syncProjectTeamRoles`, lib/project-membership.ts). That's why the team
+// still depends on its own permissions (`team.*`) — only lending out a role
+// additionally requires `member.role.update` on the affected project, see
 // `resolveTeamProjectRoles`.
 //
-// Mitglieder und Projekte kommen als vollständige Liste herein und werden als
-// Ganzes gesetzt. Der Dialog zeigt beide Mengen ohnehin komplett; ein Diff aus
-// Einzelaufrufen wäre derselbe Vorgang in mehreren Runden — mit dem Risiko,
-// zwischendrin steckenzubleiben.
+// Members and projects arrive as a complete list and are set as a whole.
+// The dialog shows both sets in full anyway; a diff built from individual
+// calls would be the same operation in multiple round trips — with the risk
+// of getting stuck partway through.
 
 interface TeamProjectInput {
   projectId: string;
-  /** Rollen-Key aus dem Scope PROJECT, oder `null` für reine Gruppierung ohne Rolle. */
+  /** Role key from the PROJECT scope, or `null` for pure grouping without a role. */
   roleKey: string | null;
 }
 
@@ -546,7 +547,7 @@ interface TeamInput {
   projects: TeamProjectInput[];
 }
 
-/** Kürzel wie beim Projekt: bis zu vier Zeichen, Buchstaben und Ziffern. */
+/** Short code like for a project: up to four characters, letters and digits. */
 function teamKey(value: string): string {
   return value
     .replace(/[^a-zA-Z0-9]/g, "")
@@ -555,9 +556,9 @@ function teamKey(value: string): string {
 }
 
 /**
- * Prüft die Eingaben gegen den Workspace: Kürzel frei, Lead und Mitglieder
- * gehören dazu, Projekte auch. Ohne diese Runde ließe sich über die Ids eines
- * fremden Mandanten ein Team zusammenstellen, das ihn quer aufspannt.
+ * Checks the inputs against the workspace: short code free, lead and
+ * members belong to it, so do the projects. Without this pass, a team
+ * could be assembled from another tenant's ids, spanning across it.
  */
 async function checkTeamInput(
   workspaceId: string,
@@ -577,8 +578,9 @@ async function checkTeamInput(
   if (taken && taken.id !== teamId)
     return { error: "Another team in this workspace uses that identifier." };
 
-  // Der Lead führt das Team und muss deshalb selbst darin stehen — sonst hätte
-  // die Zeile einen Verantwortlichen, der nicht dazugehört.
+  // The lead runs the team and therefore has to be a member of it
+  // themselves — otherwise the row would have a person in charge who
+  // doesn't even belong to it.
   const memberIds = [...new Set([data.leadId, ...data.memberIds])];
 
   const known = await db.workspaceMember.count({
@@ -600,17 +602,18 @@ async function checkTeamInput(
 }
 
 /**
- * Für jede Team-Projekt-Verknüpfung die zu vergebende Rolle auflösen — oder
- * `null` für reine Gruppierung ohne Rolle.
+ * Resolves, for each team-project link, the role to be granted — or `null`
+ * for pure grouping without a role.
  *
- * Eine Rolle über ein Team zu verleihen ist ein Zugriffsentscheid wie jede
- * andere Rollenvergabe im Projekt: verlangt wird deshalb zusätzlich
- * `member.role.update` in genau diesem Projekt, und der Rang darf die eigene
- * Obergrenze dort nicht übersteigen (`assignmentCeiling`, wie in
- * `features/projects/actions.ts`). Ohne diese zweite Prüfung könnte, wer nur
- * `team.project.manage` trägt — die Workspace-Rolle „Manager" etwa, die
- * keinerlei Projektrechte hat —, über ein Team Zugriff auf beliebige Projekte
- * des Workspace verleihen, an denen er selbst gar nichts darf.
+ * Granting a role through a team is an access decision like any other role
+ * assignment in a project: it therefore additionally requires
+ * `member.role.update` in exactly that project, and the rank must not
+ * exceed the actor's own ceiling there (`assignmentCeiling`, as in
+ * `features/projects/actions.ts`). Without this second check, anyone
+ * holding only `team.project.manage` — the workspace role "Manager", say,
+ * which has no project permissions at all — could use a team to grant
+ * access to any project in the workspace, including ones they themselves
+ * have no rights to whatsoever.
  */
 async function resolveTeamProjectRoles(
   workspaceId: string,
@@ -645,8 +648,8 @@ async function resolveTeamProjectRoles(
         ],
       },
       select: { id: true, rank: true },
-      // Wie `resolveAssignable`: die spezifischste Rolle gewinnt, falls
-      // mehrere denselben Key tragen.
+      // As in `resolveAssignable`: the most specific role wins if several
+      // share the same key.
       orderBy: [
         { projectId: { sort: "desc", nulls: "last" } },
         { workspaceId: { sort: "desc", nulls: "last" } },
@@ -716,12 +719,12 @@ export async function createTeam(
 }
 
 /**
- * Ein Team ändern — Stammdaten, Mitglieder und Projekte in einem Zug.
+ * Change a team — core data, members, and projects in one go.
  *
- * Die drei Teile hängen an drei Rechten (`team.update`, `team.member.manage`,
- * `team.project.manage`). Wer nur eines davon hat, ändert nur seinen Teil: die
- * übrigen Angaben werden übergangen statt abgelehnt, weil der Dialog sie ohnehin
- * nur anzeigt, wenn sie bedienbar sind.
+ * The three parts depend on three permissions (`team.update`,
+ * `team.member.manage`, `team.project.manage`). Whoever has only one of
+ * them only changes their part: the remaining fields are skipped instead of
+ * rejected, because the dialog only shows them when they're editable anyway.
  */
 export async function updateTeam(
   teamId: string,
@@ -748,19 +751,19 @@ export async function updateTeam(
   const checked = await checkTeamInput(workspaceId, data, teamId);
   if ("error" in checked) return checked;
 
-  // Nur auflösen, was auch geschrieben wird — ohne `team.project.manage`
-  // bräuchte die Prüfung in `resolveTeamProjectRoles` sonst Rechte, die der
-  // Aufruf am Ende ohnehin übergeht.
+  // Only resolve what actually gets written — without `team.project.manage`,
+  // the check in `resolveTeamProjectRoles` would otherwise need permissions
+  // that the call skips anyway at the end.
   const resolved = canProjects
     ? await resolveTeamProjectRoles(workspaceId, actorId, data.projects)
     : { entries: [] as { projectId: string; roleId: string | null }[] };
   if ("error" in resolved) return resolved;
 
   await db.$transaction(async (tx) => {
-    // Vorher merken, wen und welche Projekte der Team-Rollen-Sync danach
-    // abgleichen muss — die alten Zeilen sind nach den Änderungen unten schon
-    // weg, und ohne diesen Stand verlöre jemand, der aus dem Team fliegt,
-    // seine Team-Rolle nie wieder.
+    // Remember beforehand who and which projects the team role sync will
+    // need to reconcile afterward — the old rows are already gone after the
+    // changes below, and without this snapshot, someone kicked out of the
+    // team would never lose their team role.
     const [before, previousProjectRoles] = await Promise.all([
       tx.teamMember.findMany({ where: { teamId }, select: { userId: true } }),
       tx.teamProject.findMany({
@@ -802,8 +805,8 @@ export async function updateTeam(
       });
     }
 
-    // Betroffen ist, wer vorher oder nachher Mitglied war, in jedem Projekt,
-    // das vorher oder nachher eine Rolle trug.
+    // Affected is anyone who was a member before or after, in every project
+    // that carried a role before or after.
     const affectedMemberIds = canMembers
       ? [...new Set([...previousMemberIds, ...checked.memberIds])]
       : previousMemberIds;
@@ -846,13 +849,13 @@ export async function deleteTeam(teamId: string): Promise<SettingsResult> {
     ]);
     const memberIds = members.map((m) => m.userId);
 
-    // Mitgliedschaften und Projektzuordnungen kaskadieren vom Team aus; an den
-    // Aufgaben hängt ein Team nicht, es bleibt also nichts zurück.
+    // Memberships and project assignments cascade from the team; a team
+    // has no connection to tasks, so nothing is left behind there.
     await tx.team.delete({ where: { id: teamId } });
 
-    // Nach dem Löschen zählt diese Verknüpfung nicht mehr mit — wer seine
-    // Projektrolle nur von hier hatte, verliert die Zeile jetzt (sofern nicht
-    // manuell gesetzt oder von einem anderen Team weiter getragen).
+    // After deletion, this link no longer counts — whoever had their
+    // project role only from here loses the row now (unless it was set
+    // manually or is still carried by another team).
     for (const { projectId } of projectRoles) {
       await syncProjectTeamRoles(tx, projectId, memberIds);
     }
@@ -862,15 +865,15 @@ export async function deleteTeam(teamId: string): Promise<SettingsResult> {
   return { ok: true };
 }
 
-// ─── Mitglieder des Workspace ─────────────────────────────────────────────────
+// ─── Workspace members ──────────────────────────────────────────────────────
 //
-// Diese Aktionen lagen bisher in `features/issues/actions.ts` — dort, wo die
-// Mitgliederliste zuerst gebraucht wurde. Sie gehören in die Domäne, um die es
-// geht, und stehen jetzt neben dem Einladen.
+// These actions used to live in `features/issues/actions.ts` — where the
+// member list was first needed. They belong in the domain they're actually
+// about, and now sit next to inviting.
 //
-// `setMemberRole` und `removeMember` werfen, `inviteWorkspaceMember` gibt Fehler
-// zurück: die ersten beiden hängen an Zeilenaktionen einer Tabelle, die letzte an
-// einem Formular, das die Ursache anzeigen soll.
+// `setMemberRole` and `removeMember` throw, `inviteWorkspaceMember` returns
+// errors: the first two are wired up to row actions on a table, the last
+// one to a form meant to display the cause.
 
 export async function setMemberRole(
   workspaceId: string,
@@ -879,14 +882,14 @@ export async function setMemberRole(
 ) {
   const guard = "member.role.update" as const;
   const actorId = await requirePermission(guard, { workspaceId });
-  // Der Rang kommt jetzt aus der Datenbank statt aus einer Konstantenliste —
-  // damit greift die Hierarchie auch für selbst angelegte Rollen.
+  // The rank now comes from the database instead of a constant list — this
+  // way the hierarchy also applies to custom-created roles.
   const actorRank = (await accessFor(actorId, { workspaceId })).rank(
     "WORKSPACE",
   );
 
-  // Die eigene Rolle nicht über diese Tabelle — der Rangvergleich unten wäre
-  // sonst eine Prüfung gegen sich selbst.
+  // Not your own role through this table — otherwise the rank comparison
+  // below would be a check against yourself.
   if (userId === actorId) throw new PermissionError(guard);
 
   const target = await db.workspaceMember.findUnique({
@@ -895,12 +898,12 @@ export async function setMemberRole(
   });
   if (!target) throw new PermissionError(guard);
 
-  // Owner ist unveränderlich; zum Owner befördern geht nur per Ownership-Transfer.
+  // Owner is immutable; promoting to owner only happens via an ownership transfer.
   if (target.role.key === OWNER_ROLE_KEY || roleKey === OWNER_ROLE_KEY) {
     throw new PermissionError(guard);
   }
 
-  // Zuweisbar sind die geteilten System-Rollen und die eigenen dieses Workspace.
+  // Assignable are the shared system roles and this workspace's own ones.
   const next = await db.role.findFirst({
     where: {
       scope: "WORKSPACE",
@@ -911,7 +914,7 @@ export async function setMemberRole(
   });
   if (!next) throw new PermissionError(guard);
 
-  // Niemand darf eine höhere Rolle vergeben oder ein höher gestelltes Mitglied ändern.
+  // Nobody may assign a higher role or change a member ranked above them.
   if (next.rank > actorRank || target.role.rank > actorRank) {
     throw new PermissionError(guard);
   }
@@ -929,9 +932,9 @@ export async function setMemberRole(
     text: next.name,
   });
 
-  // „Wer hat wem Rechte gegeben?" — dieselbe Frage wie auf der Plattform-Ebene,
-  // hier für den Workspace. Der Eintrag trägt beide Rollen, damit man später
-  // sieht, in welche Richtung es ging.
+  // "Who granted rights to whom?" — the same question as at the platform
+  // level, here for the workspace. The entry carries both roles, so later
+  // it's possible to see which direction it went.
   const target_ = await db.user.findUnique({
     where: { id: userId },
     select: { firstName: true, lastName: true, color: true },
@@ -961,8 +964,9 @@ export async function removeMember(workspaceId: string, userId: string) {
     "WORKSPACE",
   );
 
-  // Sich selbst hinauszuwerfen ist kein Verwaltungsvorgang — dafür gäbe es einen
-  // „Workspace verlassen"-Weg, und der müsste den Owner-Fall eigens regeln.
+  // Kicking yourself out isn't an administrative action — there would be a
+  // separate "leave workspace" path for that, and it would need to handle
+  // the owner case on its own.
   if (userId === actorId) throw new PermissionError(guard);
 
   const target = await db.workspaceMember.findUnique({
@@ -974,7 +978,7 @@ export async function removeMember(workspaceId: string, userId: string) {
   });
   if (!target) throw new PermissionError(guard);
 
-  // Der Owner kann nicht entfernt werden; höher gestellte Mitglieder ebenfalls nicht.
+  // The owner can't be removed; neither can members ranked above the actor.
   if (target.role.key === OWNER_ROLE_KEY || target.role.rank > actorRank) {
     throw new PermissionError(guard);
   }
@@ -983,14 +987,15 @@ export async function removeMember(workspaceId: string, userId: string) {
     await tx.workspaceMember.delete({
       where: { workspaceId_userId: { workspaceId, userId } },
     });
-    // Wer nicht mehr im Workspace ist, ist in keinem seiner Projekte mehr. Ohne
-    // das behielte die Person über ihre Projektrollen weiter Zugriff.
+    // Whoever is no longer in the workspace is no longer in any of its
+    // projects. Without this, the person would keep access through their
+    // project roles.
     await dropProjectMemberships(tx, { workspaceId, userId });
   });
 
-  // Der einzige Weg, es der Person zu sagen — eine In-App-Zeile bliebe
-  // unerreichbar: `canEnterWorkspace` sperrt den Workspace schon aus, bevor
-  // sie die Inbox überhaupt sehen könnte.
+  // The only way to tell the person — an in-app row would be unreachable:
+  // `canEnterWorkspace` already locks out the workspace before they could
+  // even see the inbox.
   await sendMemberRemovedEmail({ userId, workspaceId, actorId });
 
   await recordAudit({
@@ -1008,16 +1013,16 @@ export async function removeMember(workspaceId: string, userId: string) {
   revalidatePath("/", "layout");
 }
 
-/** Obergrenze pro Aufruf — der einzige verfügbare Schutz, solange es im Repo
- *  kein Rate-Limiting gibt (weder hier noch anderswo). */
+/** Upper limit per call — the only safeguard available as long as this repo
+ *  has no rate limiting (neither here nor anywhere else). */
 const MAX_BULK_INVITES = 50;
 
 type BulkInviteRow = { email: string; result: MemberResult };
 type BulkInviteResult = { rows: BulkInviteRow[] } | { error: string };
 
 /**
- * Lädt jemanden per E-Mail in den Workspace ein. Dünner Wrapper um
- * `inviteWorkspaceMembers` für eine einzelne Adresse.
+ * Invites someone into the workspace by email. Thin wrapper around
+ * `inviteWorkspaceMembers` for a single address.
  */
 export async function inviteWorkspaceMember(data: {
   workspaceId: string;
@@ -1030,23 +1035,23 @@ export async function inviteWorkspaceMember(data: {
     role: data.role,
   });
   if ("error" in result) return result;
-  // `emails: [data.email]` liefert genau eine Zeile.
+  // `emails: [data.email]` yields exactly one row.
   return (result.rows[0] as BulkInviteRow).result;
 }
 
 /**
- * Lädt mehrere Adressen auf einmal in den Workspace ein.
+ * Invites multiple addresses into the workspace at once.
  *
- * Rollenauflösung, Rang-Deckel und `member.invite`-Prüfung laufen einmal vor
- * der Schleife statt pro Adresse — sonst kostet jede zusätzliche E-Mail eine
- * weitere `role.findFirst`-Abfrage, und eine Rolle, die sich mitten in der
- * Schleife ändert, ergäbe inkonsistente Teilergebnisse statt eines klaren
- * Fehlschlags für den ganzen Aufruf.
+ * Role resolution, rank ceiling, and the `member.invite` check run once
+ * before the loop instead of per address — otherwise every additional
+ * email would cost another `role.findFirst` query, and a role that changes
+ * mid-loop would produce inconsistent partial results instead of a clean
+ * failure for the whole call.
  *
- * Pro Adresse steht danach ein eigenes Ergebnis — ob eine E-Mail schon
- * Mitglied ist oder ein ungültiges Format hat, soll die übrigen nicht
- * blockieren. Zwei Wege pro Adresse, je nachdem ob es das Konto schon gibt:
- * siehe `inviteOneWorkspaceMember`.
+ * Each address then gets its own result — whether an email already belongs
+ * to a member or has an invalid format shouldn't block the rest. Two paths
+ * per address, depending on whether the account already exists: see
+ * `inviteOneWorkspaceMember`.
  */
 export async function inviteWorkspaceMembers(data: {
   workspaceId: string;
@@ -1070,8 +1075,8 @@ export async function inviteWorkspaceMembers(data: {
   if (data.role === OWNER_ROLE_KEY)
     return { error: "The owner role cannot be handed out." };
 
-  // Niemand vergibt eine Rolle über der eigenen — dieselbe Regel wie in
-  // `setMemberRole`, hier nur für Personen, die noch nicht dabei sind.
+  // Nobody assigns a role above their own — the same rule as in
+  // `setMemberRole`, here just for people who aren't in yet.
   const access = await accessFor(actorId, { workspaceId });
   const ceiling = assignmentCeiling(access, "WORKSPACE");
 
@@ -1105,18 +1110,18 @@ export async function inviteWorkspaceMembers(data: {
 }
 
 /**
- * Eine einzelne Adresse einladen — der Rumpf, den `inviteWorkspaceMembers`
- * pro E-Mail wiederholt. Rolle und Berechtigung sind hier schon geklärt.
+ * Invite a single address — the body that `inviteWorkspaceMembers` repeats
+ * per email. Role and permission are already resolved by this point.
  *
- *   bekannt    → Mitgliedschaft anlegen, fertig. Wer sich anmelden kann, braucht
- *                keine Einladung, nur einen Zugang.
- *   unbekannt  → Konto ohne Passwort, Mitgliedschaft `pending`, Einladungstoken.
- *                Erst das Annehmen macht daraus einen benutzbaren Zugang
- *                (`acceptInvitation`).
+ *   known    → create membership, done. Whoever can already log in doesn't
+ *              need an invitation, just an entry.
+ *   unknown  → account without a password, `pending` membership,
+ *              invitation token. Only accepting it turns this into usable
+ *              access (`acceptInvitation`).
  *
- * In beiden Fällen kommt die Person in die öffentlichen Projekte des Workspace.
- * Bei einer offenen Einladung bleibt diese Zeile bis zur Annahme wirkungslos —
- * `lib/permissions.ts` gibt `pending` keine Rechte.
+ * In both cases the person joins the workspace's public projects. For a
+ * pending invitation, this row stays without effect until accepted —
+ * `lib/permissions.ts` grants `pending` no rights.
  */
 async function inviteOneWorkspaceMember(params: {
   workspaceId: string;
@@ -1153,10 +1158,9 @@ async function inviteOneWorkspaceMember(params: {
       await enrollInWorkspaceProjects(tx, { workspaceId, userId: existing.id });
     });
 
-    // Ein neues Konto steckt noch hinter einem Einladungstoken (unten) und
-    // kann sich nicht anmelden — dort gäbe es niemanden, der eine
-    // In-App-Benachrichtigung sehen könnte. Wer schon ein Konto hat, ist
-    // direkt Mitglied und bekommt sie sofort.
+    // A new account still sits behind an invitation token (below) and can't
+    // log in — there'd be nobody to see an in-app notification. Whoever
+    // already has an account becomes a member directly and gets it right away.
     await notify({
       userId: existing.id,
       type: "invite",
@@ -1181,9 +1185,9 @@ async function inviteOneWorkspaceMember(params: {
     return { ok: true };
   }
 
-  // Der Name steht erst fest, wenn die Einladung angenommen wird — bis dahin
-  // trägt das Konto den lokalen Teil der Adresse, damit Avatar und Liste etwas
-  // Lesbares zeigen.
+  // The name isn't settled until the invitation is accepted — until then
+  // the account carries the local part of the address, so the avatar and
+  // list show something readable.
   const localPart = email.split("@")[0];
   const handle = await generateHandle(email);
   const now = new Date();
@@ -1197,8 +1201,8 @@ async function inviteOneWorkspaceMember(params: {
         email,
         color: pickUserColor(),
         platformRoleId: systemRoleId("PLATFORM", DEFAULT_PLATFORM_ROLE_KEY),
-        // Eingeladen statt selbst angemeldet — kein Onboarding-Schritt nötig,
-        // die Einladung bleibt ein einziger Klick.
+        // Invited instead of self-registered — no onboarding step needed,
+        // accepting the invitation stays a single click.
         onboardedAt: now,
       },
       select: { id: true },
@@ -1230,9 +1234,9 @@ async function inviteOneWorkspaceMember(params: {
 }
 
 /**
- * Schickt eine offene Einladung erneut — neuer Token, neue Frist, dieselbe
- * Person und Rolle. `createInvitation` löscht die alte Zeile selbst, bevor die
- * neue entsteht (siehe `lib/invitations.ts`), also kein Sonderfall hier.
+ * Resends a pending invitation — new token, new deadline, same person and
+ * role. `createInvitation` deletes the old row itself before the new one is
+ * created (see `lib/invitations.ts`), so no special case here.
  */
 export async function resendInvitation(token: string): Promise<MemberResult> {
   const actorId = await currentUserId();
@@ -1251,10 +1255,10 @@ export async function resendInvitation(token: string): Promise<MemberResult> {
   if (!invitation || invitation.acceptedAt)
     return { error: "This invitation no longer exists." };
 
-  // Eine projektgebundene Einladung (Projekt-Gast) verwaltet, wer im Projekt
-  // einladen darf — nicht zwingend im Workspace, dieselbe Trennung wie in
-  // `inviteOneProjectMember`. Eine Workspace-weite Einladung braucht das
-  // Workspace-Recht.
+  // A project-bound invitation (project guest) is managed by whoever can
+  // invite in the project — not necessarily in the workspace, the same
+  // separation as in `inviteOneProjectMember`. A workspace-wide invitation
+  // needs the workspace permission.
   const canManage = invitation.projectId
     ? await can(actorId, "member.invite", { projectId: invitation.projectId })
     : await can(actorId, "member.invite", {
@@ -1263,8 +1267,8 @@ export async function resendInvitation(token: string): Promise<MemberResult> {
   if (!canManage)
     return { error: "You are not allowed to manage invitations here." };
 
-  // Die Rolle steht nicht auf der Einladung selbst, sondern auf der
-  // Mitgliedschaft, die beim ersten Einladen schon entstand.
+  // The role isn't stored on the invitation itself, but on the membership
+  // already created during the first invite.
   const membership = invitation.projectId
     ? await db.projectMember.findUnique({
         where: {
@@ -1302,8 +1306,8 @@ export async function resendInvitation(token: string): Promise<MemberResult> {
 
   const inviteUrl = invitationUrl(newToken);
   await sendInvitationEmail({
-    // Das Schatten-Konto einer Einladung entsteht immer mit der eingeladenen
-    // Adresse — der Fallback ist reine Typsicherheit, kein erwarteter Fall.
+    // An invitation's shadow account is always created with the invited
+    // address — the fallback is purely for type safety, not an expected case.
     to: invitation.user.email ?? "",
     workspaceId: invitation.workspaceId,
     projectId: invitation.projectId,
@@ -1318,17 +1322,16 @@ export async function resendInvitation(token: string): Promise<MemberResult> {
 }
 
 /**
- * Zieht eine offene Einladung zurück.
+ * Withdraws a pending invitation.
  *
- * Räumt vollständig auf statt nur den Token zu löschen: die Mitgliedschaften,
- * die das Einladen angelegt hat (Workspace- und alle Projekt-Zeilen in diesem
- * Workspace — bei einem Gast nur die eine Projektzeile, sonst zusätzlich die
- * öffentlichen Projekte aus `enrollInWorkspaceProjects`), und zuletzt das
- * Schatten-Konto selbst, aber nur, wenn danach nirgends mehr etwas an ihm
- * hängt und es nie ein Passkey oder ein verbundener Anbieter angelegt wurde.
- * Sonst bliebe eine für immer unsichtbare Karteileiche stehen: ohne
- * `Invitation`-Zeile taucht sie in keiner Übersicht mehr auf, ist aber nie ein
- * nutzbarer Zugang geworden.
+ * Cleans up fully instead of just deleting the token: the memberships the
+ * invitation created (workspace and all project rows in this workspace —
+ * for a guest just the one project row, otherwise additionally the public
+ * projects from `enrollInWorkspaceProjects`), and finally the shadow
+ * account itself, but only if nothing else depends on it afterward and it
+ * never had a passkey or a linked provider set up. Otherwise a forever
+ * invisible zombie record would remain: without an `Invitation` row it no
+ * longer shows up in any overview, yet it never became usable access either.
  */
 export async function revokeInvitation(
   token: string,
@@ -1391,10 +1394,10 @@ export async function revokeInvitation(
 }
 
 /**
- * Erstellt (oder erneuert) den teilbaren Einladungslink des Workspace für
- * eine Rolle. Dieselbe Rechteprüfung wie beim E-Mail-Invite (`member.invite`,
- * Rang-Deckel) — ein Link ist nur ein weiterer Weg, jemanden einzuladen,
- * kein eigenes Recht.
+ * Creates (or renews) the workspace's shareable invitation link for a
+ * role. Same permission check as for the email invite (`member.invite`,
+ * rank ceiling) — a link is just another way to invite someone, not a
+ * permission of its own.
  */
 export async function createWorkspaceInviteLink(
   workspaceId: string,
@@ -1440,9 +1443,9 @@ export async function createWorkspaceInviteLink(
 }
 
 /**
- * Widerruft einen Einladungslink — Workspace- oder Projekt-Scope, dieselbe
- * Aktion für beide (die Berechtigung hängt vom `projectId` des Links ab,
- * dieselbe Trennung wie bei `revokeInvitation`).
+ * Revokes an invitation link — workspace or project scope, the same action
+ * for both (the permission check depends on the link's `projectId`, the
+ * same separation as in `revokeInvitation`).
  */
 export async function revokeInviteLink(
   token: string,
@@ -1471,13 +1474,13 @@ export async function revokeInviteLink(
 }
 
 /**
- * Löst einen Einladungslink für die aktuell angemeldete Person ein.
+ * Redeems an invitation link for the currently logged-in person.
  *
- * Ein Codepfad für beide Fälle, in denen die öffentliche `/join/[token]`-Seite
- * ihn aufruft: bereits eingeloggt (Bestätigung "als X beitreten?") oder frisch
- * über Login/Registrierung angekommen (derselbe Aufruf, nur später im
- * Redirect-Flow). `redeemInviteLink` selbst ist idempotent — ein erneuter
- * Aufruf für dieselbe Person ändert nichts mehr.
+ * One code path for both cases where the public `/join/[token]` page calls
+ * it: already logged in (confirmation "join as X?") or freshly arrived via
+ * login/registration (the same call, just later in the redirect flow).
+ * `redeemInviteLink` itself is idempotent — a repeat call for the same
+ * person changes nothing further.
  */
 export async function joinViaInviteLink(
   token: string,
@@ -1504,8 +1507,8 @@ export async function joinViaInviteLink(
 }
 
 /**
- * Eine weitere Seite offener Einladungen fürs Infinite Scroll im
- * "Einladungen"-Tab der Workspace-Einstellungen.
+ * One more page of pending invitations for infinite scroll in the
+ * "Invitations" tab of the workspace settings.
  */
 export async function loadMorePendingWorkspaceInvitations(
   workspaceId: string,
@@ -1519,12 +1522,12 @@ export async function loadMorePendingWorkspaceInvitations(
 }
 
 /**
- * Eine weitere Seite Mitglieder fürs Infinite Scroll in `WorkspaceMembers`.
+ * One more page of members for infinite scroll in `WorkspaceMembers`.
  *
- * `setCurrentWorkspaceId` zuerst: der Request-Store (`lib/current-workspace`)
- * ist request-scoped und wird sonst nur von der Route gesät — eine Server
- * Function, die eine spätere Anfrage ist als das ursprüngliche Rendern der
- * Seite, startet ohne ihn.
+ * `setCurrentWorkspaceId` first: the request store
+ * (`lib/current-workspace`) is request-scoped and is otherwise only seeded
+ * by the route — a Server Function, being a later request than the page's
+ * original render, starts without it.
  */
 export async function loadMoreWorkspaceMembers(
   workspaceId: string,
@@ -1537,7 +1540,7 @@ export async function loadMoreWorkspaceMembers(
     : { items: [], nextCursor: null };
 }
 
-/** Spiegelbild von `loadMoreWorkspaceMembers`, für `WorkspaceTeams`. */
+/** Mirror image of `loadMoreWorkspaceMembers`, for `WorkspaceTeams`. */
 export async function loadMoreWorkspaceTeams(
   workspaceId: string,
   cursor: string,
@@ -1549,7 +1552,7 @@ export async function loadMoreWorkspaceTeams(
     : { items: [], nextCursor: null };
 }
 
-/** Eine weitere Seite der eigenen Workspace-Labels fürs Infinite Scroll in
+/** One more page of the workspace's own labels for infinite scroll in
  * `WorkspaceLabels`. */
 export async function loadMoreWorkspaceLabels(
   workspaceId: string,
@@ -1562,7 +1565,7 @@ export async function loadMoreWorkspaceLabels(
     : { items: [], nextCursor: null };
 }
 
-/** Spiegelbild von `loadMoreWorkspaceLabels`, für die geerbten Projekt-Labels. */
+/** Mirror image of `loadMoreWorkspaceLabels`, for the inherited project labels. */
 export async function loadMoreWorkspaceProjectLabels(
   workspaceId: string,
   cursor: string,
@@ -1575,8 +1578,8 @@ export async function loadMoreWorkspaceProjectLabels(
 }
 
 /**
- * Eine weitere Seite fürs Infinite Scroll in `WorkspaceProjects` — für die
- * eine Liste ohne `seesAllProjects`.
+ * One more page for infinite scroll in `WorkspaceProjects` — for the
+ * single list without `seesAllProjects`.
  */
 export async function loadMoreWorkspaceProjects(
   workspaceId: string,
@@ -1589,8 +1592,8 @@ export async function loadMoreWorkspaceProjects(
     : { items: [], nextCursor: null };
 }
 
-/** Spiegelbild von `loadMoreWorkspaceProjects`, für die offenen Projekte
- * bei `seesAllProjects`. */
+/** Mirror image of `loadMoreWorkspaceProjects`, for the public projects
+ * under `seesAllProjects`. */
 export async function loadMorePublicWorkspaceProjects(
   workspaceId: string,
   cursor: string,
@@ -1602,7 +1605,7 @@ export async function loadMorePublicWorkspaceProjects(
     : { items: [], nextCursor: null };
 }
 
-/** Spiegelbild von `loadMorePublicWorkspaceProjects`, für die privaten. */
+/** Mirror image of `loadMorePublicWorkspaceProjects`, for the private ones. */
 export async function loadMorePrivateWorkspaceProjects(
   workspaceId: string,
   cursor: string,

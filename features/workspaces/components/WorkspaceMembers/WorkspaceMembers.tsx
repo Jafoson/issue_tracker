@@ -29,20 +29,20 @@ import styles from "./workspaceMembers.module.scss";
 
 interface Props extends WorkspaceMembersView {
   workspaceId: string;
-  /** Lädt die nächste Seite ab einem Cursor (`loadMoreWorkspaceMembers`,
-   * `features/workspaces/actions.ts`, an `workspaceId` gebunden). */
+  /** Loads the next page from a cursor (`loadMoreWorkspaceMembers`,
+   * `features/workspaces/actions.ts`, bound to `workspaceId`). */
   loadMore: (
     cursor: string,
   ) => Promise<{ items: WorkspaceMemberRow[]; nextCursor: string | null }>;
 }
 
 /**
- * Wer im Workspace ist, mit welcher Rolle und in welchen Teams.
+ * Who's in the workspace, with which role, and in which teams.
  *
- * Das Gegenstück zu `ProjectMembers` eine Ebene höher: dort entscheidet die
- * Projektrolle über ein Projekt, hier die Workspace-Rolle über die Hülle, in
- * der alle Projekte liegen. Was sich anfassen lässt, sagt der Server je Zeile
- * (`manageable`) — Rang und Owner-Schutz gehören nicht in den Client.
+ * The counterpart to `ProjectMembers` one level up: there, the project role
+ * governs a project; here, the workspace role governs the shell that
+ * contains all the projects. What's touchable is decided by the server per
+ * row (`manageable`) — rank and owner protection don't belong on the client.
  */
 export function WorkspaceMembers({
   rows,
@@ -67,9 +67,9 @@ export function WorkspaceMembers({
     loadMore,
   });
 
-  // `setMemberRole` und `removeMember` werfen, statt Fehler zurückzugeben —
-  // sie hängen an Zeilenaktionen. Hier wird der Wurf abgefangen, damit die
-  // Seite nicht in ihre Fehlergrenze läuft.
+  // `setMemberRole` and `removeMember` throw instead of returning errors —
+  // they're wired up to row actions. The throw is caught here so the page
+  // doesn't hit its error boundary.
   const run = (action: () => Promise<unknown>, failure: string) =>
     startTransition(async () => {
       try {
@@ -91,8 +91,9 @@ export function WorkspaceMembers({
     ));
 
   const remove = async (row: WorkspaceMemberRow) => {
-    // Jemanden aus dem Workspace zu nehmen nimmt ihn aus allen seinen
-    // Projekten. Das steht in der Rückfrage, weil es der eigentliche Vorgang ist.
+    // Removing someone from the workspace also removes them from all of
+    // its projects. That's in the confirmation dialog because it's the
+    // actual consequence of the action.
     const ok = await confirm({
       title: t("workspaceMembers.removeTitle", { name: fullName(row.user) }),
       description: t("workspaceMembers.removeDesc"),
@@ -188,8 +189,8 @@ export function WorkspaceMembers({
       id: "role",
       header: t("fields.role"),
       width: "minmax(150px, max-content)",
-      // Nach Rang, nicht nach Namen: die Rollen stehen in einer Ordnung,
-      // und „Owner vor Member" ist die, die jemand hier sucht.
+      // By rank, not by name: the roles have an inherent order, and
+      // "Owner before Member" is the one someone is looking for here.
       sortValue: (row) => row.roleRank,
       cell: roleCell,
     },

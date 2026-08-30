@@ -49,31 +49,31 @@ const items: SlashCommandItem[] = [
 const ids = (query: string) => filterSlashItems(items, query).map((i) => i.id);
 
 describe("filterSlashItems", () => {
-  test("findet über die Beschriftung", () => {
+  test("finds via the label", () => {
     expect(ids("trennlinie")).toContain("horizontalRule");
     expect(ids("zitat")).toContain("blockquote");
   });
 
-  test("findet über den englischen Begriff", () => {
+  test("finds via the English term", () => {
     // That's exactly the point: the label is German, the search term is English.
     expect(ids("divider")).toContain("horizontalRule");
     expect(ids("quote")).toContain("blockquote");
     expect(ids("numbered")).toContain("orderedList");
   });
 
-  test("findet über Kurzformen", () => {
+  test("finds via short forms", () => {
     expect(ids("hr")).toContain("horizontalRule");
     expect(ids("h1")).toContain("heading1");
     expect(ids("ol")).toContain("orderedList");
   });
 
-  test("kommt ohne Umlaute aus", () => {
+  test("works without umlauts", () => {
     // People searching rarely type umlauts.
     expect(ids("uberschrift")).toContain("heading1");
     expect(ids("überschrift")).toContain("heading1");
   });
 
-  test("stellt Treffer am Wortanfang nach vorn", () => {
+  test("ranks matches at the start of a word first", () => {
     // Deliberately written so the mid-word match is listed first — the
     // sorting has to push it back.
     const beide: SlashCommandItem[] = [
@@ -86,7 +86,7 @@ describe("filterSlashItems", () => {
     ]);
   });
 
-  test("behält innerhalb eines Rangs die vorgegebene Reihenfolge", () => {
+  test("keeps the given order within a rank", () => {
     // `sort` is stable — the order from `slashItems` is preserved.
     const gleichrangig: SlashCommandItem[] = [
       { id: "eins", label: "Liste A", run: () => {} },
@@ -98,12 +98,12 @@ describe("filterSlashItems", () => {
     ]);
   });
 
-  test("lässt die Liste ohne Eingabe unverändert", () => {
+  test("leaves the list unchanged with no input", () => {
     expect(filterSlashItems(items, "")).toBe(items);
     expect(filterSlashItems(items, "   ")).toBe(items);
   });
 
-  test("nimmt beim Suchen die Gruppenköpfe weg", () => {
+  test("removes the group headers while searching", () => {
     const mitGruppe: SlashCommandItem[] = [
       { id: "table", label: "Tabelle", group: "Blöcke", run: () => {} },
     ];
@@ -114,13 +114,13 @@ describe("filterSlashItems", () => {
     expect(filterSlashItems(mitGruppe, "tab")[0].group).toBeUndefined();
   });
 
-  test("gibt bei fehlendem Treffer nichts zurück", () => {
+  test("returns nothing when there is no match", () => {
     expect(ids("xyz")).toEqual([]);
   });
 });
 
 describe("normalize", () => {
-  test("legt Groß-, Klein- und Umlautschreibung zusammen", () => {
+  test("folds upper case, lower case, and umlaut spelling together", () => {
     expect(normalize("Überschrift")).toBe("uberschrift");
     expect(normalize("  Aufzählung ")).toBe("aufzahlung");
     expect(normalize("Divider")).toBe("divider");
@@ -128,7 +128,7 @@ describe("normalize", () => {
 });
 
 describe("modKey", () => {
-  test("nennt die Taste so, wie sie auf dem System heißt", () => {
+  test("names the key the way the system does", () => {
     // The test runs without `navigator` — "Ctrl" is the safe assumption there.
     expect(["⌘", "Strg", "Ctrl"]).toContain(modKey());
   });

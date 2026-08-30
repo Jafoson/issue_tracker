@@ -43,14 +43,14 @@ import { fullName } from "@/lib/utils/string";
 import { WorkspaceProfileView } from "./components/WorkspaceProfileView";
 import styles from "./workspaceDashboard.module.scss";
 
-/** Wie beim Projekt, nur ohne gespeicherte Vorgabe: die Route selbst sagt, welche Ansicht offen ist. */
+/** Like the project, just without a stored default: the route itself says which view is open. */
 type WorkspaceView = "dashboard" | "profile";
 
 interface Props extends WorkspaceDashboardView {
   view: WorkspaceView;
-  /** Basisadresse für Aufgaben: `/<workspace>/issue`. */
+  /** Base address for issues: `/<workspace>/issue`. */
   issueBase: string;
-  /** Adressen der Nachbarbereiche und der Gegenansicht. */
+  /** Addresses of the neighboring areas and the counterpart view. */
   links: {
     dashboard: string;
     overview: string;
@@ -58,10 +58,10 @@ interface Props extends WorkspaceDashboardView {
     members: string;
     teams: string;
     settings: string;
-    /** Die volle, filterbare Liste — die Aktivitäts-Karte der Übersicht zeigt nur einen Ausschnitt. */
+    /** The full, filterable list — the overview's activity card shows only an excerpt. */
     activity: string;
   };
-  /** Für die Aktivitäts-Karte der Übersicht — bereits auf `audit.view` gefiltert (`getWorkspaceActivity`). */
+  /** For the overview's activity card — already filtered by `audit.view` (`getWorkspaceActivity`). */
   activity: ActivityView;
 }
 
@@ -72,16 +72,16 @@ const REASON_ICONS = {
 } as const;
 
 /**
- * Die Startseite eines Workspace, in zwei Ansichten — dasselbe Paar wie bei
- * `ProjectDashboard` eine Ebene tiefer, nur als zwei eigene Routen statt eines
- * Umschalters an einer Adresse: die Seitenleiste führt hier zwei eigene
- * Navlinks, „Dashboard" und „Übersicht", nicht einen gemeinsamen. Der
- * Umschalter oben bleibt trotzdem — er wechselt nur die Route, statt nur die
- * Adresse zu ergänzen (`urlWith`).
+ * A workspace's home page, in two views — the same pair as `ProjectDashboard`
+ * one level down, just as two separate routes instead of a toggle on one
+ * address: the sidebar here has two separate nav links, "Dashboard" and
+ * "Overview", not one shared one. The toggle at the top still exists — it
+ * just switches the route instead of only appending to the address
+ * (`urlWith`).
  *
- * Kein gespeichertes `view`: anders als beim Projekt gibt es hier keine Zeile,
- * die sich „zuletzt offen" merken müsste — beide Routen haben ihren eigenen
- * Navlink, und wer draufklickt, meint genau die eine.
+ * No stored `view`: unlike the project, there's no row here that would need
+ * to remember "last open" — both routes have their own nav link, and
+ * whoever clicks one means exactly that one.
  */
 export function WorkspaceDashboard({
   workspace,
@@ -102,7 +102,7 @@ export function WorkspaceDashboard({
   const [isPending, startTransition] = useTransition();
   const [asTable, setAsTable] = useState(false);
 
-  /** Übersicht kennt keinen Zeitraum und bekommt die blanke Adresse; das Dashboard trägt ihn immer. */
+  /** The overview has no time period and gets the bare address; the dashboard always carries one. */
   const urlWith = (
     nextView: WorkspaceView,
     patch?: { range?: RangeKey; scope?: DashboardScope },
@@ -377,9 +377,9 @@ export function WorkspaceDashboard({
 
   const isDashboard = view === "dashboard";
 
-  // Wie in `ProjectDashboard`: Auslastung ist eine Verteilung über mehrere
-  // Personen und hat bezogen auf nur die eigene keine Antwort mehr. Nur die
-  // Zeichnung blendet ihn aus, die gespeicherte Anordnung bleibt unberührt.
+  // As in `ProjectDashboard`: workload is a distribution across multiple
+  // people and no longer has an answer when narrowed to just yourself. Only
+  // the rendering hides it; the saved layout stays untouched.
   const visibleOrder =
     data.scope === "mine" ? order.filter((key) => key !== "workload") : order;
 

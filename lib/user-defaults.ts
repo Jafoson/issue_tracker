@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 
-// Farbpalette für generierte Avatare/Akzente neuer User (Credentials & OAuth).
+// Color palette for generated avatars/accents of new users (credentials & OAuth).
 const USER_COLORS = [
   "#6e63e6",
   "#3b9d6e",
@@ -12,15 +12,15 @@ const USER_COLORS = [
   "#cf9a3b",
 ];
 
-/** Zufällige Akzentfarbe für einen neuen User. */
+/** Random accent color for a new user. */
 export function pickUserColor(): string {
   return USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 }
 
 /**
- * Erzeugt einen eindeutigen `handle` aus E-Mail (bevorzugt) oder Name. Prüft die
- * DB und hängt bei Kollision einen Zähler an. Genutzt von Credentials-Register
- * und dem Auth.js-Adapter-createUser (OAuth).
+ * Generates a unique `handle` from an email (preferred) or a name. Checks
+ * the DB and appends a counter on collision. Used by credentials
+ * registration and the Auth.js adapter's createUser (OAuth).
  */
 export async function generateHandle(source: string): Promise<string> {
   const base =

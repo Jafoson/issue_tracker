@@ -66,18 +66,19 @@ export const DEFAULT_ISSUE_TYPES = [
 ];
 
 /**
- * Die Status, die eine Aufgabe als erledigt gelten lassen — abgeschlossen oder
- * verworfen. Alles andere ist offen.
+ * The statuses that count an issue as done — completed or canceled.
+ * Everything else is open.
  *
- * Steht hier und nicht dreimal einzeln, weil daran mehr hängt als eine Zählung:
- * `Issue.closedAt` wird an genau dieser Grenze gesetzt und wieder geleert
- * (`features/issues/actions.ts`), und das Dashboard misst Durchsatz und
- * Durchlaufzeit daran. Zwei Listen, die auseinanderlaufen, hießen: eine Aufgabe
- * gilt als offen und trägt trotzdem ein Abschlussdatum.
+ * Lives here instead of being repeated three times separately, because more
+ * hangs off it than a count: `Issue.closedAt` gets set and cleared at
+ * exactly this boundary (`features/issues/actions.ts`), and the dashboard
+ * measures throughput and cycle time against it. Two lists drifting apart
+ * would mean: an issue counts as open while still carrying a completion
+ * date.
  *
- * Verworfen zählt mit dazu. Eine verworfene Aufgabe ist keine Leistung, aber sie
- * ist auch keine Arbeit mehr — stünde sie weiter im Rückstand, wüchse der um
- * genau das, was jemand bewusst weggeräumt hat.
+ * Canceled counts too. A canceled issue isn't an accomplishment, but it's
+ * also no longer work — if it kept counting toward the backlog, that
+ * backlog would grow by exactly what someone deliberately cleared away.
  */
 export const CLOSED_STATUSES = ["done", "canceled"] as const;
 
@@ -85,5 +86,5 @@ export function isClosedStatus(status: string): boolean {
   return (CLOSED_STATUSES as readonly string[]).includes(status);
 }
 
-// Default-Rollen & Permissions liegen in lib/rbac.ts (Single Source of Truth)
-// und werden über lib/rbac-provision.ts pro Workspace angelegt.
+// Default roles & permissions live in lib/rbac.ts (single source of truth)
+// and are created per workspace via lib/rbac-provision.ts.

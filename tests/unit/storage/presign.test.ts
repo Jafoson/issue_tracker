@@ -50,7 +50,7 @@ afterEach(clearEnv);
 describe("presignPutUrl()", () => {
   beforeEach(reset);
 
-  it("liefert null ohne Konfiguration", async () => {
+  it("returns null without configuration", async () => {
     clearEnv();
     const url = await presignPutUrl("avatars", "users/u-1/a.png", {
       contentType: "image/png",
@@ -59,7 +59,7 @@ describe("presignPutUrl()", () => {
     expect(mockClient.sign).not.toHaveBeenCalled();
   });
 
-  it("liefert null ohne konfigurierten Client", async () => {
+  it("returns null without a configured client", async () => {
     mockGetClient.mockReturnValue(null);
     const url = await presignPutUrl("avatars", "users/u-1/a.png", {
       contentType: "image/png",
@@ -67,7 +67,7 @@ describe("presignPutUrl()", () => {
     expect(url).toBeNull();
   });
 
-  it("signiert eine Path-Style-URL mit X-Amz-Expires=120 und Content-Type-Header", async () => {
+  it("signs a path-style URL with X-Amz-Expires=120 and a Content-Type header", async () => {
     mockClient.sign.mockResolvedValue({ url: "https://signed.example/put" });
 
     const url = await presignPutUrl("avatars", "users/u-1/a.png", {
@@ -86,7 +86,7 @@ describe("presignPutUrl()", () => {
     });
   });
 
-  it('kodiert Sonderzeichen im Key, lässt "/" aber als Pfadtrenner stehen', async () => {
+  it('encodes special characters in the key, but leaves "/" as a path separator', async () => {
     mockClient.sign.mockResolvedValue({ url: "https://signed.example/put" });
     await presignPutUrl("avatars", "users/u 1/a b.png", {
       contentType: "image/png",
@@ -101,12 +101,12 @@ describe("presignPutUrl()", () => {
 describe("presignGetUrl()", () => {
   beforeEach(reset);
 
-  it("liefert null ohne Konfiguration", async () => {
+  it("returns null without configuration", async () => {
     clearEnv();
     expect(await presignGetUrl("avatars", "users/u-1/a.png")).toBeNull();
   });
 
-  it("signiert eine GET-URL mit X-Amz-Expires=3600", async () => {
+  it("signs a GET URL with X-Amz-Expires=3600", async () => {
     mockClient.sign.mockResolvedValue({ url: "https://signed.example/get" });
 
     const url = await presignGetUrl("avatars", "users/u-1/a.png");
@@ -123,14 +123,14 @@ describe("presignGetUrl()", () => {
 describe("objectExists()", () => {
   beforeEach(reset);
 
-  it("ist false ohne Konfiguration", async () => {
+  it("is false without configuration", async () => {
     clearEnv();
     expect(await objectExists("avatars", "users/u-1/a.png")).toEqual({
       exists: false,
     });
   });
 
-  it("liest die Größe aus content-length bei einer erfolgreichen Antwort", async () => {
+  it("reads the size from content-length on a successful response", async () => {
     mockClient.fetch.mockResolvedValue(
       new Response(null, {
         status: 200,
@@ -143,14 +143,14 @@ describe("objectExists()", () => {
     });
   });
 
-  it("ist false bei einer Fehlerantwort (z.B. 404)", async () => {
+  it("is false on an error response (e.g. 404)", async () => {
     mockClient.fetch.mockResolvedValue(new Response(null, { status: 404 }));
     expect(await objectExists("avatars", "users/u-1/a.png")).toEqual({
       exists: false,
     });
   });
 
-  it("ist false, wenn fetch wirft", async () => {
+  it("is false when fetch throws", async () => {
     mockClient.fetch.mockRejectedValue(new Error("network error"));
     expect(await objectExists("avatars", "users/u-1/a.png")).toEqual({
       exists: false,
@@ -161,20 +161,20 @@ describe("objectExists()", () => {
 describe("deleteObjectSafely()", () => {
   beforeEach(reset);
 
-  it("tut nichts ohne Konfiguration", async () => {
+  it("does nothing without configuration", async () => {
     clearEnv();
     await deleteObjectSafely("avatars", "users/u-1/a.png");
     expect(mockClient.fetch).not.toHaveBeenCalled();
   });
 
-  it("wirft nicht, wenn das Löschen fehlschlägt", async () => {
+  it("does not throw when the delete fails", async () => {
     mockClient.fetch.mockRejectedValue(new Error("boom"));
     await expect(
       deleteObjectSafely("avatars", "users/u-1/a.png"),
     ).resolves.toBeUndefined();
   });
 
-  it("ruft DELETE auf der Path-Style-URL auf", async () => {
+  it("calls DELETE on the path-style URL", async () => {
     mockClient.fetch.mockResolvedValue(new Response(null, { status: 204 }));
     await deleteObjectSafely("avatars", "users/u-1/a.png");
     const [url, opts] = mockClient.fetch.mock.calls[0];

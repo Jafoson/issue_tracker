@@ -65,7 +65,7 @@ beforeEach(() => {
 });
 
 describe("updateLabel()", () => {
-  it("schreibt Namen und Farbe", async () => {
+  it("writes name and color", async () => {
     const result = await updateLabel("l-1", { name: "Fehler", color: "#f00" });
 
     expect(result).toEqual({ ok: true });
@@ -75,7 +75,7 @@ describe("updateLabel()", () => {
     });
   });
 
-  it("schneidet Leerraum am Namen ab", async () => {
+  it("trims whitespace from the name", async () => {
     await updateLabel("l-1", { name: "  Fehler  " });
 
     const call = mockLabelUpdate.mock.calls[0][0] as {
@@ -84,7 +84,7 @@ describe("updateLabel()", () => {
     expect(call.data.name).toBe("Fehler");
   });
 
-  it("lässt den Slug unangetastet — er steckt in Filter-URLs", async () => {
+  it("leaves the slug untouched — it's embedded in filter URLs", async () => {
     await updateLabel("l-1", { name: "Ganz anders" });
 
     const call = mockLabelUpdate.mock.calls[0][0] as {
@@ -93,7 +93,7 @@ describe("updateLabel()", () => {
     expect(call.data.slug).toBeUndefined();
   });
 
-  it("schreibt nur, was übergeben wurde", async () => {
+  it("writes only what was passed", async () => {
     await updateLabel("l-1", { color: "#0f0" });
 
     expect(mockLabelUpdate).toHaveBeenCalledWith({
@@ -102,14 +102,14 @@ describe("updateLabel()", () => {
     });
   });
 
-  it("lehnt einen leeren Namen ab", async () => {
+  it("rejects an empty name", async () => {
     const result = await updateLabel("l-1", { name: "   " });
 
     expect(result).toEqual({ error: "Name is required." });
     expect(mockLabelUpdate).not.toHaveBeenCalled();
   });
 
-  it("meldet ein verschwundenes Label, statt zu werfen", async () => {
+  it("reports a vanished label instead of throwing", async () => {
     mockLabelFindUnique.mockResolvedValue(null);
 
     const result = await updateLabel("l-weg", { name: "Fehler" });
@@ -118,7 +118,7 @@ describe("updateLabel()", () => {
     expect(mockLabelUpdate).not.toHaveBeenCalled();
   });
 
-  it("schreibt nichts ohne label.update", async () => {
+  it("writes nothing without label.update", async () => {
     mockHasPermission.mockResolvedValue(false);
 
     const result = await updateLabel("l-1", { name: "Fehler" });
@@ -129,7 +129,7 @@ describe("updateLabel()", () => {
 
   // Same key, two levels: for a project label the project role decides,
   // for a workspace-wide one the workspace role does.
-  it("prüft ein Projekt-Label im Projekt-Scope", async () => {
+  it("checks a project label in the project scope", async () => {
     await updateLabel("l-1", { name: "Fehler" });
 
     expect(mockHasPermission).toHaveBeenCalledWith("label.update", {
@@ -137,7 +137,7 @@ describe("updateLabel()", () => {
     });
   });
 
-  it("prüft ein Workspace-Label im Workspace-Scope", async () => {
+  it("checks a workspace label in the workspace scope", async () => {
     mockLabelFindUnique.mockResolvedValue(WORKSPACE_LABEL);
 
     await updateLabel("l-2", { name: "Fehler" });
@@ -147,14 +147,14 @@ describe("updateLabel()", () => {
     });
   });
 
-  it("ruft revalidatePath auf", async () => {
+  it("calls revalidatePath", async () => {
     await updateLabel("l-1", { name: "Fehler" });
     expect(mockRevalidate).toHaveBeenCalledWith("/", "layout");
   });
 });
 
 describe("deleteLabel()", () => {
-  it("löscht das Label", async () => {
+  it("deletes the label", async () => {
     const result = await deleteLabel("l-1");
 
     expect(result).toEqual({ ok: true });
@@ -163,7 +163,7 @@ describe("deleteLabel()", () => {
 
   // `Issue.labels` is an ID array with no foreign key — if the ID were left
   // in place, it would point nowhere and the filters would keep counting it.
-  it("nimmt die ID aus den Issues, an denen sie hängt", async () => {
+  it("removes the ID from the issues it's attached to", async () => {
     mockIssueFindMany.mockResolvedValue([
       { id: "i-1", labels: ["l-1", "l-9"] },
       { id: "i-2", labels: ["l-1"] },
@@ -181,7 +181,7 @@ describe("deleteLabel()", () => {
     });
   });
 
-  it("räumt und löscht in einer Transaktion", async () => {
+  it("cleans up and deletes in a single transaction", async () => {
     mockIssueFindMany.mockResolvedValue([{ id: "i-1", labels: ["l-1"] }]);
 
     await deleteLabel("l-1");
@@ -191,14 +191,14 @@ describe("deleteLabel()", () => {
     expect(mockTransaction.mock.calls[0][0]).toHaveLength(2);
   });
 
-  it("kommt ohne betroffene Issues aus", async () => {
+  it("works fine with no affected issues", async () => {
     await deleteLabel("l-1");
 
     expect(mockIssueUpdate).not.toHaveBeenCalled();
     expect(mockLabelDelete).toHaveBeenCalled();
   });
 
-  it("meldet ein verschwundenes Label, statt zu werfen", async () => {
+  it("reports a vanished label instead of throwing", async () => {
     mockLabelFindUnique.mockResolvedValue(null);
 
     const result = await deleteLabel("l-weg");
@@ -207,7 +207,7 @@ describe("deleteLabel()", () => {
     expect(mockLabelDelete).not.toHaveBeenCalled();
   });
 
-  it("löscht nichts ohne label.delete", async () => {
+  it("deletes nothing without label.delete", async () => {
     mockHasPermission.mockResolvedValue(false);
 
     const result = await deleteLabel("l-1");
@@ -217,7 +217,7 @@ describe("deleteLabel()", () => {
     expect(mockIssueFindMany).not.toHaveBeenCalled();
   });
 
-  it("prüft ein Workspace-Label im Workspace-Scope", async () => {
+  it("checks a workspace label in the workspace scope", async () => {
     mockLabelFindUnique.mockResolvedValue(WORKSPACE_LABEL);
 
     await deleteLabel("l-2");
@@ -227,7 +227,7 @@ describe("deleteLabel()", () => {
     });
   });
 
-  it("ruft revalidatePath auf", async () => {
+  it("calls revalidatePath", async () => {
     await deleteLabel("l-1");
     expect(mockRevalidate).toHaveBeenCalledWith("/", "layout");
   });

@@ -127,10 +127,10 @@
   gap: 6px;
 }
 
-/* `Input` (size sm) und `Button` (size sm) haben im Design-System
-   unterschiedliche Höhen (--control-h-sm vs. der feste sm-Wert des Buttons)
-   — der Knopf übernimmt hier dieselbe Variable, damit beide nebeneinander
-   bündig abschließen. */
+/* `Input` (size sm) and `Button` (size sm) have different heights in the
+   design system (--control-h-sm vs. the button's fixed sm value) — the
+   button adopts the same variable here so both line up flush next to each
+   other. */
 .testInput {
   width: 200px;
 }

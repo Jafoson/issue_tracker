@@ -32,7 +32,7 @@ describe("getLabels()", () => {
     mockLabelFindMany.mockReset();
   });
 
-  it("sucht Labels nach workspaceId sortiert nach Name", async () => {
+  it("looks up labels by workspaceId sorted by name", async () => {
     mockLabelFindMany.mockResolvedValue([]);
     await getLabels("ws-1");
     expect(mockLabelFindMany).toHaveBeenCalledWith({
@@ -48,7 +48,7 @@ describe("getLabels()", () => {
     });
   });
 
-  it("lässt Projekt-Labels unsichtbarer Projekte weg", async () => {
+  it("leaves out project labels of invisible projects", async () => {
     mockVisibleProjectIds.mockResolvedValueOnce(new Set<string>());
     mockLabelFindMany.mockResolvedValue([]);
     await getLabels("ws-1");
@@ -58,7 +58,7 @@ describe("getLabels()", () => {
     ]);
   });
 
-  it("mappt DB-Rows auf Label-Objekte mit projectId", async () => {
+  it("maps DB rows to label objects with projectId", async () => {
     mockLabelFindMany.mockResolvedValue([
       {
         id: "l-1",
@@ -104,7 +104,7 @@ describe("getLabels()", () => {
     ]);
   });
 
-  it("gibt projectId als null zurück wenn das Feld in DB null ist", async () => {
+  it("returns projectId as null when the field is null in the DB", async () => {
     mockLabelFindMany.mockResolvedValue([
       {
         id: "l-1",
@@ -121,7 +121,7 @@ describe("getLabels()", () => {
     expect(label.projectId).toBeNull();
   });
 
-  it("gibt leeres Array zurück wenn keine Labels vorhanden", async () => {
+  it("returns an empty array when there are no labels", async () => {
     mockLabelFindMany.mockResolvedValue([]);
     const result = await getLabels("ws-1");
     expect(result).toEqual([]);

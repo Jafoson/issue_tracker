@@ -12,47 +12,48 @@ export interface SettingsNavSubject {
   id: string;
   name: string;
   color: string;
-  /** Hochgeladenes Bild statt des Farbpunkts, z. B. ein Workspace-Avatar. */
+  /** Uploaded image instead of the color dot, e.g. a workspace avatar. */
   image?: string;
-  /** Der gleiche Bereich beim Geschwister — in der Regel dessen Allgemein-Seite. */
+  /** The equivalent section on the sibling — usually its General page. */
   href: string;
   /**
-   * Überschrift, unter der die Zeile steht — für Projekte der Workspace, in dem
-   * sie liegen. Ohne Angabe steht die Liste ungegliedert da. Gruppiert wird nach
-   * Reihenfolge, nicht nach Sammeln: die Liste kommt sortiert herein.
+   * Heading under which the row sits — for projects, the workspace they
+   * live in. Without one, the list appears ungrouped. Grouping follows
+   * order, not collection: the list arrives already sorted.
    */
   group?: string;
 }
 
 interface Props {
-  /** Wessen Einstellungen gerade offen sind — nur fürs Auge des Auslösers. */
+  /** Whose settings are currently open — only for the trigger's own display. */
   name: string;
   color: string;
-  /** Hochgeladenes Bild statt des Farbpunkts im Auslöser. */
+  /** Uploaded image instead of the color dot in the trigger. */
   image?: string;
   /**
-   * Wohin man von hier springen kann, das offene Element eingeschlossen.
-   * Bereits gefiltert: das Layout gibt nur weiter, was der Benutzer sehen darf.
+   * Where you can jump to from here, including the currently open entry.
+   * Already filtered: the layout only passes along what the user is
+   * allowed to see.
    */
   siblings: SettingsNavSubject[];
-  /** Überschrift über der Liste, z. B. „Projekt". */
+  /** Heading above the list, e.g. "Project". */
   label: string;
 }
 
 /**
- * Der Kopf der Einstellungsleiste als Wechsler — dasselbe wie der Workspace-
- * Wechsler in der Seitenleiste, nur eine Ebene tiefer und mit dem Ziel, im
- * gleichen Bereich zu bleiben.
+ * The settings nav's header as a switcher — the same as the workspace
+ * switcher in the sidebar, just one level deeper and with the goal of
+ * staying within the same section.
  *
- * Wer die Einstellungen eines Projekts offen hat, will von dort meist zu denen
- * eines anderen und nicht auf dessen Board; der Weg über Seitenleiste, Projekt,
- * Einstellungen sind drei Klicks für einen Wechsel. Deshalb führen die Zeilen
- * hier auf `…/settings` und nicht auf die Startseite des Geschwisters.
+ * Whoever has a project's settings open usually wants to get from there to
+ * another project's settings, not to its board; the path via sidebar,
+ * project, settings is three clicks for one switch. That's why the rows
+ * here lead to `…/settings` rather than the sibling's home page.
  *
- * Die Zeilen sind `NavLink`s wie überall sonst in der Navigation: echte Links
- * (Mittelklick, neuer Reiter) und dieselbe Markierung des offenen Eintrags nach
- * derselben Regel. Der Auslöser ist ein Knopf, weil er nirgendwohin führt — er
- * klappt nur auf.
+ * The rows are `NavLink`s like everywhere else in the navigation: real
+ * links (middle-click, new tab) and the same marking of the open entry
+ * following the same rule. The trigger is a button, because it doesn't
+ * lead anywhere — it only expands.
  */
 export function SettingsSubjectMenu({
   name,
@@ -92,13 +93,14 @@ export function SettingsSubjectMenu({
         onClose={() => setOpen(false)}
         width={228}
       >
-        {/* Reicht die Auswahl über Workspaces hinweg, wird sie lang. Der
-            `Popover` kennt keine Höhe — er verschiebt sich nur, damit er ins
-            Bild passt. Also begrenzt die Liste sich hier selbst. */}
+        {/* When the selection spans across workspaces, it grows long. The
+            `Popover` knows nothing about height — it only repositions
+            itself to fit on screen. So the list caps itself here. */}
         <div className={styles.menuList}>
           {siblings.map((item, i) => {
-            // Die Überschrift steht, wo die Gruppe wechselt. Ohne Gruppen bleibt
-            // es bei der einen ganz oben, die sagt, wovon dies die Auswahl ist.
+            // The heading sits wherever the group changes. Without groups,
+            // it stays at the single one at the top that states what this
+            // is a selection of.
             const heading =
               item.group && item.group !== siblings[i - 1]?.group
                 ? item.group

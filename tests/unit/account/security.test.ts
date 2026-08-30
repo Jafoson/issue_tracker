@@ -40,7 +40,7 @@ function reset() {
 describe("disconnectAccount()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await disconnectAccount("github")).toEqual({
       error: "You must be logged in.",
@@ -48,7 +48,7 @@ describe("disconnectAccount()", () => {
     expect(mockAccountDeleteMany).not.toHaveBeenCalled();
   });
 
-  it("lehnt ab, was gar nicht verbunden ist", async () => {
+  it("rejects something that isn't connected at all", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [{ provider: "google" }],
       authenticators: [{ credentialID: "cred-1" }],
@@ -61,7 +61,7 @@ describe("disconnectAccount()", () => {
 
   // The UI hides the button — but a server function is still an address
   // like any other.
-  it("lässt den letzten Weg herein nicht trennen", async () => {
+  it("doesn't allow disconnecting the last way in", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [{ provider: "github" }],
       authenticators: [],
@@ -70,7 +70,7 @@ describe("disconnectAccount()", () => {
     expect(mockAccountDeleteMany).not.toHaveBeenCalled();
   });
 
-  it("trennt, solange ein Passkey bleibt", async () => {
+  it("disconnects as long as a passkey remains", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [{ provider: "github" }],
       authenticators: [{ credentialID: "cred-1" }],
@@ -81,7 +81,7 @@ describe("disconnectAccount()", () => {
     });
   });
 
-  it("trennt, solange ein anderer Anbieter bleibt", async () => {
+  it("disconnects as long as another provider remains", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [{ provider: "github" }, { provider: "google" }],
       authenticators: [],
@@ -94,7 +94,7 @@ describe("disconnectAccount()", () => {
 describe("removePasskey()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await removePasskey("cred-1")).toEqual({
       error: "You must be logged in.",
@@ -102,7 +102,7 @@ describe("removePasskey()", () => {
     expect(mockAuthenticatorDelete).not.toHaveBeenCalled();
   });
 
-  it("lehnt einen fremden Passkey ab", async () => {
+  it("rejects a passkey belonging to someone else", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [],
       authenticators: [{ credentialID: "cred-2" }],
@@ -115,7 +115,7 @@ describe("removePasskey()", () => {
 
   // No connected provider, only this one passkey — without it no one
   // could get in anymore.
-  it("lässt den letzten Weg herein nicht entfernen", async () => {
+  it("doesn't allow removing the last way in", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [],
       authenticators: [{ credentialID: "cred-1" }],
@@ -124,7 +124,7 @@ describe("removePasskey()", () => {
     expect(mockAuthenticatorDelete).not.toHaveBeenCalled();
   });
 
-  it("entfernt, solange ein anderer Passkey bleibt", async () => {
+  it("removes it as long as another passkey remains", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [],
       authenticators: [{ credentialID: "cred-1" }, { credentialID: "cred-2" }],
@@ -135,7 +135,7 @@ describe("removePasskey()", () => {
     });
   });
 
-  it("entfernt, solange ein verbundener Anbieter bleibt", async () => {
+  it("removes it as long as a connected provider remains", async () => {
     mockUserFindUnique.mockResolvedValue({
       accounts: [{ provider: "github" }],
       authenticators: [{ credentialID: "cred-1" }],

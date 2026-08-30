@@ -27,7 +27,7 @@ function reset() {
 beforeEach(reset);
 
 describe("markNotificationRead()", () => {
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when no one is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
 
     const result = await markNotificationRead("n-1");
@@ -35,7 +35,7 @@ describe("markNotificationRead()", () => {
     expect(mockNotificationUpdateMany).not.toHaveBeenCalled();
   });
 
-  it("markiert nur die eigene, noch ungelesene Zeile", async () => {
+  it("marks only its own, still-unread row", async () => {
     await markNotificationRead("n-1");
 
     expect(mockNotificationUpdateMany.mock.calls[0][0]).toMatchObject({
@@ -48,7 +48,7 @@ describe("markNotificationRead()", () => {
 });
 
 describe("markAllNotificationsRead()", () => {
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when no one is logged in", async () => {
     mockGetSession.mockResolvedValue(null);
 
     const result = await markAllNotificationsRead(WS);
@@ -56,7 +56,7 @@ describe("markAllNotificationsRead()", () => {
     expect(mockNotificationUpdateMany).not.toHaveBeenCalled();
   });
 
-  it("markiert alle ungelesenen der eigenen Sitzung im aktiven Workspace", async () => {
+  it("marks all unread rows of the current session in the active workspace", async () => {
     await markAllNotificationsRead(WS);
 
     expect(mockNotificationUpdateMany.mock.calls[0][0].where).toEqual({

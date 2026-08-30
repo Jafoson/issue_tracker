@@ -14,9 +14,9 @@ async function NavGroupGlobal() {
       href,
       icon: entry.icon,
       label: t(entry.labelKey),
-      // „Meine Aufgaben" haben zwei Ansichten (Board und Liste). Ohne den
-      // Bereich darunter verlöre der Eintrag seine Markierung, sobald man auf
-      // die Liste umschaltet.
+      // "My tasks" has two views (board and list). Without the section
+      // below, the entry would lose its active marking as soon as you
+      // switch to the list.
       ...(entry.section === "my" ? { activeHref: `${href}/*` } : {}),
     };
   });

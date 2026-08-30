@@ -26,20 +26,19 @@ import styles from "./workspaceTeams.module.scss";
 
 interface Props extends WorkspaceTeamsView {
   workspaceId: string;
-  /** Lädt die nächste Seite ab einem Cursor (`loadMoreWorkspaceTeams`,
-   * `features/workspaces/actions.ts`, an `workspaceId` gebunden). */
+  /** Loads the next page from a cursor (`loadMoreWorkspaceTeams`,
+   * `features/workspaces/actions.ts`, bound to `workspaceId`). */
   loadMore: (
     cursor: string,
   ) => Promise<{ items: WorkspaceTeamRow[]; nextCursor: string | null }>;
 }
 
 /**
- * Die Teams des Workspace: wer zusammengehört und woran.
+ * The workspace's teams: who belongs together and what they're working on.
  *
- * Ein Team vergibt keine Rechte — es bündelt Menschen und Projekte, damit man
- * über eine Gruppe sprechen kann statt über sieben Namen. Deshalb steht hier
- * keine Rolle und kein Zugriff, sondern wer dabei ist, was ansteht und wer
- * führt.
+ * A team grants no rights — it bundles people and projects so you can talk
+ * about a group instead of seven names. That's why there's no role and no
+ * access column here, just who's in it, what's pending, and who leads.
  */
 export function WorkspaceTeams({
   rows,
@@ -68,8 +67,8 @@ export function WorkspaceTeams({
     loadMore,
   });
 
-  // Anlegen und Ändern führen durch denselben Dialog: es sind dieselben Felder,
-  // und ein zweiter Dialog wäre eine zweite Stelle, die man pflegen muss.
+  // Creating and editing go through the same dialog: they're the same
+  // fields, and a second dialog would be a second place to maintain.
   const openEditor = (team?: WorkspaceTeamRow) =>
     openModal(({ close }) => (
       <TeamModal
@@ -121,8 +120,9 @@ export function WorkspaceTeams({
     </Button>
   );
 
-  // Der Dialog ist nur dann ein Angebot, wenn er auch etwas bewirken kann —
-  // ohne jedes der drei Rechte bleibt die Zeile eine Auskunft.
+  // The dialog is only worth offering when it can actually change
+  // something — without any of the three permissions, the row stays purely
+  // informational.
   const editable = canUpdate || canManageMembers || canManageProjects;
 
   const columns: TableColumn<WorkspaceTeamRow>[] = [
@@ -149,7 +149,7 @@ export function WorkspaceTeams({
       id: "lead",
       header: t("workspaceTeams.colLead"),
       width: "minmax(150px, max-content)",
-      // Teams ohne Lead ans Ende — das erledigt die leere Angabe von selbst.
+      // Teams without a lead sort to the end — the empty value handles that on its own.
       sortValue: (row) => (row.lead ? fullName(row.lead) : null),
       cell: (row) => (
         <span className={styles.lead}>
@@ -205,8 +205,9 @@ export function WorkspaceTeams({
         ),
     },
     {
-      // Was das Team gerade trägt: offene Aufgaben in seinen Projekten. Die
-      // Zahl gehört dem Team nur mittelbar — sie sagt, wie viel dort ansteht.
+      // What the team is currently carrying: open tasks in its projects.
+      // The number belongs to the team only indirectly — it says how much
+      // is pending there.
       id: "open",
       header: t("workspaceTeams.colOpen"),
       width: "minmax(90px, max-content)",

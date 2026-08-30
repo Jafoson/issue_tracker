@@ -139,15 +139,15 @@ const invite = (over: Partial<{ email: string; role: string }> = {}) =>
     role: over.role ?? "member",
   });
 
-describe("inviteWorkspaceMember() — Zugriffsschutz", () => {
+describe("inviteWorkspaceMember() — access protection", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await invite()).toEqual({ error: "You must be logged in." });
   });
 
-  it("verlangt member.invite im Workspace", async () => {
+  it("requires member.invite in the workspace", async () => {
     mockCan.mockResolvedValue(false);
     expect(await invite()).toEqual({
       error: "You are not allowed to invite people to this workspace.",
@@ -155,7 +155,7 @@ describe("inviteWorkspaceMember() — Zugriffsschutz", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("prüft im Workspace-Kontext", async () => {
+  it("checks in the workspace context", async () => {
     await invite();
     expect(mockCan).toHaveBeenCalledWith(ACTOR, "member.invite", {
       workspaceId: WS,
@@ -163,29 +163,29 @@ describe("inviteWorkspaceMember() — Zugriffsschutz", () => {
   });
 });
 
-describe("inviteWorkspaceMember() — Rolle und Adresse", () => {
+describe("inviteWorkspaceMember() — role and address", () => {
   beforeEach(reset);
 
-  it("lehnt eine unsinnige Adresse ab", async () => {
+  it("rejects a nonsensical address", async () => {
     expect(await invite({ email: "keine-adresse" })).toEqual({
       error: "Please enter a valid email address.",
     });
   });
 
-  it("vergibt die Owner-Rolle nicht", async () => {
+  it("does not hand out the owner role", async () => {
     expect(await invite({ role: "owner" })).toEqual({
       error: "The owner role cannot be handed out.",
     });
   });
 
-  it("lehnt eine unbekannte Rolle ab", async () => {
+  it("rejects an unknown role", async () => {
     mockRoleFindFirst.mockResolvedValue(null);
     expect(await invite({ role: "gibtsnicht" })).toEqual({
       error: "Pick a valid role.",
     });
   });
 
-  it("vergibt keine Rolle über dem eigenen Rang", async () => {
+  it("does not assign a role above one's own rank", async () => {
     mockAccessFor.mockResolvedValue(access(2));
     mockRoleFindFirst.mockResolvedValue({ id: "sys:WORKSPACE:admin", rank: 5 });
     expect(await invite({ role: "admin" })).toEqual({
@@ -194,10 +194,10 @@ describe("inviteWorkspaceMember() — Rolle und Adresse", () => {
   });
 });
 
-describe("inviteWorkspaceMember() — bekanntes Konto", () => {
+describe("inviteWorkspaceMember() — known account", () => {
   beforeEach(reset);
 
-  it("nimmt es ohne Einladung auf — anmelden kann es sich schon", async () => {
+  it("admits it without an invitation — it can already log in", async () => {
     mockUserFindUnique.mockResolvedValue({ id: "u-1" });
 
     const result = await invite();
@@ -215,7 +215,7 @@ describe("inviteWorkspaceMember() — bekanntes Konto", () => {
     });
   });
 
-  it("merkt, wenn die Person schon dabei ist", async () => {
+  it("notices when the person is already a member", async () => {
     mockUserFindUnique.mockResolvedValue({ id: "u-1" });
     mockWorkspaceMemberFindUnique.mockResolvedValue({ userId: "u-1" });
     expect(await invite()).toEqual({
@@ -225,10 +225,10 @@ describe("inviteWorkspaceMember() — bekanntes Konto", () => {
   });
 });
 
-describe("inviteWorkspaceMember() — unbekannte Adresse", () => {
+describe("inviteWorkspaceMember() — unknown address", () => {
   beforeEach(reset);
 
-  it("legt ein Konto ohne Passwort an und stellt einen Token aus", async () => {
+  it("creates an account without a password and issues a token", async () => {
     const result = await invite();
 
     expect(result).toMatchObject({ ok: true });
@@ -246,7 +246,7 @@ describe("inviteWorkspaceMember() — unbekannte Adresse", () => {
     expect(mockTx.invitation.create).toHaveBeenCalled();
   });
 
-  it("normalisiert die Adresse", async () => {
+  it("normalizes the address", async () => {
     await invite({ email: "  ADA@Example.COM " });
     expect(mockUserFindUnique.mock.calls[0][0].where.email).toBe(
       "ada@example.com",
@@ -257,7 +257,7 @@ describe("inviteWorkspaceMember() — unbekannte Adresse", () => {
 describe("inviteWorkspaceMembers()", () => {
   beforeEach(reset);
 
-  it("lädt mehrere Adressen ein und liefert ein Ergebnis pro Zeile", async () => {
+  it("invites several addresses and returns one result per row", async () => {
     mockUserFindUnique.mockImplementation(
       async ({ where }: { where: { email: string } }) =>
         where.email === "bekannt@example.com" ? { id: "u-1" } : null,
@@ -282,7 +282,7 @@ describe("inviteWorkspaceMembers()", () => {
     ).toContain("/invite/");
   });
 
-  it("meldet eine ungültige Adresse nur für diese Zeile, nicht für den ganzen Aufruf", async () => {
+  it("reports an invalid address only for that row, not for the whole call", async () => {
     const result = await inviteWorkspaceMembers({
       workspaceId: WS,
       emails: ["keine-adresse", "gut@example.com"],
@@ -296,7 +296,7 @@ describe("inviteWorkspaceMembers()", () => {
     expect(result.rows[1].result).toMatchObject({ ok: true });
   });
 
-  it("dedupliziert Adressen", async () => {
+  it("deduplicates addresses", async () => {
     const result = await inviteWorkspaceMembers({
       workspaceId: WS,
       emails: ["ada@example.com", "ADA@example.com "],
@@ -307,7 +307,7 @@ describe("inviteWorkspaceMembers()", () => {
     expect(result.rows).toHaveLength(1);
   });
 
-  it("lehnt ab, wenn keine Adresse übergeben wird", async () => {
+  it("rejects when no address is passed", async () => {
     expect(
       await inviteWorkspaceMembers({
         workspaceId: WS,
@@ -317,7 +317,7 @@ describe("inviteWorkspaceMembers()", () => {
     ).toEqual({ error: "Add at least one email address." });
   });
 
-  it("deckelt die Anzahl pro Aufruf", async () => {
+  it("caps the number per call", async () => {
     const emails = Array.from(
       { length: 51 },
       (_, i) => `person${i}@example.com`,
@@ -328,7 +328,7 @@ describe("inviteWorkspaceMembers()", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("prüft Rolle und Berechtigung nur einmal, nicht pro Adresse", async () => {
+  it("checks role and permission only once, not per address", async () => {
     await inviteWorkspaceMembers({
       workspaceId: WS,
       emails: ["a@example.com", "b@example.com", "c@example.com"],

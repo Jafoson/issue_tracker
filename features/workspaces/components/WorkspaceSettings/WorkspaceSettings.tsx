@@ -28,11 +28,11 @@ import { AddLinkDialog } from "./components/AddLinkDialog";
 import styles from "./workspaceSettings.module.scss";
 
 interface Props extends WorkspaceSettingsView {
-  /** Die absolute Adresse des Workspace — fertig zusammengesetzt vom Server. */
+  /** The workspace's absolute address — already assembled by the server. */
   workspaceUrl: string;
 }
 
-/** Eine Einstellung als Zeile: worum es geht, was sie bedeutet, womit man sie ändert. */
+/** A setting as a row: what it's about, what it means, and how you change it. */
 interface SettingRow {
   id: string;
   label: string;
@@ -41,10 +41,10 @@ interface SettingRow {
 }
 
 /**
- * Dasselbe Raster wie in den Projekteinstellungen: links, worum es geht
- * (Beschriftung über Erklärung), rechts, womit man es ändert. Die Erklärung
- * nimmt den freien Platz; jedes Bedienelement steht in derselben festen Breite
- * (`.control`), damit die rechten Kanten eine Linie bilden.
+ * The same grid as in the project settings: left, what it's about (label
+ * above explanation); right, how you change it. The explanation takes the
+ * free space; every control sits at the same fixed width (`.control`), so
+ * the right edges form a line.
  */
 const COLUMNS: TableColumn<SettingRow>[] = [
   {
@@ -66,19 +66,20 @@ const COLUMNS: TableColumn<SettingRow>[] = [
 ];
 
 /**
- * Die Stammdaten eines Workspace: Name, Farbe, Adresse, Löschen.
+ * A workspace's core data: name, color, address, delete.
  *
- * Was jemand darf, kommt fertig vom Server (`canUpdate`, `canDelete`) — die
- * Felder hier bauen keine Rechteregeln nach. Ohne `canUpdate` bleibt die Seite
- * lesbar: sie zeigt, was gilt, nur eben unveränderlich.
+ * What someone is allowed to do arrives ready-made from the server
+ * (`canUpdate`, `canDelete`) — the fields here don't reimplement
+ * permission rules. Without `canUpdate` the page stays readable: it shows
+ * what applies, just not changeable.
  *
- * Name und Farbe teilen sich den Speichern-Knopf im Seitenkopf: wer das eine
- * ändert, sieht meist auch das andere durch, und zwei Knöpfe brauchten dafür
- * zwei Runden zum Server.
+ * Name and color share the save button in the page header: whoever
+ * changes one usually looks over the other too, and two buttons would need
+ * two round trips to the server for that.
  */
-/** Ein Link im Formular — `key` ist die Server-Id oder, für einen frisch im
- * Dialog angelegten, eine clientseitig erzeugte, damit React ihn über
- * Änderungen der Liste hinweg wiedererkennt. */
+/** A link in the form — `key` is the server id, or, for one freshly
+ * created in the dialog, a client-generated one, so React recognizes it
+ * across changes to the list. */
 interface LinkDraft {
   key: string;
   label: string;
@@ -106,9 +107,9 @@ export function WorkspaceSettings({
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Domains schreiben sofort (eigene Server-Aktion, eigene Validierung —
-  // Sperrliste und Eindeutigkeit brauchen eine Serverantwort pro Eintrag), im
-  // Unterschied zu Name/Farbe/Links, die erst der "Speichern"-Knopf schreibt.
+  // Domains write immediately (own server action, own validation —
+  // blocklist and uniqueness need a server response per entry), unlike
+  // name/color/links, which only get written by the "Save" button.
   const [domains, setDomains] = useState<string[]>(workspace.domains);
   const [domainInput, setDomainInput] = useState("");
   const [domainError, setDomainError] = useState("");
@@ -155,8 +156,8 @@ export function WorkspaceSettings({
   const remove = () =>
     run(
       () => deleteWorkspace(workspace.id),
-      // Der Workspace, in dem man stand, gibt es nicht mehr — die Wurzel
-      // sortiert von dort aus in einen verbliebenen oder zum Anlegen.
+      // The workspace you were in no longer exists — the root then routes
+      // you to a remaining one or to creation.
       () => router.push("/"),
     );
 
@@ -210,9 +211,9 @@ export function WorkspaceSettings({
   };
 
   const general: SettingRow[] = [
-    // Der Slug ist zugleich die Id des Workspace: er steht in jeder Adresse und
-    // in jeder verschickten Einladung. Deshalb steht er hier zum Nachlesen und
-    // Mitnehmen, nicht als Feld.
+    // The slug doubles as the workspace's id: it appears in every address
+    // and every invitation sent. That's why it's shown here for reference
+    // and copying, not as an editable field.
     {
       id: "url",
       label: t("workspaceSettings.url"),
@@ -229,8 +230,8 @@ export function WorkspaceSettings({
     },
   ];
 
-  // Kein Bedienelement, nur Zahlen: was im Workspace steckt, sagt vor dem
-  // Löschen mehr als jeder Warnsatz.
+  // No control, just numbers: what's inside the workspace says more before
+  // deletion than any warning sentence could.
   const content: SettingRow[] = [
     {
       id: "projects",
@@ -300,8 +301,8 @@ export function WorkspaceSettings({
         actions={
           canUpdate && (
             <>
-              {/* Verschwindet, sobald wieder etwas geändert wird — die
-                  Bestätigung gehört zum abgeschlossenen Vorgang. */}
+              {/* Disappears as soon as something changes again — the
+                  confirmation belongs to the completed action. */}
               {saved && !dirty && (
                 <span className={styles.saved}>
                   <Icon icon="lucide:check" width={14} />
@@ -380,7 +381,7 @@ export function WorkspaceSettings({
                 }}
               />
             ) : (
-              // Ohne Schreibrecht bleibt von der Farbwahl nur die Farbe.
+              // Without write access, all that's left of the color picker is the color.
               <span
                 role="img"
                 className={styles.colorProof}

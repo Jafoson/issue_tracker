@@ -41,9 +41,9 @@ function mapIssue(
     title: string;
     status: string;
     priority: number;
-    // `JsonValue` aus der Datenbank: was in der Spalte steht, ist erst einmal
-    // beliebiges JSON. `toDoc` macht daraus ein gültiges Dokument — oder ein
-    // leeres, falls die Zeile beschädigt ist.
+    // `JsonValue` from the database: whatever's in the column is arbitrary
+    // JSON at first. `toDoc` turns it into a valid document — or an empty
+    // one, if the row is corrupted.
     description: unknown;
     type: string;
     labels: string[];
@@ -64,8 +64,8 @@ function mapIssue(
     }[];
     shareToken?: string | null;
   },
-  // Für `reactedByMe` — wer nicht eingeloggt ist (öffentliche Aufrufe gibt es
-  // hier nicht, aber der Typ bleibt ehrlich), sieht keine Reaktion als eigene.
+  // For `reactedByMe` — whoever isn't logged in (there are no public calls
+  // here, but the type stays honest) sees no reaction as their own.
   viewerId: string | null,
 ): Issue {
   return {
@@ -96,8 +96,8 @@ function mapIssue(
   };
 }
 
-/** Rohe Reaktionszeilen nach Emoji gruppiert — die Kommentarleiste zeigt nur
- *  die Zusammenfassung, nie die einzelnen Personen dahinter. */
+/** Raw reaction rows grouped by emoji — the comment bar only shows the
+ *  summary, never the individual people behind it. */
 function groupReactions(
   reactions: { userId: string; emoji: string }[],
   viewerId: string | null,
@@ -113,14 +113,14 @@ function groupReactions(
 }
 
 /**
- * Löst die Anhänge eines Issues auf — nur für die beiden echten
- * Detailansicht-Lader (`getIssueById`, `getIssueByRef`), nicht für
- * Board/Liste (`getIssuesByProject`, `getMyIssues`): dort wird die volle
- * Beschreibung nie gerendert, zusätzliche Storage-Aufrufe wären verschwendet.
+ * Resolves an issue's attachments — only for the two genuine detail-view
+ * loaders (`getIssueById`, `getIssueByRef`), not for the board/list
+ * (`getIssuesByProject`, `getMyIssues`): the full description is never
+ * rendered there, so extra storage calls would be wasted.
  *
- * `kind: "file"` braucht eine presignte URL (`resolveAttachmentUrl`, wie bei
- * Avataren pro Render frisch erzeugt, kein Cache); `kind: "link"` trägt die
- * externe Adresse bereits fertig in der Spalte.
+ * `kind: "file"` needs a presigned URL (`resolveAttachmentUrl`, generated
+ * fresh per render like avatars, no cache); `kind: "link"` already carries
+ * the finished external address in the column.
  */
 async function resolveIssueAttachments(
   rows: {
@@ -150,10 +150,10 @@ async function resolveIssueAttachments(
 }
 
 /**
- * Verbindet Anhänge mit dem Issue: baut die Nachschlagetabelle für
- * `withResolvedAttachments` und reichert damit die Beschreibung an. Läuft
- * nach `mapIssue`, weil sie deren `description` (schon `toDoc`-geprüft)
- * braucht.
+ * Connects attachments to the issue: builds the lookup table for
+ * `withResolvedAttachments` and enriches the description with it. Runs
+ * after `mapIssue`, because it needs its `description` (already
+ * `toDoc`-validated).
  */
 function withIssueAttachments(
   issue: Issue,
@@ -179,21 +179,22 @@ function withIssueAttachments(
 
 // ── Cached queries (deduplicated per request) ─────────────────────────────────
 //
-// Jede Abfrage prüft selbst — ein Layout schützt nur die Seiten unter sich, nicht
-// jeden Aufruf einer Funktion (siehe docs/rbac.md, „Enforcement"). Zwei Prüfungen
-// kommen hier vor:
+// Every query checks for itself — a layout only protects the pages beneath
+// it, not every function call (see docs/rbac.md, "Enforcement"). Two checks
+// occur here:
 //
-//   `currentUserCanEnterWorkspace`  gehört die Person überhaupt in den Workspace?
-//   `visibleProjectIds`             welche Projekte darf sie darin sehen?
+//   `currentUserCanEnterWorkspace`  does this person belong in the workspace at all?
+//   `visibleProjectIds`             which projects are they allowed to see in it?
 //
-// Beide fangen leer statt zu werfen: die Abfragen laufen in Server Components,
-// die parallel zum Layout rendern — eine Ausnahme würde dort als 500 landen,
-// bevor das `notFound()` des Layouts greift. Leere Daten führen dagegen über die
-// bestehenden `if (!me) notFound()`-Pfade zum richtigen Ergebnis.
+// Both fail empty instead of throwing: these queries run in server
+// components that render in parallel with the layout — an exception there
+// would surface as a 500 before the layout's `notFound()` can take effect.
+// Empty data, by contrast, leads to the correct result via the existing
+// `if (!me) notFound()` paths.
 
 export const getWorkspace = cache(async (id: string) => {
-  // Gesperrte Workspaces (vom Plattform-Admin suspendiert) sind für den normalen
-  // App-Zugriff nicht auffindbar → die Layouts behandeln sie via notFound().
+  // Suspended workspaces (locked by a platform admin) are unreachable
+  // through normal app access → the layouts handle them via notFound().
   const workspace = await db.workspace.findFirst({
     where: { id, suspended: false },
     select: { id: true, name: true, color: true, avatarKey: true },
@@ -224,9 +225,10 @@ export const getUserWorkspaces = cache(async (userId: string) => {
 
 export const getProjects = cache(
   async (workspaceId: string): Promise<Project[]> => {
-    // Die Projektliste ist die Navigation der ganzen App — was hier fehlt,
-    // taucht auch in Sidebar, TabBar und Suche nicht auf. Deshalb ist sie der
-    // Ort für die Sichtbarkeitsregel, und nicht jede Seite für sich.
+    // The project list is the navigation for the entire app — whatever's
+    // missing here also won't show up in the sidebar, tab bar, or search.
+    // That's why the visibility rule belongs here, not scattered across
+    // every individual page.
     const visible = await visibleProjectIds(workspaceId);
     if (visible.size === 0) return [];
 
@@ -249,9 +251,9 @@ export const getProjects = cache(
 
 export const getMembers = cache(
   async (workspaceId: string): Promise<User[]> => {
-    // Die Mitgliederliste trägt Namen und E-Mail-Adressen — sie gehört niemandem
-    // von außen. `getMe()` liest sie ebenfalls, eine leere Liste führt dort
-    // deshalb geradewegs zum `notFound()` der Seiten.
+    // The member list carries names and email addresses — it's nobody
+    // outside's business. `getMe()` also reads it, so an empty list leads
+    // straight to the pages' `notFound()` there too.
     if (!(await currentUserCanEnterWorkspace(workspaceId))) return [];
 
     const rows = await db.workspaceMember.findMany({
@@ -282,8 +284,8 @@ export const getMembers = cache(
 
 export const getLabels = cache(
   async (workspaceId: string): Promise<Label[]> => {
-    // Workspace-Labels gelten überall, Projekt-Labels nur dort — und ein Projekt,
-    // das jemand nicht sehen darf, verrät auch seine Labels nicht.
+    // Workspace labels apply everywhere, project labels only there — and a
+    // project someone isn't allowed to see doesn't reveal its labels either.
     const visible = await visibleProjectIds(workspaceId);
     const rows = await db.label.findMany({
       where: {
@@ -291,9 +293,9 @@ export const getLabels = cache(
         OR: [{ projectId: null }, { projectId: { in: [...visible] } }],
       },
       orderBy: { name: "asc" },
-      // Wo ein Workspace-Label ausgeblendet ist, gehört zum Label — die Auswahl
-      // an einem Issue kennt nur diese eine Liste und muss ihr ansehen können,
-      // was in ihrem Projekt gilt.
+      // Where a workspace label is hidden belongs to the label — the
+      // picker on an issue knows only this one list and needs to be able
+      // to tell from it what applies in its own project.
       include: { hiddenIn: { select: { projectId: true } } },
     });
     return rows.map((l) => ({
@@ -349,16 +351,16 @@ export const getIssueTypes = cache(
 );
 
 /**
- * Die im Workspace zuweisbaren Rollen: die geteilten System-Rollen des Scopes
- * WORKSPACE plus die selbst angelegten dieses Workspace. Für die Projektrollen
- * siehe `getProjectMembersView`.
+ * The roles assignable in the workspace: the shared system roles of the
+ * WORKSPACE scope plus this workspace's own custom-created ones. For
+ * project roles, see `getProjectMembersView`.
  */
 export const getRoles = cache(async (workspaceId: string): Promise<Role[]> => {
   const rows = await db.role.findMany({
     where: { scope: "WORKSPACE", OR: [{ system: true }, { workspaceId }] },
     orderBy: { rank: "desc" },
   });
-  // `id` ist der stabile Role-Key, den die UI als Wert nutzt.
+  // `id` is the stable role key that the UI uses as its value.
   return rows.map((r) => ({
     id: r.key,
     name: r.name,
@@ -368,7 +370,7 @@ export const getRoles = cache(async (workspaceId: string): Promise<Role[]> => {
 });
 
 export const getTeams = cache(async (workspaceId: string): Promise<Team[]> => {
-  // Wie die Mitgliederliste: ein Team nennt seine Mitglieder.
+  // Same as the member list: a team names its members.
   if (!(await currentUserCanEnterWorkspace(workspaceId))) return [];
 
   const rows = await db.team.findMany({
@@ -392,44 +394,44 @@ export const getTeams = cache(async (workspaceId: string): Promise<Team[]> => {
 });
 
 /**
- * Die Filter der Topbar, so wie sie in der URL stehen: kommagetrennte,
- * menschenlesbare Slugs. Board, Liste und „Meine Aufgaben“ tragen dieselben —
- * nur der Ausschnitt, in dem gesucht wird, unterscheidet sie.
+ * The topbar's filters, exactly as they appear in the URL: comma-separated,
+ * human-readable slugs. Board, list, and "my issues" carry the same ones —
+ * only the scope they search within differs.
  */
 export interface IssueFilters {
   status?: string;
   priority?: string;
   assignee?: string;
   label?: string;
-  /** Nur in projektübergreifenden Ansichten belegt (siehe `getMyIssues`). */
+  /** Only populated in cross-project views (see `getMyIssues`). */
   project?: string;
   q?: string;
 }
 
 /**
- * Übersetzt die Slugs aus der URL in die internen Werte am Issue und baut daraus
- * die `where`-Bedingungen — einmal für alle Ansichten, damit derselbe Filter
- * überall dasselbe bedeutet.
+ * Translates the slugs from the URL into the issue's internal values and
+ * builds the `where` conditions from them — once for all views, so the
+ * same filter means the same thing everywhere.
  *
- * Die Projekte kommen getrennt zurück: der Aufrufer kennt seinen eigenen
- * Ausschnitt (ein Projekt, oder die sichtbaren eines Workspace) und muss den
- * Filter mit ihm schneiden, statt ihn zu überschreiben.
+ * The projects come back separately: the caller knows its own scope (a
+ * single project, or a workspace's visible ones) and needs to intersect
+ * the filter with it rather than overwrite it.
  *
- * Ein Slug, der nichts trifft, fällt weg — die Ansicht zeigt dann alles statt
- * nichts. Das ist die Regel für jeden dieser Filter, und ein veralteter Link
- * landet damit nicht auf einer leeren Seite.
+ * A slug that matches nothing is dropped — the view then shows everything
+ * instead of nothing. That's the rule for every one of these filters, so a
+ * stale link doesn't end up on an empty page.
  */
 async function resolveIssueFilters(
   filters: IssueFilters,
   scope: { projectId: string } | { workspaceId: string },
 ): Promise<{
   where: Record<string, unknown>;
-  /** `null`, wenn nicht nach Projekt gefiltert wird. */
+  /** `null` when not filtering by project. */
   projectIds: string[] | null;
 }> {
   const list = (value?: string) => value?.split(",").filter(Boolean) ?? [];
 
-  // Status-Slug == Status-Id, der braucht kein Nachschlagen.
+  // Status slug == status id, that one needs no lookup.
   const statuses = list(filters.status);
   const prioritySlugs = list(filters.priority);
   const assigneeSlugs = list(filters.assignee);
@@ -476,9 +478,9 @@ async function resolveIssueFilters(
   const assignees = assigneeRows.map((u) => u.id);
   const labels = labelRows.map((l) => l.id);
 
-  // Die Suche filtert "nach Titel oder ID": `ORB-12` bzw. `12` trifft zusätzlich
-  // die Issue-Nummer. Die Ziffernlänge ist begrenzt, damit nichts den Int-Bereich
-  // der Spalte sprengt.
+  // The search filters "by title or ID": `ORB-12` or `12` additionally
+  // matches the issue number. The digit count is capped so nothing exceeds
+  // the column's int range.
   const q = filters.q?.trim();
   const keyDigits = q?.match(/^(?:[a-z]+-)?(\d{1,9})$/i)?.[1];
   const key = keyDigits ? Number(keyDigits) : undefined;
@@ -505,16 +507,15 @@ export async function getIssuesByProject(
   projectId: string,
   filters: IssueFilters = {},
 ): Promise<IssueDetail[]> {
-  // Die Issues sind der Inhalt des Projekts — ohne `project.view` gibt es sie
-  // nicht. Das greift auch für `blocked`: die Rolle verbietet alles, also auch
-  // das Lesen, und nicht nur das Schreiben.
+  // The issues are the project's content — without `project.view` they
+  // don't exist. This also applies to `blocked`: the role forbids
+  // everything, including reading, not just writing.
   if (!(await hasPermission("project.view", { projectId }))) return [];
 
   const { where } = await resolveIssueFilters(filters, { projectId });
 
   const rows = await db.issue.findMany({
-    // Der Ausschnitt steht hinter den Filtern: kein Slug in der URL kann ihn
-    // überschreiben.
+    // The scope sits behind the filters: no slug in the URL can override it.
     where: { ...where, projectId },
     include: {
       comments: {
@@ -525,13 +526,13 @@ export async function getIssuesByProject(
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
   const viewerId = await currentUserId();
-  // `issueAccessFor` löst je Projekt einmal auf und ist `cache()`d — bei allen
-  // Zeilen desselben Projekts kostet das keine weitere Datenbankfrage. Board
-  // und Liste zeigen sonst Titel, Status, Priorität und Zuständigkeit als
-  // Bedienelemente, die der Server ohnehin ablehnen würde (`updateIssue`).
-  // Keine Anhänge hier: Board/Liste rendern die volle Beschreibung nie,
-  // zusätzliche Storage-Aufrufe für jede Zeile wären verschwendet (siehe
-  // `resolveIssueAttachments`).
+  // `issueAccessFor` resolves once per project and is `cache()`d — for all
+  // rows of the same project this costs no further database query. Without
+  // it, the board and list would show title, status, priority, and
+  // assignee as controls that the server would reject anyway
+  // (`updateIssue`). No attachments here: the board/list never render the
+  // full description, so extra storage calls for every row would be
+  // wasted (see `resolveIssueAttachments`).
   return Promise.all(
     rows.map(async (i) => ({
       ...mapIssue(i, viewerId),
@@ -541,8 +542,8 @@ export async function getIssuesByProject(
   );
 }
 
-// Auch die eigenen Issues bleiben an das Projekt gebunden: wer aus einem Projekt
-// entfernt wird, sieht das Issue nicht weiter, nur weil sein Name darauf steht.
+// Even "my issues" stays bound to the project: someone removed from a
+// project no longer sees the issue just because their name is on it.
 export async function getMyIssues(
   userId: string,
   workspaceId: string,
@@ -554,16 +555,17 @@ export async function getMyIssues(
   const { where, projectIds } = await resolveIssueFilters(filters, {
     workspaceId,
   });
-  // Der Projektfilter schneidet in die sichtbaren Projekte hinein, nie über sie
-  // hinaus: eine Projekt-Id in der URL öffnet nichts, was ohne sie zu wäre.
+  // The project filter narrows down within the visible projects, never
+  // beyond them: a project id in the URL doesn't open anything that would
+  // otherwise be closed.
   const scoped = projectIds
     ? [...visible].filter((id) => projectIds.includes(id))
     : [...visible];
   if (scoped.length === 0) return [];
 
   const rows = await db.issue.findMany({
-    // Zuständigkeit und Ausschnitt stehen hinter den Filtern — ein `?assignee=`
-    // in der Adresse macht aus „meinen“ keine fremden Aufgaben.
+    // Assignee and scope sit behind the filters — an `?assignee=` in the
+    // address can't turn "my" tasks into someone else's.
     where: { ...where, assigneeId: userId, projectId: { in: scoped } },
     include: {
       comments: {
@@ -571,12 +573,12 @@ export async function getMyIssues(
         include: { reactions: true },
       },
     },
-    // Wie im Projekt: nach Rang, damit eine gezogene Zeile dort liegen bleibt,
-    // wo sie fallen gelassen wurde.
+    // Same as within a project: by rank, so a dragged row stays where it
+    // was dropped.
     orderBy: [{ rank: "asc" }, { created: "asc" }],
   });
-  // Über mehrere Projekte hinweg löst `issueAccessFor` je vorkommendem Projekt
-  // einmal auf (`cache()`), nicht je Zeile. Keine Anhänge — siehe
+  // Across multiple projects, `issueAccessFor` resolves once per project
+  // that occurs (`cache()`), not per row. No attachments — see
   // `getIssuesByProject`.
   return Promise.all(
     rows.map(async (i) => ({
@@ -588,14 +590,14 @@ export async function getMyIssues(
 }
 
 /**
- * Was der aktuelle Benutzer mit genau diesem Issue darf.
+ * What the current user is allowed to do with exactly this issue.
  *
- * Spiegelt `updateIssue`/`deleteIssue` (`features/issues/actions.ts`) Zeile
- * für Zeile — die Detailansicht (Titel, Beschreibung, Typ, Status, Priorität,
- * Zuständigkeit, Löschen) bietet damit nie eine Bedienung an, die der Server
- * ohnehin mit `PermissionError` ablehnen würde. `issue.update.own`/
- * `issue.delete.own` hängen an Eigentümerschaft, nicht nur an der Rolle —
- * deshalb hier und nicht in `mapIssue` (das kennt weder Benutzer noch Access).
+ * Mirrors `updateIssue`/`deleteIssue` (`features/issues/actions.ts`) line
+ * for line — the detail view (title, description, type, status, priority,
+ * assignee, delete) therefore never offers a control that the server would
+ * reject with `PermissionError` anyway. `issue.update.own`/
+ * `issue.delete.own` depend on ownership, not just the role — hence this
+ * lives here and not in `mapIssue` (which knows neither the user nor access).
  */
 async function issueAccessFor(issue: {
   reporterId: string;
@@ -645,9 +647,9 @@ export async function getIssueById(id: string): Promise<IssueDetail | null> {
     },
   });
   if (!i) return null;
-  // Ein einzelnes Issue über seine Id — der direkteste Weg an fremde Inhalte,
-  // wenn hier nichts steht. `null` statt einer Ausnahme: die Aufrufer machen
-  // daraus ein 404, und ein 404 verrät nicht, dass es das Issue gibt.
+  // A single issue by its id — the most direct route to someone else's
+  // content, if nothing guards it here. `null` instead of an exception: the
+  // callers turn that into a 404, and a 404 doesn't reveal that the issue exists.
   if (!(await hasPermission("project.view", { projectId: i.projectId })))
     return null;
   const access = await issueAccessFor(i);
@@ -660,10 +662,11 @@ export async function getIssueById(id: string): Promise<IssueDetail | null> {
 }
 
 /**
- * Löst eine Referenz der Form „PREFIX-123“ innerhalb eines Workspace auf.
+ * Resolves a reference of the form "PREFIX-123" within a workspace.
  *
- * Über `cache()`, weil die Detailseite sie zweimal im selben Request braucht:
- * einmal für `generateMetadata` (Tab-Titel) und einmal für die Seite selbst.
+ * Wrapped in `cache()`, because the detail page needs it twice within the
+ * same request: once for `generateMetadata` (tab title) and once for the
+ * page itself.
  */
 export const getIssueByRef = cache(
   async (
@@ -703,13 +706,13 @@ export const getIssueByRef = cache(
   },
 );
 
-/** Eine minimale, absichtlich unvollständige Projektion für die öffentliche
- *  Issue-Seite — kein `access`, keine internen Ids in der Antwort außer
- *  denen, die die Anzeige selbst braucht. Die Seite darf strukturell keine
- *  Bearbeitungs-UI rendern können. */
-/** Reicht für `components/ui/atoms/Avatar` (`PersonAvatarData`) — hier lokal
- *  definiert statt von dort importiert, damit diese Abfrage keine
- *  UI-Abhängigkeit bekommt. */
+/** A minimal, deliberately incomplete projection for the public issue page
+ *  — no `access`, no internal ids in the response except the ones the
+ *  display itself needs. The page must be structurally incapable of
+ *  rendering any editing UI. */
+/** Enough for `components/ui/atoms/Avatar` (`PersonAvatarData`) — defined
+ *  locally here instead of imported from there, so this query doesn't pick
+ *  up a UI dependency. */
 interface PublicPerson {
   firstName: string;
   lastName: string;
@@ -736,8 +739,8 @@ async function toPerson<
 
 export interface PublicSharedIssue {
   identifier: string;
-  /** Für den Weg zurück in die App, wenn die betrachtende Person bereits
-   *  Zugriff hat (`SharedIssuePage`, Redirect via `getIssueByRef`). */
+  /** For the way back into the app if the viewing person already has
+   *  access (`SharedIssuePage`, redirect via `getIssueByRef`). */
   workspaceId: string;
   title: string;
   description: PMDoc;
@@ -749,7 +752,7 @@ export interface PublicSharedIssue {
   workspaceName: string;
   assignee: PublicPerson | null;
   reporter: PublicPerson;
-  /** Wer den Link erzeugt hat — `null`, wenn das Konto seither weg ist
+  /** Who created the link — `null` if the account has since been removed
    *  (`onDelete: SetNull`). */
   sharedBy: PublicPerson | null;
   sharedAt: Date | null;
@@ -765,9 +768,9 @@ export interface PublicSharedIssue {
 }
 
 /**
- * Löst einen öffentlichen Issue-Link auf. `null` heißt in jedem Fall
- * dasselbe: unbekannter, deaktivierter, abgelaufener oder nie aktivierter
- * Token — dieselbe Zurückhaltung wie `openInvitation`/`resolveInviteLink`.
+ * Resolves a public issue link. `null` means the same thing in every case:
+ * unknown, disabled, expired, or never-activated token — the same
+ * restraint as `openInvitation`/`resolveInviteLink`.
  */
 export async function getIssueByShareToken(
   token: string,
@@ -870,8 +873,8 @@ export async function getIssueByShareToken(
 
 export const getSearchIssues = cache(
   async (workspaceId: string): Promise<SearchableIssue[]> => {
-    // Die Suche greift über alle Projekte des Workspace — genau deshalb muss die
-    // Sichtbarkeit hier stehen und nicht erst in der Anzeige.
+    // Search reaches across all of the workspace's projects — exactly why
+    // visibility needs to be enforced here and not only at display time.
     const visible = await visibleProjectIds(workspaceId);
     if (visible.size === 0) return [];
 

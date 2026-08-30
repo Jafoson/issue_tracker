@@ -14,14 +14,14 @@ interface Options<T> {
 }
 
 /**
- * Lädt weitere Seiten nach, sobald der Rand am Ende einer Tabelle ins Bild
- * kommt — die eine Stelle für das Muster, das sonst in jeder Tabelle mit
- * Infinite Scroll gleich aussähe. `sentinelRef` gehört auf ein
- * `LoadMoreSentinel` direkt nach der Tabelle.
+ * Loads further pages as soon as the edge at the end of a table comes into
+ * view — the one place for the pattern that would otherwise look the same
+ * in every table with infinite scroll. `sentinelRef` belongs on a
+ * `LoadMoreSentinel` right after the table.
  *
- * Filtert oder sortiert eine Ansicht die geladenen Zeilen (`useTableSort`,
- * eigene Client-Filter), tut sie das auf `items` — auf dem, was bereits da
- * ist, nicht auf einer imaginären Gesamtmenge.
+ * If a view filters or sorts the loaded rows (`useTableSort`, its own
+ * client-side filters), it does so on `items` — on what's already there,
+ * not on some imaginary total set.
  */
 export function useInfiniteScroll<T>({
   initialItems,
@@ -33,10 +33,10 @@ export function useInfiniteScroll<T>({
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLOutputElement>(null);
 
-  // Setzt geladene Seiten zurück, sobald der Server neue Erstzeilen schickt —
-  // nach `router.refresh()` einer Zeilenaktion (löschen, ändern) sonst
-  // zeigte die Liste weiter den Stand von vor der Aktion, weil `useState`
-  // seinen Startwert nur beim Mounten liest.
+  // Resets loaded pages as soon as the server sends new initial rows —
+  // after a `router.refresh()` from a row action (delete, edit), the list
+  // would otherwise keep showing the state from before the action, because
+  // `useState` only reads its initial value on mount.
   useEffect(() => {
     setItems(initialItems);
     setCursor(initialCursor);

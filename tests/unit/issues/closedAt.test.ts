@@ -61,13 +61,13 @@ const EARLIER = new Date("2026-01-05T10:00:00Z");
 // with every later change — and that's exactly the kind of bug nobody
 // notices: the chart keeps showing bars, just on the wrong days.
 
-describe("Abschließen", () => {
+describe("Closing", () => {
   beforeEach(() => {
     mockFindUnique.mockReset();
     mockUpdate.mockReset();
   });
 
-  it("setzt das Datum, wenn eine offene Aufgabe erledigt wird", async () => {
+  it("sets the date when an open issue is completed", async () => {
     mockFindUnique.mockResolvedValue(issue("in_progress", null));
     await moveIssue("i1", "done");
 
@@ -75,14 +75,14 @@ describe("Abschließen", () => {
     expect(written().closedAt).toBeInstanceOf(Date);
   });
 
-  it("zählt auch das Verwerfen als Abschluss", async () => {
+  it("counts discarding as a close too", async () => {
     mockFindUnique.mockResolvedValue(issue("todo", null));
     await moveIssue("i1", "canceled");
 
     expect(written().closedAt).toBeInstanceOf(Date);
   });
 
-  it("nimmt das Datum wieder weg, wenn die Aufgabe erneut aufgemacht wird", async () => {
+  it("removes the date again when the issue is reopened", async () => {
     // Without this case, the dashboard would count it toward the throughput
     // of the day it was once finished, forever.
     mockFindUnique.mockResolvedValue(issue("done", EARLIER));
@@ -91,7 +91,7 @@ describe("Abschließen", () => {
     expect(written().closedAt).toBeNull();
   });
 
-  it("lässt das ursprüngliche Datum stehen, wenn Erledigt zu Verworfen wird", async () => {
+  it("leaves the original date in place when Done becomes Canceled", async () => {
     // It was closed back then; only how it's labeled has changed.
     mockFindUnique.mockResolvedValue(issue("done", EARLIER));
     await moveIssue("i1", "canceled");
@@ -99,7 +99,7 @@ describe("Abschließen", () => {
     expect(written()).not.toHaveProperty("closedAt");
   });
 
-  it("fasst das Datum nicht an, wenn der Status gleich bleibt", async () => {
+  it("leaves the date untouched when the status stays the same", async () => {
     mockFindUnique.mockResolvedValue(issue("done", EARLIER));
     await updateIssue("i1", { title: "Neuer Titel" });
 
@@ -107,7 +107,7 @@ describe("Abschließen", () => {
     expect(written().title).toBe("Neuer Titel");
   });
 
-  it("fasst es auch bei einem Wechsel zwischen zwei offenen Status nicht an", async () => {
+  it("leaves it untouched for a switch between two open statuses too", async () => {
     mockFindUnique.mockResolvedValue(issue("todo", null));
     await moveIssue("i1", "in_progress");
 

@@ -32,38 +32,39 @@ type LoadMoreProjects = (
 
 interface Props extends WorkspaceProjectsView {
   workspaceId: string;
-  /** Lädt die nächste Seite der einen Liste (ohne `seesAllProjects`),
+  /** Loads the next page of the single list (without `seesAllProjects`),
    * `loadMoreWorkspaceProjects` in `features/workspaces/actions.ts`. */
   loadMore: LoadMoreProjects;
-  /** Lädt die nächste Seite der offenen Projekte (bei `seesAllProjects`). */
+  /** Loads the next page of public projects (under `seesAllProjects`). */
   loadMorePublic: LoadMoreProjects;
-  /** Lädt die nächste Seite der privaten Projekte (bei `seesAllProjects`). */
+  /** Loads the next page of private projects (under `seesAllProjects`). */
   loadMorePrivate: LoadMoreProjects;
 }
 
 /**
- * Alle Projekte des Workspace in einer Liste — mit dem, was sich an ihnen von
- * hier aus ändern lässt.
+ * All of the workspace's projects in one list — with what can be changed
+ * about them from here.
  *
- * Die Zeile führt ins Projekt; geändert wird im Dialog daneben. Beides gehört
- * zusammen: wer die Übersicht öffnet, will meist nachsehen und nicht umbauen,
- * und ein Feld, das schon beim Tippen wirkt, wäre in einer Liste aus zwanzig
- * Zeilen ein Versehen zu viel.
+ * The row leads into the project; changes happen in the dialog next to it.
+ * The two belong together: whoever opens the overview mostly wants to
+ * check on things, not restructure them, and a field that takes effect
+ * while typing would be one accident too many in a list of twenty rows.
  *
- * `canUpdate` und `canDelete` stehen an jeder Zeile, nicht an der Seite: die
- * beiden Rechte gelten im Projekt. Wer eines leitet, sieht seine Knöpfe genau
- * dort — und an den übrigen Zeilen keine.
+ * `canUpdate` and `canDelete` sit on each row, not on the page: both
+ * permissions apply at the project level. Whoever leads one sees their
+ * buttons exactly there — and none on the remaining rows.
  *
- * Wer jedes Projekt des Workspace sieht (`seesAllProjects`), bekommt sie in zwei
- * Abschnitten: offen und privat, jeder mit eigener Überschrift, eigenem
- * Vorspann und eigener Tabelle. Dieselbe Gliederung wie auf der Label-Seite —
- * dort stehen die eigenen Labels über den geerbten. Zwei Listen mit einem Satz
- * dazu sagen mehr als eine Liste mit einer Spalte „Sichtbarkeit": sie erklären
- * auch, was der Unterschied bedeutet. Die Spalte entfällt dafür.
+ * Whoever sees every project in the workspace (`seesAllProjects`) gets them
+ * in two sections: public and private, each with its own heading, its own
+ * intro text, and its own table. The same structure as on the labels page —
+ * there, the workspace's own labels sit above the inherited ones. Two lists
+ * with a sentence attached say more than one list with a "Visibility"
+ * column: they also explain what the difference means. The column is
+ * dropped in exchange.
  *
- * Für alle anderen bleibt es bei einer Liste samt Spalte: sie sehen ohnehin nur
- * ihren Ausschnitt, und eine Überschrift „Privat" über drei von zwölf Projekten
- * führte in die Irre.
+ * For everyone else, it stays a single list with that column: they only
+ * ever see their own slice anyway, and a "Private" heading over three of
+ * twelve projects would be misleading.
  */
 export function WorkspaceProjects({
   rows,
@@ -86,8 +87,9 @@ export function WorkspaceProjects({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
-  // Immer alle drei — welche davon etwas anzeigt, entscheidet erst das Rendern
-  // weiter unten (`seesAllProjects`). Hooks lassen sich nicht bedingt aufrufen.
+  // Always all three — which one actually displays anything is decided
+  // only by the render below (`seesAllProjects`). Hooks can't be called
+  // conditionally.
   const singleScroll = useInfiniteScroll({
     initialItems: rows,
     initialCursor: nextCursor,
@@ -120,8 +122,9 @@ export function WorkspaceProjects({
     ));
 
   const remove = async (row: WorkspaceProjectRow) => {
-    // Die Zahl steht in der Rückfrage, weil sie den Unterschied macht: ein
-    // leeres Projekt zu löschen ist Aufräumen, ein volles ist ein Verlust.
+    // The count appears in the confirmation dialog because it makes the
+    // difference: deleting an empty project is cleaning up, deleting a
+    // full one is a loss.
     const ok = await confirm({
       title: t("workspaceProjects.deleteTitle", { name: row.name }),
       description: t("projectSettings.deleteDesc", { count: row.issueCount }),
@@ -173,8 +176,8 @@ export function WorkspaceProjects({
         </span>
       ),
     },
-    // Gruppiert steht die Sichtbarkeit im Bandkopf — zweimal dasselbe in einer
-    // Zeile wäre nur breiter, nicht klarer.
+    // When grouped, visibility already sits in the section heading —
+    // saying the same thing twice in one row would only be wider, not clearer.
     ...(seesAllProjects
       ? []
       : [
@@ -198,9 +201,9 @@ export function WorkspaceProjects({
       width: "minmax(140px, max-content)",
       align: "end",
       sortValue: (row) => row.memberCount,
-      // Gesichter und Zahl: der Stapel beantwortet „wer ist da drin", die Zahl
-      // „wie viele". Der Stapel zeigt die ersten vier, deshalb steht die
-      // Gesamtzahl daneben statt als „+n" darin.
+      // Faces and count: the stack answers "who's in there", the number
+      // answers "how many". The stack shows the first four, so the total
+      // sits next to it instead of as a "+n" inside it.
       cell: (row) => (
         <span className={styles.members}>
           {row.members.length > 0 && (
@@ -257,14 +260,14 @@ export function WorkspaceProjects({
     },
   ];
 
-  // Drei Sortierungen für drei mögliche Tabellen — wie bei den Labels: die
-  // Listen stehen nebeneinander und sollen sich einzeln ordnen lassen.
+  // Three sort states for three possible tables — as with the labels: the
+  // lists sit side by side and should each be sortable on their own.
   const singleSort = useTableSort(columns);
   const publicSort = useTableSort(columns);
   const privateSort = useTableSort(columns);
 
-  // Die Zeile führt ins Projekt — als Link, damit Tastatur, Mittelklick und
-  // „in neuem Tab öffnen" mitkommen. Alle Tabellen benutzen denselben.
+  // The row leads into the project — as a link, so keyboard, middle-click,
+  // and "open in new tab" all keep working. All tables use the same one.
   const rowOverlay = (row: WorkspaceProjectRow) => (
     <Link href={projectPath(workspaceId, row.slug, "")} aria-label={row.name} />
   );
@@ -291,9 +294,9 @@ export function WorkspaceProjects({
           </p>
         )}
 
-        {/* Gibt es gar kein Projekt, bleibt eine Tabelle stehen — die leere
-            Seite gehört ihr, und zwei Überschriften über nichts wären zwei zu
-            viel. */}
+        {/* If there's no project at all, a single table remains — the
+            empty state belongs to it, and two headings over nothing would
+            be two too many. */}
         {totalCount === 0 ? (
           <Table
             variant="card"
@@ -312,14 +315,14 @@ export function WorkspaceProjects({
           />
         ) : seesAllProjects ? (
           <>
-            {/* Offen zuerst: das ist der Normalfall eines Workspace und die
-                längere Liste. Eine leere Hälfte fällt weg — eine Überschrift
-                ohne Zeilen darunter behauptet eine Aufteilung, die es gerade
-                nicht gibt. */}
+            {/* Public first: that's the normal case for a workspace and
+                the longer list. An empty half is dropped — a heading with
+                no rows underneath would assert a split that doesn't
+                currently exist. */}
             {publicScroll.items.length > 0 && (
               <section className={styles.group}>
-                {/* Das Schloss bzw. die Weltkugel steht dabei, weil „privat"
-                    ein Zustand ist und kein Titel. */}
+                {/* The lock or the globe icon is there because "private"
+                    is a state, not a title. */}
                 <h2 className={styles.groupTitle}>
                   <Icon
                     icon="lucide:globe"
@@ -397,8 +400,8 @@ export function WorkspaceProjects({
             )}
           </>
         ) : (
-          // Ohne Aufteilung bleibt es die eine Liste, die sie vorher war: keine
-          // Überschrift, kein Vorspann.
+          // Without a split, it stays the single list it was before: no
+          // heading, no intro.
           <section className={styles.group}>
             <Table
               fill

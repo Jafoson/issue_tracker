@@ -83,25 +83,25 @@ function reset() {
 describe("removeMember()", () => {
   beforeEach(reset);
 
-  it("verlangt member.remove", async () => {
+  it("requires member.remove", async () => {
     await removeMember(WS, "u-1");
     expect(mockRequirePermission).toHaveBeenCalledWith("member.remove", {
       workspaceId: WS,
     });
   });
 
-  it("entfernt sich nicht selbst", async () => {
+  it("does not remove oneself", async () => {
     await expect(removeMember(WS, ACTOR)).rejects.toThrow();
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("lehnt ab, wenn die Person nicht (mehr) Mitglied ist", async () => {
+  it("rejects when the person is not (or no longer) a member", async () => {
     mockWorkspaceMemberFindUnique.mockResolvedValue(null);
     await expect(removeMember(WS, "u-1")).rejects.toThrow();
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("entfernt den Owner nicht", async () => {
+  it("does not remove the owner", async () => {
     mockWorkspaceMemberFindUnique.mockResolvedValue({
       role: { key: "owner", rank: 10 },
     });
@@ -109,7 +109,7 @@ describe("removeMember()", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("entfernt kein höher gestelltes Mitglied", async () => {
+  it("does not remove a higher-ranked member", async () => {
     mockAccessFor.mockResolvedValue({
       rank: (scope: string) => (scope === "WORKSPACE" ? 2 : -1),
     });
@@ -120,7 +120,7 @@ describe("removeMember()", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("löscht die Mitgliedschaft und alle Projektzuordnungen", async () => {
+  it("deletes the membership and all project assignments", async () => {
     await removeMember(WS, "u-1");
 
     expect(mockTx.workspaceMember.delete).toHaveBeenCalledWith({

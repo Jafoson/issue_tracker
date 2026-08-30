@@ -87,7 +87,7 @@ function reset() {
 describe("updateWorkspace()", () => {
   beforeEach(reset);
 
-  it("lehnt ab, wenn niemand eingeloggt ist", async () => {
+  it("rejects when nobody is logged in", async () => {
     mockCurrentUserId.mockResolvedValue(null);
     expect(await updateWorkspace(WS, { name: "Neu" })).toEqual({
       error: "You must be logged in.",
@@ -95,7 +95,7 @@ describe("updateWorkspace()", () => {
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("verlangt workspace.update im Workspace-Kontext", async () => {
+  it("requires workspace.update in the workspace context", async () => {
     mockCan.mockResolvedValue(false);
     expect(await updateWorkspace(WS, { name: "Neu" })).toEqual({
       error: "You are not allowed to change this workspace.",
@@ -106,14 +106,14 @@ describe("updateWorkspace()", () => {
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("lehnt einen leeren Namen ab", async () => {
+  it("rejects an empty name", async () => {
     expect(await updateWorkspace(WS, { name: "   " })).toEqual({
       error: "Name is required.",
     });
     expect(mockWorkspaceUpdate).not.toHaveBeenCalled();
   });
 
-  it("schreibt nur, was übergeben wurde", async () => {
+  it("only writes what was passed", async () => {
     expect(await updateWorkspace(WS, { color: "#123456" })).toEqual({
       ok: true,
     });
@@ -123,34 +123,34 @@ describe("updateWorkspace()", () => {
     });
   });
 
-  it("trimmt den Namen", async () => {
+  it("trims the name", async () => {
     await updateWorkspace(WS, { name: "  Acme  " });
     expect(mockWorkspaceUpdate.mock.calls[0][0].data).toEqual({ name: "Acme" });
   });
 
   // The slug is also the id and appears in every address — the action never
   // even accepts it as input. The test documents this.
-  it("rührt den Slug nicht an", async () => {
+  it("does not touch the slug", async () => {
     await updateWorkspace(WS, { name: "Acme", color: "#fff" });
     const data = mockWorkspaceUpdate.mock.calls[0][0].data;
     expect(data).not.toHaveProperty("slug");
     expect(data).not.toHaveProperty("id");
   });
 
-  it("trimmt die Beschreibung", async () => {
+  it("trims the description", async () => {
     await updateWorkspace(WS, { desc: "  Ein Satz.  " });
     expect(mockWorkspaceUpdate.mock.calls[0][0].data).toEqual({
       desc: "Ein Satz.",
     });
   });
 
-  it("lässt Links unangetastet, wenn keine übergeben werden", async () => {
+  it("leaves links untouched when none are passed", async () => {
     await updateWorkspace(WS, { name: "Acme" });
     expect(mockLinkDeleteMany).not.toHaveBeenCalled();
     expect(mockLinkCreateMany).not.toHaveBeenCalled();
   });
 
-  it("ersetzt die Links durch die übergebene Liste, in ihrer Reihenfolge", async () => {
+  it("replaces the links with the passed list, in their order", async () => {
     expect(
       await updateWorkspace(WS, {
         links: [
@@ -181,7 +181,7 @@ describe("updateWorkspace()", () => {
     ]);
   });
 
-  it("lässt leere Zeilen still weg, statt sie zu speichern", async () => {
+  it("silently drops empty rows instead of saving them", async () => {
     expect(
       await updateWorkspace(WS, { links: [{ label: "", url: "" }] }),
     ).toEqual({ ok: true });
@@ -189,7 +189,7 @@ describe("updateWorkspace()", () => {
     expect(mockLinkCreateMany).not.toHaveBeenCalled();
   });
 
-  it("lehnt eine Zeile ohne Beschriftung oder Adresse ab", async () => {
+  it("rejects a row without a label or address", async () => {
     expect(
       await updateWorkspace(WS, {
         links: [{ label: "Docs", url: "" }],
@@ -198,7 +198,7 @@ describe("updateWorkspace()", () => {
     expect(mockLinkDeleteMany).not.toHaveBeenCalled();
   });
 
-  it("verlangt http:// oder https://", async () => {
+  it("requires http:// or https://", async () => {
     expect(
       await updateWorkspace(WS, {
         links: [{ label: "Docs", url: "ftp://example.com" }],
@@ -210,7 +210,7 @@ describe("updateWorkspace()", () => {
 describe("deleteWorkspace()", () => {
   beforeEach(reset);
 
-  it("verlangt workspace.delete", async () => {
+  it("requires workspace.delete", async () => {
     mockCan.mockResolvedValue(false);
     expect(await deleteWorkspace(WS)).toEqual({
       error: "You are not allowed to delete this workspace.",
@@ -220,7 +220,7 @@ describe("deleteWorkspace()", () => {
 
   // The issues' foreign key to the project is set to `Restrict` — without
   // this first step, deleting the projects would fail.
-  it("löscht erst die Aufgaben, dann den Workspace", async () => {
+  it("deletes the issues first, then the workspace", async () => {
     expect(await deleteWorkspace(WS)).toEqual({ ok: true });
     expect(mockTx.issue.deleteMany).toHaveBeenCalledWith({
       where: { project: { workspaceId: WS } },

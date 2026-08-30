@@ -9,18 +9,19 @@ import styles from "./tabBar.module.scss";
 import { useTabBar } from "./useTabBar";
 
 interface TabBarClientProps {
-  // Href des ersten Tabs bzw. neu geöffneter Tabs — abhängig vom aktuellen
-  // Bereich (z.B. `/<workspaceId>/my` oder `/admin`).
+  // Href of the first tab / newly opened tabs — depends on the current area
+  // (e.g. `/<workspaceId>/my` or `/admin`).
   defaultHref: string;
-  // Projekte des aktuellen Workspace, serverseitig vorgeladen.
+  // Projects of the current workspace, preloaded server-side.
   projects: Project[];
-  // ID des gerade aktiven Workspace, oder `null` im Admin-Bereich.
+  // ID of the currently active workspace, or `null` in the admin area.
   currentWorkspaceId: string | null;
 }
 
-// Reine Darstellung: der gesamte Tab-Zustand (Persistenz, Navigation,
-// Titel/Farbe/Icon pro Tab) lebt in useTabBar — analog dazu, wie die Sidebar
-// ihre NavGroups fertige Tab-Listen rendern lässt, statt selbst Logik zu halten.
+// Pure rendering: the entire tab state (persistence, navigation,
+// title/color/icon per tab) lives in useTabBar — analogous to how the
+// sidebar lets its NavGroups render finished tab lists instead of holding
+// logic itself.
 export function TabBarClient({
   defaultHref,
   projects,
@@ -37,9 +38,9 @@ export function TabBarClient({
 
   return (
     <div className={styles.bar}>
-      {/* Eigener Scroll-Container: bei vielen Tabs scrollt die Leiste,
-          statt jeden Tab bis zur Unlesbarkeit zusammenzuschieben — der
-          Plus-Button bleibt dabei sichtbar. */}
+      {/* Own scroll container: with many tabs, the strip scrolls instead
+          of squeezing every tab down to illegibility — the plus button
+          stays visible throughout. */}
       <div className={styles.strip} role="tablist">
         {tabs.map((tab) => (
           <Tab

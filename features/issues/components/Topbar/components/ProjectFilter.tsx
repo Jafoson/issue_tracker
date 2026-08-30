@@ -18,12 +18,12 @@ interface ProjectFilterProps {
 }
 
 /**
- * Grenzt eine projektübergreifende Ansicht auf einzelne Projekte ein — im Board
- * und in der Liste eines Projekts gibt es ihn nicht, dort ist die Frage schon
- * durch die Adresse beantwortet.
+ * Narrows a cross-project view down to individual projects — it doesn't
+ * exist in a single project's board or list, since the question there is
+ * already answered by the URL.
  *
- * Zeichen ist der Projektpunkt, dieselbe Farbe wie in der Seitenleiste und der
- * Reiterleiste; bei mehreren stehen bis zu drei davon nebeneinander.
+ * The marker is the project dot, the same color as in the sidebar and tab
+ * bar; with several selected, up to three of them appear side by side.
  */
 export function ProjectFilter({
   value,

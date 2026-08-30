@@ -1,11 +1,11 @@
-// ─── Katalog der Mail-Vorlagen ──────────────────────────────────────────────
+// ─── Mail template catalog ──────────────────────────────────────────────────
 //
-// Reine Datendefinition — kein DB-Zugriff, kein `server-only`. Sagt, welche
-// Schlüssel es gibt, wie sie in der Oberfläche heißen und welche
-// `{{platzhalter}}` je Vorlage gültig sind. `lib/mail/templates/*.ts` baut
-// aus denselben Feldnamen seine `placeholders`-Objekte — ein hier gelisteter
-// Platzhalter, der dort nicht ankommt, bliebe im Admin-Text wörtlich stehen
-// (siehe `applyPlaceholders`).
+// Pure data definition — no DB access, no `server-only`. States which keys
+// exist, what they're called in the UI, and which `{{placeholders}}` are
+// valid per template. `lib/mail/templates/*.ts` builds its `placeholders`
+// objects from the same field names — a placeholder listed here that
+// doesn't arrive there would stay literal in the admin text (see
+// `applyPlaceholders`).
 
 export const MAIL_TEMPLATE_KEYS = [
   "invitation",
@@ -37,212 +37,212 @@ export interface MailTemplateMeta {
   key: MailTemplateKey;
   label: string;
   group: string;
-  /** Ob es dafür heute einen Versandpunkt gibt — steht so auch im
-   *  Admin-Editor, damit niemand einen bearbeiteten Text erwartet, der
-   *  gerade nirgendwo verschickt wird. */
+  /** Whether there's a send point for this today — shown the same way in
+   *  the admin editor, so nobody expects an edited text that's currently
+   *  sent nowhere. */
   wired: boolean;
   placeholders: PlaceholderDef[];
 }
 
 const ACTOR: PlaceholderDef = {
   key: "actorLabel",
-  description: "Wer gehandelt hat",
+  description: "Who took the action",
 };
 const WORKSPACE: PlaceholderDef = {
   key: "workspaceName",
-  description: "Name des Workspace",
+  description: "Name of the workspace",
 };
 const PROJECT: PlaceholderDef = {
   key: "projectName",
-  description: "Projektname — leer, wenn workspaceweit",
+  description: "Project name — empty if workspace-wide",
 };
 const ISSUE_ID: PlaceholderDef = {
   key: "issueIdentifier",
-  description: "Issue-Kürzel, z. B. ACME-42",
+  description: "Issue code, e.g. ACME-42",
 };
 const ISSUE_TITLE: PlaceholderDef = {
   key: "issueTitle",
-  description: "Titel des Issues",
+  description: "Title of the issue",
 };
 
 export const MAIL_TEMPLATE_CATALOG: Record<MailTemplateKey, MailTemplateMeta> =
   {
     invitation: {
       key: "invitation",
-      label: "Einladung",
-      group: "Konto & Zugang",
+      label: "Invitation",
+      group: "Account & access",
       wired: true,
       placeholders: [
-        { key: "inviterName", description: "Name der einladenden Person" },
+        { key: "inviterName", description: "Name of the inviting person" },
         WORKSPACE,
         PROJECT,
-        { key: "roleName", description: "Vergebene Rolle" },
+        { key: "roleName", description: "Role granted" },
         {
           key: "target",
-          description: "„Projekt (Workspace)“ oder nur der Workspace-Name",
+          description: '"Project (Workspace)" or just the workspace name',
         },
       ],
     },
     memberRemoved: {
       key: "memberRemoved",
-      label: "Aus Workspace/Projekt entfernt",
-      group: "Konto & Zugang",
+      label: "Removed from workspace/project",
+      group: "Account & access",
       wired: true,
       placeholders: [
-        { key: "actorName", description: "Wer entfernt hat" },
+        { key: "actorName", description: "Who removed them" },
         WORKSPACE,
         PROJECT,
         {
           key: "target",
-          description: "„Projekt (Workspace)“ oder nur der Workspace-Name",
+          description: '"Project (Workspace)" or just the workspace name',
         },
       ],
     },
     welcome: {
       key: "welcome",
-      label: "Registrierung",
-      group: "Konto & Zugang",
+      label: "Registration",
+      group: "Account & access",
       wired: false,
-      placeholders: [{ key: "firstName", description: "Vorname" }],
+      placeholders: [{ key: "firstName", description: "First name" }],
     },
     emailVerification: {
       key: "emailVerification",
-      label: "E-Mail bestätigen",
-      group: "Konto & Zugang",
+      label: "Confirm email",
+      group: "Account & access",
       wired: false,
-      placeholders: [{ key: "firstName", description: "Vorname" }],
+      placeholders: [{ key: "firstName", description: "First name" }],
     },
     passwordReset: {
       key: "passwordReset",
-      label: "Passwort zurücksetzen",
-      group: "Konto & Zugang",
+      label: "Reset password",
+      group: "Account & access",
       wired: false,
       placeholders: [
-        { key: "email", description: "E-Mail-Adresse des Kontos" },
+        { key: "email", description: "Email address of the account" },
       ],
     },
     "notification.assigned": {
       key: "notification.assigned",
-      label: "Issue zugewiesen",
-      group: "Benachrichtigungen",
+      label: "Issue assigned",
+      group: "Notifications",
       wired: true,
       placeholders: [ACTOR, ISSUE_ID, ISSUE_TITLE],
     },
     "notification.mentioned": {
       key: "notification.mentioned",
-      label: "Erwähnung",
-      group: "Benachrichtigungen",
+      label: "Mention",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         ISSUE_ID,
         ISSUE_TITLE,
-        { key: "text", description: "Vorschau der Erwähnung" },
+        { key: "text", description: "Preview of the mention" },
       ],
     },
     "notification.comment": {
       key: "notification.comment",
-      label: "Neuer Kommentar",
-      group: "Benachrichtigungen",
+      label: "New comment",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         ISSUE_ID,
         ISSUE_TITLE,
-        { key: "text", description: "Kommentar-Vorschau" },
+        { key: "text", description: "Comment preview" },
       ],
     },
     "notification.commentReply": {
       key: "notification.commentReply",
-      label: "Antwort auf eigenen Kommentar",
-      group: "Benachrichtigungen",
+      label: "Reply to your comment",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         ISSUE_ID,
         ISSUE_TITLE,
-        { key: "text", description: "Vorschau der Antwort" },
+        { key: "text", description: "Preview of the reply" },
       ],
     },
     "notification.status": {
       key: "notification.status",
-      label: "Statuswechsel",
-      group: "Benachrichtigungen",
+      label: "Status change",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         ISSUE_ID,
         ISSUE_TITLE,
-        { key: "text", description: "Neuer Status (Rohschlüssel)" },
+        { key: "text", description: "New status (raw key)" },
       ],
     },
     "notification.invite": {
       key: "notification.invite",
-      label: "Mitgliedschaft (bestehendes Konto)",
-      group: "Benachrichtigungen",
+      label: "Membership (existing account)",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         WORKSPACE,
         PROJECT,
-        { key: "text", description: "Vergebene Rolle" },
+        { key: "text", description: "Role granted" },
       ],
     },
     "notification.role": {
       key: "notification.role",
-      label: "Rollenänderung",
-      group: "Benachrichtigungen",
+      label: "Role change",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         WORKSPACE,
         PROJECT,
-        { key: "text", description: "Neue Rolle" },
+        { key: "text", description: "New role" },
       ],
     },
     "notification.issueShared": {
       key: "notification.issueShared",
-      label: "Issue geteilt",
-      group: "Benachrichtigungen",
+      label: "Issue shared",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         ISSUE_ID,
         ISSUE_TITLE,
-        { key: "text", description: "Persönliche Nachricht (optional)" },
+        { key: "text", description: "Personal message (optional)" },
       ],
     },
     weeklyDigest: {
       key: "weeklyDigest",
-      label: "Wöchentliche Zusammenfassung",
-      group: "Zusammenfassungen",
+      label: "Weekly summary",
+      group: "Summaries",
       wired: false,
       placeholders: [
-        { key: "firstName", description: "Vorname" },
+        { key: "firstName", description: "First name" },
         WORKSPACE,
-        { key: "periodLabel", description: "Zeitraum, z. B. „13.–19. Januar“" },
-        { key: "completedCount", description: "Anzahl erledigt" },
-        { key: "assignedOpenCount", description: "Anzahl offen zugewiesen" },
-        { key: "createdCount", description: "Anzahl neu angelegt" },
+        { key: "periodLabel", description: 'Time period, e.g. "Jan 13–19"' },
+        { key: "completedCount", description: "Number completed" },
+        { key: "assignedOpenCount", description: "Number open and assigned" },
+        { key: "createdCount", description: "Number newly created" },
       ],
     },
     issueUpdate: {
       key: "issueUpdate",
-      label: "Issue-Sammeländerung",
-      group: "Benachrichtigungen",
+      label: "Issue batch update",
+      group: "Notifications",
       wired: false,
       placeholders: [ACTOR, ISSUE_ID, ISSUE_TITLE],
     },
     issueShare: {
       key: "issueShare",
-      label: "Öffentlicher Link per Mail",
-      group: "Benachrichtigungen",
+      label: "Public link via email",
+      group: "Notifications",
       wired: true,
       placeholders: [
         ACTOR,
         ISSUE_ID,
         ISSUE_TITLE,
-        { key: "text", description: "Persönliche Nachricht (optional)" },
+        { key: "text", description: "Personal message (optional)" },
       ],
     },
   };

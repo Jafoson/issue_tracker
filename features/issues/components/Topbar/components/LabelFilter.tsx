@@ -17,10 +17,9 @@ interface LabelFilterProps {
   value: string[];
   labels: Label[];
   /**
-   * Das Projekt, in dessen Rahmen gefiltert wird. Leer in einer
-   * projektübergreifenden Ansicht: dann stehen alle sichtbaren Labels zur Wahl
-   * und keines lässt sich von hier aus anlegen — ein neues Label braucht ein
-   * Zuhause, und das gäbe es hier nicht.
+   * The project this filter operates within. Empty in a cross-project
+   * view: then all visible labels are offered, and none can be created
+   * from here — a new label needs a home, and there wouldn't be one here.
    */
   projectId: string;
   projectName: string;

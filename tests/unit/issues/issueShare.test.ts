@@ -102,7 +102,7 @@ function reset() {
 describe("enableIssueShare()", () => {
   beforeEach(reset);
 
-  it("verlangt issue.share.manage im Projekt", async () => {
+  it("requires issue.share.manage in the project", async () => {
     mockRequirePermission.mockImplementation(() => {
       throw new PermissionError("issue.share.manage");
     });
@@ -110,14 +110,14 @@ describe("enableIssueShare()", () => {
     expect(mockIssueUpdate).not.toHaveBeenCalled();
   });
 
-  it("prüft im Kontext des Projekts", async () => {
+  it("checks in the context of the project", async () => {
     await enableIssueShare(ID);
     expect(mockRequirePermission).toHaveBeenCalledWith("issue.share.manage", {
       projectId: "p1",
     });
   });
 
-  it("setzt einen neuen Token und gibt die URL zurück", async () => {
+  it("sets a new token and returns the URL", async () => {
     const result = await enableIssueShare(ID);
 
     expect(result.ok).toBe(true);
@@ -133,7 +133,7 @@ describe("enableIssueShare()", () => {
     });
   });
 
-  it("protokolliert das Aktivieren", async () => {
+  it("logs the activation", async () => {
     await enableIssueShare(ID);
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
     expect(mockAuditCreate.mock.calls[0][0].data.action).toBe("issue.shared");
@@ -143,7 +143,7 @@ describe("enableIssueShare()", () => {
 describe("disableIssueShare()", () => {
   beforeEach(reset);
 
-  it("verlangt issue.share.manage im Projekt", async () => {
+  it("requires issue.share.manage in the project", async () => {
     mockRequirePermission.mockImplementation(() => {
       throw new PermissionError("issue.share.manage");
     });
@@ -151,7 +151,7 @@ describe("disableIssueShare()", () => {
     expect(mockIssueUpdate).not.toHaveBeenCalled();
   });
 
-  it("löscht den Token und seine Metadaten", async () => {
+  it("deletes the token and its metadata", async () => {
     const result = await disableIssueShare(ID);
 
     expect(result).toEqual({ ok: true });
@@ -166,7 +166,7 @@ describe("disableIssueShare()", () => {
     });
   });
 
-  it("protokolliert das Widerrufen", async () => {
+  it("logs the revocation", async () => {
     await disableIssueShare(ID);
     expect(mockAuditCreate.mock.calls[0][0].data.action).toBe(
       "issue.share.revoked",
@@ -177,7 +177,7 @@ describe("disableIssueShare()", () => {
 describe("shareIssueWithMember()", () => {
   beforeEach(reset);
 
-  it("verlangt issue.share.manage im Projekt", async () => {
+  it("requires issue.share.manage in the project", async () => {
     mockRequirePermission.mockImplementation(() => {
       throw new PermissionError("issue.share.manage");
     });
@@ -187,7 +187,7 @@ describe("shareIssueWithMember()", () => {
     expect(mockNotify).not.toHaveBeenCalled();
   });
 
-  it("benachrichtigt die ausgewählte Person mit dem Anlass issueShared", async () => {
+  it("notifies the selected person with the issueShared event", async () => {
     await shareIssueWithMember(ID, "u-target", "Schau mal rein");
 
     expect(mockNotify).toHaveBeenCalledWith({
@@ -201,7 +201,7 @@ describe("shareIssueWithMember()", () => {
     });
   });
 
-  it("ohne Nachricht bleibt text leer", async () => {
+  it("text stays empty without a message", async () => {
     await shareIssueWithMember(ID, "u-target");
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ text: "" }),
@@ -212,7 +212,7 @@ describe("shareIssueWithMember()", () => {
 describe("shareIssueByEmail()", () => {
   beforeEach(reset);
 
-  it("verlangt issue.share.manage im Projekt", async () => {
+  it("requires issue.share.manage in the project", async () => {
     mockRequirePermission.mockImplementation(() => {
       throw new PermissionError("issue.share.manage");
     });
@@ -222,13 +222,13 @@ describe("shareIssueByEmail()", () => {
     expect(mockIssueUpdate).not.toHaveBeenCalled();
   });
 
-  it("lehnt eine ungültige E-Mail-Adresse ab", async () => {
+  it("rejects an invalid email address", async () => {
     const result = await shareIssueByEmail(ID, "not-an-email");
     expect(result).toEqual({ error: expect.any(String) });
     expect(mockIssueUpdate).not.toHaveBeenCalled();
   });
 
-  it("schaltet den Link mit ein, wenn er noch aus ist", async () => {
+  it("turns the link on when it's still off", async () => {
     const result = await shareIssueByEmail(ID, "mara@example.com");
 
     expect(result).toEqual({ ok: true, url: expect.any(String) });
@@ -244,7 +244,7 @@ describe("shareIssueByEmail()", () => {
     expect(mockAuditCreate.mock.calls[0][0].data.action).toBe("issue.shared");
   });
 
-  it("erzeugt keinen neuen Token, wenn schon einer ohne Ablaufdatum aktiv ist", async () => {
+  it("doesn't create a new token when one without an expiry date is already active", async () => {
     mockIssueFindUnique.mockResolvedValue(
       baseIssue({ shareToken: "existing-token" }),
     );
@@ -259,7 +259,7 @@ describe("shareIssueByEmail()", () => {
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("erzeugt keinen neuen Token, wenn der aktive noch nicht abgelaufen ist", async () => {
+  it("doesn't create a new token when the active one hasn't expired yet", async () => {
     mockIssueFindUnique.mockResolvedValue(
       baseIssue({
         shareToken: "existing-token",
@@ -276,7 +276,7 @@ describe("shareIssueByEmail()", () => {
     expect(mockIssueUpdate).not.toHaveBeenCalled();
   });
 
-  it("erzeugt einen neuen Token, wenn der aktive schon abgelaufen ist", async () => {
+  it("creates a new token when the active one has already expired", async () => {
     mockIssueFindUnique.mockResolvedValue(
       baseIssue({
         shareToken: "expired-token",
@@ -305,12 +305,12 @@ describe("shareIssueByEmail()", () => {
 describe("getIssueByShareToken()", () => {
   beforeEach(reset);
 
-  it("liefert null für einen unbekannten Token", async () => {
+  it("returns null for an unknown token", async () => {
     mockIssueFindUnique.mockResolvedValue(null);
     expect(await getIssueByShareToken(TOKEN)).toBeNull();
   });
 
-  it("liefert null für einen leeren Token", async () => {
+  it("returns null for an empty token", async () => {
     expect(await getIssueByShareToken("")).toBeNull();
     expect(mockIssueFindUnique).not.toHaveBeenCalled();
   });
@@ -369,7 +369,7 @@ describe("getIssueByShareToken()", () => {
     };
   }
 
-  it("liefert eine minimale Projektion ohne Zugriffsfelder", async () => {
+  it("returns a minimal projection without access-control fields", async () => {
     mockIssueFindUnique.mockResolvedValue(shareableIssue());
     mockStatusFindMany.mockResolvedValue([
       {
@@ -406,7 +406,7 @@ describe("getIssueByShareToken()", () => {
     expect(result).not.toHaveProperty("access");
   });
 
-  it("liefert null für einen abgelaufenen Token", async () => {
+  it("returns null for an expired token", async () => {
     mockIssueFindUnique.mockResolvedValue(
       shareableIssue({ shareTokenExpiresAt: new Date("2020-01-01") }),
     );
@@ -418,7 +418,7 @@ describe("getIssueByShareToken()", () => {
     ).toBeNull();
   });
 
-  it("bleibt ohne Assignee gültig", async () => {
+  it("stays valid without an assignee", async () => {
     mockIssueFindUnique.mockResolvedValue(shareableIssue({ assignee: null }));
     mockStatusFindMany.mockResolvedValue([]);
     mockLabelFindMany.mockResolvedValue([]);

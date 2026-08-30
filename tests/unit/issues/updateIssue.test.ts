@@ -129,10 +129,10 @@ function reset() {
   );
 }
 
-describe("updateIssue() — Protokoll", () => {
+describe("updateIssue() — Audit log", () => {
   beforeEach(reset);
 
-  it("protokolliert eine Zuweisung, mit Farbe für den Avatar", async () => {
+  it("logs an assignment, with color for the avatar", async () => {
     mockUserFindUnique.mockResolvedValue({
       firstName: "Ada",
       lastName: "Lovelace",
@@ -155,7 +155,7 @@ describe("updateIssue() — Protokoll", () => {
     expect(entry.targetLabel).toBe("MOB-1: Ada Lovelace");
   });
 
-  it("protokolliert eine Umverteilung mit alter und neuer Person", async () => {
+  it("logs a reassignment with the old and new person", async () => {
     mockIssueFindUnique.mockResolvedValue(issue({ assigneeId: "u-mara" }));
     mockUserFindUnique.mockImplementation(
       async ({ where }: { where: { id: string } }) =>
@@ -172,7 +172,7 @@ describe("updateIssue() — Protokoll", () => {
     expect(entry.personColor).toBe("#camila");
   });
 
-  it("protokolliert eine Entfernung der Zuweisung", async () => {
+  it("logs removal of the assignment", async () => {
     mockIssueFindUnique.mockResolvedValue(issue({ assigneeId: "u-ada" }));
 
     await updateIssue(ID, { assignee: null });
@@ -185,7 +185,7 @@ describe("updateIssue() — Protokoll", () => {
     });
   });
 
-  it("protokolliert nichts, wenn dieselbe Person erneut zugewiesen wird", async () => {
+  it("logs nothing when the same person is assigned again", async () => {
     mockIssueFindUnique.mockResolvedValue(issue({ assigneeId: "u-ada" }));
 
     await updateIssue(ID, { assignee: "u-ada" });
@@ -193,7 +193,7 @@ describe("updateIssue() — Protokoll", () => {
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("protokolliert eine Titeländerung mit alt und neu", async () => {
+  it("logs a title change with old and new", async () => {
     await updateIssue(ID, { title: "Neuer Titel" });
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
@@ -202,12 +202,12 @@ describe("updateIssue() — Protokoll", () => {
     expect(entry.targetLabel).toBe("MOB-1: Ursprünglicher Titel → Neuer Titel");
   });
 
-  it("protokolliert nichts, wenn derselbe Titel erneut gespeichert wird", async () => {
+  it("logs nothing when the same title is saved again", async () => {
     await updateIssue(ID, { title: "Ursprünglicher Titel" });
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("protokolliert eine Beschreibungsänderung", async () => {
+  it("logs a description change", async () => {
     const changed: PMDoc = {
       type: "doc",
       content: [
@@ -223,12 +223,12 @@ describe("updateIssue() — Protokoll", () => {
     expect(entry.targetLabel).toBe("MOB-1");
   });
 
-  it("protokolliert nichts, wenn dasselbe Dokument erneut gespeichert wird", async () => {
+  it("logs nothing when the same document is saved again", async () => {
     await updateIssue(ID, { description: EMPTY_DOC });
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("protokolliert einen Statuswechsel mit Namen und roh in meta", async () => {
+  it("logs a status change with names, and raw in meta", async () => {
     await updateIssue(ID, { status: "in_progress" });
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
@@ -243,7 +243,7 @@ describe("updateIssue() — Protokoll", () => {
     });
   });
 
-  it("protokolliert eine Prioritätsänderung mit Namen und roh in meta", async () => {
+  it("logs a priority change with names, and raw in meta", async () => {
     await updateIssue(ID, { priority: 4 });
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
@@ -253,7 +253,7 @@ describe("updateIssue() — Protokoll", () => {
     expect(entry.meta).toEqual({ from: 2, to: 4 });
   });
 
-  it("protokolliert eine Typänderung mit Namen", async () => {
+  it("logs a type change with names", async () => {
     await updateIssue(ID, { type: "bug" });
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
@@ -262,7 +262,7 @@ describe("updateIssue() — Protokoll", () => {
     expect(entry.targetLabel).toBe("MOB-1: Aufgabe → Fehler");
   });
 
-  it("protokolliert, welche Labels dazukamen und welche weg sind", async () => {
+  it("logs which labels were added and which are gone", async () => {
     await updateIssue(ID, { labels: ["l-a", "l-c"] });
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
@@ -275,12 +275,12 @@ describe("updateIssue() — Protokoll", () => {
     });
   });
 
-  it("protokolliert nichts, wenn dieselben Labels nur anders sortiert ankommen", async () => {
+  it("logs nothing when the same labels arrive just sorted differently", async () => {
     await updateIssue(ID, { labels: ["l-b", "l-a"] });
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });
 
-  it("protokolliert mehrere geänderte Aspekte als je eigene Zeile", async () => {
+  it("logs several changed aspects as separate rows each", async () => {
     await updateIssue(ID, { title: "Neuer Titel", priority: 4 });
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(2);
@@ -291,10 +291,10 @@ describe("updateIssue() — Protokoll", () => {
   });
 });
 
-describe("moveIssue() — Protokoll", () => {
+describe("moveIssue() — Audit log", () => {
   beforeEach(reset);
 
-  it("protokolliert den Statuswechsel per Drag & Drop mit Namen", async () => {
+  it("logs the status change from drag & drop, with names", async () => {
     await moveIssue(ID, "done");
 
     expect(mockAuditCreate).toHaveBeenCalledTimes(1);
@@ -309,7 +309,7 @@ describe("moveIssue() — Protokoll", () => {
     });
   });
 
-  it("protokolliert nichts, wenn der Status gleich bleibt", async () => {
+  it("logs nothing when the status stays the same", async () => {
     await moveIssue(ID, "todo");
     expect(mockAuditCreate).not.toHaveBeenCalled();
   });

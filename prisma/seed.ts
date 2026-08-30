@@ -932,7 +932,7 @@ const realCommentId = new Map(
 // Lookups that fail hard instead of writing a broken reference.
 const ref = <K>(map: Map<K, string>, key: K, what: string): string => {
   const id = map.get(key);
-  if (!id) throw new Error(`Seed: ${what} "${String(key)}" nicht gemappt`);
+  if (!id) throw new Error(`Seed: ${what} "${String(key)}" not mapped`);
   return id;
 };
 
@@ -1056,7 +1056,7 @@ async function main() {
   // or similar, see example.env). Without SMTP, nobody can currently get
   // into a seed account — accepted deliberately, since it's test data.
   console.log(
-    `   ✓ ${USERS.length} users (Login nur per Magic Link — SMTP nötig, siehe example.env)`,
+    `   ✓ ${USERS.length} users (sign-in only via magic link — SMTP required, see example.env)`,
   );
 
   for (const m of WORKSPACE_MEMBERS) {
@@ -1129,9 +1129,7 @@ async function main() {
       },
     });
   }
-  console.log(
-    `   ✓ vault: ${vaultMembers.length} ausdrücklich eingeladene Mitglieder`,
-  );
+  console.log(`   ✓ vault: ${vaultMembers.length} explicitly invited members`);
 
   // ── Different managers for different projects ─────────────────────────────
   //
@@ -1158,7 +1156,7 @@ async function main() {
       projectId: { in: [web, platform] },
     },
   });
-  console.log("   ✓ manager1 → nur Web App, manager2 → nur Mobile");
+  console.log("   ✓ manager1 → Web App only, manager2 → Mobile only");
 
   // ── Blocked: with and without effect ────────────────────────────────────────
   //
@@ -1187,7 +1185,7 @@ async function main() {
     data: { roleId: blockedRoleId },
   });
   console.log(
-    "   ✓ member3 in Mobile blocked, project_lead2 in Platform blocked (wirkungslos)",
+    "   ✓ member3 blocked in Mobile, project_lead2 blocked in Platform (no effect)",
   );
 
   for (const l of LABELS) {

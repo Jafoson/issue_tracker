@@ -4,12 +4,12 @@ import { getAccess, PLATFORM } from "@/lib/permissions";
 import TabList, { type TabGroup } from "../components/TabList";
 
 /**
- * Die Bereiche der Plattformverwaltung.
+ * The sections of platform administration.
  *
- * Gefiltert nach dem, was die Plattform-Rolle hergibt: die Rollen dieser Ebene
- * sind verschieden geschnitten, und Support etwa verwaltet keine Konten. Der
- * Filter ist Höflichkeit, kein Schutz — die Abfragen dahinter prüfen selbst
- * (`features/admin/queries.ts`).
+ * Filtered by what the platform role grants: the roles at this level are
+ * scoped differently, and Support, for instance, doesn't manage accounts.
+ * The filter is a courtesy, not a safeguard — the queries behind it check
+ * for themselves (`features/admin/queries.ts`).
  */
 async function NavGroupAdmin() {
   const t = await getTranslations("nav");

@@ -20,54 +20,54 @@ interface TableBaseProps<T> {
   columns: TableColumn<T>[];
   getRowKey: (row: T) => string;
   /**
-   * Element, das die gesamte Zeile überdeckt und sie bedienbar macht — in der
-   * Regel ein `<Link>`. Bewusst kein `onRowClick`: ein Link bringt Fokus,
-   * Tastatur, Mittelklick und "in neuem Tab öffnen" von Haus aus mit.
-   * Interaktive Zellinhalte (Buttons, Links, Inputs) liegen automatisch darüber.
+   * Element that covers the entire row and makes it operable — usually a
+   * `<Link>`. Deliberately no `onRowClick`: a link comes with focus,
+   * keyboard, middle-click, and "open in new tab" built in. Interactive
+   * cell content (buttons, links, inputs) automatically sits above it.
    */
   rowOverlay?: (row: T) => ReactNode;
-  /** Hebt eine Zeile dauerhaft hervor, z. B. das gerade geöffnete Objekt. */
+  /** Permanently highlights a row, e.g. the currently open object. */
   isRowActive?: (row: T) => boolean;
-  /** Name der Tabelle für Screenreader. */
+  /** Name of the table for screen readers. */
   label?: string;
-  /** Ersatzinhalt, wenn keine einzige Zeile vorhanden ist. */
+  /** Fallback content when there's not a single row. */
   empty?: ReactNode;
   /**
-   * Zusätzliche Zeile am Ende, im selben Scroll-Bereich wie die Zeilen davor —
-   * für den Rand des Infinite Scroll (`LoadMoreSentinel`). Bei `fill` sitzt er
-   * sonst außerhalb der scrollenden Fläche und bekäme nie mit, dass jemand ans
-   * Ende blättert.
+   * Extra row at the end, in the same scroll area as the rows before it —
+   * for the infinite-scroll edge (`LoadMoreSentinel`). With `fill`, it
+   * would otherwise sit outside the scrolling area and never notice
+   * someone scrolling to the end.
    */
   footer?: ReactNode;
-  /** Füllt den verfügbaren Platz eines Flex-Containers und scrollt selbst. */
+  /** Fills the available space of a flex container and scrolls itself. */
   fill?: boolean;
   /**
-   * `"card"` fasst die Tabelle in eine umrandete Fläche mit Trennlinien
-   * zwischen den Zeilen — für Verwaltungslisten, die als abgeschlossener Block
-   * auf einer Seite stehen. `"plain"` (Vorgabe) lässt die Zeilen frei im Raum
-   * stehen und trennt sie nur über Rhythmus und Hover; das passt, wenn die
-   * Tabelle die ganze Ansicht ist.
+   * `"card"` wraps the table in a bordered area with dividers between the
+   * rows — for admin lists that stand as a self-contained block on a page.
+   * `"plain"` (default) leaves the rows floating freely and separates them
+   * only through rhythm and hover; that fits when the table is the whole
+   * view.
    */
   variant?: "plain" | "card";
   /**
-   * Macht die Zeilen sortierbar — das Ergebnis von `useTableDnd`. Ohne diese
-   * Prop bleibt die Tabelle, was sie ist: eine Ansicht ohne Zustand, die auch
-   * eine Server Component rendern kann.
+   * Makes the rows draggable — the result of `useTableDnd`. Without this
+   * prop, the table stays what it is: a stateless view that a Server
+   * Component can render too.
    */
   dnd?: TableDnd<T>;
   /**
-   * Macht die Köpfe sortierbarer Spalten anklickbar — das Ergebnis von
-   * `useTableSort`. Wie bei `dnd` bleibt die Tabelle selbst zustandslos: sie
-   * zeichnet, wonach gerade geordnet ist, und meldet den Klick zurück. Sortiert
-   * werden die Zeilen beim Aufrufer, bevor sie hier ankommen.
+   * Makes the headers of sortable columns clickable — the result of
+   * `useTableSort`. As with `dnd`, the table itself stays stateless: it
+   * draws what's currently sorted by and reports the click back. The rows
+   * are sorted by the caller before they arrive here.
    */
   sort?: TableSort;
   className?: string;
 }
 
 /**
- * Zeilen kommen entweder flach (`rows`) oder in Gruppen mit eigenem Kopf
- * (`groups`) — beides gleichzeitig ergäbe zwei Wahrheiten über dieselbe Tabelle.
+ * Rows come either flat (`rows`) or in groups with their own header
+ * (`groups`) — both at once would be two truths about the same table.
  */
 export type TableProps<T> = TableBaseProps<T> &
   ({ rows: T[]; groups?: never } | { groups: TableGroup<T>[]; rows?: never });
@@ -75,12 +75,12 @@ export type TableProps<T> = TableBaseProps<T> &
 const DEFAULT_WIDTH = "auto";
 
 /**
- * Die Winkel der Sortiermarke, alle im selben Feld (10×14).
+ * The angles of the sort mark, all in the same field (10×14).
  *
- * Ungewählt stehen `UP` und `DOWN` zusammen als Paar — das gewohnte Zeichen für
- * "hier lässt sich ordnen". Sortiert steht nur noch der geltende, dann aber in
- * der Mitte des Feldes: eine Richtung wird gezeigt, nicht eine von zweien
- * betont.
+ * Unselected, `UP` and `DOWN` sit together as a pair — the familiar sign for
+ * "sortable here". Once sorted, only the active one remains, but then in
+ * the middle of the field: one direction is shown, not one of two
+ * emphasized.
  */
 const SORT_MARK = {
   up: "M2 5.5 5 2.5l3 3",
@@ -89,7 +89,7 @@ const SORT_MARK = {
   desc: "M2 5.5 5 8.5l3-3",
 };
 
-/** Sechs Punkte — das gewohnte Zeichen für "hier anfassen". */
+/** Six dots — the familiar sign for "grab here". */
 const GRIP_DOTS = [
   [3, 4],
   [7, 4],
@@ -100,27 +100,27 @@ const GRIP_DOTS = [
 ];
 
 /**
- * Tabelle mit einem einzigen Grid-Raster: `<tr>` greift die Spalten der
- * `<table>` per `subgrid` wieder ab. Dadurch stehen die Spalten aller Gruppen
- * exakt untereinander, auch wenn ihre Breite aus dem Inhalt kommt — und die
- * Zeile bleibt ein echter Kasten, der Sticky-Gruppenköpfe, Hover und einen
- * zeilenfüllenden Link trägt, woran das native Tabellenlayout scheitert.
+ * Table with a single grid raster: `<tr>` picks up the `<table>`'s columns
+ * again via `subgrid`. That way the columns of every group line up exactly,
+ * even when their width comes from the content — and the row stays a real
+ * box that can carry sticky group headers, hover, and a row-filling link,
+ * which is exactly where native table layout falls short.
  *
- * Das Aussehen sitzt in `table.module.scss`. Vier Werte darf der Aufrufer
- * verstellen — als vererbte Custom Properties auf seinem Wrapper, nicht als
- * Prop, weil sie reine Optik sind:
+ * The appearance lives in `table.module.scss`. The caller may adjust four
+ * values — as inherited custom properties on its wrapper, not as a prop,
+ * because they're pure appearance:
  *
  * ```scss
  * .wrapper {
- *   --table-row-height: 52px;              // Höhe der Zeilen
- *   --table-surface: var(--surface);       // Grundfläche der Karte
- *   --table-divider: var(--outline-variant); // Linie zwischen den Zeilen
- *   --table-hover: transparent;            // Fläche unter dem Zeiger
+ *   --table-row-height: 52px;              // row height
+ *   --table-surface: var(--surface);       // base surface of the card
+ *   --table-divider: var(--outline-variant); // line between rows
+ *   --table-hover: transparent;            // area under the pointer
  * }
  * ```
  *
- * Vorgabe ist die einzeilige Liste: Zeilenhöhe `--row-h`, Seitengrund, keine
- * Trennlinien.
+ * The default is the single-line list: row height `--row-h`, page
+ * background, no dividers.
  */
 export function Table<T>({
   columns,
@@ -138,7 +138,7 @@ export function Table<T>({
   rows,
   groups,
 }: TableProps<T>) {
-  // Flache Zeilen sind der Sonderfall "eine Gruppe ohne Kopf".
+  // Flat rows are the special case "one group without a header".
   const sections: TableGroup<T>[] = groups ?? [
     { id: FLAT_GROUP_ID, rows: rows ?? [] },
   ];
@@ -159,22 +159,23 @@ export function Table<T>({
     .filter(Boolean)
     .join(" ");
 
-  // Scrollt eine Karte selbst, brauchen Rundung und Scrollbalken getrennte
-  // Elemente: der native Balken rundet seine eigene Ecke nicht mit, die Karte
-  // sähe rechts sonst eckig aus, sobald sie überläuft. `cardFrame` übernimmt
-  // Rahmen und Rundung von außen, ohne selbst zu scrollen.
+  // If a card scrolls itself, rounding and the scrollbar need separate
+  // elements: the native bar doesn't round its own corner along with it,
+  // so the card would look square on the right the moment it overflows.
+  // `cardFrame` takes over the border and rounding from the outside,
+  // without scrolling itself.
   const cardFill = variant === "card" && Boolean(fill);
 
-  // Die Spaltenbreiten sind Daten, kein Aussehen — deshalb als Custom Property
-  // ins Stylesheet gereicht statt als Klasse pro Layout.
+  // Column widths are data, not appearance — so they're passed into the
+  // stylesheet as a custom property instead of as a class per layout.
   const trackStyle = {
     "--table-cols": columns
       .map((column) => column.width ?? DEFAULT_WIDTH)
       .join(" "),
   } as CSSProperties;
 
-  // Ein Anker ist von Haus aus ziehbar: ohne das Verbot nähme der Browser beim
-  // Ziehen die Verknüpfung mit statt die Zeile darunter.
+  // An anchor is draggable by default: without this prohibition, the
+  // browser would drag the link along instead of the row beneath it.
   const overlayOf = (row: T) => {
     const node = rowOverlay?.(row);
     return dnd && isValidElement<{ draggable?: boolean }>(node)
@@ -182,8 +183,8 @@ export function Table<T>({
       : node;
   };
 
-  // Ohne Zeilen gibt es nichts auszurichten: der Ersatzinhalt steht für sich,
-  // nicht in den Spalten der Tabelle.
+  // Without rows there's nothing to align: the fallback content stands on
+  // its own, not within the table's columns.
   if (isEmpty && empty) {
     const emptyEl = (
       <div
@@ -207,12 +208,12 @@ export function Table<T>({
   }
 
   const tableEl = (
-    // Die Rollen wirken doppelt gemoppelt, sind es aber nicht: Browser leiten
-    // die Tabellensemantik aus dem Layout ab und verwerfen sie, sobald
-    // `display` überschrieben wird — hier durch das Grid. Ohne die Rollen
-    // meldet ein Screenreader eine namenlose Gruppe statt einer Tabelle.
-    // `noRedundantRoles`/`useSemanticElements` sind für diese Datei deshalb in
-    // der biome.json abgeschaltet.
+    // The roles look redundant, but aren't: browsers derive table semantics
+    // from the layout and drop them as soon as `display` is overridden —
+    // here, by the grid. Without the roles, a screen reader announces a
+    // nameless group instead of a table. `noRedundantRoles`/
+    // `useSemanticElements` are therefore disabled for this file in
+    // biome.json.
     <table
       className={root}
       style={trackStyle}
@@ -221,9 +222,9 @@ export function Table<T>({
       data-dnd={dnd ? "" : undefined}
       {...(dnd ? dnd.root : {})}
     >
-      {/* Die einzige Stelle für eine Live-Region innerhalb einer <table>. Sie
-          sagt an, was beim Sortieren per Tastatur zu sehen wäre; `role="status"`
-          nimmt ihr die Rolle als Beschriftung der Tabelle. */}
+      {/* The only place for a live region inside a <table>. It announces
+          what keyboard sorting would show; `role="status"` takes away its
+          role as the table's caption. */}
       {dnd && (
         <caption className={styles.status} role="status">
           {dnd.status}
@@ -242,9 +243,9 @@ export function Table<T>({
                   className={cellClass(column)}
                   role="columnheader"
                   scope="col"
-                  // `none` sagt "sortierbar, aber gerade nicht sortiert" —
-                  // ohne das Attribut wäre die Spalte für einen Screenreader
-                  // gar nicht erst als Griff erkennbar.
+                  // `none` says "sortable, but not currently sorted" —
+                  // without this attribute, a screen reader wouldn't even
+                  // recognize the column as a handle in the first place.
                   aria-sort={
                     active
                       ? sort?.direction === "asc"
@@ -263,10 +264,10 @@ export function Table<T>({
                       onClick={() => sort?.toggle(column.id)}
                     >
                       {column.header}
-                      {/* Die Marke steht immer da, auch ungewählt: eine
-                          Sortierung, die man erst beim Überfahren entdeckt,
-                          gibt es auf einem Tastfeld gar nicht. Das Feld behält
-                          dabei seine Größe — beim Klicken springt nichts. */}
+                      {/* The mark is always there, even unselected: a sort
+                          you'd only discover on hover doesn't exist at all
+                          on a touchscreen. The field keeps its size in the
+                          process — nothing jumps on click. */}
                       <svg
                         className={styles.sortArrow}
                         data-direction={active ? sort?.direction : undefined}
@@ -301,8 +302,8 @@ export function Table<T>({
       )}
 
       {sections.map((section) => (
-        // `display: contents` — die Gruppe strukturiert nur, das Raster gehört
-        // der Tabelle.
+        // `display: contents` — the group only structures, the raster
+        // belongs to the table.
         <tbody
           key={section.id}
           className={styles.group}
@@ -343,8 +344,8 @@ export function Table<T>({
                       className={cellClass(column)}
                       role="cell"
                     >
-                      {/* Griff und Overlay hängen in der ersten Zelle, gespannt
-                        werden sie über die ganze Zeile. */}
+                      {/* Handle and overlay hang in the first cell, spanned
+                        across the entire row. */}
                       {index === 0 && handle && (
                         <button
                           type="button"

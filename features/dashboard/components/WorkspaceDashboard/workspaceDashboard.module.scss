@@ -1,8 +1,8 @@
-/* Dasselbe Raster wie `ProjectDashboard/projectDashboard.module.scss` eine
-   Ebene tiefer — siehe dort für die Begründung jeder Regel. Eigene Datei statt
-   geteilter Import: die beiden Seiten liegen in verschiedenen Features, und
-   eine gemeinsame SCSS-Datei über die Grenze hinweg wäre eine Kopplung, die
-   diese Regeln nicht rechtfertigen. */
+/* The same grid as `ProjectDashboard/projectDashboard.module.scss` one
+   level down — see there for the reasoning behind each rule. A separate
+   file instead of a shared import: the two pages live in different
+   features, and a shared SCSS file across that boundary would be a coupling
+   these rules don't justify. */
 .body {
   flex: 1;
   min-height: 0;
@@ -13,10 +13,10 @@
   gap: 16px;
 }
 
-/* Wie in `ProjectDashboard/projectDashboard.module.scss`: die Übersicht passt
-   sich der verfügbaren Höhe an, statt die Seite scrollen zu lassen —
-   `WorkspaceProfileView` lässt lange Listen in sich selbst scrollen. Nur bis
-   zu der Breite, ab der die Spalten dort untereinander stehen. */
+/* As in `ProjectDashboard/projectDashboard.module.scss`: the overview
+   adapts to the available height instead of letting the page scroll —
+   `WorkspaceProfileView` lets long lists scroll within themselves. Only up
+   to the width where the columns there stack. */
 .body[data-view="profile"] {
   overflow: hidden;
 }
@@ -47,8 +47,8 @@
   gap: 8px;
 }
 
-/* Der Hinweis, dass hier nur die eigenen Zahlen stehen — knapp, keine eigene
-   Karte: er soll auffallen, nicht die Seite dominieren. */
+/* The notice that only your own numbers are shown here — terse, no card of
+   its own: it's meant to stand out, not dominate the page. */
 .scopeHint {
   display: flex;
   align-items: center;

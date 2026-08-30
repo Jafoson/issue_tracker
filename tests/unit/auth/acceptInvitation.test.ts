@@ -89,10 +89,10 @@ function reset() {
   });
 }
 
-describe("acceptInvitation() — Zugriff", () => {
+describe("acceptInvitation() — access", () => {
   beforeEach(reset);
 
-  it("verlangt eine Session", async () => {
+  it("requires a session", async () => {
     mockGetSession.mockResolvedValue(null);
     expect(await acceptInvitation("tok")).toEqual({
       error: "You must be signed in to accept this invitation.",
@@ -102,7 +102,7 @@ describe("acceptInvitation() — Zugriff", () => {
 
   // Unknown, expired, used: `openInvitation` doesn't distinguish between
   // these, and neither does this message.
-  it("lehnt eine ungültige Einladung ab", async () => {
+  it("rejects an invalid invitation", async () => {
     mockInvitationFindUnique.mockResolvedValue(null);
     expect(await acceptInvitation("tok")).toEqual({
       error: "This invitation is no longer valid. Ask for a new one.",
@@ -110,7 +110,7 @@ describe("acceptInvitation() — Zugriff", () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("lehnt eine fremde, eingeloggte Sitzung ab", async () => {
+  it("rejects a logged-in session belonging to someone else", async () => {
     mockGetSession.mockResolvedValue({ userId: "u-other" });
     expect(await acceptInvitation("tok")).toEqual({
       error:
@@ -120,10 +120,10 @@ describe("acceptInvitation() — Zugriff", () => {
   });
 });
 
-describe("acceptInvitation() — Zugang einrichten", () => {
+describe("acceptInvitation() — setting up access", () => {
   beforeEach(reset);
 
-  it("hebt pending auf — erst damit greifen die Rechte der Rolle", async () => {
+  it("clears pending — only then does the role's permissions take effect", async () => {
     await acceptInvitation("tok");
     expect(mockTx.workspaceMember.update).toHaveBeenCalledWith({
       where: { workspaceId_userId: { workspaceId: "acme", userId: "u-1" } },
@@ -131,7 +131,7 @@ describe("acceptInvitation() — Zugang einrichten", () => {
     });
   });
 
-  it("nimmt die Person in die öffentlichen Projekte auf", async () => {
+  it("adds the person to the public projects", async () => {
     await acceptInvitation("tok");
     expect(mockTx.project.findMany.mock.calls[0][0].where.visibility).toBe(
       "public",
@@ -139,18 +139,18 @@ describe("acceptInvitation() — Zugang einrichten", () => {
     expect(mockTx.projectMember.createMany).toHaveBeenCalled();
   });
 
-  it("verbraucht den Token", async () => {
+  it("consumes the token", async () => {
     await acceptInvitation("tok");
     const call = mockTx.invitation.update.mock.calls[0][0];
     expect(call.where).toEqual({ token: "tok" });
     expect(call.data.acceptedAt).toBeInstanceOf(Date);
   });
 
-  it("schickt in den Workspace", async () => {
+  it("sends them into the workspace", async () => {
     expect(await acceptInvitation("tok")).toEqual({ redirectTo: "/acme" });
   });
 
-  it("protokolliert die Aufnahme", async () => {
+  it("logs the addition", async () => {
     await acceptInvitation("tok");
     const entry = mockAuditLogCreate.mock.calls[0][0].data;
     expect(entry.action).toBe("member.added");
@@ -162,10 +162,10 @@ describe("acceptInvitation() — Zugang einrichten", () => {
   });
 });
 
-describe("acceptInvitation() — Projekt-Gast", () => {
+describe("acceptInvitation() — project guest", () => {
   beforeEach(reset);
 
-  it("lässt einen Gast ohne Workspace-Mitgliedschaft in Ruhe", async () => {
+  it("leaves a guest without workspace membership alone", async () => {
     // No `WorkspaceMember`: access hinges solely on the project row, which
     // is already in place. There's nothing to lift here.
     mockTx.workspaceMember.findUnique.mockResolvedValue(null);
@@ -178,7 +178,7 @@ describe("acceptInvitation() — Projekt-Gast", () => {
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
 
-  it("rührt eine schon angenommene Mitgliedschaft nicht an", async () => {
+  it("doesn't touch a membership that's already been accepted", async () => {
     mockTx.workspaceMember.findUnique.mockResolvedValue({
       pending: false,
       role: { permissions: [] },

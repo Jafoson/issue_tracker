@@ -28,12 +28,12 @@ const make = (name: string) =>
 const keyName = (key: unknown) => (key as { key: string }).key;
 
 describe("createSuggestion", () => {
-  test("vergibt überhaupt einen eigenen Plugin-Schlüssel", () => {
+  test("assigns its own plugin key at all", () => {
     // Without this key, the module-wide default from @tiptap/suggestion would apply.
     expect(make("mentionSuggestion").pluginKey).toBeDefined();
   });
 
-  test("gibt zwei Triggern niemals denselben Schlüssel", () => {
+  test("never gives two triggers the same key", () => {
     const a = make("mentionSuggestion");
     const b = make("issueLinkSuggestion");
 
@@ -41,7 +41,7 @@ describe("createSuggestion", () => {
     expect(keyName(a.pluginKey)).not.toBe(keyName(b.pluginKey));
   });
 
-  test("hält alle vier Trigger des Editors auseinander", () => {
+  test("keeps all four of the editor's triggers apart", () => {
     // The same names as in `RichTextEditor` — four plugins in one editor.
     const names = [
       "mentionSuggestion",
@@ -54,13 +54,13 @@ describe("createSuggestion", () => {
     expect(new Set(keys).size).toBe(names.length);
   });
 
-  test("übernimmt den Namen in den Schlüssel — für lesbare Fehlermeldungen", () => {
+  test("carries the name into the key — for readable error messages", () => {
     expect(keyName(make("mentionSuggestion").pluginKey)).toStartWith(
       "mentionSuggestion",
     );
   });
 
-  test("reicht die Trigger-Optionen unverändert durch", () => {
+  test("passes the trigger options through unchanged", () => {
     const suggestion = createSuggestion<SuggestionItem>({
       name: "test",
       char: "#",

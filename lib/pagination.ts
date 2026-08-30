@@ -1,5 +1,5 @@
 /**
- * Seitengröße für Tabellen mit Infinite Scroll — dieselbe überall, damit sich
- * das Nachladen gleich anfühlt, ganz gleich welche Liste gerade scrollt.
+ * Page size for tables with infinite scroll — the same everywhere, so
+ * loading more feels the same no matter which list is scrolling.
  */
 export const TABLE_PAGE_SIZE = 50;

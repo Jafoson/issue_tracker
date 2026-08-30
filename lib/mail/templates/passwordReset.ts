@@ -1,4 +1,4 @@
-import { escapeHtml, formatDateDe } from "@/lib/mail/templates/html";
+import { escapeHtml, formatDate } from "@/lib/mail/templates/html";
 import {
   renderAlertBox,
   renderDetailTable,
@@ -27,8 +27,8 @@ export interface PasswordResetEmailInput {
   securityUrl?: string;
 }
 
-function formatTimeDe(date: Date): string {
-  return date.toLocaleTimeString("de-DE", {
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -50,43 +50,43 @@ export function passwordResetEmail(
   const placeholders = { email: input.to };
 
   const subject = resolveText(
-    "Passwort zurücksetzen",
+    "Reset your password",
     override?.subject,
     placeholders,
   );
   const heading = resolveText(
-    "Passwort zurücksetzen",
+    "Reset your password",
     override?.heading,
     placeholders,
   );
   const introText = resolveText(
-    `Für dein Konto ${input.to} wurde eine Passwort-Zurücksetzung angefordert. Wähle ein neues Passwort — bestehende Sitzungen werden danach abgemeldet.`,
+    `A password reset was requested for your account ${input.to}. Choose a new password — existing sessions will then be signed out.`,
     override?.bodyText,
     placeholders,
   );
 
   const rows = [
     {
-      label: "Anfrage",
-      value: `${formatDateDe(input.requestedAt)}, ${formatTimeDe(input.requestedAt)}`,
+      label: "Requested",
+      value: `${formatDate(input.requestedAt)}, ${formatTime(input.requestedAt)}`,
     },
     ...(input.device
-      ? [{ label: "Gerät", value: escapeHtml(input.device) }]
+      ? [{ label: "Device", value: escapeHtml(input.device) }]
       : []),
     ...(input.location
-      ? [{ label: "Ort", value: escapeHtml(input.location) }]
+      ? [{ label: "Location", value: escapeHtml(input.location) }]
       : []),
     {
-      label: "Gültig bis",
-      value: `${formatTimeDe(expiresAt)} (${input.expiresInMinutes} Min.)`,
+      label: "Valid until",
+      value: `${formatTime(expiresAt)} (${input.expiresInMinutes} min)`,
     },
   ];
 
   const alertHtml = renderAlertBox(
-    "Warst das nicht du?",
-    `Ändere dein Passwort sicherheitshalber.${
+    "Wasn't you?",
+    `Change your password as a precaution.${
       input.securityUrl
-        ? ` <a href="${escapeHtml(input.securityUrl)}" style="color: inherit;">Sicherheitseinstellungen öffnen</a>.`
+        ? ` <a href="${escapeHtml(input.securityUrl)}" style="color: inherit;">Open security settings</a>.`
         : ""
     }`,
   );
@@ -96,10 +96,10 @@ export function passwordResetEmail(
     ${renderDetailTable(rows)}`;
 
   const html = renderLayout({
-    preheader: `Passwort-Zurücksetzung für ${input.to} angefordert.`,
+    preheader: `Password reset requested for ${input.to}.`,
     heading: escapeHtml(heading),
     bodyHtml: `${bodyHtml}${alertHtml}`,
-    ctaLabel: "Neues Passwort wählen",
+    ctaLabel: "Choose new password",
     ctaUrl: input.resetUrl,
     recipientEmail: input.to,
   });
@@ -109,14 +109,14 @@ export function passwordResetEmail(
     "",
     introText,
     "",
-    `Anfrage: ${formatDateDe(input.requestedAt)}, ${formatTimeDe(input.requestedAt)}`,
-    ...(input.device ? [`Gerät: ${input.device}`] : []),
-    ...(input.location ? [`Ort: ${input.location}`] : []),
-    `Gültig bis ${formatTimeDe(expiresAt)} (${input.expiresInMinutes} Min.)`,
+    `Requested: ${formatDate(input.requestedAt)}, ${formatTime(input.requestedAt)}`,
+    ...(input.device ? [`Device: ${input.device}`] : []),
+    ...(input.location ? [`Location: ${input.location}`] : []),
+    `Valid until ${formatTime(expiresAt)} (${input.expiresInMinutes} min)`,
     "",
-    `Neues Passwort wählen: ${input.resetUrl}`,
+    `Choose new password: ${input.resetUrl}`,
     "",
-    "Warst das nicht du? Ändere dein Passwort sicherheitshalber.",
+    "Wasn't you? Change your password as a precaution.",
   ].join("\n");
 
   return { subject, html, text };

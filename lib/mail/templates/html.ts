@@ -24,14 +24,14 @@ export function humanizeKey(value: string): string {
 }
 
 /**
- * `21. August 2026` — hardcoded to German instead of going through
+ * `August 21, 2026` — hardcoded to a fixed locale instead of going through
  * `toLocaleDateString(undefined, …)` like `lib/utils/date.ts`: the
  * `undefined` locale used there needs a browser that has one set. An email
  * is built server-side, without that context — the result would depend on
  * the server's locale instead of being predictable.
  */
-export function formatDateDe(date: Date): string {
-  return date.toLocaleDateString("de-DE", {
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",

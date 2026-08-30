@@ -19,7 +19,7 @@ function text(node: PMNode): string {
 }
 
 describe("fromMarkdown", () => {
-  test("macht aus leerem Text ein leeres Dokument mit einem Absatz", () => {
+  test("turns empty text into an empty document with one paragraph", () => {
     expect(fromMarkdown("")).toEqual({
       type: "doc",
       content: [{ type: "paragraph" }],
@@ -30,7 +30,7 @@ describe("fromMarkdown", () => {
     });
   });
 
-  test("erkennt Überschriften an der Anzahl der Rauten", () => {
+  test("recognizes headings by the number of hashes", () => {
     expect(first("# Eins")).toMatchObject({
       type: "heading",
       attrs: { level: 1 },
@@ -43,7 +43,7 @@ describe("fromMarkdown", () => {
     expect(first("#kein Titel")).toMatchObject({ type: "paragraph" });
   });
 
-  test("erkennt die Auszeichnungen im Absatz", () => {
+  test("recognizes the marks within a paragraph", () => {
     const marks = (source: string) =>
       (first(source).content ?? []).flatMap((n) =>
         (n.marks ?? []).map((m) => m.type),
@@ -57,7 +57,7 @@ describe("fromMarkdown", () => {
     expect(marks("Ein `Code` Text")).toContain("code");
   });
 
-  test("schachtelt Auszeichnungen ineinander", () => {
+  test("nests marks inside one another", () => {
     const node = first("**fett und *kursiv* zugleich**");
     const nested = (node.content ?? []).find((n) =>
       (n.marks ?? []).some((m) => m.type === "italic"),
@@ -68,20 +68,20 @@ describe("fromMarkdown", () => {
     ]);
   });
 
-  test("macht aus einzelnen Umbrüchen harte Zeilenumbrüche", () => {
+  test("turns single line breaks into hard line breaks", () => {
     // The old renderer made them visible via `pre-wrap`.
     const node = first("Erste Zeile\nZweite Zeile");
     expect(node.content?.some((n) => n.type === "hardBreak")).toBe(true);
     expect(blocks("Erste\n\nZweite")).toHaveLength(2);
   });
 
-  test("erkennt beide Listenarten", () => {
+  test("recognizes both list types", () => {
     expect(first("- eins\n- zwei")).toMatchObject({ type: "bulletList" });
     expect(first("1. eins\n2. zwei")).toMatchObject({ type: "orderedList" });
     expect(first("- eins\n- zwei").content).toHaveLength(2);
   });
 
-  test("erkennt Checklisten samt Zustand", () => {
+  test("recognizes checklists along with their state", () => {
     const list = first("- [ ] offen\n- [x] erledigt");
     expect(list.type).toBe("taskList");
     expect(list.content?.[0]).toMatchObject({ attrs: { checked: false } });
@@ -89,12 +89,12 @@ describe("fromMarkdown", () => {
     expect(text(list)).toBe("offenerledigt");
   });
 
-  test("hält Checkliste und einfache Aufzählung auseinander", () => {
+  test("distinguishes a checklist from a plain bullet list", () => {
     const result = blocks("- normal\n- [ ] eine Aufgabe");
     expect(result.map((b) => b.type)).toEqual(["bulletList", "taskList"]);
   });
 
-  test("erkennt Zitat, Codeblock und Trennlinie", () => {
+  test("recognizes blockquote, code block, and horizontal rule", () => {
     expect(first("> zitiert")).toMatchObject({ type: "blockquote" });
 
     const code = first("```ts\nconst a = 1\n```");
@@ -107,7 +107,7 @@ describe("fromMarkdown", () => {
     expect(first("---")).toMatchObject({ type: "horizontalRule" });
   });
 
-  test("macht aus Links einen Textknoten mit Link-Mark", () => {
+  test("turns links into a text node with a link mark", () => {
     const node = first("[Orbit](https://example.com)");
     const link = node.content?.[0];
     expect(link?.marks?.[0]).toMatchObject({
@@ -117,14 +117,14 @@ describe("fromMarkdown", () => {
     expect(text(node)).toBe("Orbit");
   });
 
-  test("erkennt nackte Adressen", () => {
+  test("recognizes bare URLs", () => {
     const node = first("Siehe https://example.com dort");
     expect(
       node.content?.some((n) => (n.marks ?? []).some((m) => m.type === "link")),
     ).toBe(true);
   });
 
-  test("macht aus Bildern einen eigenen Knoten", () => {
+  test("turns images into their own node", () => {
     const node = first("![Alt-Text](/bild.png)");
     expect(node.content?.[0]).toMatchObject({
       type: "image",
@@ -132,14 +132,14 @@ describe("fromMarkdown", () => {
     });
   });
 
-  test("lässt gefährliche Adressen als Text stehen", () => {
+  test("leaves dangerous URLs as plain text", () => {
     const node = first("[klick](javascript:alert(1))");
     // No link mark, no image — just the original text.
     expect(node.content?.some((n) => (n.marks ?? []).length > 0)).toBe(false);
     expect(text(node)).toContain("klick");
   });
 
-  test("trennt aufeinanderfolgende Blöcke ohne Leerzeile", () => {
+  test("separates consecutive blocks without a blank line", () => {
     const result = blocks("# Titel\n- eins\n> zitat");
     expect(result.map((b) => b.type)).toEqual([
       "heading",
@@ -148,7 +148,7 @@ describe("fromMarkdown", () => {
     ]);
   });
 
-  test("erzeugt Absätze ohne leeres content-Array", () => {
+  test("creates paragraphs without an empty content array", () => {
     // ProseMirror rejects `content: []` — an empty paragraph has no field at all.
     const node = fromMarkdown("");
     expect(node.content?.[0]).not.toHaveProperty("content");

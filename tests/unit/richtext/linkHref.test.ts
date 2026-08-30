@@ -13,28 +13,28 @@ import { faviconOf, faviconStyle, hostOf } from "@/lib/richtext/link";
  */
 
 describe("toHref", () => {
-  test("lässt vollständige Adressen unangetastet", () => {
+  test("leaves complete URLs untouched", () => {
     expect(toHref("https://example.com")).toBe("https://example.com");
     expect(toHref("http://example.com/a?b=c")).toBe("http://example.com/a?b=c");
   });
 
-  test("ergänzt das fehlende Schema", () => {
+  test("adds the missing scheme", () => {
     expect(toHref("example.com")).toBe("https://example.com");
     expect(toHref("www.example.com/pfad")).toBe("https://www.example.com/pfad");
   });
 
-  test("erkennt eine Mailadresse", () => {
+  test("recognizes an email address", () => {
     expect(toHref("anna@example.com")).toBe("mailto:anna@example.com");
     // With a scheme already present, it stays as is.
     expect(toHref("mailto:anna@example.com")).toBe("mailto:anna@example.com");
   });
 
-  test("lässt anwendungsinterne Ziele durch", () => {
+  test("lets in-app targets through", () => {
     expect(toHref("/issues/ORB-42")).toBe("/issues/ORB-42");
     expect(toHref("#abschnitt")).toBe("#abschnitt");
   });
 
-  test("lehnt gefährliche Schemata ab, statt sie zu ergänzen", () => {
+  test("rejects dangerous schemes instead of adding one", () => {
     // The core rule: `javascript:` must never become `https://javascript:…`.
     expect(toHref("javascript:alert(1)")).toBeNull();
     expect(toHref("JavaScript:alert(1)")).toBeNull();
@@ -43,23 +43,23 @@ describe("toHref", () => {
     expect(toHref("file:///etc/passwd")).toBeNull();
   });
 
-  test("gibt für leere Eingaben nichts zurück", () => {
+  test("returns nothing for empty input", () => {
     expect(toHref("")).toBeNull();
     expect(toHref("   ")).toBeNull();
   });
 
-  test("stört sich nicht an Leerzeichen am Rand", () => {
+  test("is not bothered by surrounding whitespace", () => {
     expect(toHref("  example.com  ")).toBe("https://example.com");
   });
 });
 
 describe("hostOf / faviconOf", () => {
-  test("nimmt den Hostnamen als Ersatznamen — ohne www", () => {
+  test("uses the hostname as the fallback name — without www", () => {
     expect(hostOf("https://www.example.com/a/b")).toBe("example.com");
     expect(hostOf("https://docs.example.com")).toBe("docs.example.com");
   });
 
-  test("leitet das Icon von der Seite selbst ab", () => {
+  test("derives the icon from the site itself", () => {
     // Deliberately no third-party service: it would otherwise get to see
     // every linked address.
     expect(faviconOf("https://example.com/tief/drin?a=b")).toBe(
@@ -70,14 +70,14 @@ describe("hostOf / faviconOf", () => {
     );
   });
 
-  test("gibt für Adressen ohne Host kein Icon zurück", () => {
+  test("returns no icon for URLs without a host", () => {
     expect(faviconOf("mailto:anna@example.com")).toBeNull();
     expect(faviconOf("/issues/ORB-42")).toBeNull();
     expect(faviconOf("#abschnitt")).toBeNull();
     expect(faviconOf("kein-link")).toBeNull();
   });
 
-  test("baut ein `style`-Attribut, das nichts einschleusen kann", () => {
+  test("builds a `style` attribute that can't be used to inject anything", () => {
     const style = faviconStyle("https://example.com");
     expect(style).toBe('--favicon: url("https://example.com/favicon.ico")');
     // Quotes could break out of the attribute — the URL parser doesn't allow

@@ -13,20 +13,20 @@ interface TabProps {
   onClose: () => void;
 }
 
-// Rendert einen einzelnen Tab. Reines UI + Interaktion — der Zustand liegt in
-// TabBarClient, hier kommen nur die abgeleiteten Meta-Daten und Callbacks an.
+// Renders a single tab. Pure UI + interaction — the state lives in
+// TabBarClient, only the derived metadata and callbacks arrive here.
 export function Tab({ meta, isActive, onSelect, onClose }: TabProps) {
   const t = useTranslations();
   const { title, color, icon, image } = meta;
 
   return (
-    // Bewusst ein <div role="tab">: der Tab enthält einen Close-<button>,
-    // ein <button> als Wurzel wäre invalides HTML.
+    // Deliberately a <div role="tab">: the tab contains a close <button>,
+    // a <button> as the root would be invalid HTML.
     <div
       role="tab"
       aria-selected={isActive}
       tabIndex={0}
-      // Der Titel wird ab ~200px abgeschnitten — als Tooltip bleibt er lesbar.
+      // The title gets truncated past ~200px — as a tooltip it stays readable.
       title={title}
       className={`${styles.tab}${isActive ? ` ${styles.active}` : ""}`}
       onClick={onSelect}

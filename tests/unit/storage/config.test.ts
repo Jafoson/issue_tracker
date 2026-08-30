@@ -21,20 +21,20 @@ function clearEnv() {
 afterEach(clearEnv);
 
 describe("storageConfig()", () => {
-  it("ist null ohne S3_ENDPOINT — kein Avatar-Upload ohne Konfiguration", () => {
+  it("is null without S3_ENDPOINT — no avatar upload without configuration", () => {
     clearEnv();
     expect(storageConfig()).toBeNull();
     expect(isStorageConfigured()).toBe(false);
   });
 
-  it("ist null, solange Keys oder Bucket fehlen", () => {
+  it("is null as long as keys or bucket are missing", () => {
     process.env.S3_ENDPOINT = "http://localhost:9000";
     process.env.S3_ACCESS_KEY_ID = "id";
     // Secret and bucket are still missing.
     expect(storageConfig()).toBeNull();
   });
 
-  it("liest Endpoint, Keys und Bucket aus der Umgebung — ohne S3_BUCKET_ISSUES bleiben Anhänge aus", () => {
+  it("reads endpoint, keys, and bucket from the environment — without S3_BUCKET_ISSUES, attachments stay disabled", () => {
     process.env.S3_ENDPOINT = "http://localhost:9000";
     process.env.S3_REGION = "eu-central-1";
     process.env.S3_ACCESS_KEY_ID = "rustfsadmin";
@@ -53,7 +53,7 @@ describe("storageConfig()", () => {
     expect(isAttachmentsConfigured()).toBe(false);
   });
 
-  it("fällt ohne S3_REGION auf us-east-1 zurück", () => {
+  it("falls back to us-east-1 without S3_REGION", () => {
     process.env.S3_ENDPOINT = "http://localhost:9000";
     process.env.S3_ACCESS_KEY_ID = "id";
     process.env.S3_SECRET_ACCESS_KEY = "secret";
@@ -63,7 +63,7 @@ describe("storageConfig()", () => {
     expect(config?.region).toBe("us-east-1");
   });
 
-  it("liest S3_BUCKET_ISSUES unabhängig vom Avatar-Bucket", () => {
+  it("reads S3_BUCKET_ISSUES independently of the avatar bucket", () => {
     process.env.S3_ENDPOINT = "http://localhost:9000";
     process.env.S3_ACCESS_KEY_ID = "id";
     process.env.S3_SECRET_ACCESS_KEY = "secret";

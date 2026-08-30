@@ -6,10 +6,10 @@ import { forwardRef } from "react";
 import styles from "./loadMoreSentinel.module.scss";
 
 /**
- * Der Rand am Ende einer Tabelle mit Infinite Scroll — sichtbar nur, während
- * geladen wird, damit er nicht wie eine leere letzte Zeile wirkt.
- * `ref` gehört an `useInfiniteScroll` (`sentinelRef`); die Tabelle rendert
- * dieses Element nur, solange dessen `cursor` noch etwas nachzuladen hat.
+ * The edge at the end of a table with infinite scroll — visible only while
+ * loading, so it doesn't look like an empty last row. `ref` belongs to
+ * `useInfiniteScroll` (`sentinelRef`); the table only renders this element
+ * as long as its `cursor` still has something left to load.
  */
 export const LoadMoreSentinel = forwardRef<
   HTMLOutputElement,
