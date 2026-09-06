@@ -44,7 +44,7 @@ describe("sendMail()", () => {
       host: "smtp.example.com",
       port: 587,
       secure: false,
-      from: "Issue Tracker <no-reply@smtp.example.com>",
+      from: "Barynt <no-reply@smtp.example.com>",
     });
     mockGetTransport.mockReturnValue({ sendMail: mockSendMail });
     mockSendMail.mockResolvedValue(undefined);
@@ -52,7 +52,7 @@ describe("sendMail()", () => {
     await sendMail(MESSAGE);
 
     expect(mockSendMail).toHaveBeenCalledWith({
-      from: "Issue Tracker <no-reply@smtp.example.com>",
+      from: "Barynt <no-reply@smtp.example.com>",
       to: MESSAGE.to,
       subject: MESSAGE.subject,
       html: MESSAGE.html,
@@ -65,7 +65,7 @@ describe("sendMail()", () => {
       host: "smtp.example.com",
       port: 587,
       secure: false,
-      from: "Issue Tracker <no-reply@smtp.example.com>",
+      from: "Barynt <no-reply@smtp.example.com>",
     });
     mockGetTransport.mockReturnValue({ sendMail: mockSendMail });
     mockSendMail.mockRejectedValue(new Error("connection refused"));

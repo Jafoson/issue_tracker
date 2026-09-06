@@ -44,7 +44,7 @@ export function emailVerificationEmail(
     placeholders,
   );
   const introText = resolveText(
-    "Welcome to Orbit. Confirm your address so we can activate your account and send you notifications about your issues.",
+    "Welcome to Barynt. Confirm your address so we can activate your account and send you notifications about your issues.",
     override?.bodyText,
     placeholders,
   );

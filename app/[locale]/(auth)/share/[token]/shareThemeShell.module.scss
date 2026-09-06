@@ -23,26 +23,6 @@
   min-width: 0;
 }
 
-.logo {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
-  color: var(--on-primary);
-  font-weight: 700;
-  font-size: var(--text-sm);
-}
-
-.brandName {
-  flex: none;
-  font-weight: 700;
-  font-size: var(--text-md);
-  color: var(--on-background);
-}
-
 .badge {
   @media (max-width: 560px) {
     display: none;

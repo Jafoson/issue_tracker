@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Issue Tracker — Project Conventions
+# Barynt — Project Conventions
 
 ## Stack
 

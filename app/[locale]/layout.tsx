@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Orbit — Issue Tracker",
+  title: "Barynt — Issue Tracker",
   description: "Open source issue tracker",
 };
 

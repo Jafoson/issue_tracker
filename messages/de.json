@@ -485,13 +485,13 @@
     }
   },
   "login": {
-    "subtitle": "Weiter zu Orbit Issue Tracker",
+    "subtitle": "Weiter zu Barynt Issue Tracker",
     "or": "oder Single Sign-on",
     "continueWith": "Mit {provider} fortfahren",
     "noAccount": "Noch kein Konto?",
     "requestAccess": "Zugang anfragen",
     "signInTo": "Bei {ws} anmelden",
-    "signInTitle": "Bei Orbit anmelden",
+    "signInTitle": "Bei Barynt anmelden",
     "registerTitle": "Konto erstellen",
     "registerSubtitle": "Starte in Sekunden mit der Aufgabenverwaltung.",
     "heroTitle": "Aufgaben im Griff, ohne dass es dir im Weg steht.",
@@ -586,7 +586,7 @@
     "sidebarVisibilityPublic": "Öffentlich",
     "ctaTitle": "Mitdiskutieren?",
     "ctaDesc": "Kommentieren, Status ändern und den vollständigen Verlauf sehen können nur Mitglieder des Workspace {workspace}.",
-    "footerMade": "Erstellt mit Orbit – Issue-Tracking für kleine Teams",
+    "footerMade": "Erstellt mit Barynt – Issue-Tracking für kleine Teams",
     "footerPrivacy": "Datenschutz",
     "footerReportAbuse": "Missbrauch melden"
   },

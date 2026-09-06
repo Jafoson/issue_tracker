@@ -23,7 +23,7 @@ export interface MagicLinkEmailInput {
  * alterable via admin override.
  */
 export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
-  const heading = "Your sign-in link for Orbit";
+  const heading = "Your sign-in link for Barynt";
   const introText =
     "This link signs you in — it only works once and expires afterward.";
   const formattedCode = `${input.code.slice(0, 4)}-${input.code.slice(4)}`;
@@ -59,5 +59,5 @@ export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
     `Expires in ${input.expiresInMinutes} minutes.`,
   ].join("\n");
 
-  return { subject: "Your sign-in link for Orbit", html, text };
+  return { subject: "Your sign-in link for Barynt", html, text };
 }

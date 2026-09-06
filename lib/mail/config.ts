@@ -33,7 +33,7 @@ export function mailConfig(): MailConfig | null {
     secure: process.env.SMTP_SECURE === "true",
     user: process.env.SMTP_USER || undefined,
     pass: process.env.SMTP_PASS || undefined,
-    from: process.env.SMTP_FROM || `Issue Tracker <no-reply@${host}>`,
+    from: process.env.SMTP_FROM || `Barynt <no-reply@${host}>`,
   };
 }
 

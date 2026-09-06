@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/atoms/Badge/Badge";
 import { Button } from "@/components/ui/atoms/Button/Button";
 import buttonStyles from "@/components/ui/atoms/Button/button.module.scss";
+import { Logo } from "@/components/ui/atoms/Logo/Logo";
 import { Link } from "@/i18n/navigation";
 import styles from "./shareThemeShell.module.scss";
 
@@ -32,8 +33,11 @@ export function ShareThemeShell({ children }: { children: React.ReactNode }) {
     <div data-theme={theme} className={styles.page}>
       <header className={styles.nav}>
         <div className={styles.brand}>
-          <span className={styles.logo}>O</span>
-          <span className={styles.brandName}>Orbit</span>
+          <Logo
+            variant="horizontal"
+            color={theme === "dark" ? "white" : "color"}
+            height={20}
+          />
           <Badge mono={false} className={styles.badge}>
             <Icon icon="lucide:globe-2" width={13} />
             {t("share.publicBadge")}

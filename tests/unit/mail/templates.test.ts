@@ -239,7 +239,7 @@ describe("welcomeEmail()", () => {
       loginUrl: "https://issues.example.com/login",
     });
 
-    expect(subject).toBe("Welcome to Issue Tracker");
+    expect(subject).toBe("Welcome to Barynt");
     expect(text).toContain("Welcome, Ada");
     expect(text).toContain("https://issues.example.com/login");
   });

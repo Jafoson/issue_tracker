@@ -8,7 +8,7 @@ import { escapeHtml } from "@/lib/mail/templates/html";
 // block: that's what reliably survives in mail clients (Gmail routinely
 // strips `<head>` styles, Outlook renders with the Word engine).
 
-const BRAND = "Orbit";
+const BRAND = "Barynt";
 const BRAND_SUFFIX = "Issue Tracker";
 const ACCENT = "#6b5e10";
 const ACCENT_SOFT = "#eef1e8";
@@ -126,7 +126,7 @@ export function renderLayout(input: LayoutInput): string {
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="width: 26px; height: 26px; border-radius: 6px; background: ${ACCENT}; color: #ffffff; font-family: ${FONT}; font-size: 13px; font-weight: 700; text-align: center; vertical-align: middle;">
-                      O
+                      B
                     </td>
                     <td style="padding-left: 8px; font-family: ${FONT}; font-size: 14px;">
                       <strong>${BRAND}</strong>

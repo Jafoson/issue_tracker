@@ -212,7 +212,7 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
           WebAuthn({
             relayingParty: {
               id: new URL(appBaseUrl()).hostname,
-              name: "Orbit",
+              name: "Barynt",
               origin: appBaseUrl(),
             },
             enableConditionalUI: true,

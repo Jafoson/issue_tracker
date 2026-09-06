@@ -48,6 +48,6 @@ describe("mailConfig()", () => {
     const config = mailConfig();
     expect(config?.port).toBe(587);
     expect(config?.secure).toBe(false);
-    expect(config?.from).toBe("Issue Tracker <no-reply@smtp.example.com>");
+    expect(config?.from).toBe("Barynt <no-reply@smtp.example.com>");
   });
 });

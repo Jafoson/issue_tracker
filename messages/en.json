@@ -485,13 +485,13 @@
     }
   },
   "login": {
-    "subtitle": "Continue to Orbit Issue Tracker",
+    "subtitle": "Continue to Barynt Issue Tracker",
     "or": "or use single sign-on",
     "continueWith": "Continue with {provider}",
     "noAccount": "Don't have an account?",
     "requestAccess": "Request access",
     "signInTo": "Sign in to {ws}",
-    "signInTitle": "Sign in to Orbit",
+    "signInTitle": "Sign in to Barynt",
     "registerTitle": "Create your account",
     "registerSubtitle": "Start tracking issues in seconds.",
     "heroTitle": "Issue tracking that stays out of your way.",
@@ -586,7 +586,7 @@
     "sidebarVisibilityPublic": "Public",
     "ctaTitle": "Want to join the discussion?",
     "ctaDesc": "Only members of the {workspace} workspace can comment, change status and see the full history.",
-    "footerMade": "Made with Orbit – issue tracking for small teams",
+    "footerMade": "Made with Barynt – issue tracking for small teams",
     "footerPrivacy": "Privacy",
     "footerReportAbuse": "Report abuse"
   },

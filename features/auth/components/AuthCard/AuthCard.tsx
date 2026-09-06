@@ -3,6 +3,7 @@
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/atoms/Button/Button";
+import { Logo } from "@/components/ui/atoms/Logo/Logo";
 import { signInWithOAuth } from "@/features/auth/actions";
 import styles from "./authCard.module.scss";
 
@@ -57,8 +58,7 @@ export function AuthCard({
     <div className={styles.page}>
       <div className={styles.hero}>
         <div className={styles.heroBrand}>
-          <Icon icon="lucide:orbit" width={20} />
-          <span>Orbit</span>
+          <Logo variant="horizontal" color="white" height={22} priority />
         </div>
         <div className={styles.heroCopy}>
           <h2>{t("login.heroTitle")}</h2>

@@ -106,7 +106,7 @@ export function tabTitle(
 
   if (root === "admin") {
     const entry = findBySection(ADMIN_NAV, section);
-    return entry ? t(`nav.${entry.labelKey}`) : "Orbit";
+    return entry ? t(`nav.${entry.labelKey}`) : "Barynt";
   }
 
   if (section === "project") {
@@ -114,7 +114,7 @@ export function tabTitle(
   }
 
   const entry = findBySection(WORKSPACE_SECTIONS, section);
-  return entry ? t(`nav.${entry.labelKey}`) : "Orbit";
+  return entry ? t(`nav.${entry.labelKey}`) : "Barynt";
 }
 
 /** Project color for a project tab path, else null. */

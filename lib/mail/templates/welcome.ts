@@ -22,7 +22,7 @@ export function welcomeEmail(
   const placeholders = { firstName: input.firstName };
 
   const subject = resolveText(
-    "Welcome to Issue Tracker",
+    "Welcome to Barynt",
     override?.subject,
     placeholders,
   );
