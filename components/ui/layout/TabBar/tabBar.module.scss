@@ -164,3 +164,42 @@
   flex: none;
   color: var(--on-surface-variant);
 }
+
+/* Pinned to the far end of the row via the auto margin — the strip and the
+   add button above stay exactly where they were. */
+.brand {
+  display: flex;
+  align-items: center;
+  flex: none;
+  margin-inline-start: auto;
+  padding-inline-start: 12px;
+}
+
+/* Two classes, not one — needs to outrank `.logo { display: block }` from
+   Logo's own module regardless of which CSS chunk loads first. */
+.brand .brandDark,
+.brand .brandLight {
+  display: none;
+}
+
+/* Same three-state `data-theme` selector as styles/colors.scss: dark and
+   system default to dark, light and a light system preference show the
+   black lockup instead. */
+[data-theme="dark"] .brand .brandDark,
+[data-theme="system"] .brand .brandDark {
+  display: block;
+}
+
+[data-theme="light"] .brand .brandLight {
+  display: block;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] .brand .brandLight {
+    display: block;
+  }
+
+  [data-theme="system"] .brand .brandDark {
+    display: none;
+  }
+}

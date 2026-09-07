@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/atoms/Input/Input";
+import { logout } from "@/features/auth/actions";
 import { AuthCard } from "@/features/auth/components/AuthCard/AuthCard";
 import { completeOnboarding } from "@/features/onboarding/actions";
 import { useRouter } from "@/i18n/navigation";
@@ -53,6 +54,16 @@ export function OnboardingForm({
       error={error}
       submitLabel={t("onboarding.continue")}
       onSubmit={submit}
+      extra={
+        <button
+          type="button"
+          className={styles.signOut}
+          disabled={isPending}
+          onClick={() => logout()}
+        >
+          {t("nav.signOut")}
+        </button>
+      }
     >
       <Input
         id="onboarding-handle"

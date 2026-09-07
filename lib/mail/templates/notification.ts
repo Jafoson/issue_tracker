@@ -1,6 +1,6 @@
 import type { NotificationEvent } from "@/features/account/types";
 import { escapeHtml, humanizeKey } from "@/lib/mail/templates/html";
-import { renderLayout } from "@/lib/mail/templates/layout";
+import { ACCENT_SOFT, renderLayout } from "@/lib/mail/templates/layout";
 import {
   resolveText,
   type TemplateOverride,
@@ -147,7 +147,7 @@ export function notificationEmail(
 
   const issueCardHtml = input.issue
     ? `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #eef1e8; border-radius: 8px; margin: 12px 0 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: ${ACCENT_SOFT}; border-radius: 8px; margin: 12px 0 0;">
         <tr>
           <td style="padding: 12px 16px;">
             <div style="font-family: monospace; color: #6b6b6b; font-size: 12px;">${escapeHtml(input.issue.identifier)}${input.project ? ` · ${escapeHtml(input.project.name)}` : ""}</div>

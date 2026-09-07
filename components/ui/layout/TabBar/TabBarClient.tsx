@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import type { Project } from "@/types";
 import { Button } from "../../atoms/Button/Button";
+import { Logo } from "../../atoms/Logo/Logo";
 import { Tab } from "./Tab";
 import styles from "./tabBar.module.scss";
 import { useTabBar } from "./useTabBar";
@@ -61,6 +62,24 @@ export function TabBarClient({
         icon={<Icon icon="lucide:plus" width={14} />}
         onClick={openTab}
       />
+
+      {/* Brand mark, pinned to the far end of the row. Two mono lockups
+          swapped by `data-theme` on `<html>` (see styles/colors.scss for the
+          same three-state selector) — CSS, not JS, per the appearance rule. */}
+      <div className={styles.brand}>
+        <Logo
+          variant="horizontal"
+          color="white"
+          height={22}
+          className={styles.brandDark}
+        />
+        <Logo
+          variant="horizontal"
+          color="black"
+          height={22}
+          className={styles.brandLight}
+        />
+      </div>
     </div>
   );
 }

@@ -3,3 +3,23 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
+.signOut {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--text-sm);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  align-self: center;
+
+  &:hover:not(:disabled) {
+    color: var(--on-surface);
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}

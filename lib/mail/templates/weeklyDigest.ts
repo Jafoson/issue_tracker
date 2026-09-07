@@ -1,5 +1,5 @@
 import { escapeHtml } from "@/lib/mail/templates/html";
-import { renderLayout } from "@/lib/mail/templates/layout";
+import { ACCENT_SOFT, renderLayout } from "@/lib/mail/templates/layout";
 import {
   resolveText,
   type TemplateOverride,
@@ -36,7 +36,7 @@ export interface WeeklyDigestEmailInput {
 
 function statTile(value: string, label: string): string {
   return `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #eef1e8; border-radius: 8px; margin: 0 0 8px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: ${ACCENT_SOFT}; border-radius: 8px; margin: 0 0 8px;">
       <tr>
         <td style="padding: 12px 16px;">
           <div style="font-size: 22px; font-weight: 700; line-height: 1.2;">${escapeHtml(value)}</div>

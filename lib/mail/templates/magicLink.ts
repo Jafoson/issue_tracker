@@ -1,5 +1,5 @@
 import { escapeHtml } from "@/lib/mail/templates/html";
-import { renderLayout } from "@/lib/mail/templates/layout";
+import { ACCENT_SOFT, renderLayout } from "@/lib/mail/templates/layout";
 import type { MailContent } from "@/lib/mail/templates/types";
 
 export interface MagicLinkEmailInput {
@@ -33,7 +33,7 @@ export function magicLinkEmail(input: MagicLinkEmailInput): MailContent {
     <p style="margin: 20px 0 0; font-size: 13px; color: #6b6b6b;">Opened this on another device? Enter this code on the sign-in page instead:</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 8px 0 0;">
       <tr>
-        <td style="border-radius: 6px; background: #eef1e8; padding: 10px 18px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: #1c1c1c;">
+        <td style="border-radius: 6px; background: ${ACCENT_SOFT}; padding: 10px 18px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: #1c1c1c;">
           ${escapeHtml(formattedCode)}
         </td>
       </tr>

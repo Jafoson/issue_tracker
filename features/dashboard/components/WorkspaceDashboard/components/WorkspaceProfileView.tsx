@@ -363,7 +363,7 @@ export function WorkspaceProfileView({
                           image: project.avatarUrl ?? undefined,
                         }}
                         shape="square"
-                        size={20}
+                        size={18}
                       />
                       {project.name}
                       <Icon

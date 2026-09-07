@@ -1,3 +1,4 @@
+import { appUrl } from "@/lib/app-url";
 import { escapeHtml } from "@/lib/mail/templates/html";
 
 // ─── Shared frame for all emails ─────────────────────────────────────────────
@@ -8,10 +9,16 @@ import { escapeHtml } from "@/lib/mail/templates/html";
 // block: that's what reliably survives in mail clients (Gmail routinely
 // strips `<head>` styles, Outlook renders with the Word engine).
 
-const BRAND = "Barynt";
-const BRAND_SUFFIX = "Issue Tracker";
-const ACCENT = "#6b5e10";
-const ACCENT_SOFT = "#eef1e8";
+// Same lockup as `components/ui/atoms/Logo` (`variant="horizontal"
+// color="color"`), referenced by absolute URL instead of imported — mail
+// clients load it like any other remote image, not through Next's asset
+// pipeline. Intrinsic size 788×260 (see `Logo.tsx`), scaled down for the header.
+const LOGO_HEIGHT = 28;
+const LOGO_WIDTH = Math.round((788 / 260) * LOGO_HEIGHT);
+// Same teal as `--primary` (light theme, styles/colors.scss) — mail has no
+// dark mode of its own, so it's always the light-theme tone.
+const ACCENT = "#006972";
+export const ACCENT_SOFT = "#e7f4f6";
 const TEXT = "#1c1c1c";
 const MUTED = "#6b6b6b";
 const BORDER = "#e4e4e4";
@@ -123,17 +130,7 @@ export function renderLayout(input: LayoutInput): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background: #ffffff; border: 1px solid ${BORDER}; border-radius: 12px;">
             <tr>
               <td style="padding: 24px 28px 0;">
-                <table role="presentation" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="width: 26px; height: 26px; border-radius: 6px; background: ${ACCENT}; color: #ffffff; font-family: ${FONT}; font-size: 13px; font-weight: 700; text-align: center; vertical-align: middle;">
-                      B
-                    </td>
-                    <td style="padding-left: 8px; font-family: ${FONT}; font-size: 14px;">
-                      <strong>${BRAND}</strong>
-                      <span style="color: ${MUTED};">${BRAND_SUFFIX}</span>
-                    </td>
-                  </tr>
-                </table>
+                <img src="${appUrl("/Logo/color/Logo_horizontal.svg")}" alt="Barynt" width="${LOGO_WIDTH}" height="${LOGO_HEIGHT}" style="display: block; width: ${LOGO_WIDTH}px; height: ${LOGO_HEIGHT}px;" />
               </td>
             </tr>
             <tr>

@@ -38,19 +38,25 @@
    time: once as the default, once under the media query. Writing the same
    block twice by hand would be two truths that drift apart. */
 @mixin dark {
-  --primary: rgb(216 199 112);
-  --surface-tint: rgb(216 199 112);
-  --on-primary: rgb(56 48 0);
-  --primary-container: rgb(81 71 0);
-  --on-primary-container: rgb(245 227 137);
-  --secondary: rgb(178 209 137);
-  --on-secondary: rgb(31 55 1);
-  --secondary-container: rgb(53 78 21);
-  --on-secondary-container: rgb(205 237 163);
-  --tertiary: rgb(130 213 201);
-  --on-tertiary: rgb(0 55 50);
-  --tertiary-container: rgb(0 80 73);
-  --on-tertiary-container: rgb(158 242 229);
+  /* Brand seeds: primary #0F95A2, secondary #FDC94F, tertiary #D369A2.
+     Full scheme generated (Material 3, spec 2021, tonal-spot variant) from
+     these three hues via @material/material-color-utilities — hue/chroma of
+     each seed preserved, tone adjusted per role for contrast in each theme.
+     Whoever changes a seed re-runs the generator rather than hand-editing
+     roles below. */
+  --primary: rgb(107 214 228);
+  --surface-tint: rgb(107 214 228);
+  --on-primary: rgb(0 54 60);
+  --primary-container: rgb(0 79 86);
+  --on-primary-container: rgb(142 242 255);
+  --secondary: rgb(242 191 70);
+  --on-secondary: rgb(63 46 0);
+  --secondary-container: rgb(91 67 0);
+  --on-secondary-container: rgb(255 223 158);
+  --tertiary: rgb(255 175 213);
+  --on-tertiary: rgb(96 5 65);
+  --tertiary-container: rgb(125 34 89);
+  --on-tertiary-container: rgb(255 216 232);
   /* Info and warning — the two panel types in rich text. Dedicated tokens
      instead of mixed from `--tertiary`/`--amber`: "info" is a meaning, not a
      color, and should be free to evolve independently of the accent. */
@@ -60,38 +66,38 @@
   --on-error: rgb(105 0 5);
   --error-container: rgb(147 0 10);
   --on-error-container: rgb(255 218 214);
-  --background: rgb(2, 2, 1);
-  --on-background: rgb(232 226 212);
-  --surface: rgb(20 20 12);
-  --on-surface: rgb(229 227 214);
-  --surface-variant: rgb(69 72 61);
-  --on-surface-variant: rgb(197 200 185);
-  --outline: rgb(143 146 132);
-  --outline-variant: rgb(69 72 61);
+  --background: rgb(12 21 24);
+  --on-background: rgb(219 228 232);
+  --surface: rgb(12 21 24);
+  --on-surface: rgb(219 228 232);
+  --surface-variant: rgb(58 73 79);
+  --on-surface-variant: rgb(185 201 208);
+  --outline: rgb(132 147 154);
+  --outline-variant: rgb(58 73 79);
   --shadow: rgb(0 0 0);
   --scrim: rgb(0 0 0);
-  --inverse-surface: rgb(229 227 214);
-  --inverse-on-surface: rgb(49 49 40);
-  --inverse-primary: rgb(107 95 16);
-  --primary-fixed: rgb(245 227 137);
-  --on-primary-fixed: rgb(33 28 0);
-  --primary-fixed-dim: rgb(216 199 112);
-  --on-primary-fixed-variant: rgb(81 71 0);
-  --secondary-fixed: rgb(205 237 163);
-  --on-secondary-fixed: rgb(16 32 0);
-  --secondary-fixed-dim: rgb(178 209 137);
-  --on-secondary-fixed-variant: rgb(53 78 21);
-  --tertiary-fixed: rgb(158 242 229);
-  --on-tertiary-fixed: rgb(0 32 29);
-  --tertiary-fixed-dim: rgb(130 213 201);
-  --on-tertiary-fixed-variant: rgb(0 80 73);
-  --surface-dim: rgb(20 20 12);
-  --surface-bright: rgb(58 58 49);
-  --surface-container-lowest: rgb(14 15 8);
-  --surface-container-low: rgb(28 28 20);
-  --surface-container: rgb(32 32 24);
-  --surface-container-high: rgb(42 42 34);
-  --surface-container-highest: rgb(53 53 44);
+  --inverse-surface: rgb(219 228 232);
+  --inverse-on-surface: rgb(41 50 53);
+  --inverse-primary: rgb(0 105 114);
+  --primary-fixed: rgb(142 242 255);
+  --on-primary-fixed: rgb(0 31 35);
+  --primary-fixed-dim: rgb(107 214 228);
+  --on-primary-fixed-variant: rgb(0 79 86);
+  --secondary-fixed: rgb(255 223 158);
+  --on-secondary-fixed: rgb(38 26 0);
+  --secondary-fixed-dim: rgb(242 191 70);
+  --on-secondary-fixed-variant: rgb(91 67 0);
+  --tertiary-fixed: rgb(255 216 232);
+  --on-tertiary-fixed: rgb(61 0 39);
+  --tertiary-fixed-dim: rgb(255 175 213);
+  --on-tertiary-fixed-variant: rgb(125 34 89);
+  --surface-dim: rgb(12 21 24);
+  --surface-bright: rgb(50 58 62);
+  --surface-container-lowest: rgb(7 15 18);
+  --surface-container-low: rgb(21 29 32);
+  --surface-container: rgb(25 33 36);
+  --surface-container-high: rgb(35 43 46);
+  --surface-container-highest: rgb(46 54 57);
 
   /* Syntax highlighting. Dedicated tokens, because the roles in code —
      keyword, string, comment — have nothing to do with the UI's roles. They
@@ -111,19 +117,20 @@
 }
 
 @mixin light {
-  --primary: rgb(107 94 16);
-  --surface-tint: rgb(107 94 16);
+  /* Same three seeds as the dark theme — see the comment there. */
+  --primary: rgb(0 105 114);
+  --surface-tint: rgb(0 105 114);
   --on-primary: rgb(255 255 255);
-  --primary-container: rgb(245 227 136);
-  --on-primary-container: rgb(82 71 0);
-  --secondary: rgb(78 102 41);
+  --primary-container: rgb(142 242 255);
+  --on-primary-container: rgb(0 79 86);
+  --secondary: rgb(120 89 0);
   --on-secondary: rgb(255 255 255);
-  --secondary-container: rgb(208 237 161);
-  --on-secondary-container: rgb(55 77 19);
-  --tertiary: rgb(31 106 79);
+  --secondary-container: rgb(255 223 158);
+  --on-secondary-container: rgb(91 67 0);
+  --tertiary: rgb(155 59 114);
   --on-tertiary: rgb(255 255 255);
-  --tertiary-container: rgb(168 242 206);
-  --on-tertiary-container: rgb(0 81 57);
+  --tertiary-container: rgb(255 216 232);
+  --on-tertiary-container: rgb(125 34 89);
   /* See the dark theme. Both stronger here, so they still carry as a border
      and as a text tone on a light background. */
   --info: rgb(20 104 92);
@@ -132,38 +139,38 @@
   --on-error: rgb(255 255 255);
   --error-container: rgb(255 218 214);
   --on-error-container: rgb(147 0 10);
-  --background: rgb(255 249 236);
-  --on-background: rgb(30 28 19);
-  --surface: rgb(245 251 245);
-  --on-surface: rgb(23 29 26);
-  --surface-variant: rgb(231 227 208);
-  --on-surface-variant: rgb(73 71 58);
-  --outline: rgb(122 119 104);
-  --outline-variant: rgb(203 199 181);
+  --background: rgb(242 251 255);
+  --on-background: rgb(21 29 32);
+  --surface: rgb(242 251 255);
+  --on-surface: rgb(21 29 32);
+  --surface-variant: rgb(213 229 236);
+  --on-surface-variant: rgb(58 73 79);
+  --outline: rgb(106 121 128);
+  --outline-variant: rgb(185 201 208);
   --shadow: rgb(0 0 0);
   --scrim: rgb(0 0 0);
-  --inverse-surface: rgb(44 50 46);
-  --inverse-on-surface: rgb(237 242 236);
-  --inverse-primary: rgb(216 199 111);
-  --primary-fixed: rgb(245 227 136);
-  --on-primary-fixed: rgb(33 27 0);
-  --primary-fixed-dim: rgb(216 199 111);
-  --on-primary-fixed-variant: rgb(82 71 0);
-  --secondary-fixed: rgb(208 237 161);
-  --on-secondary-fixed: rgb(18 31 0);
-  --secondary-fixed-dim: rgb(180 208 135);
-  --on-secondary-fixed-variant: rgb(55 77 19);
-  --tertiary-fixed: rgb(168 242 206);
-  --on-tertiary-fixed: rgb(0 33 21);
-  --tertiary-fixed-dim: rgb(140 213 179);
-  --on-tertiary-fixed-variant: rgb(0 81 57);
-  --surface-dim: rgb(214 219 214);
-  --surface-bright: rgb(245 251 245);
+  --inverse-surface: rgb(41 50 53);
+  --inverse-on-surface: rgb(234 242 246);
+  --inverse-primary: rgb(107 214 228);
+  --primary-fixed: rgb(142 242 255);
+  --on-primary-fixed: rgb(0 31 35);
+  --primary-fixed-dim: rgb(107 214 228);
+  --on-primary-fixed-variant: rgb(0 79 86);
+  --secondary-fixed: rgb(255 223 158);
+  --on-secondary-fixed: rgb(38 26 0);
+  --secondary-fixed-dim: rgb(242 191 70);
+  --on-secondary-fixed-variant: rgb(91 67 0);
+  --tertiary-fixed: rgb(255 216 232);
+  --on-tertiary-fixed: rgb(61 0 39);
+  --tertiary-fixed-dim: rgb(255 175 213);
+  --on-tertiary-fixed-variant: rgb(125 34 89);
+  --surface-dim: rgb(211 219 223);
+  --surface-bright: rgb(242 251 255);
   --surface-container-lowest: rgb(255 255 255);
-  --surface-container-low: rgb(239 245 239);
-  --surface-container: rgb(234 239 234);
-  --surface-container-high: rgb(228 234 228);
-  --surface-container-highest: rgb(222 228 222);
+  --surface-container-low: rgb(237 245 249);
+  --surface-container: rgb(231 239 243);
+  --surface-container-high: rgb(225 233 238);
+  --surface-container-highest: rgb(219 228 232);
 
   /* See the dark theme — uniformly darker here, so they carry on a light
      background. */
