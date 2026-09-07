@@ -24,6 +24,22 @@
 .DS_Store
 *.pem
 
+# editor/OS/cloud-sync junk — none of this is project content, all of it
+# is machine- and app-local (e.g. public/Barynt_Logo.af~lock~ and
+# public/Barynt_Logo.af~lock~:com.dropbox.ignored ended up committed by
+# accident while someone had the design file open with Dropbox syncing it)
+*~lock~
+*:com.dropbox.ignored
+.dropbox
+.dropbox.cache
+Thumbs.db
+desktop.ini
+.directory
+*.swp
+*.swo
+.Spotlight-V100
+.Trashes
+
 # debug
 npm-debug.log*
 yarn-debug.log*
