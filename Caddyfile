@@ -1,0 +1,13 @@
+# Reverse proxy for the self-hosted stack (docker-compose.yml, "caddy"
+# service). DOMAIN comes from .env — see example.env.
+#
+# A real, publicly resolvable domain (e.g. "issues.example.com") makes
+# Caddy fetch and auto-renew a Let's Encrypt certificate for it, no
+# further config needed. Left unset, it defaults to "localhost", for which
+# Caddy still serves HTTPS (with automatic HTTP->HTTPS redirects) — just
+# using its own internal, self-signed CA instead of Let's Encrypt, since
+# "localhost" can never pass public domain validation. Browsers will warn
+# about that certificate; that's expected for local/loopback testing.
+{$DOMAIN:localhost} {
+	reverse_proxy app:3000
+}

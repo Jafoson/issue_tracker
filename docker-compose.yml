@@ -1,23 +1,243 @@
 name: orbit
 
+# One file for local dev AND self-hosted production — split by Compose
+# profiles, the standard way to do this without a second file (Docker's own
+# docs recommend this over docker-compose.prod.yml + `-f` juggling):
+# https://docs.docker.com/compose/how-tos/profiles/
+#
+# - Local dev: `bun run db:up` / `db:dev` / `db:reset` (package.json) run a
+#   bare `docker compose up -d --wait` — with no --profile flag, Compose
+#   only starts services that have no `profiles:` key, so those commands
+#   still start postgres alone, unchanged. The app itself runs via
+#   `bun run dev` on the host, not in a container.
+# - Production: `docker compose --profile app up -d --build` additionally
+#   builds and starts `migrate` (once) and `app`.
+#
+# Every credential below is overridable from a ".env" next to this file
+# (see example.env for the full, commented list of app-level config —
+# OAuth, SMTP, S3 — which is optional and purely additive either way).
+# The defaults reproduce today's local-dev behavior unchanged; for a real
+# deployment, at minimum set AUTH_SECRET and POSTGRES_PASSWORD — shipping
+# with the literal password "postgres" is fine on a laptop, not on a
+# server with an exposed port.
+#
+# `app`/`migrate` default to a DATABASE_URL built from POSTGRES_USER/
+# PASSWORD/DB below (the bundled `postgres` service). This deliberately
+# does NOT key off .env's own DATABASE_URL — that name already means
+# something else there (the *host*-side connection string `bun run dev`
+# uses, e.g. "@localhost:5432"; inside the containers "localhost" would
+# mean the container itself, not the postgres service). To point at an
+# external Postgres instead of the bundled one, set COMPOSE_DATABASE_URL
+# (in .env or the shell) to its full connection string — it overrides the
+# constructed default, and you can then leave the `postgres` service
+# simply unused.
+#
+# Object storage (avatars, issue attachments) is bundled the same way, via
+# RustFS (rustfs/rustfs) — a self-hosted, S3-compatible server, so
+# `--profile app` gives you working uploads out of the box, no external S3
+# account needed. It shares credentials with `lib/storage`'s own S3_* vars
+# (defaulting to "rustfsadmin"/"avatars"/"issues", same as this project's
+# tests) instead of introducing separate RUSTFS_* ones to keep in sync by
+# hand. `rustfs-init` creates the two buckets on first start (RustFS itself
+# doesn't, same as MinIO) and is safe to run on every start — it ignores
+# "bucket already exists". To use real AWS S3 (or any other S3-compatible
+# provider) instead, set COMPOSE_S3_ENDPOINT to its endpoint URL — same
+# reasoning as COMPOSE_DATABASE_URL: .env's own S3_ENDPOINT is for the
+# host-run dev server ("@localhost:9000"), which isn't reachable as such
+# from inside the containers. Don't want file storage at all? Run with
+# `--scale rustfs=0 --scale rustfs-init=0`.
+#
+# Multi-arch app image: build once per architecture with
+#   docker buildx build --platform linux/amd64,linux/arm64 -t barynt:latest --push .
+# and set `app.image`/`migrate.image` below to that tag instead of building
+# locally, or just let `--profile app up --build` build natively for
+# whatever architecture the host actually is.
+#
+# Ports: postgres, rustfs and the app itself publish to 127.0.0.1 by
+# default, not 0.0.0.0 — on a real server, a database and an object-storage
+# admin console reachable from the public internet (with default
+# credentials, unless you changed them) is the classic self-hosting
+# footgun. `caddy` is the one service meant to be reachable externally
+# (80/443). Need direct access to one of the others from outside the host
+# — e.g. connecting a DB client from your laptop — override its _BIND var
+# (DB_BIND, S3_BIND, APP_BIND) to "0.0.0.0", ideally behind your own
+# firewall rule.
+#
+# TLS: `caddy` gets you HTTPS with a zero-config Let's Encrypt certificate
+# as soon as DOMAIN in .env is a real, publicly resolvable domain pointed
+# at this host (ports 80/443 open). Without DOMAIN set, it defaults to
+# "localhost" and still serves HTTPS, just with Caddy's own internal,
+# self-signed CA instead of Let's Encrypt (browsers will warn — expected
+# for local/loopback testing, not a real deployment). Set AUTH_URL to
+# "https://$DOMAIN" alongside it (see example.env) so invitation links
+# etc. point at the right place instead of localhost.
+
 services:
   postgres:
     image: postgres:17-alpine
     container_name: orbit-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: IssueTracker
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_DB: "${POSTGRES_DB:-IssueTracker}"
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     volumes:
       - orbit-db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d IssueTracker"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-IssueTracker}",
+        ]
       interval: 3s
       timeout: 5s
       retries: 15
       start_period: 5s
 
+  # One-off: applies pending migrations, then exits. Runs from the `builder`
+  # stage (full toolchain, including the `prisma` CLI) rather than the `app`
+  # image itself — that image only ships Next's pruned standalone output and
+  # deliberately has no `prisma` CLI (~200MB of engine binaries it would
+  # otherwise never use). `app` waits for this to exit 0 before starting.
+  migrate:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: barynt-migrate:latest
+    command: ["bun", "prisma", "migrate", "deploy"]
+    restart: "no"
+    environment:
+      DATABASE_URL: "${COMPOSE_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-IssueTracker}}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Self-hosted, S3-compatible object storage for avatars/attachments —
+  # see the header comment above for why it's bundled and how to opt out
+  # or replace it with real S3.
+  rustfs:
+    profiles: ["app"]
+    image: rustfs/rustfs:latest
+    container_name: orbit-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: "0.0.0.0:9000"
+      RUSTFS_CONSOLE_ADDRESS: "0.0.0.0:9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: "${S3_ACCESS_KEY_ID:-rustfsadmin}"
+      RUSTFS_SECRET_KEY: "${S3_SECRET_ACCESS_KEY:-rustfsadmin}"
+    ports:
+      - "${S3_BIND:-127.0.0.1}:${S3_PORT:-9000}:9000"
+      - "${S3_BIND:-127.0.0.1}:${S3_CONSOLE_PORT:-9001}:9001" # web console, e.g. for a manual look at uploaded files
+    volumes:
+      - orbit-storage:/data
+    healthcheck:
+      # 127.0.0.1, not localhost: RustFS only listens on IPv4, and this
+      # image's `localhost` resolves to ::1 first — wget would otherwise
+      # fail with "connection refused" against a perfectly healthy server.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/health || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  # One-off: creates the avatars/issues buckets, then exits. RustFS (like
+  # MinIO) doesn't auto-create buckets from env vars, so this replaces the
+  # manual "click Create Bucket in the console" step. `aws s3 mb` exits
+  # non-zero when a bucket already exists — `|| true` keeps this safe to
+  # run on every start.
+  rustfs-init:
+    profiles: ["app"]
+    image: amazon/aws-cli:latest
+    container_name: orbit-rustfs-init
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        aws --endpoint-url http://rustfs:9000 s3 mb
+        s3://${S3_BUCKET_AVATARS:-avatars} || true;
+        aws --endpoint-url http://rustfs:9000 s3 mb
+        s3://${S3_BUCKET_ISSUES:-issues} || true
+    environment:
+      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID:-rustfsadmin}"
+      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY:-rustfsadmin}"
+      AWS_DEFAULT_REGION: "${S3_REGION:-us-east-1}"
+    depends_on:
+      rustfs:
+        condition: service_healthy
+
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: barynt:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    # Forwards whatever this project's .env actually defines (see
+    # example.env) — OAuth, SMTP stay genuinely *unset* in the container
+    # when not configured, matching local dev. Do NOT switch this to a long
+    # `environment:` list of `${VAR:-}` fallbacks: an empty string is not the
+    # same as an unset variable, and code using `??` (e.g. around AUTH_URL)
+    # only falls back on null/undefined — an explicit "" bypasses it and
+    # crashes the app with "TypeError: Invalid URL" (hit this exact bug
+    # while building this file).
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "${COMPOSE_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-IssueTracker}}"
+      AUTH_SECRET: "${AUTH_SECRET:?AUTH_SECRET must be set — generate one with: bunx auth secret}"
+      # S3_ENDPOINT alone gets the COMPOSE_-override treatment (see header
+      # comment) — the rest (keys, region, bucket names) mean the same
+      # thing from the host and from inside a container, so they're safe
+      # to default directly.
+      S3_ENDPOINT: "${COMPOSE_S3_ENDPOINT:-http://rustfs:9000}"
+      S3_REGION: "${S3_REGION:-us-east-1}"
+      S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID:-rustfsadmin}"
+      S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY:-rustfsadmin}"
+      S3_BUCKET_AVATARS: "${S3_BUCKET_AVATARS:-avatars}"
+      S3_BUCKET_ISSUES: "${S3_BUCKET_ISSUES:-issues}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      rustfs-init:
+        condition: service_completed_successfully
+
+  # Reverse proxy + automatic HTTPS. The only service meant to be reachable
+  # from the public internet — everything else binds to 127.0.0.1 (see
+  # header comment). Works with a domain from any registrar/DNS provider —
+  # nothing here is tied to a specific one. Caddy fetches and renews a
+  # Let's Encrypt certificate by itself as soon as DOMAIN resolves to this
+  # host with 80/443 open; without DOMAIN set, it still serves HTTPS on
+  # "localhost" via Caddy's own internal CA (see Caddyfile).
+  caddy:
+    profiles: ["app"]
+    image: caddy:2-alpine
+    container_name: orbit-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: "${DOMAIN:-localhost}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - orbit-caddy-data:/data
+      - orbit-caddy-config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
 volumes:
   orbit-db:
+  orbit-storage:
+  orbit-caddy-data:
+  orbit-caddy-config:
