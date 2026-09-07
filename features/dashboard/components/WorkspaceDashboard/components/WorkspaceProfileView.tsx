@@ -410,25 +410,19 @@ export function WorkspaceProfileView({
       </div>
 
       {/* Members as their own column on the right. Without `member.view`,
-          only leadership (`named`) and platform access remain —
-          `profile.roles` is already filtered server-side for that
-          (`wsProfileFor`). The column disappears entirely only once truly
-          nothing is left of it. The header count and the link to the full
-          list stay tied to `canViewMembers`: the page behind it is locked
-          without that permission anyway, and the count would reveal the
-          full roster, which is precisely what shouldn't be shown here. */}
-      {(profile.canViewMembers ||
-        named.length > 0 ||
-        profile.platformStaff.length > 0) && (
+          only leadership (`named`) remains — `profile.roles` is already
+          filtered server-side for that (`wsProfileFor`). The column
+          disappears entirely only once truly nothing is left of it. The
+          header count and the link to the full list stay tied to
+          `canViewMembers`: the page behind it is locked without that
+          permission anyway, and the count would reveal the full roster,
+          which is precisely what shouldn't be shown here. */}
+      {(profile.canViewMembers || named.length > 0) && (
         <aside className={styles.side}>
           <Card
             title={t("nav.members")}
             count={profile.canViewMembers ? profile.memberCount : undefined}
-            empty={
-              profile.canViewMembers &&
-              profile.memberCount === 0 &&
-              profile.platformStaff.length === 0
-            }
+            empty={profile.canViewMembers && profile.memberCount === 0}
             scrollBody
             footer={
               profile.canViewMembers &&
@@ -440,9 +434,7 @@ export function WorkspaceProfileView({
               )
             }
           >
-            {profile.canViewMembers &&
-            profile.memberCount === 0 &&
-            profile.platformStaff.length === 0 ? (
+            {profile.canViewMembers && profile.memberCount === 0 ? (
               t("dashboard.noMembers")
             ) : (
               <>
@@ -495,43 +487,6 @@ export function WorkspaceProfileView({
                     </ul>
                   </div>
                 ))}
-
-                {profile.platformStaff.length > 0 && (
-                  <div className={styles.roleBlock}>
-                    <span
-                      className={styles.subLabel}
-                      title={t("dashboard.platformAccessHint")}
-                    >
-                      {t("dashboard.platformAccess")}
-                    </span>
-                    <ul className={styles.people}>
-                      {profile.platformStaff.flatMap((role) =>
-                        role.members.map((member) => (
-                          <li key={member.id} className={styles.person}>
-                            <Avatar avatar={member} size={28} />
-                            <span className={styles.personText}>
-                              <span className={styles.personName}>
-                                <span>{fullName(member)}</span>
-                                <Label
-                                  size="sm"
-                                  filled
-                                  color={roleColor(role.rank)}
-                                >
-                                  {role.name}
-                                </Label>
-                              </span>
-                              {member.email && (
-                                <span className={styles.personMeta}>
-                                  {member.email}
-                                </span>
-                              )}
-                            </span>
-                          </li>
-                        )),
-                      )}
-                    </ul>
-                  </div>
-                )}
               </>
             )}
           </Card>

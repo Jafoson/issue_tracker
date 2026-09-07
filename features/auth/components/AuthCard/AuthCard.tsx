@@ -58,16 +58,12 @@ export function AuthCard({
     <div className={styles.page}>
       <div className={styles.hero}>
         <div className={styles.heroBrand}>
-          <Logo variant="horizontal" color="white" height={22} priority />
+          <Logo variant="horizontal" color="color" height={40} priority />
         </div>
         <div className={styles.heroCopy}>
           <h2>{t("login.heroTitle")}</h2>
           <p>{t("login.heroSubtitle")}</p>
         </div>
-        <p className={styles.heroFoot}>
-          <Icon icon="lucide:shield-check" width={14} />
-          {t("login.heroFoot")}
-        </p>
       </div>
 
       <div className={styles.formSide}>

@@ -294,15 +294,6 @@ export interface WorkspaceProfile {
    * the list contains only the distinguished groups.
    */
   roles: WorkspaceRoleGroup[];
-  /**
-   * `platform_admin`/`platform_support` with reach into this workspace, with
-   * no `WorkspaceMember` row of their own — otherwise they'd stay invisible
-   * in the profile card despite being able to do more than almost anyone in
-   * `roles`. Visible independent of `member.view`, like leadership there.
-   * Doesn't count toward `memberCount` — that stays the size of actual
-   * membership.
-   */
-  platformStaff: WorkspaceRoleGroup[];
   memberCount: number;
   teams: ProjectTeam[];
   projects: WorkspaceProjectSummary[];

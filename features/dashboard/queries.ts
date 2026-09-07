@@ -17,7 +17,6 @@ import type {
   WorkspaceDashboardView,
   WorkspaceProfile,
   WorkspaceProjectSummary,
-  WorkspaceRoleGroup,
 } from "@/features/dashboard/types";
 import { resolveLayout } from "@/features/dashboard/widgets";
 import { getPriorities, getStatuses } from "@/features/issues/queries";
@@ -43,8 +42,6 @@ import {
 import {
   DEFAULT_PROJECT_ROLE_KEY,
   DEFAULT_WORKSPACE_ROLE_KEY,
-  PLATFORM_ADMIN_ROLE_KEY,
-  PLATFORM_SUPPORT_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,
   PROJECT_GUEST_ROLE_KEY,
   PROJECT_VIEWER_ROLE_KEY,
@@ -116,67 +113,6 @@ const ROSTER_ROLE_KEYS = new Set<string>([
   PROJECT_GUEST_ROLE_KEY,
   PROJECT_BLOCKED_ROLE_KEY,
 ]);
-
-/**
- * Platform roles with real reach into every workspace: `platform_admin`
- * (metadata, suspension — `workspace.suspend`, `project.metadata.manage`)
- * and `platform_support` (`tenant.access`, any content). Neither carries a
- * `WorkspaceMember` row for that (see `prisma/seed.ts`, u18) and would
- * otherwise leave no trace in the profile card, despite being able to do
- * more than almost anyone listed there.
- */
-const PLATFORM_STAFF_ROLE_KEYS = [
-  PLATFORM_ADMIN_ROLE_KEY,
-  PLATFORM_SUPPORT_ROLE_KEY,
-];
-
-/**
- * Colored at the level of owner/admin (`roleColor`, rank ≥ 5) — the same
- * standing, just not the same scale: the rank from `lib/rbac/roles.ts` is
- * counted among platform roles (0 to 2), not alongside workspace roles.
- */
-const PLATFORM_STAFF_RANK_OFFSET = 5;
-
-/**
- * `platform_admin`/`platform_support` alongside the actual members — their
- * own groups instead of an entry in `groupByRole`, because there's no
- * `WorkspaceMember` row underlying this. Anyone who's both at once (the
- * creator, see seed) is already listed among the members and is excluded
- * here via `excludeIds`, instead of appearing twice.
- */
-async function platformStaffFor(
-  excludeIds: Set<string>,
-): Promise<WorkspaceRoleGroup[]> {
-  const staff = await db.user.findMany({
-    where: {
-      deactivatedAt: null,
-      platformRole: { key: { in: PLATFORM_STAFF_ROLE_KEYS } },
-    },
-    select: {
-      ...USER_SELECT,
-      platformRole: { select: { key: true, name: true, rank: true } },
-    },
-    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-  });
-
-  const groups = new Map<string, WorkspaceRoleGroup>();
-  for (const user of staff) {
-    if (excludeIds.has(user.id) || !user.platformRole) continue;
-    const existing = groups.get(user.platformRole.key);
-    if (existing) {
-      existing.members.push(await mapUser(user));
-      continue;
-    }
-    groups.set(user.platformRole.key, {
-      key: user.platformRole.key,
-      name: user.platformRole.name,
-      rank: user.platformRole.rank + PLATFORM_STAFF_RANK_OFFSET,
-      distinguished: true,
-      members: [await mapUser(user)],
-    });
-  }
-  return [...groups.values()].sort((a, b) => b.rank - a.rank);
-}
 
 /** Same thing one level up — being a contributor in the workspace instead of the project. */
 const WS_CONTRIBUTOR_RANK =
@@ -1246,9 +1182,6 @@ async function wsProfileFor(
     WS_CONTRIBUTOR_RANK,
     WS_ROSTER_ROLE_KEYS,
   );
-  const platformStaff = await platformStaffFor(
-    new Set(workspace.members.map((m) => m.user.id)),
-  );
 
   return {
     desc: workspace.desc,
@@ -1262,7 +1195,6 @@ async function wsProfileFor(
     // hiding the tab would be pointless (the overview would show it to
     // anyone allowed to enter the workspace).
     roles: canViewMembers ? roles : roles.filter((r) => r.distinguished),
-    platformStaff,
     memberCount: workspace.members.length,
     teams: workspace.teams,
     projects: (await Promise.all(
